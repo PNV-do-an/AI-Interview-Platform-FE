@@ -8,6 +8,13 @@ const STORAGE_KEYS = {
   ACCESS_TOKEN: 'accessToken',
   REFRESH_TOKEN: 'refreshToken',
   USER: 'user',
+  REMEMBER_ME: 'rememberMe',
+};
+
+const getStorage = () => {
+  return localStorage.getItem(STORAGE_KEYS.REMEMBER_ME) === 'true'
+    ? localStorage
+    : sessionStorage;
 };
 
 const initialState: AuthState = {
@@ -24,11 +31,11 @@ export const useAuthController = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Restore session from localStorage on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
-    const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-    const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+    const storage = getStorage();
+    const storedUser = storage.getItem(STORAGE_KEYS.USER);
+    const accessToken = storage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+    const refreshToken = storage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
 
     if (storedUser && accessToken) {
       setState({
@@ -43,47 +50,71 @@ export const useAuthController = () => {
     }
   }, []);
 
-  const persistSession = useCallback((accessToken: string, refreshToken: string, user: User) => {
-    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
-    localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
-    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-    setState({ user, accessToken, refreshToken, isAuthenticated: true, isLoading: false });
-  }, []);
+  const persistSession = useCallback(
+    (accessToken: string, refreshToken: string, user: User, rememberMe: boolean) => {
+      const storage = rememberMe ? localStorage : sessionStorage;
+      storage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+      storage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+      storage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+      if (rememberMe) {
+        localStorage.setItem(STORAGE_KEYS.REMEMBER_ME, 'true');
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.REMEMBER_ME);
+      }
+      setState({ user, accessToken, refreshToken, isAuthenticated: true, isLoading: false });
+    },
+    []
+  );
 
-  const login = useCallback(async (data: LoginRequest) => {
-    setError('');
-    setLoading(true);
-    try {
-      const res = await AuthService.login(data);
-      const { accessToken, refreshToken, user } = res.data.data!;
-      persistSession(accessToken, refreshToken, user as User);
-      navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, [navigate, persistSession]);
+  const login = useCallback(
+    async (data: LoginRequest, rememberMe = false) => {
+      setError('');
+      setLoading(true);
+      try {
+        const res = await AuthService.login(data);
+        const { accessToken, refreshToken, user } = res.data.data!;
+        persistSession(accessToken, refreshToken, user as User, rememberMe);
 
-  const register = useCallback(async (data: RegisterRequest) => {
-    setError('');
-    setLoading(true);
-    try {
-      const res = await AuthService.register(data);
-      const { accessToken, refreshToken, user } = res.data.data!;
-      persistSession(accessToken, refreshToken, user as User);
-      navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, [navigate, persistSession]);
+        const role = user?.role;
+        if (role === 'ROLE_ADMIN') {
+          navigate('/admin/dashboard');
+        } else if (role === 'ROLE_MENTOR') {
+          navigate('/mentor/dashboard');
+        } else {
+          navigate('/dashboard');
+        }
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Login failed. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [navigate, persistSession]
+  );
+
+  const register = useCallback(
+    async (data: RegisterRequest) => {
+      setError('');
+      setLoading(true);
+      try {
+        await AuthService.register(data);
+        navigate('/login?registered=true');
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [navigate]
+  );
 
   const logout = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.USER);
+    localStorage.removeItem(STORAGE_KEYS.REMEMBER_ME);
+    [localStorage, sessionStorage].forEach((s) => {
+      s.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+      s.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+      s.removeItem(STORAGE_KEYS.USER);
+    });
     setState({ ...initialState, isLoading: false });
     navigate('/login');
   }, [navigate]);

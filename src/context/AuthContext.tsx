@@ -9,18 +9,13 @@ interface AuthContextType {
   isLoading: boolean;
   error: string;
   loading: boolean;
-  login: (data: LoginRequest) => Promise<void>;
+  login: (data: LoginRequest, rememberMe?: boolean) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/**
- * AuthProvider wraps the app and exposes auth state + actions.
- * The controller (useAuthController) holds all business logic.
- * Views consume this context — they never call services directly.
- */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const controller = useAuthController();
 
