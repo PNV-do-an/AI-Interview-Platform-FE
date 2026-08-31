@@ -1,4 +1,4 @@
-export type Role = 'ROLE_USER' | 'ROLE_STAFF' | 'ROLE_ADMIN';
+export type Role = 'ROLE_USER' | 'ROLE_STAFF' | 'ROLE_ADMIN' | 'ROLE_INTERVIEWER';
 export type AccountStatus = 'ACTIVE' | 'INACTIVE' | 'LOCKED' | 'DELETED';
 
 export interface User {

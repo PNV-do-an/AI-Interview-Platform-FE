@@ -8,6 +8,7 @@ const ROLE_LABELS: Record<string, string> = {
   ROLE_USER: 'Người dùng',
   ROLE_STAFF: 'Nhân viên',
   ROLE_ADMIN: 'Quản trị viên',
+  ROLE_INTERVIEWER: 'Phỏng vấn viên',
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -112,7 +113,7 @@ const AdminUserManagementPage: React.FC = () => {
               onChange={e => handleFilterChange('role', e.target.value)}>
               <option value="">Tất cả vai trò</option>
               <option value="ROLE_USER">Người dùng</option>
-              <option value="ROLE_STAFF">Nhân viên</option>
+              <option value="ROLE_INTERVIEWER">Phỏng vấn viên</option>
               <option value="ROLE_ADMIN">Quản trị viên</option>
             </select>
           </div>

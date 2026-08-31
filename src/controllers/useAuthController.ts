@@ -77,7 +77,7 @@ export const useAuthController = () => {
 
         const role = user?.role;
         if (role === 'ROLE_ADMIN') {
-          navigate('/admin/dashboard');
+          navigate('/admin/users');
         } else if (role === 'ROLE_MENTOR') {
           navigate('/mentor/dashboard');
         } else {

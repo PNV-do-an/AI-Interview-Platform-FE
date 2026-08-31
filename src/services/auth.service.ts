@@ -9,7 +9,7 @@ const AuthService = {
     httpService.post<ApiResponse<AuthResponse>>('/api/v1/auth/register', data),
 
   getMe: () =>
-    httpService.get<ApiResponse<AuthResponse['user']>>('/api/v1/users/me'),
+    httpService.get<ApiResponse<AuthResponse['user']>>('/api/v1/auth/me'),
 };
 
 export default AuthService;

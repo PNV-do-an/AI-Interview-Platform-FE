@@ -6,6 +6,7 @@ const ROLE_LABELS: Record<string, string> = {
   ROLE_USER: 'Người dùng',
   ROLE_STAFF: 'Nhân viên',
   ROLE_ADMIN: 'Quản trị viên',
+  ROLE_INTERVIEWER: 'Phỏng vấn viên',
 };
 
 const DashboardPage: React.FC = () => {
