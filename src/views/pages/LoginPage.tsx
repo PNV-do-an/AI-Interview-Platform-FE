@@ -51,7 +51,10 @@ const LoginPage: React.FC = () => {
           {loading ? 'Logging in...' : 'Login'}
         </button>
       </form>
-      <p style={{ marginTop: 16 }}>
+      <p style={{ marginTop: 8 }}>
+        <Link to="/forgot-password">Quên mật khẩu?</Link>
+      </p>
+      <p style={{ marginTop: 8 }}>
         Don't have an account? <Link to="/register">Register</Link>
       </p>
     </div>

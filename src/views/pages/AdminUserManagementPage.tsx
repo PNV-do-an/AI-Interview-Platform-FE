@@ -5,7 +5,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import UserDetailModal from '../components/UserDetailModal';
 
 const ROLE_LABELS: Record<string, string> = {
-  ROLE_USER: 'Người dùng',
+  ROLE_USER: 'Khách hàng',
   ROLE_STAFF: 'Nhân viên',
   ROLE_ADMIN: 'Quản trị viên',
   ROLE_INTERVIEWER: 'Phỏng vấn viên',
@@ -112,7 +112,8 @@ const AdminUserManagementPage: React.FC = () => {
             <select style={styles.select} value={roleFilter}
               onChange={e => handleFilterChange('role', e.target.value)}>
               <option value="">Tất cả vai trò</option>
-              <option value="ROLE_USER">Người dùng</option>
+              <option value="ROLE_USER">Khách hàng</option>
+              <option value="ROLE_STAFF">Nhân viên</option>
               <option value="ROLE_INTERVIEWER">Phỏng vấn viên</option>
               <option value="ROLE_ADMIN">Quản trị viên</option>
             </select>

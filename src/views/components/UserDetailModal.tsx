@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Role, UserDetail } from '../../models/User.model';
+import ConfirmDialog from './ConfirmDialog';
 
 interface Props {
   user: UserDetail | null;
@@ -13,7 +14,7 @@ interface Props {
 }
 
 const ROLE_LABELS: Record<string, string> = {
-  ROLE_USER: 'Người dùng',
+  ROLE_USER: 'Khách hàng',
   ROLE_STAFF: 'Nhân viên',
   ROLE_ADMIN: 'Quản trị viên',
   ROLE_INTERVIEWER: 'Phỏng vấn viên',
@@ -26,6 +27,13 @@ const STATUS_COLORS: Record<string, string> = {
 const UserDetailModal: React.FC<Props> = ({
   user, onClose, onLock, onUnlock, onDelete, onResetPassword, onChangeRole, actionLoading,
 }) => {
+  const [confirmState, setConfirmState] = useState<null | {
+    key: 'lock' | 'unlock' | 'reset' | 'changeRole';
+    role?: Role;
+  }>(null);
+
+  const closeConfirm = () => setConfirmState(null);
+
   if (!user) return null;
 
   const fmtDate = (d: string | null) =>
@@ -58,20 +66,21 @@ const UserDetailModal: React.FC<Props> = ({
           <div style={styles.footer}>
             {user.status === 'LOCKED'
               ? <Btn label="Mở khóa" color="#16a34a" disabled={actionLoading}
-                  onClick={() => onUnlock(user.id)} />
+                  onClick={() => setConfirmState({ key: 'unlock' })} />
               : <Btn label="Khóa TK" color="#f59e0b" disabled={actionLoading}
-                  onClick={() => onLock(user.id)} />
+                  onClick={() => setConfirmState({ key: 'lock' })} />
             }
             <Btn label="Reset mật khẩu" color="#6366f1" disabled={actionLoading}
-              onClick={() => onResetPassword(user.id)} />
+              onClick={() => setConfirmState({ key: 'reset' })} />
 
             <select
               disabled={actionLoading}
               value={user.role}
-              onChange={e => onChangeRole(user.id, e.target.value as Role)}
+              onChange={e => setConfirmState({ key: 'changeRole', role: e.target.value as Role })}
               style={styles.select}
             >
-              <option value="ROLE_USER">Người dùng</option>
+              <option value="ROLE_USER">Khách hàng</option>
+              <option value="ROLE_STAFF">Nhân viên</option>
               <option value="ROLE_INTERVIEWER">Phỏng vấn viên</option>
               <option value="ROLE_ADMIN">Quản trị viên</option>
             </select>
@@ -81,6 +90,39 @@ const UserDetailModal: React.FC<Props> = ({
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmState !== null}
+        title={
+          confirmState?.key === 'lock' ? 'Xác nhận khóa tài khoản' :
+          confirmState?.key === 'unlock' ? 'Xác nhận mở khóa tài khoản' :
+          confirmState?.key === 'reset' ? 'Xác nhận gửi email đặt lại mật khẩu' :
+          confirmState?.key === 'changeRole' ? 'Xác nhận thay đổi vai trò' : 'Xác nhận'
+        }
+        message={
+          confirmState?.key === 'lock' ? 'Bạn có chắc muốn khóa tài khoản này? Người dùng sẽ không thể đăng nhập.' :
+          confirmState?.key === 'unlock' ? 'Bạn có chắc muốn mở khóa tài khoản này?' :
+          confirmState?.key === 'reset' ? 'Một email đặt lại mật khẩu sẽ được gửi đến ' + (user?.email ?? '') + '. Tiếp tục?' :
+          confirmState?.key === 'changeRole' ? 'Bạn có chắc muốn thay đổi vai trò của người dùng này?' : ''
+        }
+        danger={confirmState?.key === 'lock'}
+        confirmLabel={
+          confirmState?.key === 'lock' ? 'Khóa' :
+          confirmState?.key === 'unlock' ? 'Mở khóa' :
+          confirmState?.key === 'reset' ? 'Gửi email' :
+          confirmState?.key === 'changeRole' ? 'Đổi vai trò' : 'Xác nhận'
+        }
+        onCancel={closeConfirm}
+        onConfirm={() => {
+          if (!user || !confirmState) return;
+          const s = confirmState;
+          closeConfirm();
+          if (s.key === 'lock') onLock(user.id);
+          else if (s.key === 'unlock') onUnlock(user.id);
+          else if (s.key === 'reset') onResetPassword(user.id);
+          else if (s.key === 'changeRole' && s.role) onChangeRole(user.id, s.role);
+        }}
+      />
     </div>
   );
 };

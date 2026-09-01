@@ -78,13 +78,22 @@ export const useAuthController = () => {
         const role = user?.role;
         if (role === 'ROLE_ADMIN') {
           navigate('/admin/users');
-        } else if (role === 'ROLE_MENTOR') {
-          navigate('/mentor/dashboard');
+        } else if (role === 'ROLE_STAFF' || role === 'ROLE_INTERVIEWER') {
+          navigate('/dashboard');
         } else {
           navigate('/dashboard');
         }
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Login failed. Please try again.');
+        const status = err.response?.status;
+        const msg = err.response?.data?.message || err.response?.data?.errorMessage || 'Đăng nhập thất bại. Vui lòng thử lại.';
+        if (status === 423 && err.response?.data?.extra?.lockedUntil) {
+          const until = err.response.data.extra.lockedUntil;
+          setError(msg + ` Mở khóa vào: ${new Date(until).toLocaleString('vi-VN')}`);
+        } else if (status === 423) {
+          setError(msg);
+        } else {
+          setError(msg);
+        }
       } finally {
         setLoading(false);
       }
