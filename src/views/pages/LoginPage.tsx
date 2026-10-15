@@ -47,18 +47,21 @@ const GoogleIcon: React.FC = () => (
 );
 
 const LoginPage: React.FC = () => {
-  const { login, loginWithGoogle, loading, error } = useAuth();
-  const [searchParams] = useSearchParams();
+  const { login, loginWithGoogle, loginWithGithub, loading, error } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [form, setForm] = useState({ email: '', password: '' });
   const [rememberMe, setRememberMe] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [notice, setNotice] = useState('');
   const [googleClientId, setGoogleClientId] = useState('');
+  const [githubClientId, setGithubClientId] = useState('');
 
   const rememberMeRef = useRef(rememberMe);
   rememberMeRef.current = rememberMe;
 
   const registered = searchParams.get('registered');
+
+  const redirectUri = window.location.origin + window.location.pathname;
 
   useEffect(() => {
     let alive = true;
@@ -67,10 +70,61 @@ const LoginPage: React.FC = () => {
         if (alive) setGoogleClientId(res.data.data || '');
       })
       .catch(() => {});
+    AuthService.getGithubClientId()
+      .then((res) => {
+        if (alive) setGithubClientId(res.data.data || '');
+      })
+      .catch(() => {});
     return () => {
       alive = false;
     };
   }, []);
+
+  // GitHub OAuth callback: /login?code=...&state=...
+  const githubCallbackRef = useRef(false);
+  useEffect(() => {
+    if (githubCallbackRef.current) return;
+
+    const code = searchParams.get('code');
+    const ghError = searchParams.get('error');
+    if (!code && !ghError) return;
+    githubCallbackRef.current = true;
+
+    const state = searchParams.get('state') || '';
+    const savedState = sessionStorage.getItem('github_oauth_state');
+    sessionStorage.removeItem('github_oauth_state');
+    setSearchParams({}, { replace: true });
+
+    if (ghError) {
+      setNotice(ghError === 'access_denied' ? 'GitHub sign-in was cancelled.' : 'GitHub sign-in failed. Please try again.');
+      return;
+    }
+    if (!savedState || state !== savedState) {
+      setNotice('GitHub sign-in link expired. Please try again.');
+      return;
+    }
+    loginWithGithub(code!, redirectUri, rememberMeRef.current);
+  }, [searchParams, setSearchParams, loginWithGithub, redirectUri]);
+
+  const handleGithubLogin = () => {
+    setNotice('');
+    if (!githubClientId) {
+      comingSoon('Sign in with GitHub');
+      return;
+    }
+    const state =
+      window.crypto && 'randomUUID' in window.crypto
+        ? window.crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    sessionStorage.setItem('github_oauth_state', state);
+    const params = new URLSearchParams({
+      client_id: githubClientId,
+      redirect_uri: redirectUri,
+      scope: 'read:user user:email',
+      state,
+    });
+    window.location.assign(`https://github.com/login/oauth/authorize?${params.toString()}`);
+  };
 
   const handleGoogleLogin = async () => {
     setNotice('');
@@ -162,7 +216,7 @@ const LoginPage: React.FC = () => {
                   <button
                     type="button"
                     className="flex h-10 items-center justify-center gap-1 rounded-lg border-0 bg-surface-low px-3 text-label-md text-ink shadow-sm transition-colors hover:bg-surface-mid"
-                    onClick={() => comingSoon('Sign in with GitHub')}
+                    onClick={handleGithubLogin}
                   >
                     <GitHubIcon /> GitHub
                   </button>

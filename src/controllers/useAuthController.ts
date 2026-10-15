@@ -119,6 +119,24 @@ export const useAuthController = () => {
     [navigate, persistSession]
   );
 
+  const loginWithGithub = useCallback(
+    async (code: string, redirectUri: string, rememberMe: boolean) => {
+      setError('');
+      setLoading(true);
+      try {
+        const res = await AuthService.githubLogin(code, redirectUri);
+        const { accessToken, refreshToken, user } = res.data.data!;
+        persistSession(accessToken, refreshToken, user as User, rememberMe);
+        navigate(user?.role === 'ROLE_ADMIN' ? '/admin/users' : '/dashboard', { replace: true });
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'GitHub sign-in failed. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [navigate, persistSession]
+  );
+
   const register = useCallback(
     async (data: RegisterRequest) => {
       setError('');
@@ -146,5 +164,5 @@ export const useAuthController = () => {
     navigate('/login');
   }, [navigate]);
 
-  return { ...state, error, loading, login, loginWithGoogle, register, logout };
+  return { ...state, error, loading, login, loginWithGoogle, loginWithGithub, register, logout };
 };

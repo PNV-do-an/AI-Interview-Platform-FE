@@ -32,6 +32,12 @@ const AuthService = {
 
   googleLogin: (idToken: string) =>
     publicHttp.post<ApiResponse<AuthResponse>>('/api/v1/auth/google', { idToken }),
+
+  getGithubClientId: () =>
+    publicHttp.get<ApiResponse<string>>('/api/v1/auth/github/client-id'),
+
+  githubLogin: (code: string, redirectUri: string) =>
+    publicHttp.post<ApiResponse<AuthResponse>>('/api/v1/auth/github', { code, redirectUri }),
 };
 
 export default AuthService;
