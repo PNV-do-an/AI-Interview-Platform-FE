@@ -10,6 +10,7 @@ interface AuthContextType {
   error: string;
   loading: boolean;
   login: (data: LoginRequest, rememberMe?: boolean) => Promise<void>;
+  loginWithGoogle: (idToken: string, rememberMe: boolean) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => void;
 }
