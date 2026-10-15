@@ -101,6 +101,24 @@ export const useAuthController = () => {
     [navigate, persistSession]
   );
 
+  const loginWithGoogle = useCallback(
+    async (idToken: string, rememberMe: boolean) => {
+      setError('');
+      setLoading(true);
+      try {
+        const res = await AuthService.googleLogin(idToken);
+        const { accessToken, refreshToken, user } = res.data.data!;
+        persistSession(accessToken, refreshToken, user as User, rememberMe);
+        navigate(user?.role === 'ROLE_ADMIN' ? '/admin/users' : '/dashboard');
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Đăng nhập Google thất bại. Vui lòng thử lại.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [navigate, persistSession]
+  );
+
   const register = useCallback(
     async (data: RegisterRequest) => {
       setError('');
@@ -128,5 +146,5 @@ export const useAuthController = () => {
     navigate('/login');
   }, [navigate]);
 
-  return { ...state, error, loading, login, register, logout };
+  return { ...state, error, loading, login, loginWithGoogle, register, logout };
 };

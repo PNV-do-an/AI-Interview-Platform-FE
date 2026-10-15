@@ -25,6 +25,13 @@ const AuthService = {
 
   resetPassword: (token: string, password: string) =>
     publicHttp.post<ApiResponse<string>>('/api/v1/auth/reset-password', { token, password }),
+
+  // Dùng publicHttp để 401 từ Google không kích hoạt interceptor refresh của httpService
+  getGoogleClientId: () =>
+    publicHttp.get<ApiResponse<string>>('/api/v1/auth/google/client-id'),
+
+  googleLogin: (idToken: string) =>
+    publicHttp.post<ApiResponse<AuthResponse>>('/api/v1/auth/google', { idToken }),
 };
 
 export default AuthService;
