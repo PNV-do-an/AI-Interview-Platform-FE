@@ -1,5 +1,6 @@
 name: Frontend CI
-# Push dev/main -> Build. Build xanh tren dev thi bao repo deploy-staging deploy Vercel.
+# Push dev/main -> Build. Build xanh tren dev thi bump con tro submodule
+# `frontend` trong superrepo deploy-staging; superrepo do deploy Vercel.
 
 on:
   push:
@@ -38,23 +39,39 @@ jobs:
         env:
           CI: "false"
 
-  # workflow_run chi nghe duoc workflow cung repo, nen phai dispatch sang
-  # repo deploy-staging bang PAT (secret DEPLOY_PAT).
-  notify-deploy-repo:
-    name: Trigger staging deploy
+  # Build xanh tren dev thi cong con tro submodule `frontend` trong superrepo
+  # deploy-staging; superrepo moi deploy Vercel. PAT can quyen Contents: r/w.
+  bump-superrepo:
+    name: Bump superrepo submodule
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
-      - name: Dispatch Staging Deploy
+      - name: Push new submodule pointer
         env:
           PAT: ${{ secrets.DEPLOY_PAT }}
           SHA: ${{ github.sha }}
+          SUB: frontend
         run: |
-          code=$(curl -sS -o /tmp/dispatch.json -w '%{http_code}' \
-            -X POST -H "Authorization: Bearer $PAT" -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/PNV-do-an/AI-Interview-Platform-deploy-staging/actions/workflows/staging-deploy.yml/dispatches" \
-            -d "{\"ref\":\"dev\",\"inputs\":{\"frontend_sha\":\"$SHA\"}}")
-          echo "dispatch HTTP $code"
-          [ "$code" = "204" ] || { cat /tmp/dispatch.json; exit 1; }
+          set -euo pipefail
+          if [ -z "$PAT" ]; then echo "Thieu secret DEPLOY_PAT"; exit 1; fi
+          git config --global user.name  "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global http.https://github.com/.extraheader \
+            "AUTHORIZATION: basic $(printf 'oauth2:%s' "$PAT" | base64 -w0)"
+          url=https://github.com/PNV-do-an/AI-Interview-Platform-deploy-staging.git
+          for try in 1 2 3; do
+            rm -rf /tmp/super
+            git clone --quiet "$url" /tmp/super
+            git -C /tmp/super update-index --add --replace --cacheinfo 160000,"$SHA","$SUB"
+            if git -C /tmp/super diff --cached --quiet; then
+              echo "superrepo dang tro dung $SHA, khong bump"; exit 0
+            fi
+            git -C /tmp/super commit -q -m "chore(deploy): $SUB -> $SHA"
+            if git -C /tmp/super push --quiet origin HEAD:dev; then
+              echo "da bump $SUB -> $SHA"; exit 0
+            fi
+            echo "push bi conflict, thu lan $try"; sleep 5
+          done
+          echo "khong bump duoc sau 3 lan"; exit 1
