@@ -3,7 +3,31 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useMockInterviewController } from '../../controllers/useMockInterviewController';
 import { useJobController } from '../../controllers/useJobController';
 import { useAuth } from '../../context/AuthContext';
-import { INTERVIEW_MODE_LABELS, InterviewMode } from '../../models/Interview.model';
+import { INTERVIEW_MODE_LABELS, InterviewMode, InterviewSession } from '../../models/Interview.model';
+import {
+  Badge,
+  Card,
+  EmptyState,
+  ErrorBanner,
+  LoadingState,
+  buttonClass,
+  inputClass,
+  labelClass,
+} from '../components/ui';
+
+// "Completed N days ago" dẫn xuất từ completedAt/createdAt thật (không hardcode).
+const relativeDays = (iso?: string): string => {
+  if (!iso) return '';
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return '';
+  const days = Math.floor((Date.now() - then) / 86400000);
+  if (days <= 0) return 'Completed today';
+  if (days === 1) return 'Completed 1 day ago';
+  return `Completed ${days} days ago`;
+};
+
+const sessionTitle = (s: InterviewSession): string =>
+  s.mode === 'MOCK' ? (s.jobTitle ?? 'Mock interview') : (s.topic ?? 'Knowledge practice');
 
 const MockInterviewsPage = () => {
   const { user } = useAuth();
@@ -35,26 +59,39 @@ const MockInterviewsPage = () => {
   };
 
   if (!user || user.role !== 'ROLE_USER') {
-    return <div style={{ padding: '40px', color: '#395886' }}>Vui lòng đăng nhập với tài khoản ứng viên.</div>;
+    return (
+      <div className="p-10 text-body-md text-ink-variant">
+        Please sign in with a candidate account.
+      </div>
+    );
   }
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '10px 12px', border: '1px solid #D5DEEF',
-    borderRadius: 4, boxSizing: 'border-box', fontSize: 14,
-  };
-  const labelStyle: React.CSSProperties = { display: 'block', marginBottom: 6, color: '#395886', fontWeight: 600 };
-
   return (
-    <div style={{ padding: '40px', maxWidth: 900, margin: '0 auto' }}>
-      <h1 style={{ color: '#395886' }}>Luyện phỏng vấn với AI</h1>
+    <div className="mx-auto flex w-full max-w-[1080px] flex-col gap-6">
+      {/* Header: breadcrumb + title + description (nguyên văn nhãn tiếng Anh của mockup) */}
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-1 text-label-sm text-outline-strong">
+          <span>Candidate Core</span>
+          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          <span>Growth &amp; Preparation</span>
+          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+          <span className="font-medium text-primary">Skills Hub &amp; Practice</span>
+        </div>
+        <h1 className="m-0 text-display-mobile text-ink sm:text-display">Skills Hub &amp; Interactive AI Practice</h1>
+        <p className="m-0 max-w-3xl text-body-md text-ink-variant">
+          Sharpen your technical interview readiness with simulated live coding challenges, system design
+          architectural whiteboards, and sub-second synthesized AI feedback.
+        </p>
+      </div>
 
-      <div style={{ background: '#F0F3FA', borderRadius: 8, padding: 24, marginBottom: 32 }}>
-        <h3 style={{ color: '#395886', marginTop: 0 }}>Bắt đầu phiên mới</h3>
-        <form onSubmit={handleStart} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Start new session (giữ 100% logic cũ) */}
+      <Card className="bg-surface-low">
+        <h3 className="m-0 mb-4 text-headline-md text-ink">Start a New Session</h3>
+        <form onSubmit={handleStart} className="flex flex-col gap-4">
           <div>
-            <label style={labelStyle}>Chế độ luyện tập</label>
+            <label className={labelClass}>Practice Mode</label>
             <select
-              style={inputStyle}
+              className={inputClass}
               value={mode}
               onChange={(e) => setMode(e.target.value as InterviewMode)}
             >
@@ -66,9 +103,9 @@ const MockInterviewsPage = () => {
 
           {mode === 'MOCK' && (
             <div>
-              <label style={labelStyle}>Chọn tin tuyển dụng</label>
-              <select style={inputStyle} value={jobId} onChange={(e) => setJobId(e.target.value ? Number(e.target.value) : '')}>
-                <option value="">— Chọn tin tuyển dụng —</option>
+              <label className={labelClass}>Job Posting</label>
+              <select className={inputClass} value={jobId} onChange={(e) => setJobId(e.target.value ? Number(e.target.value) : '')}>
+                <option value="">— Select a job posting —</option>
                 {jobs?.content.map((j) => (
                   <option key={j.id} value={j.id}>{j.title} — {j.companyName}</option>
                 ))}
@@ -78,20 +115,20 @@ const MockInterviewsPage = () => {
 
           {mode === 'KNOWLEDGE' && (
             <div>
-              <label style={labelStyle}>Chủ đề luyện tập</label>
+              <label className={labelClass}>Practice Topic</label>
               <input
-                style={inputStyle}
+                className={inputClass}
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                placeholder="VD: Java Spring Boot, React, SQL..."
+                placeholder="e.g. Java Spring Boot, React, SQL..."
               />
             </div>
           )}
 
           <div>
-            <label style={labelStyle}>Số câu hỏi (3-10)</label>
+            <label className={labelClass}>Number of Questions (3-10)</label>
             <input
-              style={{ ...inputStyle, width: 120 }}
+              className={`${inputClass} max-w-[120px] tabular-nums`}
               type="number"
               min={3}
               max={10}
@@ -100,58 +137,84 @@ const MockInterviewsPage = () => {
             />
           </div>
 
-          <button
-            type="submit"
-            style={{
-              padding: '12px 24px', background: '#628ECB', color: '#fff',
-              border: 'none', borderRadius: 4, cursor: 'pointer', fontSize: 15, width: 200,
-            }}
-          >
-            Bắt đầu phỏng vấn
+          <button type="submit" className={buttonClass('primary', 'self-start gap-1')}>
+            <span>Launch Live Simulation</span>
+            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
           </button>
         </form>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        {successMsg && <p style={{ color: 'green' }}>{successMsg}</p>}
-      </div>
+        <div className="mt-3">
+          <ErrorBanner message={error} />
+          {successMsg && (
+            <div className="flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text">
+              <span className="material-symbols-outlined shrink-0 text-[18px]">check_circle</span>
+              <span>{successMsg}</span>
+            </div>
+          )}
+        </div>
+      </Card>
 
-      <h3 style={{ color: '#395886' }}>Lịch sử phỏng vấn</h3>
-      {loading && <p style={{ color: '#395886' }}>Đang tải...</p>}
-      {!sessions || sessions.content.length === 0 ? (
-        <p style={{ color: '#888' }}>Chưa có phiên phỏng vấn nào.</p>
-      ) : (
-        sessions.content.map((s) => (
-          <div
-            key={s.id}
-            style={{
-              border: '1px solid #D5DEEF', borderRadius: 6, padding: 16,
-              marginBottom: 10, background: '#fff', display: 'flex',
-              justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10,
-            }}
-          >
-            <div>
-              <strong style={{ color: '#395886' }}>
-                {s.mode === 'MOCK' ? `Phỏng vấn mô phỏng — ${s.jobTitle}` : `Kiến thức — ${s.topic}`}
-              </strong>
-              <div style={{ color: '#888', fontSize: 13 }}>
-                {new Date(s.createdAt).toLocaleString('vi-VN')} · {s.answeredCount}/{s.questions.length} câu đã trả lời
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              {s.status === 'COMPLETED' && s.overallScore != null && (
-                <span style={{ padding: '4px 12px', borderRadius: 4, background: '#D5DEEF', color: '#395886', fontSize: 13 }}>
-                  Điểm: {s.overallScore}/100
-                </span>
-              )}
-              <Link
-                to={s.status === 'COMPLETED' ? `/mock-interviews/${s.id}/result` : `/mock-interviews/${s.id}`}
-                style={{ padding: '6px 14px', background: '#628ECB', color: '#fff', borderRadius: 4, textDecoration: 'none', fontSize: 13 }}
-              >
-                {s.status === 'COMPLETED' ? 'Xem kết quả' : 'Tiếp tục'}
-              </Link>
-            </div>
+      {/* Recent Mock Sessions & Diagnostic History — chỉ field có trong model */}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h3 className="m-0 text-headline-md text-ink">Recent Mock Sessions &amp; Diagnostic History</h3>
+            <p className="m-0 text-body-sm text-ink-variant">Deep-dive telemetry transcripts and synthetic proctor scorecards.</p>
           </div>
-        ))
-      )}
+          {sessions && sessions.totalElements > 0 && (
+            <span className="text-label-sm text-ink-variant tabular-nums">
+              Showing {sessions.content.length} of {sessions.totalElements} sessions
+            </span>
+          )}
+        </div>
+
+        {loading && <LoadingState />}
+        {!sessions || sessions.content.length === 0 ? (
+          <EmptyState icon="smart_toy" title="No mock sessions yet." />
+        ) : (
+          <div className="flex flex-col gap-3">
+            {sessions.content.map((s) => {
+              const done = s.status === 'COMPLETED';
+              return (
+                <Card key={s.id} className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-low text-primary">
+                      <span className="material-symbols-outlined text-[20px]">
+                        {s.mode === 'MOCK' ? 'code_blocks' : 'psychology'}
+                      </span>
+                    </span>
+                    <div className="flex min-w-0 flex-col">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-[12px] font-medium text-primary">#{s.mode === 'MOCK' ? 'MOCK' : 'KNOW'}-{s.id}</span>
+                        <span className="text-outline-strong">•</span>
+                        <span className="text-label-sm text-ink-variant">
+                          {done ? relativeDays(s.completedAt ?? s.createdAt) : `In progress · ${s.answeredCount}/${s.questions.length} answered`}
+                        </span>
+                      </div>
+                      <h5 className="m-0 mt-0.5 truncate text-headline-sm text-ink">{sessionTitle(s)}</h5>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 self-end md:self-center">
+                    {s.overallScore != null ? (
+                      <div className="flex flex-col items-end">
+                        <span className="text-headline-md font-semibold text-primary tabular-nums">{s.overallScore} / 100</span>
+                        {done && <Badge tone="success">Completed</Badge>}
+                      </div>
+                    ) : (
+                      <Badge tone={done ? 'success' : 'info'}>{done ? 'Completed' : 'In progress'}</Badge>
+                    )}
+                    <Link
+                      to={done ? `/mock-interviews/${s.id}/result` : `/mock-interviews/${s.id}`}
+                      className={buttonClass(done ? 'secondary' : 'primary', 'no-underline whitespace-nowrap')}
+                    >
+                      {done ? 'View Detailed Feedback' : 'Continue'}
+                    </Link>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

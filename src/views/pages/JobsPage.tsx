@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useJobController } from '../../controllers/useJobController';
-
-const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 900, margin: '40px auto', padding: 24, fontFamily: 'sans-serif' },
-  searchRow: { display: 'flex', gap: 8, marginBottom: 20 },
-  input: { flex: 1, padding: 8 },
-  card: { border: '1px solid #e5e7eb', borderRadius: 8, padding: 16, marginBottom: 12 },
-  meta: { color: '#6b7280', fontSize: 14 },
-  pager: { display: 'flex', gap: 8, alignItems: 'center', marginTop: 16 },
-};
+import {
+  EmptyState,
+  ErrorBanner,
+  LoadingState,
+  PageHeader,
+  buttonClass,
+  inputClass,
+  tdClass,
+} from '../components/ui';
 
 const JobsPage: React.FC = () => {
   const { jobs, loading, error, fetchJobs } = useJobController();
@@ -25,47 +25,63 @@ const JobsPage: React.FC = () => {
   };
 
   return (
-    <div style={styles.page}>
-      <h2>Chương trình phỏng vấn</h2>
-      <form onSubmit={onSearch} style={styles.searchRow}>
+    <div>
+      <PageHeader title="Job Board" description="Open listings for candidates" />
+
+      <form className="mb-4 flex gap-2" onSubmit={onSearch}>
         <input
-          placeholder="Tìm theo tiêu đề, công ty, vị trí, địa điểm..."
+          className={inputClass}
+          placeholder="Search by title, company, role, or location..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={styles.input}
         />
-        <button type="submit">Tìm kiếm</button>
+        <button type="submit" className={buttonClass('primary', 'shrink-0')}>Search</button>
       </form>
 
-      {loading && <p>Đang tải...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <ErrorBanner message={error} />
+      {loading && <LoadingState />}
 
-      {jobs?.content.map((job) => (
-        <div key={job.id} style={styles.card}>
-          <Link to={`/jobs/${job.id}`} style={{ fontSize: 18, fontWeight: 600 }}>
-            {job.title}
-          </Link>
-          <p style={styles.meta}>
-            {job.companyName}
-            {job.location ? ` · ${job.location}` : ''}
-            {job.salaryRange ? ` · ${job.salaryRange}` : ''}
-          </p>
-        </div>
-      ))}
+      {!loading && jobs && jobs.content.length === 0 && (
+        <EmptyState
+          icon="work"
+          title="No job listings found"
+          description="Try a different search keyword."
+        />
+      )}
 
-      {jobs && jobs.content.length === 0 && !loading && <p>Không có tin tuyển dụng nào.</p>}
-
-      {jobs && jobs.totalPages > 1 && (
-        <div style={styles.pager}>
-          <button disabled={page === 0} onClick={() => setPage(page - 1)}>Trước</button>
-          <span>Trang {jobs.number + 1} / {jobs.totalPages}</span>
-          <button disabled={page >= jobs.totalPages - 1} onClick={() => setPage(page + 1)}>Sau</button>
+      {!loading && jobs && jobs.content.length > 0 && (
+        <div className="overflow-hidden rounded-lg border border-[#e2e8f0] bg-card">
+          {jobs.content.map((job) => (
+            <Link
+              key={job.id}
+              to={`/jobs/${job.id}`}
+              className="flex items-center justify-between gap-3 border-b border-[#e2e8f0] px-4 no-underline last:border-b-0 transition-colors hover:bg-surface-low"
+            >
+              <span className="flex min-w-0 flex-col py-3">
+                <span className="truncate text-headline-sm text-ink">{job.title}</span>
+                <span className="truncate text-body-sm text-ink-variant">
+                  {job.companyName}
+                  {job.location ? ` · ${job.location}` : ''}
+                  {job.salaryRange ? ` · ${job.salaryRange}` : ''}
+                </span>
+              </span>
+              <span className="material-symbols-outlined shrink-0 text-[18px] text-ink-variant">chevron_right</span>
+            </Link>
+          ))}
         </div>
       )}
 
-      <p style={{ marginTop: 24 }}>
-        <Link to="/dashboard">← Về Dashboard</Link>
-      </p>
+      {jobs && jobs.totalPages > 1 && (
+        <div className="mt-4 flex items-center gap-2">
+          <button className={buttonClass('secondary')} disabled={page === 0} onClick={() => setPage(page - 1)}>
+            Previous
+          </button>
+          <span className={tdClass}>Page {jobs.number + 1} / {jobs.totalPages}</span>
+          <button className={buttonClass('secondary')} disabled={page >= jobs.totalPages - 1} onClick={() => setPage(page + 1)}>
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 };

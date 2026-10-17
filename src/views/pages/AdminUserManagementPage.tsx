@@ -3,22 +3,24 @@ import { useAdminUserController } from '../../controllers/useAdminUserController
 import { Role, UserSummary } from '../../models/User.model';
 import ConfirmDialog from '../components/ConfirmDialog';
 import UserDetailModal from '../components/UserDetailModal';
+import {
+  Badge, ErrorBanner, LoadingState, PageHeader, StatusBadge,
+  buttonClass, inputClass, tableClass, tdClass, thClass,
+} from '../components/ui';
 
 const ROLE_LABELS: Record<string, string> = {
-  ROLE_USER: 'Khách hàng',
-  ROLE_STAFF: 'Nhân viên',
-  ROLE_ADMIN: 'Quản trị viên',
-  ROLE_INTERVIEWER: 'Phỏng vấn viên',
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  ACTIVE: '#dcfce7', INACTIVE: '#f3f4f6', LOCKED: '#fee2e2', DELETED: '#e5e7eb',
-};
-const STATUS_TEXT_COLORS: Record<string, string> = {
-  ACTIVE: '#16a34a', INACTIVE: '#6b7280', LOCKED: '#dc2626', DELETED: '#9ca3af',
+  ROLE_USER: 'Candidate',
+  ROLE_STAFF: 'Staff',
+  ROLE_ADMIN: 'Administrator',
+  ROLE_INTERVIEWER: 'Interviewer',
 };
 
 type TabType = 'users' | 'auditLogs';
+
+// inputClass ép `w-full` nên select dùng bản riêng (bỏ w-full) để bo theo nội dung.
+const selectClass =
+  'h-9 cursor-pointer rounded-md border border-[#e2e8f0] bg-card px-2.5 text-body-md text-ink ' +
+  'transition-all focus:border-[#6366f1] focus:outline-none focus:ring-1 focus:ring-[#6366f1]';
 
 const AdminUserManagementPage: React.FC = () => {
   const ctrl = useAdminUserController();
@@ -58,107 +60,120 @@ const AdminUserManagementPage: React.FC = () => {
 
   const handleDelete = (id: number, email: string) => {
     askConfirm(
-      'Xác nhận xóa tài khoản',
-      `Bạn có chắc muốn xóa tài khoản "${email}"? Hành động này không thể khôi phục.`,
+      'Delete account',
+      `Are you sure you want to delete the account "${email}"? This action cannot be undone.`,
       async () => { closeConfirm(); await ctrl.deleteUser(id); },
     );
   };
 
   return (
-    <div style={styles.page}>
-      <h2 style={{ margin: '0 0 24px' }}>Quản lý người dùng</h2>
+    <div>
+      <PageHeader title="User Directory" />
 
       {/* Tabs */}
-      <div style={styles.tabs}>
+      <div className="mb-6 flex border-b border-[#e2e8f0]">
         {(['users', 'auditLogs'] as TabType[]).map(t => (
           <button
             key={t}
-            style={{ ...styles.tab, ...(tab === t ? styles.tabActive : {}) }}
+            type="button"
+            className={`-mb-px flex h-9 items-center gap-1.5 border-b-2 px-4 text-label-md transition-colors ${
+              tab === t
+                ? 'border-primary font-semibold text-primary'
+                : 'border-transparent text-ink-variant hover:text-ink'
+            }`}
             onClick={() => {
               setTab(t);
               if (t === 'auditLogs' && !ctrl.auditLogs) ctrl.fetchAuditLogs(0);
             }}
           >
-            {t === 'users' ? 'Danh sách người dùng' : 'Audit Log'}
+            <span className="material-symbols-outlined text-[18px]">{t === 'users' ? 'group' : 'history'}</span>
+            {t === 'users' ? 'Users' : 'Audit Log'}
           </button>
         ))}
       </div>
 
       {/* Messages */}
-      {ctrl.error && <div style={styles.errorBanner}>{ctrl.error}</div>}
-      {ctrl.successMsg && <div style={styles.successBanner}>{ctrl.successMsg}</div>}
+      <ErrorBanner message={ctrl.error} />
+      {ctrl.successMsg && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text" role="status">
+          <span className="material-symbols-outlined shrink-0 text-[18px]">check_circle</span>
+          <span>{ctrl.successMsg}</span>
+        </div>
+      )}
 
       {tab === 'users' && (
         <>
           {/* Filters */}
-          <div style={styles.filterBar}>
-            <input
-              style={styles.searchInput}
-              placeholder="Tìm kiếm theo email hoặc tên..."
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            />
-            <button style={styles.searchBtn} onClick={handleSearch}>Tìm</button>
+          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-[#e2e8f0] bg-card p-3">
+            <div className="relative min-w-[220px] flex-1">
+              <span className="material-symbols-outlined pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[18px] text-[#94a3b8]">search</span>
+              <input
+                className={`${inputClass} pl-9`}
+                placeholder="Search by email or name..."
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+              />
+            </div>
+            <button type="button" className={buttonClass('primary', 'shrink-0')} onClick={handleSearch}>Search</button>
 
-            <select style={styles.select} value={statusFilter}
+            <span className="material-symbols-outlined text-[18px] text-ink-variant">filter_list</span>
+            <select className={selectClass} value={statusFilter}
               onChange={e => handleFilterChange('status', e.target.value)}>
-              <option value="">Tất cả trạng thái</option>
+              <option value="">All statuses</option>
               <option value="ACTIVE">Active</option>
               <option value="INACTIVE">Inactive</option>
               <option value="LOCKED">Locked</option>
             </select>
 
-            <select style={styles.select} value={roleFilter}
+            <select className={selectClass} value={roleFilter}
               onChange={e => handleFilterChange('role', e.target.value)}>
-              <option value="">Tất cả vai trò</option>
-              <option value="ROLE_USER">Khách hàng</option>
-              <option value="ROLE_STAFF">Nhân viên</option>
-              <option value="ROLE_INTERVIEWER">Phỏng vấn viên</option>
-              <option value="ROLE_ADMIN">Quản trị viên</option>
+              <option value="">All roles</option>
+              <option value="ROLE_USER">Candidate</option>
+              <option value="ROLE_STAFF">Staff</option>
+              <option value="ROLE_INTERVIEWER">Interviewer</option>
+              <option value="ROLE_ADMIN">Administrator</option>
             </select>
           </div>
 
           {/* Table */}
           {ctrl.loading ? (
-            <div style={styles.loading}>Đang tải...</div>
+            <LoadingState />
           ) : (
             <>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={styles.table}>
+              <div className="overflow-x-auto rounded-lg border border-[#e2e8f0] bg-card">
+                <table className={tableClass}>
                   <thead>
-                    <tr style={styles.theadRow}>
-                      {['Email', 'Họ tên', 'Vai trò', 'Trạng thái', 'Ngày tạo', 'Hành động'].map(h => (
-                        <th key={h} style={styles.th}>{h}</th>
+                    <tr>
+                      {['Email', 'Name', 'Role', 'Status', 'Registered', 'Actions'].map(h => (
+                        <th key={h} className={thClass}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {ctrl.users?.content.length === 0 && (
-                      <tr><td colSpan={6} style={styles.empty}>Không có dữ liệu</td></tr>
+                      <tr><td colSpan={6} className="px-3 py-12 text-center text-body-sm text-ink-variant">No data</td></tr>
                     )}
                     {ctrl.users?.content.map((u: UserSummary) => (
                       <tr
                         key={u.id}
-                        style={styles.row}
+                        className={`cursor-pointer transition-colors ${
+                          ctrl.selectedUser?.id === u.id ? 'bg-info-bg' : 'hover:bg-surface-low'
+                        }`}
                         onClick={() => ctrl.fetchUserDetail(u.id)}
                       >
-                        <td style={styles.td}>{u.email}</td>
-                        <td style={styles.td}>{u.fullName}</td>
-                        <td style={styles.td}>{ROLE_LABELS[u.role] ?? u.role}</td>
-                        <td style={styles.td}>
-                          <span style={{
-                            ...styles.badge,
-                            background: STATUS_COLORS[u.status] ?? '#f3f4f6',
-                            color: STATUS_TEXT_COLORS[u.status] ?? '#333',
-                          }}>
-                            {u.status}
-                          </span>
+                        <td className={`${tdClass} break-all`}>{u.email}</td>
+                        <td className={tdClass}>{u.fullName}</td>
+                        <td className={tdClass}>
+                          <Badge tone="neutral" icon="shield">{ROLE_LABELS[u.role] ?? u.role}</Badge>
                         </td>
-                        <td style={styles.td}>
+                        <td className={tdClass}>
+                          <StatusBadge status={u.status} />
+                        </td>
+                        <td className={`${tdClass} whitespace-nowrap tabular-nums`}>
                           {new Date(u.createdAt).toLocaleDateString('vi-VN')}
                         </td>
-                        <td style={{ ...styles.td, whiteSpace: 'nowrap' }} onClick={e => e.stopPropagation()}>
+                        <td className={`${tdClass} whitespace-nowrap`} onClick={e => e.stopPropagation()}>
                           <ActionButtons
                             user={u}
                             loading={ctrl.actionLoading}
@@ -213,7 +228,7 @@ const AdminUserManagementPage: React.FC = () => {
         open={confirmDialog.open}
         title={confirmDialog.title}
         message={confirmDialog.message}
-        confirmLabel="Xóa"
+        confirmLabel="Delete"
         danger
         onConfirm={confirmDialog.onConfirm}
         onCancel={closeConfirm}
@@ -224,6 +239,15 @@ const AdminUserManagementPage: React.FC = () => {
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 
+type ActionTone = 'success' | 'warning' | 'info' | 'danger';
+
+const ACTION_TONE: Record<ActionTone, string> = {
+  success: 'bg-success-bg text-success-text',
+  warning: 'bg-[#fffbeb] text-[#92400e]',
+  info: 'bg-info-bg text-info-text',
+  danger: 'bg-danger-bg text-danger-text',
+};
+
 const ActionButtons: React.FC<{
   user: UserSummary;
   loading: boolean;
@@ -232,30 +256,28 @@ const ActionButtons: React.FC<{
   onDelete: () => void;
   onReset: () => void;
 }> = ({ user, loading, onLock, onUnlock, onDelete, onReset }) => {
-  if (user.status === 'DELETED') return <span style={{ color: '#9ca3af', fontSize: 13 }}>—</span>;
+  if (user.status === 'DELETED') return <span className="text-body-sm text-ink-variant">—</span>;
   return (
-    <div style={{ display: 'flex', gap: 6 }}>
+    <div className="flex flex-wrap items-center gap-1.5">
       {user.status === 'LOCKED'
-        ? <SmBtn label="Mở khóa" color="#16a34a" disabled={loading} onClick={onUnlock} />
-        : <SmBtn label="Khóa" color="#f59e0b" disabled={loading} onClick={onLock} />
+        ? <SmBtn label="Unlock" icon="lock_open" tone="success" disabled={loading} onClick={onUnlock} />
+        : <SmBtn label="Lock" icon="lock" tone="warning" disabled={loading} onClick={onLock} />
       }
-      <SmBtn label="Reset PW" color="#6366f1" disabled={loading} onClick={onReset} />
-      <SmBtn label="Xóa" color="#ef4444" disabled={loading} onClick={onDelete} />
+      <SmBtn label="Reset PW" icon="key" tone="info" disabled={loading} onClick={onReset} />
+      <SmBtn label="Delete" icon="delete" tone="danger" disabled={loading} onClick={onDelete} />
     </div>
   );
 };
 
 const SmBtn: React.FC<{
-  label: string; color: string; disabled?: boolean; onClick: () => void;
-}> = ({ label, color, disabled, onClick }) => (
+  label: string; icon: string; tone: ActionTone; disabled?: boolean; onClick: () => void;
+}> = ({ label, icon, tone, disabled, onClick }) => (
   <button
+    type="button"
     onClick={onClick} disabled={disabled}
-    style={{
-      padding: '4px 10px', borderRadius: 5, border: 'none',
-      background: color, color: '#fff', cursor: disabled ? 'not-allowed' : 'pointer',
-      opacity: disabled ? 0.6 : 1, fontSize: 12,
-    }}
+    className={`inline-flex h-8 items-center gap-1 rounded-md px-2.5 text-label-sm font-medium transition-[filter] hover:brightness-95 active:brightness-90 disabled:cursor-not-allowed disabled:opacity-60 ${ACTION_TONE[tone]}`}
   >
+    <span className="material-symbols-outlined text-[16px]">{icon}</span>
     {label}
   </button>
 );
@@ -264,62 +286,69 @@ const Pagination: React.FC<{
   currentPage: number; totalPages: number; totalElements: number;
   onPageChange: (p: number) => void;
 }> = ({ currentPage, totalPages, totalElements, onPageChange }) => (
-  <div style={styles.pagination}>
-    <span style={{ color: '#6b7280', fontSize: 13 }}>
-      Tổng: {totalElements} người dùng
+  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+    <span className="text-body-sm tabular-nums text-ink-variant">
+      Total: {totalElements} users
     </span>
-    <div style={{ display: 'flex', gap: 4 }}>
-      <button style={styles.pageBtn} disabled={currentPage === 0}
+    <div className="flex items-center gap-1">
+      <button type="button" className={pageBtnClass(false)} disabled={currentPage === 0}
         onClick={() => onPageChange(currentPage - 1)}>‹</button>
       {Array.from({ length: totalPages }, (_, i) => i)
         .filter(p => Math.abs(p - currentPage) <= 2)
         .map(p => (
           <button
             key={p}
-            style={{ ...styles.pageBtn, ...(p === currentPage ? styles.pageBtnActive : {}) }}
+            type="button"
+            className={pageBtnClass(p === currentPage)}
             onClick={() => onPageChange(p)}
           >
             {p + 1}
           </button>
         ))}
-      <button style={styles.pageBtn} disabled={currentPage >= totalPages - 1}
+      <button type="button" className={pageBtnClass(false)} disabled={currentPage >= totalPages - 1}
         onClick={() => onPageChange(currentPage + 1)}>›</button>
     </div>
   </div>
 );
 
+const pageBtnClass = (active: boolean) =>
+  `inline-flex h-8 min-w-[32px] items-center justify-center rounded-md border px-2 text-label-sm tabular-nums ` +
+  `transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+    active
+      ? 'border-primary bg-primary text-on-primary'
+      : 'border-[#e2e8f0] bg-card text-ink hover:bg-surface-low'
+  }`;
+
 const AuditLogTab: React.FC<{
   logs: any; page: number; onPageChange: (p: number) => void;
 }> = ({ logs, page, onPageChange }) => {
-  if (!logs) return <div style={styles.loading}>Đang tải...</div>;
+  if (!logs) return <LoadingState />;
   return (
     <>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={styles.table}>
+      <div className="overflow-x-auto rounded-lg border border-[#e2e8f0] bg-card">
+        <table className={tableClass}>
           <thead>
-            <tr style={styles.theadRow}>
-              {['Admin', 'Hành động', 'Target user', 'Chi tiết', 'Thời gian'].map(h => (
-                <th key={h} style={styles.th}>{h}</th>
+            <tr>
+              {['Admin', 'Action', 'Target user', 'Detail', 'Time'].map(h => (
+                <th key={h} className={thClass}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {logs.content.length === 0 && (
-              <tr><td colSpan={5} style={styles.empty}>Chưa có log nào</td></tr>
+              <tr><td colSpan={5} className="px-3 py-12 text-center text-body-sm text-ink-variant">No logs yet</td></tr>
             )}
             {logs.content.map((l: any) => (
-              <tr key={l.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                <td style={styles.td}>{l.adminEmail}</td>
-                <td style={styles.td}>
-                  <span style={{ ...styles.badge, background: '#eff6ff', color: '#2563eb' }}>
-                    {l.action}
-                  </span>
+              <tr key={l.id} className="transition-colors hover:bg-surface-low">
+                <td className={`${tdClass} break-all`}>{l.adminEmail}</td>
+                <td className={tdClass}>
+                  <Badge tone="info" icon="verified_user">{l.action}</Badge>
                 </td>
-                <td style={styles.td}>{l.targetUserId ?? '—'}</td>
-                <td style={{ ...styles.td, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <td className={`${tdClass} tabular-nums`}>{l.targetUserId ?? '—'}</td>
+                <td className={`${tdClass} max-w-[200px] truncate`}>
                   {l.detail ?? '—'}
                 </td>
-                <td style={styles.td}>
+                <td className={`${tdClass} whitespace-nowrap tabular-nums`}>
                   {new Date(l.createdAt).toLocaleString('vi-VN')}
                 </td>
               </tr>
@@ -335,63 +364,6 @@ const AuditLogTab: React.FC<{
       )}
     </>
   );
-};
-
-// ── Styles ───────────────────────────────────────────────────────────────────
-
-const styles: Record<string, React.CSSProperties> = {
-  page: { padding: '24px', maxWidth: 1200, margin: '0 auto' },
-  tabs: { display: 'flex', gap: 0, borderBottom: '2px solid #e5e7eb', marginBottom: 24 },
-  tab: {
-    padding: '10px 24px', border: 'none', background: 'none',
-    cursor: 'pointer', fontSize: 14, color: '#6b7280', borderBottom: '2px solid transparent',
-    marginBottom: -2,
-  },
-  tabActive: { color: '#2563eb', borderBottomColor: '#2563eb', fontWeight: 600 },
-  filterBar: { display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' },
-  searchInput: {
-    flex: 1, minWidth: 200, padding: '8px 12px', borderRadius: 7,
-    border: '1px solid #d1d5db', fontSize: 14,
-  },
-  searchBtn: {
-    padding: '8px 20px', borderRadius: 7, border: 'none',
-    background: '#2563eb', color: '#fff', cursor: 'pointer', fontSize: 14,
-  },
-  select: {
-    padding: '8px 12px', borderRadius: 7,
-    border: '1px solid #d1d5db', fontSize: 14, cursor: 'pointer',
-  },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: 14 },
-  theadRow: { background: '#f9fafb' },
-  th: {
-    padding: '12px 16px', textAlign: 'left', fontWeight: 600,
-    color: '#374151', borderBottom: '2px solid #e5e7eb', whiteSpace: 'nowrap',
-  },
-  td: { padding: '12px 16px', borderBottom: '1px solid #f3f4f6', verticalAlign: 'middle' },
-  row: { cursor: 'pointer', transition: 'background 0.15s' },
-  badge: {
-    display: 'inline-block', padding: '2px 10px', borderRadius: 99,
-    fontSize: 12, fontWeight: 600,
-  },
-  empty: { padding: 32, textAlign: 'center', color: '#9ca3af' },
-  loading: { padding: 48, textAlign: 'center', color: '#6b7280' },
-  pagination: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    marginTop: 16, flexWrap: 'wrap', gap: 12,
-  },
-  pageBtn: {
-    padding: '6px 12px', borderRadius: 6, border: '1px solid #d1d5db',
-    background: '#fff', cursor: 'pointer', fontSize: 13,
-  },
-  pageBtnActive: { background: '#2563eb', color: '#fff', borderColor: '#2563eb' },
-  errorBanner: {
-    padding: '12px 16px', borderRadius: 8, background: '#fee2e2',
-    color: '#dc2626', marginBottom: 16, fontSize: 14,
-  },
-  successBanner: {
-    padding: '12px 16px', borderRadius: 8, background: '#dcfce7',
-    color: '#16a34a', marginBottom: 16, fontSize: 14,
-  },
 };
 
 export default AdminUserManagementPage;

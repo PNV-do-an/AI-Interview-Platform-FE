@@ -26,7 +26,7 @@ export const useMockInterviewController = () => {
       setSession(res.data.data!);
       return res.data.data!;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không thể bắt đầu phiên phỏng vấn');
+      setError(e.response?.data?.message || 'Failed to start the interview session');
       return null;
     }
   }, []);
@@ -38,7 +38,7 @@ export const useMockInterviewController = () => {
       const res = await InterviewService.getMySessions({ page, size: 10 });
       setSessions(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không tải được lịch sử phỏng vấn');
+      setError(e.response?.data?.message || 'Failed to load session history');
     } finally {
       setLoading(false);
     }
@@ -52,7 +52,7 @@ export const useMockInterviewController = () => {
       setResult(res.data.data!);
       setSession(res.data.data!.session);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không tải được kết quả phỏng vấn');
+      setError(e.response?.data?.message || 'Failed to load session results');
     } finally {
       setLoading(false);
     }
@@ -65,7 +65,7 @@ export const useMockInterviewController = () => {
       setLastAnswer(res.data.data!);
       return res.data.data!;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Gửi câu trả lời thất bại');
+      setError(e.response?.data?.message || 'Failed to submit answer');
       return null;
     }
   }, []);
@@ -76,10 +76,10 @@ export const useMockInterviewController = () => {
       const res = await InterviewService.finish(id);
       setResult(res.data.data!);
       setSession(res.data.data!.session);
-      setSuccessMsg('Đã hoàn thành phiên phỏng vấn');
+      setSuccessMsg('Interview session completed');
       return res.data.data!;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không thể kết thúc phiên phỏng vấn');
+      setError(e.response?.data?.message || 'Failed to end the interview session');
       return null;
     }
   }, []);

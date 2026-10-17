@@ -12,6 +12,7 @@ interface AuthContextType {
   login: (data: LoginRequest, rememberMe?: boolean) => Promise<void>;
   loginWithGoogle: (idToken: string, rememberMe: boolean) => Promise<void>;
   loginWithGithub: (code: string, redirectUri: string, rememberMe: boolean) => Promise<void>;
+  loginWithSso: (code: string, redirectUri: string, nonce: string, rememberMe: boolean) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => void;
 }

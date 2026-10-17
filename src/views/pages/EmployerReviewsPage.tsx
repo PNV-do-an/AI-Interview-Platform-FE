@@ -3,17 +3,14 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useReviewController } from '../../controllers/useReviewController';
 import { useAuth } from '../../context/AuthContext';
 import { StarDisplay } from '../../models/Review.model';
+import {
+  Card, ErrorBanner, LoadingState, PageHeader, buttonClass,
+} from '../components/ui';
 
-const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 760, margin: '40px auto', padding: 24, fontFamily: 'sans-serif' },
-  card: { border: '1px solid #D5DEEF', borderRadius: 8, padding: 20, marginTop: 16, background: '#fff' },
-  summary: { background: '#F0F3FA', borderRadius: 8, padding: 16, textAlign: 'center' as const },
-  big: { fontSize: 36, fontWeight: 700, color: '#395886' },
-  meta: { color: '#6b7280', fontSize: 14 },
-  textarea: { width: '100%', minHeight: 90, padding: 8, marginTop: 8, boxSizing: 'border-box' as const },
-  reply: { background: '#F0F3FA', borderRadius: 6, padding: 10, marginTop: 10, fontSize: 14 },
-  starBtn: { fontSize: 28, background: 'none', border: 'none', cursor: 'pointer', padding: 2 },
-};
+// inputClass bỏ `h-9` thay `py-2` khi dùng cho textarea.
+const textareaClass =
+  'min-h-[90px] w-full resize-y rounded-md border border-[#e2e8f0] bg-card px-2.5 py-2 text-body-md text-ink ' +
+  'transition-all placeholder:text-[#94a3b8] focus:border-[#6366f1] focus:outline-none focus:ring-1 focus:ring-[#6366f1]';
 
 const EmployerReviewsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -45,72 +42,92 @@ const EmployerReviewsPage: React.FC = () => {
   };
 
   return (
-    <div style={styles.page}>
-      <h2>Đánh giá nhà tuyển dụng</h2>
-      {loading && <p>Đang tải...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {successMsg && <p style={{ color: 'green' }}>{successMsg}</p>}
-
-      {reviewList && (
-        <div style={styles.summary}>
-          <div style={styles.big}>{reviewList.averageRating != null ? reviewList.averageRating.toFixed(1) : '—'}</div>
-          <StarDisplay rating={Math.round(reviewList.averageRating || 0)} />
-          <p style={styles.meta}>{reviewList.totalReviews} đánh giá</p>
+    <div>
+      <PageHeader title="Employer Reviews" />
+      {loading && <LoadingState />}
+      <ErrorBanner message={error} />
+      {successMsg && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text" role="status">
+          <span className="material-symbols-outlined shrink-0 text-[18px]">check_circle</span>
+          <span>{successMsg}</span>
         </div>
       )}
 
+      {reviewList && (
+        <Card className="mb-4">
+          <div className="flex flex-col items-center gap-1 py-2 text-center">
+            <div className="text-metric-stat tabular-nums text-primary">
+              {reviewList.averageRating != null ? reviewList.averageRating.toFixed(1) : '—'}
+            </div>
+            <StarDisplay rating={Math.round(reviewList.averageRating || 0)} />
+            <p className="m-0 text-body-sm text-ink-variant">{reviewList.totalReviews} reviews</p>
+          </div>
+        </Card>
+      )}
+
       {isCandidate && (
-        <div style={styles.card}>
-          <h3>Viết đánh giá của bạn</h3>
-          <p style={styles.meta}>Bạn chỉ có thể đánh giá sau khi hoàn thành buổi phỏng vấn với nhà tuyển dụng này.</p>
-          <div onMouseLeave={() => setHover(0)}>
+        <Card className="mb-4">
+          <h2 className="m-0 text-headline-sm text-ink">Write your review</h2>
+          <p className="mt-1 text-body-sm text-ink-variant">
+            You can only leave a review after completing an interview with this employer.
+          </p>
+          <div className="mt-2 flex items-center gap-1" onMouseLeave={() => setHover(0)}>
             {[1, 2, 3, 4, 5].map((n) => (
               <button
                 key={n}
-                style={{ ...styles.starBtn, color: (hover || rating) >= n ? '#f59e0b' : '#D5DEEF' }}
+                type="button"
+                className={`flex h-9 w-9 items-center justify-center rounded-md text-[28px] leading-none transition-colors ${
+                  (hover || rating) >= n ? 'text-[#f59e0b]' : 'text-[#cbd5e1] hover:text-[#f59e0b]'
+                }`}
                 onMouseEnter={() => setHover(n)}
                 onClick={() => setRating(n)}
-                type="button"
               >
                 ★
               </button>
             ))}
           </div>
           <textarea
-            placeholder="Chia sẻ trải nghiệm phỏng vấn của bạn..."
+            className={`${textareaClass} mt-2`}
+            placeholder="Share your interview experience..."
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            style={styles.textarea}
           />
-          <div style={{ marginTop: 8 }}>
-            <button onClick={onSubmit} disabled={!comment.trim()}>Gửi đánh giá</button>
+          <div className="mt-2">
+            <button type="button" className={buttonClass('primary')} onClick={onSubmit} disabled={!comment.trim()}>
+              <span className="material-symbols-outlined text-[18px]">send</span>
+              Submit review
+            </button>
           </div>
-        </div>
+        </Card>
       )}
 
       {reviewList && reviewList.reviews.length === 0 && (
-        <p style={styles.meta}>Chưa có đánh giá nào.</p>
+        <p className="m-0 text-body-sm text-ink-variant">No reviews yet.</p>
       )}
 
-      {reviewList?.reviews.map((r) => (
-        <div key={r.id} style={styles.card}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <strong>{r.reviewerName}</strong>
-            <StarDisplay rating={r.rating} />
-          </div>
-          {r.jobTitle && <p style={styles.meta}>Vị trí: {r.jobTitle}</p>}
-          <p style={{ marginTop: 8 }}>{r.comment}</p>
-          {r.reply && (
-            <div style={styles.reply}>
-              <strong>Phản hồi từ {r.repliedByName || 'quản trị viên'}:</strong>
-              <p style={{ margin: '4px 0 0' }}>{r.reply}</p>
+      <div className="flex flex-col gap-3">
+        {reviewList?.reviews.map((r) => (
+          <Card key={r.id}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <strong className="text-headline-sm text-ink">{r.reviewerName}</strong>
+              <StarDisplay rating={r.rating} />
             </div>
-          )}
-        </div>
-      ))}
+            {r.jobTitle && <p className="mt-1 text-body-sm text-ink-variant">Position: {r.jobTitle}</p>}
+            <p className="mt-2 text-body-md text-ink">{r.comment}</p>
+            {r.reply && (
+              <div className="mt-2 rounded-md bg-surface-low p-3">
+                <strong className="text-label-md text-ink">Reply from {r.repliedByName || 'the administrator'}:</strong>
+                <p className="mt-1 text-body-sm text-ink-variant">{r.reply}</p>
+              </div>
+            )}
+          </Card>
+        ))}
+      </div>
 
-      <p style={{ marginTop: 24 }}>
-        <Link to="/jobs">← Danh sách chương trình</Link>
+      <p className="mt-6">
+        <Link to="/jobs" className="text-body-sm text-ink-variant no-underline transition-colors hover:text-primary">
+          ← Back to jobs
+        </Link>
       </p>
     </div>
   );

@@ -3,12 +3,9 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import ProgramService from '../../services/program.service';
 import { useEmployerJobController } from '../../controllers/useEmployerJobController';
 import { JobRequest } from '../../models/Program.model';
+import { ErrorBanner, PageHeader, buttonClass, inputClass, labelClass } from '../components/ui';
 
-const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 640, margin: '40px auto', padding: 24, fontFamily: 'sans-serif' },
-  field: { marginBottom: 14 },
-  input: { display: 'block', width: '100%', padding: 8, marginTop: 4, boxSizing: 'border-box' },
-};
+const textareaClass = `${inputClass.replace('h-9', 'py-2')} min-h-[120px] resize-y`;
 
 const emptyForm: JobRequest = {
   title: '',
@@ -46,7 +43,7 @@ const JobFormPage: React.FC = () => {
           requiredSkills: j.requiredSkills ?? '',
         });
       })
-      .catch((e) => setLoadError(e.response?.data?.message || 'Không tải được tin tuyển dụng'));
+      .catch((e) => setLoadError(e.response?.data?.message || 'Failed to load the job posting'));
   }, [jobId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (key: keyof JobRequest) => (
@@ -60,55 +57,70 @@ const JobFormPage: React.FC = () => {
   };
 
   return (
-    <div style={styles.page}>
-      <h2>{isEdit ? 'Chỉnh sửa tin tuyển dụng' : 'Đăng tin tuyển dụng mới'}</h2>
+    <div className="max-w-[640px]">
+      <PageHeader title={isEdit ? 'Edit Job Posting' : 'Create Job Posting'} />
 
-      {loadError && <p style={{ color: 'red' }}>{loadError}</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {successMsg && <p style={{ color: 'green' }}>{successMsg}</p>}
+      <ErrorBanner message={loadError} />
+      <ErrorBanner message={error} />
+      {successMsg && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text" role="status">
+          <span className="material-symbols-outlined shrink-0 text-[18px]">check_circle</span>
+          <span>{successMsg}</span>
+        </div>
+      )}
 
-      <form onSubmit={onSubmit}>
-        <div style={styles.field}>
-          <label>Tiêu đề *</label>
-          <input required value={form.title} onChange={set('title')} style={styles.input} />
+      <form onSubmit={onSubmit} className="flex flex-col gap-3 rounded-lg border border-[#e2e8f0] bg-card p-4 shadow-card">
+        <div>
+          <label className={labelClass}>Job Title *</label>
+          <input required value={form.title} onChange={set('title')} className={inputClass} />
         </div>
-        <div style={styles.field}>
-          <label>Tên công ty *</label>
-          <input required value={form.companyName} onChange={set('companyName')} style={styles.input} />
+        <div>
+          <label className={labelClass}>Company Name *</label>
+          <input required value={form.companyName} onChange={set('companyName')} className={inputClass} />
         </div>
-        <div style={styles.field}>
-          <label>Vị trí</label>
-          <input value={form.position} onChange={set('position')} style={styles.input} />
+        <div>
+          <label className={labelClass}>Position</label>
+          <input value={form.position} onChange={set('position')} className={inputClass} />
         </div>
-        <div style={styles.field}>
-          <label>Địa điểm</label>
-          <input value={form.location} onChange={set('location')} style={styles.input} />
+        <div>
+          <label className={labelClass}>Location</label>
+          <input value={form.location} onChange={set('location')} className={inputClass} />
         </div>
-        <div style={styles.field}>
-          <label>Mức lương</label>
-          <input value={form.salaryRange} onChange={set('salaryRange')} style={styles.input} />
+        <div>
+          <label className={labelClass}>Salary Range</label>
+          <input value={form.salaryRange} onChange={set('salaryRange')} className={inputClass} />
         </div>
-        <div style={styles.field}>
-          <label>Mô tả công việc</label>
-          <textarea value={form.description} onChange={set('description')} style={{ ...styles.input, minHeight: 120 }} />
+        <div>
+          <label className={labelClass}>Job Description</label>
+          <textarea value={form.description} onChange={set('description')} className={textareaClass} />
         </div>
-        <div style={styles.field}>
-          <label>Yêu cầu</label>
-          <textarea value={form.requirements} onChange={set('requirements')} style={{ ...styles.input, minHeight: 120 }} />
+        <div>
+          <label className={labelClass}>Requirements</label>
+          <textarea value={form.requirements} onChange={set('requirements')} className={textareaClass} />
         </div>
-        <div style={styles.field}>
-          <label>Kỹ năng yêu cầu (phân cách bởi dấu phẩy)</label>
+        <div>
+          <label className={labelClass}>Required Skills (comma-separated)</label>
           <input
             value={form.requiredSkills}
             onChange={set('requiredSkills')}
             placeholder="Java, Spring Boot, MySQL"
-            style={styles.input}
+            className={inputClass}
           />
         </div>
-        <button type="submit">{isEdit ? 'Lưu thay đổi' : 'Đăng tin'}</button>
+        <button type="submit" className={buttonClass('primary', 'self-start')}>
+          <span className="material-symbols-outlined text-[18px]">{isEdit ? 'edit' : 'add'}</span>
+          {isEdit ? 'Save Changes' : 'Create Job Posting'}
+        </button>
       </form>
 
-      <p style={{ marginTop: 24 }}><Link to="/my-jobs">← Quản lý tin của tôi</Link></p>
+      <p className="pt-6">
+        <Link
+          to="/my-jobs"
+          className="text-label-md text-ink-variant no-underline transition-colors hover:text-primary"
+        >
+          ← My Job Postings
+        </Link>
+      </p>
     </div>
   );
 };

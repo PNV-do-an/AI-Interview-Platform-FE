@@ -1,6 +1,17 @@
 import React, { useState } from 'react';
 import { Role, UserDetail } from '../../models/User.model';
 import ConfirmDialog from './ConfirmDialog';
+import { Badge, StatusBadge, buttonClass } from './ui';
+
+/**
+ * Modal chi tiết người dùng (nhóm trang admin).
+ * Props API giữ nguyên.
+ */
+
+// inputClass ép `w-full` nên select dùng bản riêng (bỏ w-full) để bo theo nội dung.
+const selectClass =
+  'h-9 cursor-pointer rounded-md border border-[#e2e8f0] bg-card px-2.5 text-body-md text-ink ' +
+  'transition-all focus:border-[#6366f1] focus:outline-none focus:ring-1 focus:ring-[#6366f1]';
 
 interface Props {
   user: UserDetail | null;
@@ -14,15 +25,24 @@ interface Props {
 }
 
 const ROLE_LABELS: Record<string, string> = {
-  ROLE_USER: 'Khách hàng',
-  ROLE_STAFF: 'Nhân viên',
-  ROLE_ADMIN: 'Quản trị viên',
-  ROLE_INTERVIEWER: 'Phỏng vấn viên',
+  ROLE_USER: 'Candidate',
+  ROLE_STAFF: 'Staff',
+  ROLE_ADMIN: 'Administrator',
+  ROLE_INTERVIEWER: 'Interviewer',
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  ACTIVE: '#16a34a', INACTIVE: '#6b7280', LOCKED: '#dc2626', DELETED: '#9ca3af',
+type SmallTone = 'success' | 'warning' | 'info' | 'danger';
+
+const SMALL_TONE: Record<SmallTone, string> = {
+  success: 'bg-success-bg text-success-text',
+  warning: 'bg-[#fffbeb] text-[#92400e]',
+  info: 'bg-info-bg text-info-text',
+  danger: 'bg-danger-bg text-danger-text',
 };
+
+const smallBtnClass = (tone: SmallTone) =>
+  `inline-flex h-9 items-center gap-1 rounded-md px-3 text-label-md font-medium transition-[filter] ` +
+  `hover:brightness-95 active:brightness-90 disabled:cursor-not-allowed disabled:opacity-60 ${SMALL_TONE[tone]}`;
 
 const UserDetailModal: React.FC<Props> = ({
   user, onClose, onLock, onUnlock, onDelete, onResetPassword, onChangeRole, actionLoading,
@@ -40,53 +60,68 @@ const UserDetailModal: React.FC<Props> = ({
     d ? new Date(d).toLocaleString('vi-VN') : '—';
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={e => e.stopPropagation()}>
-        <div style={styles.header}>
-          <h3 style={{ margin: 0 }}>Chi tiết người dùng</h3>
-          <button onClick={onClose} style={styles.closeBtn}>✕</button>
+    <div
+      className="fixed inset-0 z-[900] flex items-center justify-center bg-black/40 p-4"
+      onClick={(e) => {
+        // ConfirmDialog lồng bên trong overlay này; chỉ đóng khi bấm đúng nền tối.
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="max-h-[90vh] w-full max-w-[480px] overflow-y-auto rounded-lg border border-[#e2e8f0] bg-card p-6 shadow-card"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="m-0 text-headline-md text-ink">User Details</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-variant transition-colors hover:bg-surface-low hover:text-ink"
+          >
+            ✕
+          </button>
         </div>
 
-        <div style={styles.body}>
-          <Row label="ID" value={String(user.id)} />
+        <div className="mt-4">
+          <Row label="ID" value={<span className="tabular-nums">{String(user.id)}</span>} />
           <Row label="Email" value={user.email} />
-          <Row label="Họ tên" value={user.fullName} />
-          <Row label="Vai trò" value={ROLE_LABELS[user.role] || user.role} />
-          <Row label="Trạng thái" value={
-            <span style={{ color: STATUS_COLORS[user.status] ?? '#333', fontWeight: 600 }}>
-              {user.status}
-            </span>
-          } />
-          <Row label="Ngày tạo" value={fmtDate(user.createdAt)} />
-          <Row label="Cập nhật" value={fmtDate(user.updatedAt)} />
-          {user.deletedAt && <Row label="Xóa lúc" value={fmtDate(user.deletedAt)} />}
+          <Row label="Full name" value={user.fullName} />
+          <Row label="Role" value={<Badge tone="neutral" icon="group">{ROLE_LABELS[user.role] || user.role}</Badge>} />
+          <Row label="Status" value={<StatusBadge status={user.status} />} />
+          <Row label="Created" value={<span className="tabular-nums">{fmtDate(user.createdAt)}</span>} />
+          <Row label="Updated" value={<span className="tabular-nums">{fmtDate(user.updatedAt)}</span>} />
+          {user.deletedAt && <Row label="Deleted" value={<span className="tabular-nums">{fmtDate(user.deletedAt)}</span>} />}
         </div>
 
         {user.status !== 'DELETED' && (
-          <div style={styles.footer}>
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#e2e8f0] pt-4">
             {user.status === 'LOCKED'
-              ? <Btn label="Mở khóa" color="#16a34a" disabled={actionLoading}
+              ? <Btn label="Unlock" icon="lock_open" tone="success" disabled={actionLoading}
                   onClick={() => setConfirmState({ key: 'unlock' })} />
-              : <Btn label="Khóa TK" color="#f59e0b" disabled={actionLoading}
+              : <Btn label="Lock account" icon="lock" tone="warning" disabled={actionLoading}
                   onClick={() => setConfirmState({ key: 'lock' })} />
             }
-            <Btn label="Reset mật khẩu" color="#6366f1" disabled={actionLoading}
+            <Btn label="Reset password" icon="key" tone="info" disabled={actionLoading}
               onClick={() => setConfirmState({ key: 'reset' })} />
 
             <select
               disabled={actionLoading}
               value={user.role}
               onChange={e => setConfirmState({ key: 'changeRole', role: e.target.value as Role })}
-              style={styles.select}
+              className={selectClass}
             >
-              <option value="ROLE_USER">Khách hàng</option>
-              <option value="ROLE_STAFF">Nhân viên</option>
-              <option value="ROLE_INTERVIEWER">Phỏng vấn viên</option>
-              <option value="ROLE_ADMIN">Quản trị viên</option>
+              <option value="ROLE_USER">Candidate</option>
+              <option value="ROLE_STAFF">Staff</option>
+              <option value="ROLE_INTERVIEWER">Interviewer</option>
+              <option value="ROLE_ADMIN">Administrator</option>
             </select>
 
-            <Btn label="Xóa TK" color="#ef4444" disabled={actionLoading}
-              onClick={() => onDelete(user.id)} />
+            <button type="button" onClick={() => onDelete(user.id)} disabled={actionLoading}
+              className={buttonClass('danger')}>
+              <span className="material-symbols-outlined text-[16px]">delete</span>
+              Delete account
+            </button>
           </div>
         )}
       </div>
@@ -94,23 +129,23 @@ const UserDetailModal: React.FC<Props> = ({
       <ConfirmDialog
         open={confirmState !== null}
         title={
-          confirmState?.key === 'lock' ? 'Xác nhận khóa tài khoản' :
-          confirmState?.key === 'unlock' ? 'Xác nhận mở khóa tài khoản' :
-          confirmState?.key === 'reset' ? 'Xác nhận gửi email đặt lại mật khẩu' :
-          confirmState?.key === 'changeRole' ? 'Xác nhận thay đổi vai trò' : 'Xác nhận'
+          confirmState?.key === 'lock' ? 'Confirm account lock' :
+          confirmState?.key === 'unlock' ? 'Confirm account unlock' :
+          confirmState?.key === 'reset' ? 'Confirm password reset email' :
+          confirmState?.key === 'changeRole' ? 'Confirm role change' : 'Confirm'
         }
         message={
-          confirmState?.key === 'lock' ? 'Bạn có chắc muốn khóa tài khoản này? Người dùng sẽ không thể đăng nhập.' :
-          confirmState?.key === 'unlock' ? 'Bạn có chắc muốn mở khóa tài khoản này?' :
-          confirmState?.key === 'reset' ? 'Một email đặt lại mật khẩu sẽ được gửi đến ' + (user?.email ?? '') + '. Tiếp tục?' :
-          confirmState?.key === 'changeRole' ? 'Bạn có chắc muốn thay đổi vai trò của người dùng này?' : ''
+          confirmState?.key === 'lock' ? 'Lock this account? The user will no longer be able to sign in.' :
+          confirmState?.key === 'unlock' ? 'Unlock this account?' :
+          confirmState?.key === 'reset' ? 'A password reset email will be sent to ' + (user?.email ?? '') + '. Continue?' :
+          confirmState?.key === 'changeRole' ? 'Change the role for this user?' : ''
         }
         danger={confirmState?.key === 'lock'}
         confirmLabel={
-          confirmState?.key === 'lock' ? 'Khóa' :
-          confirmState?.key === 'unlock' ? 'Mở khóa' :
-          confirmState?.key === 'reset' ? 'Gửi email' :
-          confirmState?.key === 'changeRole' ? 'Đổi vai trò' : 'Xác nhận'
+          confirmState?.key === 'lock' ? 'Lock' :
+          confirmState?.key === 'unlock' ? 'Unlock' :
+          confirmState?.key === 'reset' ? 'Send email' :
+          confirmState?.key === 'changeRole' ? 'Change role' : 'Confirm'
         }
         onCancel={closeConfirm}
         onConfirm={() => {
@@ -128,53 +163,19 @@ const UserDetailModal: React.FC<Props> = ({
 };
 
 const Row: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
-  <div style={{ display: 'flex', gap: 12, padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
-    <span style={{ minWidth: 110, color: '#6b7280', fontSize: 13 }}>{label}</span>
-    <span style={{ flex: 1, fontSize: 14, wordBreak: 'break-all' }}>{value}</span>
+  <div className="flex items-center gap-3 border-b border-[#e2e8f0] py-2 last:border-b-0">
+    <span className="w-[110px] shrink-0 text-label-md text-ink-variant">{label}</span>
+    <span className="min-w-0 flex-1 break-all text-body-md text-ink">{value}</span>
   </div>
 );
 
 const Btn: React.FC<{
-  label: string; color: string; disabled?: boolean; onClick: () => void;
-}> = ({ label, color, disabled, onClick }) => (
-  <button
-    onClick={onClick}
-    disabled={disabled}
-    style={{
-      padding: '7px 14px', borderRadius: 6, border: 'none',
-      background: color, color: '#fff', cursor: disabled ? 'not-allowed' : 'pointer',
-      opacity: disabled ? 0.6 : 1, fontSize: 13,
-    }}
-  >
+  label: string; icon: string; tone: SmallTone; disabled?: boolean; onClick: () => void;
+}> = ({ label, icon, tone, disabled, onClick }) => (
+  <button type="button" onClick={onClick} disabled={disabled} className={smallBtnClass(tone)}>
+    <span className="material-symbols-outlined text-[16px]">{icon}</span>
     {label}
   </button>
 );
-
-const styles: Record<string, React.CSSProperties> = {
-  overlay: {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 900,
-  },
-  modal: {
-    background: '#fff', borderRadius: 12, width: 480, maxWidth: '95vw',
-    maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-  },
-  header: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    padding: '20px 24px', borderBottom: '1px solid #e5e7eb',
-  },
-  body: { padding: '16px 24px' },
-  footer: {
-    display: 'flex', gap: 8, flexWrap: 'wrap', padding: '16px 24px',
-    borderTop: '1px solid #e5e7eb',
-  },
-  closeBtn: {
-    background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#6b7280',
-  },
-  select: {
-    padding: '7px 10px', borderRadius: 6, border: '1px solid #d1d5db',
-    fontSize: 13, cursor: 'pointer',
-  },
-};
 
 export default UserDetailModal;

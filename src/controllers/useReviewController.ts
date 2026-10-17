@@ -18,10 +18,10 @@ export const useReviewController = () => {
     clearMessages();
     try {
       await ReviewService.createReview(body);
-      setSuccessMsg('Đã gửi đánh giá');
+      setSuccessMsg('Review submitted');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Gửi đánh giá thất bại');
+      setError(e.response?.data?.message || 'Failed to submit review');
       return false;
     }
   }, []);
@@ -31,7 +31,7 @@ export const useReviewController = () => {
       const res = await ReviewService.getReviewsByTarget(userId);
       setReviewList(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không tải được đánh giá');
+      setError(e.response?.data?.message || 'Failed to load review');
     }
   }, []);
 
@@ -40,7 +40,7 @@ export const useReviewController = () => {
       const res = await ReviewService.getMyReviews();
       setMyReviews(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không tải được danh sách đánh giá');
+      setError(e.response?.data?.message || 'Failed to load review list');
     }
   }, []);
 
@@ -49,7 +49,7 @@ export const useReviewController = () => {
       const res = await ReviewService.getAllReviews();
       setAllReviews(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không tải được danh sách đánh giá');
+      setError(e.response?.data?.message || 'Failed to load review list');
     }
   }, []);
 
@@ -57,10 +57,10 @@ export const useReviewController = () => {
     clearMessages();
     try {
       await ReviewService.replyReview(id, reply);
-      setSuccessMsg('Đã phản hồi đánh giá');
+      setSuccessMsg('Reply posted');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Phản hồi thất bại');
+      setError(e.response?.data?.message || 'Failed to post reply');
       return false;
     }
   }, []);
@@ -70,10 +70,10 @@ export const useReviewController = () => {
     setLoading(true);
     try {
       await ReviewService.createBugReport(body);
-      setSuccessMsg('Đã gửi báo cáo — cảm ơn bạn!');
+      setSuccessMsg('Report submitted — thank you!');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Gửi báo cáo thất bại');
+      setError(e.response?.data?.message || 'Failed to submit report');
       return false;
     } finally {
       setLoading(false);
@@ -85,7 +85,7 @@ export const useReviewController = () => {
       const res = await ReviewService.getMyBugReports();
       setMyBugs(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không tải được danh sách báo cáo');
+      setError(e.response?.data?.message || 'Failed to load bug reports');
     }
   }, []);
 
@@ -94,7 +94,7 @@ export const useReviewController = () => {
       const res = await ReviewService.getAllBugReports();
       setAllBugs(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không tải được danh sách báo cáo');
+      setError(e.response?.data?.message || 'Failed to load bug reports');
     }
   }, []);
 
@@ -102,10 +102,10 @@ export const useReviewController = () => {
     clearMessages();
     try {
       await ReviewService.updateBugReport(id, body);
-      setSuccessMsg('Đã cập nhật báo cáo');
+      setSuccessMsg('Report updated');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Cập nhật thất bại');
+      setError(e.response?.data?.message || 'Failed to update report');
       return false;
     }
   }, []);

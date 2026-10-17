@@ -27,7 +27,7 @@ export const useEmployerJobController = () => {
       const res = await ProgramService.getMyJobs({ page, size: 10 });
       setMyJobs(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không tải được danh sách tin của bạn');
+      setError(e.response?.data?.message || 'Failed to load your job postings');
     } finally {
       setLoading(false);
     }
@@ -37,10 +37,10 @@ export const useEmployerJobController = () => {
     clearMessages();
     try {
       await ProgramService.createJob(body);
-      setSuccessMsg('Tin tuyển dụng đã được tạo');
+      setSuccessMsg('Job posting created');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Tạo tin thất bại');
+      setError(e.response?.data?.message || 'Failed to create job posting');
       return false;
     }
   }, []);
@@ -49,10 +49,10 @@ export const useEmployerJobController = () => {
     clearMessages();
     try {
       await ProgramService.updateJob(id, body);
-      setSuccessMsg('Tin tuyển dụng đã được cập nhật');
+      setSuccessMsg('Job posting updated');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Cập nhật tin thất bại');
+      setError(e.response?.data?.message || 'Failed to update job posting');
       return false;
     }
   }, []);
@@ -61,10 +61,10 @@ export const useEmployerJobController = () => {
     clearMessages();
     try {
       await ProgramService.changeJobStatus(id, status);
-      setSuccessMsg('Trạng thái đã được cập nhật');
+      setSuccessMsg('Status updated');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Cập nhật trạng thái thất bại');
+      setError(e.response?.data?.message || 'Failed to update status');
       return false;
     }
   }, []);
@@ -73,10 +73,10 @@ export const useEmployerJobController = () => {
     clearMessages();
     try {
       await ProgramService.deleteJob(id);
-      setSuccessMsg('Tin tuyển dụng đã được xóa');
+      setSuccessMsg('Job posting deleted');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Xóa tin thất bại');
+      setError(e.response?.data?.message || 'Failed to delete job posting');
       return false;
     }
   }, []);
@@ -88,7 +88,7 @@ export const useEmployerJobController = () => {
       const res = await ProgramService.getJobApplications(jobId, { page, size: 10 });
       setApplications(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không tải được danh sách ứng viên');
+      setError(e.response?.data?.message || 'Failed to load applicants');
     } finally {
       setLoading(false);
     }
@@ -100,7 +100,7 @@ export const useEmployerJobController = () => {
       const res = await ProgramService.getMatchingCandidates(jobId);
       setSuggestions(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không tải được gợi ý ứng viên');
+      setError(e.response?.data?.message || 'Failed to load suggested candidates');
     }
   }, []);
 
@@ -108,10 +108,10 @@ export const useEmployerJobController = () => {
     clearMessages();
     try {
       await ProgramService.evaluateApplication(id, body);
-      setSuccessMsg('Đã cập nhật đánh giá');
+      setSuccessMsg('Evaluation updated');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Đánh giá thất bại');
+      setError(e.response?.data?.message || 'Failed to save evaluation');
       return false;
     }
   }, []);

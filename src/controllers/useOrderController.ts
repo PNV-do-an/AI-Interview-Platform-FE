@@ -19,7 +19,7 @@ export const useOrderController = () => {
       const res = await OrderService.getPackages();
       setPackages(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không tải được danh sách gói dịch vụ');
+      setError(e.response?.data?.message || 'Failed to load packages');
     }
   }, []);
 
@@ -28,7 +28,7 @@ export const useOrderController = () => {
       const res = await OrderService.getAllPackages();
       setAllPackages(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không tải được danh sách gói dịch vụ');
+      setError(e.response?.data?.message || 'Failed to load packages');
     }
   }, []);
 
@@ -36,10 +36,10 @@ export const useOrderController = () => {
     clearMessages();
     try {
       await OrderService.createPackage(body);
-      setSuccessMsg('Đã tạo gói dịch vụ');
+      setSuccessMsg('Package created');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Tạo gói thất bại');
+      setError(e.response?.data?.message || 'Failed to create package');
       return false;
     }
   }, []);
@@ -48,10 +48,10 @@ export const useOrderController = () => {
     clearMessages();
     try {
       await OrderService.updatePackage(id, body);
-      setSuccessMsg('Đã cập nhật gói dịch vụ');
+      setSuccessMsg('Package updated');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Cập nhật gói thất bại');
+      setError(e.response?.data?.message || 'Failed to update package');
       return false;
     }
   }, []);
@@ -62,7 +62,7 @@ export const useOrderController = () => {
       await OrderService.togglePackageActive(id);
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Thay đổi trạng thái gói thất bại');
+      setError(e.response?.data?.message || 'Failed to change package status');
       return false;
     }
   }, []);
@@ -71,10 +71,10 @@ export const useOrderController = () => {
     clearMessages();
     try {
       await OrderService.deletePackage(id);
-      setSuccessMsg('Đã xóa gói dịch vụ');
+      setSuccessMsg('Package deleted');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Xóa gói thất bại');
+      setError(e.response?.data?.message || 'Failed to delete package');
       return false;
     }
   }, []);
@@ -87,7 +87,7 @@ export const useOrderController = () => {
       setCurrentOrder(res.data.data!);
       return res.data.data!;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Tạo đơn hàng thất bại');
+      setError(e.response?.data?.message || 'Failed to create order');
       return null;
     } finally {
       setLoading(false);
@@ -99,7 +99,7 @@ export const useOrderController = () => {
       const res = await OrderService.getMyOrders();
       setOrders(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không tải được lịch sử đơn hàng');
+      setError(e.response?.data?.message || 'Failed to load order history');
     }
   }, []);
 
@@ -108,7 +108,7 @@ export const useOrderController = () => {
       const res = await OrderService.getAllOrders();
       setAllOrders(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không tải được danh sách đơn hàng');
+      setError(e.response?.data?.message || 'Failed to load orders');
     }
   }, []);
 
@@ -117,11 +117,11 @@ export const useOrderController = () => {
     setLoading(true);
     try {
       const res = await OrderService.payOrder(id);
-      setSuccessMsg('Thanh toán thành công — email xác nhận đã được gửi');
+      setSuccessMsg('Payment successful — confirmation email sent');
       setCurrentOrder(res.data.data!);
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Thanh toán thất bại');
+      setError(e.response?.data?.message || 'Payment failed');
       return false;
     } finally {
       setLoading(false);
@@ -132,10 +132,10 @@ export const useOrderController = () => {
     clearMessages();
     try {
       await OrderService.cancelOrder(id);
-      setSuccessMsg('Đã hủy đơn hàng');
+      setSuccessMsg('Order cancelled');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Hủy đơn hàng thất bại');
+      setError(e.response?.data?.message || 'Failed to cancel order');
       return false;
     }
   }, []);

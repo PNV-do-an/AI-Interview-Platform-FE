@@ -39,7 +39,7 @@ export const useAdminUserController = () => {
       setUsers(res.data.data!);
       setCurrentPage(page);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không thể tải danh sách người dùng');
+      setError(e.response?.data?.message || 'Failed to load user list');
     } finally {
       setLoading(false);
     }
@@ -50,7 +50,7 @@ export const useAdminUserController = () => {
       const res = await AdminService.getUserDetail(id);
       setSelectedUser(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không thể tải thông tin người dùng');
+      setError(e.response?.data?.message || 'Failed to load user details');
     }
   }, []);
 
@@ -58,11 +58,11 @@ export const useAdminUserController = () => {
     setActionLoading(true); clearMessages();
     try {
       await AdminService.lockUser(id);
-      setSuccessMsg('Tài khoản đã bị khóa');
+      setSuccessMsg('Account locked');
       await fetchUsers(currentPage);
       if (selectedUser?.id === id) await fetchUserDetail(id);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không thể khóa tài khoản');
+      setError(e.response?.data?.message || 'Failed to lock account');
     } finally { setActionLoading(false); }
   }, [currentPage, fetchUsers, fetchUserDetail, selectedUser]);
 
@@ -70,11 +70,11 @@ export const useAdminUserController = () => {
     setActionLoading(true); clearMessages();
     try {
       await AdminService.unlockUser(id);
-      setSuccessMsg('Tài khoản đã được mở khóa');
+      setSuccessMsg('Account unlocked');
       await fetchUsers(currentPage);
       if (selectedUser?.id === id) await fetchUserDetail(id);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không thể mở khóa tài khoản');
+      setError(e.response?.data?.message || 'Failed to unlock account');
     } finally { setActionLoading(false); }
   }, [currentPage, fetchUsers, fetchUserDetail, selectedUser]);
 
@@ -82,11 +82,11 @@ export const useAdminUserController = () => {
     setActionLoading(true); clearMessages();
     try {
       await AdminService.deleteUser(id);
-      setSuccessMsg('Tài khoản đã được xóa');
+      setSuccessMsg('Account deleted');
       if (selectedUser?.id === id) setSelectedUser(null);
       await fetchUsers(currentPage);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không thể xóa tài khoản');
+      setError(e.response?.data?.message || 'Failed to delete account');
     } finally { setActionLoading(false); }
   }, [currentPage, fetchUsers, selectedUser]);
 
@@ -94,9 +94,9 @@ export const useAdminUserController = () => {
     setActionLoading(true); clearMessages();
     try {
       await AdminService.resetPassword(id);
-      setSuccessMsg('Email đặt lại mật khẩu đã được gửi');
+      setSuccessMsg('Password reset email sent');
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không thể gửi email reset mật khẩu');
+      setError(e.response?.data?.message || 'Failed to send password reset email');
     } finally { setActionLoading(false); }
   }, []);
 
@@ -104,11 +104,11 @@ export const useAdminUserController = () => {
     setActionLoading(true); clearMessages();
     try {
       await AdminService.changeRole(id, role);
-      setSuccessMsg('Vai trò đã được cập nhật');
+      setSuccessMsg('Role updated');
       await fetchUsers(currentPage);
       if (selectedUser?.id === id) await fetchUserDetail(id);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không thể thay đổi vai trò');
+      setError(e.response?.data?.message || 'Failed to change role');
     } finally { setActionLoading(false); }
   }, [currentPage, fetchUsers, fetchUserDetail, selectedUser]);
 
@@ -118,7 +118,7 @@ export const useAdminUserController = () => {
       setAuditLogs(res.data.data!);
       setAuditPage(page);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không thể tải audit log');
+      setError(e.response?.data?.message || 'Failed to load audit logs');
     }
   }, []);
 

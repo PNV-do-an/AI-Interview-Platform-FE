@@ -40,19 +40,19 @@ export interface BugReport {
 }
 
 export const BUG_CATEGORY_LABELS: Record<BugCategory, string> = {
-  BUG: 'Lỗi hệ thống',
-  FEATURE: 'Đề xuất tính năng',
-  OTHER: 'Khác',
+  BUG: 'System Bug',
+  FEATURE: 'Feature Request',
+  OTHER: 'Other',
 };
 
 export const BUG_STATUS_LABELS: Record<BugStatus, string> = {
-  OPEN: 'Mở',
-  IN_PROGRESS: 'Đang xử lý',
-  RESOLVED: 'Đã giải quyết',
+  OPEN: 'Open',
+  IN_PROGRESS: 'In Progress',
+  RESOLVED: 'Resolved',
 };
 
 export const StarDisplay: React.FC<{ rating: number }> = ({ rating }) => (
-  <span style={{ color: '#f59e0b', fontSize: 18, letterSpacing: 2 }}>
+  <span className="text-[18px] tracking-[2px] text-amber-500">
     {'★'.repeat(rating)}{'☆'.repeat(5 - rating)}
   </span>
 );

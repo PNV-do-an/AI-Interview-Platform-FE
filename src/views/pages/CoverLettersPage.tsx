@@ -3,6 +3,16 @@ import { Link } from 'react-router-dom';
 import { useCvController } from '../../controllers/useCvController';
 import { useJobController } from '../../controllers/useJobController';
 import { useAuth } from '../../context/AuthContext';
+import {
+  Card,
+  ErrorBanner,
+  PageHeader,
+  buttonClass,
+  inputClass,
+  labelClass,
+} from '../components/ui';
+
+const textareaClass = inputClass.replace('h-9', 'py-2');
 
 const CoverLettersPage = () => {
   const { user } = useAuth();
@@ -65,34 +75,37 @@ const CoverLettersPage = () => {
   };
 
   if (!user || user.role !== 'ROLE_USER') {
-    return <div style={{ padding: '40px', color: '#395886' }}>Vui lòng đăng nhập với tài khoản ứng viên.</div>;
+    return (
+      <Card className="text-body-md text-ink-variant">
+        Vui lòng đăng nhập với tài khoản ứng viên.
+      </Card>
+    );
   }
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '10px 12px', border: '1px solid #D5DEEF',
-    borderRadius: 4, boxSizing: 'border-box', fontSize: 14,
-  };
-  const labelStyle: React.CSSProperties = { display: 'block', marginBottom: 6, color: '#395886', fontWeight: 600 };
-
   return (
-    <div style={{ padding: '40px', maxWidth: 1000, margin: '0 auto' }}>
-      <h1 style={{ color: '#395886' }}>Thư xin việc AI</h1>
-      <p style={{ color: '#628ECB' }}>
-        Chọn tin tuyển dụng và CV đã phân tích — AI sẽ soạn thư xin việc nháp, bạn có thể chỉnh sửa và tải xuống.
-      </p>
+    <div>
+      <PageHeader
+        title="Thư xin việc AI"
+        description="Chọn tin tuyển dụng và CV đã phân tích — AI sẽ soạn thư xin việc nháp, bạn có thể chỉnh sửa và tải xuống."
+      />
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {successMsg && <p style={{ color: 'green' }}>{successMsg}</p>}
+      <ErrorBanner message={error} />
+      {successMsg && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text" role="status">
+          <span className="material-symbols-outlined shrink-0 text-[18px]">check_circle</span>
+          <span>{successMsg}</span>
+        </div>
+      )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 }}>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div>
-          <div style={{ background: '#F0F3FA', borderRadius: 8, padding: 20, marginBottom: 20 }}>
-            <h3 style={{ color: '#395886', marginTop: 0 }}>Tạo thư mới</h3>
-            <form onSubmit={handleGenerate} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Card className="mb-5">
+            <h3 className="m-0 text-headline-md text-ink">Tạo thư mới</h3>
+            <form onSubmit={handleGenerate} className="mt-3 flex flex-col gap-3">
               <div>
-                <label style={labelStyle}>Tiêu đề thư</label>
+                <label className={labelClass}>Tiêu đề thư</label>
                 <input
-                  style={inputStyle}
+                  className={inputClass}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="VD: Thư xin việc Java Developer - FPT"
@@ -100,8 +113,8 @@ const CoverLettersPage = () => {
                 />
               </div>
               <div>
-                <label style={labelStyle}>Tin tuyển dụng (tùy chọn)</label>
-                <select style={inputStyle} value={jobId} onChange={(e) => setJobId(e.target.value ? Number(e.target.value) : '')}>
+                <label className={labelClass}>Tin tuyển dụng (tùy chọn)</label>
+                <select className={inputClass} value={jobId} onChange={(e) => setJobId(e.target.value ? Number(e.target.value) : '')}>
                   <option value="">— Thư dùng chung —</option>
                   {jobs?.content.map((j) => (
                     <option key={j.id} value={j.id}>{j.title} — {j.companyName}</option>
@@ -109,105 +122,78 @@ const CoverLettersPage = () => {
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>CV làm cơ sở (khuyến nghị)</label>
-                <select style={inputStyle} value={cvId} onChange={(e) => setCvId(e.target.value ? Number(e.target.value) : '')}>
+                <label className={labelClass}>CV làm cơ sở (khuyến nghị)</label>
+                <select className={inputClass} value={cvId} onChange={(e) => setCvId(e.target.value ? Number(e.target.value) : '')}>
                   <option value="">— Không dùng CV —</option>
                   {cvs.map((cv) => (
                     <option key={cv.id} value={cv.id}>{cv.fileName} ({cv.cvScore}/100)</option>
                   ))}
                 </select>
                 {cvs.length === 0 && (
-                  <p style={{ fontSize: 13, color: '#888', marginTop: 4 }}>
-                    Bạn chưa có CV nào — <Link to="/cv-analyzer" style={{ color: '#628ECB' }}>phân tích CV</Link> trước.
+                  <p className="mt-1 text-body-sm text-ink-variant">
+                    Bạn chưa có CV nào — <Link to="/cv-analyzer" className="text-primary no-underline hover:underline">phân tích CV</Link> trước.
                   </p>
                 )}
               </div>
-              <button
-                type="submit"
-                disabled={!title.trim() || loading}
-                style={{
-                  padding: '12px 24px',
-                  background: title.trim() ? '#628ECB' : '#B1C9EF',
-                  color: '#fff', border: 'none', borderRadius: 4,
-                  cursor: title.trim() ? 'pointer' : 'not-allowed', fontSize: 15,
-                }}
-              >
+              <button type="submit" className={buttonClass('primary', 'self-start')} disabled={!title.trim() || loading}>
                 {loading ? 'Đang tạo...' : 'Tạo thư'}
               </button>
             </form>
-          </div>
+          </Card>
 
-          <h3 style={{ color: '#395886' }}>Thư đã lưu</h3>
+          <h3 className="mb-2 text-headline-md text-ink">Thư đã lưu</h3>
           {letters.length === 0 ? (
-            <p style={{ color: '#888' }}>Chưa có thư nào.</p>
+            <p className="text-body-md text-ink-variant">Chưa có thư nào.</p>
           ) : (
-            letters.map((l) => (
-              <div
-                key={l.id}
-                style={{
-                  border: '1px solid #D5DEEF', borderRadius: 6, padding: '10px 14px',
-                  marginBottom: 8, background: current?.id === l.id ? '#F0F3FA' : '#fff',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap',
-                }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <strong style={{ color: '#395886' }}>{l.title}</strong>
-                  <div style={{ color: '#888', fontSize: 12 }}>
-                    {l.jobTitle ? `${l.jobTitle} · ` : ''}{new Date(l.updatedAt || l.createdAt).toLocaleString('vi-VN')}
+            <div className="flex flex-col gap-2">
+              {letters.map((l) => (
+                <div
+                  key={l.id}
+                  className={`flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2.5 transition-colors ${
+                    current?.id === l.id ? 'border-primary bg-surface-low' : 'border-[#e2e8f0] bg-card hover:bg-surface-low'
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate text-headline-sm text-ink">{l.title}</span>
+                    <span className="text-label-sm text-ink-variant">
+                      {l.jobTitle ? `${l.jobTitle} · ` : ''}{new Date(l.updatedAt || l.createdAt).toLocaleString('vi-VN')}
+                    </span>
+                  </div>
+                  <div className="flex gap-1">
+                    <button className={buttonClass('ghost', 'h-auto px-2 py-1 text-label-sm')} onClick={() => openLetter(l.id)}>
+                      Xem
+                    </button>
+                    <button
+                      className={buttonClass('ghost', 'h-auto px-2 py-1 text-label-sm text-danger-text hover:bg-danger-bg')}
+                      onClick={async () => {
+                        if (!window.confirm('Xóa thư này?')) return;
+                        const ok = await deleteLetter(l.id);
+                        if (ok) fetchMyLetters();
+                      }}
+                    >
+                      Xóa
+                    </button>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button onClick={() => openLetter(l.id)} style={{ padding: '4px 10px', fontSize: 12 }}>Xem</button>
-                  <button
-                    onClick={async () => {
-                      if (!window.confirm('Xóa thư này?')) return;
-                      const ok = await deleteLetter(l.id);
-                      if (ok) fetchMyLetters();
-                    }}
-                    style={{ padding: '4px 10px', fontSize: 12, color: '#B33' }}
-                  >
-                    Xóa
-                  </button>
-                </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
 
         <div>
-          <h3 style={{ color: '#395886' }}>Nội dung thư</h3>
+          <h3 className="mb-2 text-headline-md text-ink">Nội dung thư</h3>
           <textarea
+            className={`${textareaClass} min-h-[420px] leading-relaxed`}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Nội dung thư sẽ hiển thị ở đây — bạn có thể chỉnh sửa trực tiếp."
-            style={{
-              width: '100%', minHeight: 420, padding: 12, fontSize: 14,
-              border: '1px solid #D5DEEF', borderRadius: 4, boxSizing: 'border-box',
-              lineHeight: 1.6,
-            }}
           />
-          <div style={{ marginTop: 12, display: 'flex', gap: 10 }}>
-            <button
-              onClick={handleSave}
-              disabled={!current}
-              style={{
-                padding: '10px 22px',
-                background: current ? '#628ECB' : '#B1C9EF',
-                color: '#fff', border: 'none', borderRadius: 4,
-                cursor: current ? 'pointer' : 'not-allowed',
-              }}
-            >
+          <div className="mt-3 flex gap-2">
+            <button className={buttonClass('primary')} onClick={handleSave} disabled={!current}>
               Lưu thay đổi
             </button>
-            <button
-              onClick={handleDownload}
-              disabled={!content.trim()}
-              style={{
-                padding: '10px 22px', background: '#fff', color: '#628ECB',
-                border: '1px solid #628ECB', borderRadius: 4,
-                cursor: content.trim() ? 'pointer' : 'not-allowed',
-              }}
-            >
+            <button className={buttonClass('secondary')} onClick={handleDownload} disabled={!content.trim()}>
+              <span className="material-symbols-outlined text-[18px]">download</span>
               Tải xuống (.txt)
             </button>
           </div>

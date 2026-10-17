@@ -1,7 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useOrderController } from '../../controllers/useOrderController';
 import { formatVnd, PAYMENT_METHOD_LABELS, ServicePackage } from '../../models/Order.model';
+import {
+  ErrorBanner,
+  LoadingState,
+  PageHeader,
+  buttonClass,
+  labelClass,
+} from '../components/ui';
+
+const selectClass =
+  'h-9 w-full box-border rounded-md border border-[#e2e8f0] bg-card px-2.5 text-body-md text-ink transition-all focus:border-[#6366f1] focus:outline-none focus:ring-1 focus:ring-[#6366f1]';
 
 const PackagesPage: React.FC = () => {
   const {
@@ -30,116 +39,78 @@ const PackagesPage: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '40px', maxWidth: 1000, margin: '0 auto' }}>
-      <h1 style={{ color: '#395886' }}>Gói dịch vụ</h1>
-      <p style={{ color: '#628ECB' }}>
-        Chọn gói phù hợp để đăng tin tuyển dụng và sử dụng các công cụ AI.
-      </p>
+    <div>
+      <PageHeader
+        title="Packages"
+        description="Select a package to publish job postings and use the AI tools."
+      />
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {successMsg && <p style={{ color: 'green' }}>{successMsg}</p>}
+      {loading && <LoadingState />}
+      <ErrorBanner message={error} />
+      {successMsg && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text" role="status">
+          <span className="material-symbols-outlined shrink-0 text-[18px]">check_circle</span>
+          <span>{successMsg}</span>
+        </div>
+      )}
 
-      {loading && <p>Đang tải...</p>}
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, marginTop: 20 }}>
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {packages.map((pkg) => (
-          <div
-            key={pkg.id}
-            style={{
-              border: '1px solid #D5DEEF', borderRadius: 12, padding: 24,
-              background: '#fff', boxShadow: '0 2px 12px rgba(57,88,134,0.08)',
-              display: 'flex', flexDirection: 'column',
-            }}
-          >
-            <h2 style={{ color: '#395886', margin: '0 0 4px' }}>{pkg.name}</h2>
+          <div key={pkg.id} className="flex flex-col rounded-lg border border-[#e2e8f0] bg-card p-4 shadow-card">
+            <h2 className="m-0 text-headline-md text-ink">{pkg.name}</h2>
             {pkg.description && (
-              <p style={{ color: '#6b7280', fontSize: 14, minHeight: 40 }}>{pkg.description}</p>
+              <p className="m-0 mt-1 min-h-[40px] text-body-sm text-ink-variant">{pkg.description}</p>
             )}
-            <p style={{ fontSize: 28, fontWeight: 700, color: '#628ECB', margin: '8px 0' }}>
+            <p className="m-0 mt-2 flex flex-wrap items-baseline gap-1 text-metric-stat text-primary">
               {formatVnd(pkg.price)}
-              <span style={{ fontSize: 14, fontWeight: 400, color: '#6b7280' }}>
-                {' '}/ {pkg.durationDays} ngày
+              <span className="text-body-sm font-normal text-ink-variant">
+                {' '}/ {pkg.durationDays} days
               </span>
             </p>
-            <ul style={{ paddingLeft: 18, color: '#395886', flex: 1 }}>
-              <li>Đăng tối đa {pkg.jobPostLimit} tin tuyển dụng</li>
+            <ul className="m-0 mt-3 flex-1 list-disc pl-5 text-body-md text-ink">
+              <li>Up to {pkg.jobPostLimit} job postings</li>
               {pkg.features.map((f, i) => <li key={i}>{f}</li>)}
             </ul>
             <button
               onClick={() => { setSelected(pkg); clearMessages(); }}
-              style={{
-                marginTop: 16, padding: '12px 0', borderRadius: 8, border: 'none',
-                background: '#628ECB', color: '#fff', fontSize: 15, fontWeight: 600,
-                cursor: 'pointer',
-              }}
+              className={buttonClass('primary', 'w-full mt-4')}
             >
-              Mua gói này
+              Buy Package
             </button>
           </div>
         ))}
       </div>
 
       {selected && (
-        <div style={{ ...styles.modalOverlay }}>
-          <div style={styles.modal}>
-            <h3 style={{ color: '#395886', marginTop: 0 }}>Thanh toán: {selected.name}</h3>
-            <p>Số tiền: <strong>{formatVnd(selected.price)}</strong></p>
-            <label style={{ display: 'block', marginBottom: 6, color: '#395886', fontWeight: 600 }}>
-              Phương thức thanh toán
-            </label>
-            <select
-              value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
-              style={{ width: '100%', padding: '10px 12px', border: '1px solid #D5DEEF', borderRadius: 4, marginBottom: 16 }}
-            >
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
+          <div className="flex w-[380px] max-w-full flex-col rounded-lg border border-[#e2e8f0] bg-card p-6 shadow-card">
+            <h3 className="m-0 text-headline-md text-ink">Payment: {selected.name}</h3>
+            <p className="m-0 mt-2 text-body-md text-ink">
+              Amount: <strong className="text-metric-stat text-primary">{formatVnd(selected.price)}</strong>
+            </p>
+            <label className={`${labelClass} mt-3`}>Payment Method</label>
+            <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className={selectClass}>
               {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>{label}</option>
               ))}
             </select>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                onClick={handleBuy}
-                disabled={paying}
-                style={{
-                  flex: 1, padding: '12px 0', borderRadius: 8, border: 'none',
-                  background: paying ? '#B1C9EF' : '#395886', color: '#fff',
-                  fontSize: 15, fontWeight: 600, cursor: paying ? 'not-allowed' : 'pointer',
-                }}
-              >
-                {paying ? 'Đang xử lý...' : 'Xác nhận thanh toán'}
+            <div className="mt-4 flex gap-2">
+              <button onClick={handleBuy} disabled={paying} className={buttonClass('primary', 'flex-1')}>
+                {paying ? 'Processing...' : 'Confirm Payment'}
               </button>
-              <button
-                onClick={() => setSelected(null)}
-                disabled={paying}
-                style={{
-                  padding: '12px 20px', borderRadius: 8, border: '1px solid #D5DEEF',
-                  background: '#fff', cursor: 'pointer',
-                }}
-              >
-                Đóng
+              <button onClick={() => setSelected(null)} disabled={paying} className={buttonClass('secondary')}>
+                Close
               </button>
             </div>
-            <p style={{ fontSize: 12, color: '#888', marginBottom: 0 }}>
-              Thanh toán được giả lập cho môi trường demo — không phát sinh giao dịch thật.
+            <p className="m-0 mt-3 flex items-start gap-1 text-body-sm text-ink-variant">
+              <span className="material-symbols-outlined shrink-0 text-[18px] text-info-text">info</span>
+              Payments are simulated in the demo environment — no real transactions are made.
             </p>
           </div>
         </div>
       )}
-
-      <p style={{ marginTop: 24 }}><Link to="/dashboard" style={{ color: '#628ECB' }}>← Về Dashboard</Link></p>
     </div>
   );
-};
-
-const styles: Record<string, React.CSSProperties> = {
-  modalOverlay: {
-    position: 'fixed', inset: 0, background: 'rgba(57,88,134,0.35)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100,
-  },
-  modal: {
-    background: '#fff', borderRadius: 12, padding: 28, width: 380,
-    boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
-  },
 };
 
 export default PackagesPage;

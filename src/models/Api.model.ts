@@ -26,5 +26,13 @@ export interface RegisterRequest {
   fullName: string;
   email: string;
   password: string;
-  phone: string;
+  phone?: string;
+}
+
+/** Config OIDC cho Enterprise SSO, lấy từ GET /api/v1/auth/sso/config */
+export interface SsoConfig {
+  enabled: boolean;
+  authorizationEndpoint: string;
+  clientId: string;
+  scopes: string;
 }

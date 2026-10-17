@@ -18,7 +18,7 @@ export const useSlotController = () => {
       const res = await ProgramService.getMySlots();
       setMySlots(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không tải được danh sách khung giờ');
+      setError(e.response?.data?.message || 'Failed to load time slots');
     } finally {
       setLoading(false);
     }
@@ -31,7 +31,7 @@ export const useSlotController = () => {
       const res = await ProgramService.getAvailableSlots(employerId);
       setAvailableSlots(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Không tải được khung giờ trống');
+      setError(e.response?.data?.message || 'Failed to load available slots');
     } finally {
       setLoading(false);
     }
@@ -41,10 +41,10 @@ export const useSlotController = () => {
     clearMessages();
     try {
       await ProgramService.createSlot(body);
-      setSuccessMsg('Khung giờ đã được tạo');
+      setSuccessMsg('Time slot created');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Tạo khung giờ thất bại');
+      setError(e.response?.data?.message || 'Failed to create time slot');
       return false;
     }
   }, []);
@@ -53,10 +53,10 @@ export const useSlotController = () => {
     clearMessages();
     try {
       await ProgramService.cancelSlot(id);
-      setSuccessMsg('Khung giờ đã được hủy');
+      setSuccessMsg('Time slot cancelled');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Hủy khung giờ thất bại');
+      setError(e.response?.data?.message || 'Failed to cancel time slot');
       return false;
     }
   }, []);

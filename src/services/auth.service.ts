@@ -1,6 +1,6 @@
 import httpService from './http.service';
 import axios from 'axios';
-import { ApiResponse, AuthResponse, LoginRequest, RegisterRequest } from '../models/Api.model';
+import { ApiResponse, AuthResponse, LoginRequest, RegisterRequest, SsoConfig } from '../models/Api.model';
 
 const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
@@ -38,6 +38,12 @@ const AuthService = {
 
   githubLogin: (code: string, redirectUri: string) =>
     publicHttp.post<ApiResponse<AuthResponse>>('/api/v1/auth/github', { code, redirectUri }),
+
+  getSsoConfig: () =>
+    publicHttp.get<ApiResponse<SsoConfig>>('/api/v1/auth/sso/config'),
+
+  ssoLogin: (code: string, redirectUri: string, nonce: string) =>
+    publicHttp.post<ApiResponse<AuthResponse>>('/api/v1/auth/sso', { code, redirectUri, nonce }),
 };
 
 export default AuthService;
