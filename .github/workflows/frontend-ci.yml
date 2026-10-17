@@ -1,4 +1,5 @@
 name: Frontend CI
+# Chay khi push dev/main. Repo deploy-staging nghe xong run nay de deploy Vercel.
 
 on:
   push:
