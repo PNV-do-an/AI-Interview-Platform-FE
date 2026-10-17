@@ -246,7 +246,7 @@ const LoginPage: React.FC = () => {
                   {registered === 'true' && (
                     <div className="flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text">
                       <span className="material-symbols-outlined shrink-0 text-[18px]">check_circle</span>
-                      <span>Registration successful! Please check your email to activate your account.</span>
+                      <span>Registration successful! Please sign in to continue.</span>
                     </div>
                   )}
                   {error && (

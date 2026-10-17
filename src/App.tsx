@@ -9,6 +9,7 @@ import AdminUserManagementPage from './views/pages/AdminUserManagementPage';
 import UnauthorizedPage from './views/pages/UnauthorizedPage';
 import ForgotPasswordPage from './views/pages/ForgotPasswordPage';
 import ResetPasswordPage from './views/pages/ResetPasswordPage';
+import VerifyEmailPage from './views/pages/VerifyEmailPage';
 import JobsPage from './views/pages/JobsPage';
 import JobDetailPage from './views/pages/JobDetailPage';
 import JobFormPage from './views/pages/JobFormPage';
@@ -38,6 +39,7 @@ const App: React.FC = () => {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/verify" element={<VerifyEmailPage />} />
 
           {/* Protected routes — any authenticated user */}
           <Route element={<ProtectedRoute />}>

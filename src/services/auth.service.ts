@@ -38,6 +38,9 @@ const AuthService = {
 
   githubLogin: (code: string, redirectUri: string) =>
     publicHttp.post<ApiResponse<AuthResponse>>('/api/v1/auth/github', { code, redirectUri }),
+
+  verifyEmail: (token: string) =>
+    publicHttp.get<ApiResponse<string>>('/api/v1/auth/verify', { params: { token } }),
 };
 
 export default AuthService;
