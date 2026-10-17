@@ -1,5 +1,5 @@
 name: Frontend CI
-# Chay khi push dev/main. Repo deploy-staging nghe xong run nay de deploy Vercel.
+# Push dev/main -> Build. Build xanh tren dev thi bao repo deploy-staging deploy Vercel.
 
 on:
   push:
@@ -37,3 +37,24 @@ jobs:
         run: npm run build
         env:
           CI: "false"
+
+  # workflow_run chi nghe duoc workflow cung repo, nen phai dispatch sang
+  # repo deploy-staging bang PAT (secret DEPLOY_PAT).
+  notify-deploy-repo:
+    name: Trigger staging deploy
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch Staging Deploy
+        env:
+          PAT: ${{ secrets.DEPLOY_PAT }}
+          SHA: ${{ github.sha }}
+        run: |
+          code=$(curl -sS -o /tmp/dispatch.json -w '%{http_code}' \
+            -X POST -H "Authorization: Bearer $PAT" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/PNV-do-an/AI-Interview-Platform-deploy-staging/actions/workflows/staging-deploy.yml/dispatches" \
+            -d "{\"ref\":\"dev\",\"inputs\":{\"frontend_sha\":\"$SHA\"}}")
+          echo "dispatch HTTP $code"
+          [ "$code" = "204" ] || { cat /tmp/dispatch.json; exit 1; }
