@@ -1,6 +1,6 @@
 import httpService from './http.service';
 import axios from 'axios';
-import { ApiResponse, AuthResponse, LoginRequest, RegisterRequest, SsoConfig } from '../models/Api.model';
+import { ApiResponse, AuthResponse, LoginRequest, PasswordResetResult, RegisterRequest, ResetTokenInfo, SsoConfig } from '../models/Api.model';
 
 const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
@@ -23,8 +23,16 @@ const AuthService = {
   forgotPassword: (email: string) =>
     publicHttp.post<ApiResponse<string>>('/api/v1/auth/forgot-password', { email }),
 
-  resetPassword: (token: string, password: string) =>
-    publicHttp.post<ApiResponse<string>>('/api/v1/auth/reset-password', { token, password }),
+  getResetTokenInfo: (token: string) =>
+    publicHttp.get<ApiResponse<ResetTokenInfo>>('/api/v1/auth/reset-password', { params: { token } }),
+
+  resetPassword: (token: string, password: string, confirmPassword: string, signOutEverywhere: boolean) =>
+    publicHttp.post<ApiResponse<PasswordResetResult>>('/api/v1/auth/reset-password', {
+      token,
+      password,
+      confirmPassword,
+      signOutEverywhere,
+    }),
 
   // Dùng publicHttp để 401 từ Google không kích hoạt interceptor refresh của httpService
   getGoogleClientId: () =>

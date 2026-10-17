@@ -36,3 +36,17 @@ export interface SsoConfig {
   clientId: string;
   scopes: string;
 }
+
+/** Tài khoản ứng với link đặt lại mật khẩu, từ GET /api/v1/auth/reset-password?token= */
+export interface ResetTokenInfo {
+  fullName: string;
+  email: string;
+  role: string;
+  remainingSeconds: number;
+}
+
+/** Kết quả POST /api/v1/auth/reset-password */
+export interface PasswordResetResult {
+  eventId: string;
+  signedOutEverywhere: boolean;
+}
