@@ -1,27 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useReviewController } from '../../controllers/useReviewController';
 import { BUG_CATEGORY_LABELS, BUG_STATUS_LABELS, BugCategory, BugStatus } from '../../models/Review.model';
+import {
+  Badge, buttonClass, Card, ErrorBanner, PageHeader, inputClass,
+} from '../components/ui';
 
-const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 760, margin: '40px auto', padding: 24, fontFamily: 'sans-serif' },
-  card: { border: '1px solid #D5DEEF', borderRadius: 8, padding: 20, marginTop: 16, background: '#fff' },
-  input: { width: '100%', padding: 8, marginTop: 8, boxSizing: 'border-box' as const },
-  textarea: { width: '100%', minHeight: 110, padding: 8, marginTop: 8, boxSizing: 'border-box' as const },
-  meta: { color: '#6b7280', fontSize: 14 },
-  reply: { background: '#F0F3FA', borderRadius: 6, padding: 10, marginTop: 10, fontSize: 14 },
+type BadgeTone = 'warning' | 'info' | 'success';
+
+const statusTone: Record<BugStatus, BadgeTone> = {
+  OPEN: 'warning',
+  IN_PROGRESS: 'info',
+  RESOLVED: 'success',
 };
 
-const statusColor: Record<BugStatus, [string, string]> = {
-  OPEN: ['#92400e', '#fef3c7'],
-  IN_PROGRESS: ['#1e40af', '#dbeafe'],
-  RESOLVED: ['#065f46', '#d1fae5'],
-};
+// inputClass bỏ `h-9` thay `py-2` khi dùng cho textarea.
+const textareaClass =
+  'min-h-[110px] w-full resize-y rounded-md border border-[#e2e8f0] bg-card px-2.5 py-2 text-body-md text-ink ' +
+  'transition-all placeholder:text-[#94a3b8] focus:border-[#6366f1] focus:outline-none focus:ring-1 focus:ring-[#6366f1]';
 
-const badge = (color: string, bg: string): React.CSSProperties => ({
-  display: 'inline-block', padding: '2px 10px', borderRadius: 12,
-  fontSize: 12, fontWeight: 600, color, background: bg,
-});
+// inputClass ép `w-full` nên select dùng bản riêng (bỏ w-full) để bo theo nội dung.
+const selectClass =
+  'h-9 cursor-pointer rounded-md border border-[#e2e8f0] bg-card px-2.5 text-body-md text-ink ' +
+  'transition-all focus:border-[#6366f1] focus:outline-none focus:ring-1 focus:ring-[#6366f1]';
 
 const BugReportsPage: React.FC = () => {
   const { myBugs, loading, error, successMsg, createBugReport, fetchMyBugs } = useReviewController();
@@ -42,63 +42,77 @@ const BugReportsPage: React.FC = () => {
   };
 
   return (
-    <div style={styles.page}>
-      <h2>Báo cáo lỗi &amp; góp ý</h2>
-      <p style={styles.meta}>Phản ánh sự cố hoặc đề xuất tính năng để đội ngũ phát triển cải thiện nền tảng.</p>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {successMsg && <p style={{ color: 'green' }}>{successMsg}</p>}
-
-      <div style={styles.card}>
-        <h3>Gửi báo cáo mới</h3>
-        <input
-          placeholder="Tiêu đề"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          style={styles.input}
-        />
-        <select value={category} onChange={(e) => setCategory(e.target.value as BugCategory)} style={styles.input}>
-          {(Object.keys(BUG_CATEGORY_LABELS) as BugCategory[]).map((c) => (
-            <option key={c} value={c}>{BUG_CATEGORY_LABELS[c]}</option>
-          ))}
-        </select>
-        <textarea
-          placeholder="Mô tả chi tiết vấn đề bạn gặp phải..."
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          style={styles.textarea}
-        />
-        <div style={{ marginTop: 8 }}>
-          <button onClick={onSubmit} disabled={loading || !title.trim() || !description.trim()}>
-            {loading ? 'Đang gửi...' : 'Gửi báo cáo'}
-          </button>
+    <div>
+      <PageHeader
+        title="Report an Issue"
+        description="Report a problem or suggest a feature to help the team improve the platform."
+      />
+      <ErrorBanner message={error} />
+      {successMsg && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text" role="status">
+          <span className="material-symbols-outlined shrink-0 text-[18px]">check_circle</span>
+          <span>{successMsg}</span>
         </div>
-      </div>
+      )}
 
-      <h3 style={{ marginTop: 32 }}>Báo cáo của tôi</h3>
-      {myBugs.length === 0 && <p style={styles.meta}>Bạn chưa gửi báo cáo nào.</p>}
-      {myBugs.map((b) => {
-        const [color, bg] = statusColor[b.status];
-        return (
-          <div key={b.id} style={styles.card}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-              <strong>{b.title}</strong>
-              <span style={badge(color, bg)}>{BUG_STATUS_LABELS[b.status]}</span>
+      <Card>
+        <h2 className="m-0 text-headline-sm text-ink">Submit a new report</h2>
+        <div className="mt-3 flex flex-col gap-3">
+          <input
+            className={inputClass}
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <select className={selectClass} value={category} onChange={(e) => setCategory(e.target.value as BugCategory)}>
+            {(Object.keys(BUG_CATEGORY_LABELS) as BugCategory[]).map((c) => (
+              <option key={c} value={c}>{BUG_CATEGORY_LABELS[c]}</option>
+            ))}
+          </select>
+          <textarea
+            className={textareaClass}
+            placeholder="Describe the issue you encountered in detail..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          <div>
+            <button
+              type="button"
+              className={buttonClass('primary')}
+              onClick={onSubmit}
+              disabled={loading || !title.trim() || !description.trim()}
+            >
+              <span className="material-symbols-outlined text-[18px]">send</span>
+              {loading ? 'Submitting...' : 'Submit report'}
+            </button>
+          </div>
+        </div>
+      </Card>
+
+      <h2 className="mb-3 mt-8 text-headline-md text-ink">My Reports</h2>
+      {myBugs.length === 0 && (
+        <p className="m-0 text-body-sm text-ink-variant">You have not submitted any reports yet.</p>
+      )}
+      <div className="flex flex-col gap-3">
+        {myBugs.map((b) => (
+          <Card key={b.id}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <strong className="text-headline-sm text-ink">{b.title}</strong>
+              <Badge tone={statusTone[b.status]}>{BUG_STATUS_LABELS[b.status]}</Badge>
             </div>
-            <p style={styles.meta}>{BUG_CATEGORY_LABELS[b.category]} · {new Date(b.createdAt).toLocaleDateString('vi-VN')}</p>
-            <p style={{ whiteSpace: 'pre-wrap', marginTop: 8 }}>{b.description}</p>
+            <p className="mt-1 text-body-sm tabular-nums text-ink-variant">
+              {BUG_CATEGORY_LABELS[b.category]} · {new Date(b.createdAt).toLocaleDateString('vi-VN')}
+            </p>
+            <p className="mt-2 whitespace-pre-wrap text-body-md text-ink">{b.description}</p>
             {b.reply && (
-              <div style={styles.reply}>
-                <strong>Phản hồi từ {b.repliedByName || 'đội ngũ hỗ trợ'}:</strong>
-                <p style={{ margin: '4px 0 0' }}>{b.reply}</p>
+              <div className="mt-2 rounded-md bg-surface-low p-3">
+                <strong className="text-label-md text-ink">Reply from {b.repliedByName || 'the support team'}:</strong>
+                <p className="mt-1 text-body-sm text-ink-variant">{b.reply}</p>
               </div>
             )}
-          </div>
-        );
-      })}
-
-      <p style={{ marginTop: 24 }}>
-        <Link to="/dashboard">← Về trang tổng quan</Link>
-      </p>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };

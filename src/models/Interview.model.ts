@@ -40,6 +40,6 @@ export interface StartInterviewRequest {
 }
 
 export const INTERVIEW_MODE_LABELS: Record<InterviewMode, string> = {
-  MOCK: 'Phỏng vấn mô phỏng theo tin tuyển dụng',
-  KNOWLEDGE: 'Luyện tập kiến thức theo chủ đề',
+  MOCK: 'Job-based mock interview',
+  KNOWLEDGE: 'Topic-based knowledge practice',
 };

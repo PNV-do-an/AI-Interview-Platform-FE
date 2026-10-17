@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSlotController } from '../../controllers/useSlotController';
-
-const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 720, margin: '40px auto', padding: 24, fontFamily: 'sans-serif' },
-  card: { border: '1px solid #e5e7eb', borderRadius: 8, padding: 16, marginBottom: 12 },
-  row: { display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' },
-  field: { marginBottom: 12 },
-  input: { display: 'block', padding: 6, marginTop: 4 },
-};
+import {
+  Badge,
+  EmptyState,
+  ErrorBanner,
+  LoadingState,
+  PageHeader,
+  buttonClass,
+  inputClass,
+  labelClass,
+} from '../components/ui';
 
 const toLocalInput = (d: Date) => {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -25,7 +27,10 @@ const MySlotsPage: React.FC = () => {
 
   const onCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ok = await createSlot({ startTime: new Date(start).toISOString(), endTime: new Date(end).toISOString(), note: note || undefined });
+    // Backend nhận LocalDateTime (mốc tường(local), không có zone). toISOString() sẽ đẩy về UTC
+    // và làm lệch giờ với máy ngoài UTC, nên gửi đúng chuỗi local.
+    const withSeconds = (v: string) => (v.length === 16 ? `${v}:00` : v);
+    const ok = await createSlot({ startTime: withSeconds(start), endTime: withSeconds(end), note: note || undefined });
     if (ok) {
       setNote('');
       await fetchMySlots();
@@ -33,49 +38,77 @@ const MySlotsPage: React.FC = () => {
   };
 
   return (
-    <div style={styles.page}>
-      <h2>Quản lý khung giờ trống</h2>
-      {loading && <p>Đang tải...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {successMsg && <p style={{ color: 'green' }}>{successMsg}</p>}
+    <div>
+      <PageHeader title="Interviewer Availability" />
 
-      <form onSubmit={onCreate} style={{ ...styles.card, background: '#f9fafb' }}>
-        <div style={styles.row}>
-          <div style={styles.field}>
-            <label>Bắt đầu</label>
-            <input type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} style={styles.input} />
+      {loading && <LoadingState />}
+      <ErrorBanner message={error} />
+      {successMsg && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text" role="status">
+          <span className="material-symbols-outlined shrink-0 text-[18px]">check_circle</span>
+          <span>{successMsg}</span>
+        </div>
+      )}
+
+      <form
+        onSubmit={onCreate}
+        className="mb-6 flex flex-col gap-3 rounded-lg border border-[#e2e8f0] bg-card p-4 shadow-card"
+      >
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div>
+            <label className={labelClass}>Start</label>
+            <input type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} className={inputClass} />
           </div>
-          <div style={styles.field}>
-            <label>Kết thúc</label>
-            <input type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} style={styles.input} />
+          <div>
+            <label className={labelClass}>End</label>
+            <input type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} className={inputClass} />
           </div>
-          <div style={styles.field}>
-            <label>Ghi chú</label>
-            <input value={note} onChange={(e) => setNote(e.target.value)} style={styles.input} />
+          <div>
+            <label className={labelClass}>Note</label>
+            <input value={note} onChange={(e) => setNote(e.target.value)} className={inputClass} />
           </div>
         </div>
-        <button type="submit">Thêm khung giờ</button>
+        <button type="submit" className={buttonClass('primary', 'self-start')}>
+          <span className="material-symbols-outlined text-[18px]">add</span>
+          Add Slot
+        </button>
       </form>
 
-      {mySlots.map((slot) => (
-        <div key={slot.id} style={styles.card}>
-          <div style={styles.row}>
-            <strong style={{ flex: 1 }}>
+      <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+        {mySlots.map((slot) => (
+          <div
+            key={slot.id}
+            className="flex min-h-8 flex-wrap items-center gap-2 rounded-md border border-[#e2e8f0] bg-card px-3 py-1 text-label-md text-ink transition-colors hover:border-[#6366f1] hover:bg-info"
+          >
+            <span className="material-symbols-outlined shrink-0 text-[18px] text-primary">schedule</span>
+            <strong className="min-w-0 flex-1 truncate font-medium">
               {new Date(slot.startTime).toLocaleString('vi-VN')} — {new Date(slot.endTime).toLocaleTimeString('vi-VN')}
             </strong>
-            <span style={{ color: slot.booked ? '#991b1b' : '#166534' }}>
-              {slot.booked ? `Đã đặt bởi ${slot.bookedByName}` : 'Còn trống'}
-            </span>
+            <Badge tone={slot.booked ? 'danger' : 'success'}>
+              {slot.booked ? `Booked by ${slot.bookedByName}` : 'Available'}
+            </Badge>
+            {slot.note && <span className="min-w-0 flex-1 truncate text-body-sm text-ink-variant">{slot.note}</span>}
+            {!slot.booked && (
+              <button
+                className={buttonClass('ghost', 'h-7 shrink-0 px-2 text-label-sm')}
+                onClick={() => cancelSlot(slot.id).then(() => fetchMySlots())}
+              >
+                Cancel Slot
+              </button>
+            )}
           </div>
-          {slot.note && <p style={{ color: '#6b7280' }}>{slot.note}</p>}
-          {!slot.booked && (
-            <button onClick={() => cancelSlot(slot.id).then(() => fetchMySlots())}>Hủy khung giờ</button>
-          )}
-        </div>
-      ))}
-      {mySlots.length === 0 && !loading && <p>Chưa có khung giờ nào.</p>}
+        ))}
+      </div>
 
-      <p style={{ marginTop: 24 }}><Link to="/my-jobs">← Quản lý tin của tôi</Link></p>
+      {mySlots.length === 0 && !loading && (
+        <EmptyState icon="event" title="No availability slots yet." />
+      )}
+
+      <p className="pt-6">
+        <Link to="/my-jobs" className="text-label-md text-ink-variant no-underline transition-colors hover:text-primary">
+          ← My Job Postings
+        </Link>
+      </p>
     </div>
   );
 };

@@ -1,30 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useReviewController } from '../../controllers/useReviewController';
 import {
   BUG_CATEGORY_LABELS, BUG_STATUS_LABELS, StarDisplay,
   BugCategory, BugStatus,
 } from '../../models/Review.model';
+import {
+  Badge, buttonClass, Card, EmptyState, ErrorBanner, LoadingState, PageHeader,
+} from '../components/ui';
 
-const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 900, margin: '40px auto', padding: 24, fontFamily: 'sans-serif' },
-  card: { border: '1px solid #D5DEEF', borderRadius: 8, padding: 16, marginTop: 12, background: '#fff' },
-  meta: { color: '#6b7280', fontSize: 14 },
-  textarea: { width: '100%', minHeight: 60, padding: 8, marginTop: 8, boxSizing: 'border-box' as const },
-  section: { marginTop: 32 },
-  row: { display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' },
+type BadgeTone = 'warning' | 'info' | 'success';
+
+const statusTone: Record<BugStatus, BadgeTone> = {
+  OPEN: 'warning',
+  IN_PROGRESS: 'info',
+  RESOLVED: 'success',
 };
 
-const statusColor: Record<BugStatus, [string, string]> = {
-  OPEN: ['#92400e', '#fef3c7'],
-  IN_PROGRESS: ['#1e40af', '#dbeafe'],
-  RESOLVED: ['#065f46', '#d1fae5'],
-};
+// inputClass bỏ `h-9` thay `py-2` khi dùng cho textarea.
+const textareaClass =
+  'w-full resize-y rounded-md border border-[#e2e8f0] bg-card px-2.5 py-2 text-body-md text-ink ' +
+  'transition-all placeholder:text-[#94a3b8] focus:border-[#6366f1] focus:outline-none focus:ring-1 focus:ring-[#6366f1]';
 
-const badge = (color: string, bg: string): React.CSSProperties => ({
-  display: 'inline-block', padding: '2px 10px', borderRadius: 12,
-  fontSize: 12, fontWeight: 600, color, background: bg,
-});
+const selectClass =
+  'h-9 cursor-pointer rounded-md border border-[#e2e8f0] bg-card px-2.5 text-body-md text-ink ' +
+  'transition-all focus:border-[#6366f1] focus:outline-none focus:ring-1 focus:ring-[#6366f1]';
 
 const AdminFeedbackPage: React.FC = () => {
   const {
@@ -60,65 +59,81 @@ const AdminFeedbackPage: React.FC = () => {
   };
 
   return (
-    <div style={styles.page}>
-      <h2>Quản lý đánh giá &amp; báo cáo</h2>
-      {loading && <p>Đang tải...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {successMsg && <p style={{ color: 'green' }}>{successMsg}</p>}
+    <div>
+      <PageHeader title="Reviews & Reports" />
+      {loading && <LoadingState />}
+      <ErrorBanner message={error} />
+      {successMsg && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text" role="status">
+          <span className="material-symbols-outlined shrink-0 text-[18px]">check_circle</span>
+          <span>{successMsg}</span>
+        </div>
+      )}
 
-      <div style={styles.section}>
-        <h3>Đánh giá từ ứng viên ({allReviews.length})</h3>
-        {allReviews.length === 0 && <p style={styles.meta}>Chưa có đánh giá nào.</p>}
-        {allReviews.map((r) => (
-          <div key={r.id} style={styles.card}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span>
-                <strong>{r.reviewerName}</strong> đánh giá <strong>{r.targetName}</strong>
-              </span>
-              <StarDisplay rating={r.rating} />
-            </div>
-            {r.jobTitle && <p style={styles.meta}>Vị trí: {r.jobTitle}</p>}
-            <p style={{ marginTop: 6 }}>{r.comment}</p>
-            {r.reply ? (
-              <p style={styles.meta}>Đã phản hồi: {r.reply}</p>
-            ) : (
-              <>
-                <textarea
-                  placeholder="Viết phản hồi..."
-                  value={reviewReplies[r.id] || ''}
-                  onChange={(e) => setReviewReplies((prev) => ({ ...prev, [r.id]: e.target.value }))}
-                  style={styles.textarea}
-                />
-                <div style={styles.row}>
-                  <button onClick={() => onReplyReview(r.id)} disabled={!(reviewReplies[r.id] || '').trim()}>
-                    Phản hồi
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div style={styles.section}>
-        <h3>Báo cáo lỗi &amp; góp ý ({allBugs.length})</h3>
-        {allBugs.length === 0 && <p style={styles.meta}>Chưa có báo cáo nào.</p>}
-        {allBugs.map((b) => {
-          const [color, bg] = statusColor[b.status];
-          return (
-            <div key={b.id} style={styles.card}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <strong>{b.title}</strong>
-                <span style={badge(color, bg)}>{BUG_STATUS_LABELS[b.status]}</span>
+      <section className="mt-6">
+        <h2 className="mb-3 text-headline-md text-ink">Candidate Reviews ({allReviews.length})</h2>
+        {allReviews.length === 0 && (
+          <EmptyState icon="star" title="No reviews yet." />
+        )}
+        <div className="flex flex-col gap-3">
+          {allReviews.map((r) => (
+            <Card key={r.id}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-body-md text-ink">
+                  <strong>{r.reviewerName}</strong> rated <strong>{r.targetName}</strong>
+                </span>
+                <StarDisplay rating={r.rating} />
               </div>
-              <p style={styles.meta}>
+              {r.jobTitle && <p className="mt-1 text-body-sm text-ink-variant">Position: {r.jobTitle}</p>}
+              <p className="mt-1.5 text-body-md text-ink">{r.comment}</p>
+              {r.reply ? (
+                <p className="mt-1 text-body-sm text-ink-variant">Replied: {r.reply}</p>
+              ) : (
+                <>
+                  <textarea
+                    className={`${textareaClass} mt-2`}
+                    placeholder="Write a reply..."
+                    value={reviewReplies[r.id] || ''}
+                    onChange={(e) => setReviewReplies((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                  />
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      className={buttonClass('primary')}
+                      onClick={() => onReplyReview(r.id)}
+                      disabled={!(reviewReplies[r.id] || '').trim()}
+                    >
+                      Reply
+                    </button>
+                  </div>
+                </>
+              )}
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-8">
+        <h2 className="mb-3 text-headline-md text-ink">Bug Reports &amp; Feedback ({allBugs.length})</h2>
+        {allBugs.length === 0 && (
+          <EmptyState icon="bug_report" title="No reports yet." />
+        )}
+        <div className="flex flex-col gap-3">
+          {allBugs.map((b) => (
+            <Card key={b.id}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <strong className="text-headline-sm text-ink">{b.title}</strong>
+                <Badge tone={statusTone[b.status]}>{BUG_STATUS_LABELS[b.status]}</Badge>
+              </div>
+              <p className="mt-1 text-body-sm text-ink-variant">
                 {b.reporterName} · {BUG_CATEGORY_LABELS[b.category as BugCategory]} ·{' '}
-                {new Date(b.createdAt).toLocaleDateString('vi-VN')}
+                <span className="tabular-nums">{new Date(b.createdAt).toLocaleDateString('vi-VN')}</span>
               </p>
-              <p style={{ whiteSpace: 'pre-wrap', marginTop: 6 }}>{b.description}</p>
-              {b.reply && <p style={styles.meta}>Phản hồi hiện tại: {b.reply}</p>}
-              <div style={styles.row}>
+              <p className="mt-1.5 whitespace-pre-wrap text-body-md text-ink">{b.description}</p>
+              {b.reply && <p className="mt-1 text-body-sm text-ink-variant">Current reply: {b.reply}</p>}
+              <div className="mt-2 flex items-center gap-2">
                 <select
+                  className={selectClass}
                   value={bugStatus[b.id] || b.status}
                   onChange={(e) => setBugStatus((prev) => ({ ...prev, [b.id]: e.target.value as BugStatus }))}
                 >
@@ -128,22 +143,20 @@ const AdminFeedbackPage: React.FC = () => {
                 </select>
               </div>
               <textarea
-                placeholder="Phản hồi cho người báo cáo..."
+                className={`${textareaClass} mt-2`}
+                placeholder="Reply to the reporter..."
                 value={bugReplies[b.id] || ''}
                 onChange={(e) => setBugReplies((prev) => ({ ...prev, [b.id]: e.target.value }))}
-                style={styles.textarea}
               />
-              <div style={styles.row}>
-                <button onClick={() => onUpdateBug(b.id)}>Cập nhật</button>
+              <div className="mt-2 flex items-center gap-2">
+                <button type="button" className={buttonClass('primary')} onClick={() => onUpdateBug(b.id)}>
+                  Update
+                </button>
               </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <p style={{ marginTop: 24 }}>
-        <Link to="/dashboard">← Về trang tổng quan</Link>
-      </p>
+            </Card>
+          ))}
+        </div>
+      </section>
     </div>
   );
 };

@@ -1,13 +1,17 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useOrderController } from '../../controllers/useOrderController';
-import { formatVnd, ORDER_STATUS_LABELS, Order, PAYMENT_METHOD_LABELS } from '../../models/Order.model';
-
-const statusColor = (status: Order['status']): string => {
-  if (status === 'PAID') return '#16a34a';
-  if (status === 'CANCELLED') return '#9ca3af';
-  return '#d97706';
-};
+import { formatVnd, ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS } from '../../models/Order.model';
+import {
+  ErrorBanner,
+  LoadingState,
+  PageHeader,
+  StatusBadge,
+  buttonClass,
+  tableClass,
+  tdClass,
+  thClass,
+} from '../components/ui';
 
 const MyOrdersPage: React.FC = () => {
   const {
@@ -24,85 +28,89 @@ const MyOrdersPage: React.FC = () => {
   };
 
   const handleCancel = async (id: number) => {
-    if (!window.confirm('Hủy đơn hàng này?')) return;
+    if (!window.confirm('Cancel this order?')) return;
     clearMessages();
     const ok = await cancelOrder(id);
     if (ok) fetchMyOrders();
   };
 
   return (
-    <div style={{ padding: '40px', maxWidth: 900, margin: '0 auto' }}>
-      <h1 style={{ color: '#395886' }}>Đơn hàng của tôi</h1>
+    <div>
+      <PageHeader title="My Orders" />
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {successMsg && <p style={{ color: 'green' }}>{successMsg}</p>}
-      {loading && <p>Đang xử lý...</p>}
-
-      {orders.length === 0 && !loading && (
-        <p style={{ color: '#6b7280' }}>
-          Bạn chưa có đơn hàng nào — <Link to="/packages" style={{ color: '#628ECB' }}>xem gói dịch vụ</Link>.
-        </p>
+      {loading && <LoadingState label="Processing..." />}
+      <ErrorBanner message={error} />
+      {successMsg && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text" role="status">
+          <span className="material-symbols-outlined shrink-0 text-[18px]">check_circle</span>
+          <span>{successMsg}</span>
+        </div>
       )}
 
-      {orders.map((order) => (
-        <div
-          key={order.id}
-          style={{
-            border: '1px solid #D5DEEF', borderRadius: 8, padding: '16px 20px',
-            marginBottom: 12, background: '#fff',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-            <div>
-              <strong style={{ color: '#395886' }}>{order.packageName}</strong>
-              <span style={{ color: '#888', fontSize: 13 }}> · {order.orderCode}</span>
-              <div style={{ fontSize: 13, color: '#6b7280' }}>
-                {formatVnd(order.amount)} · {PAYMENT_METHOD_LABELS[order.paymentMethod || ''] || order.paymentMethod}
-              </div>
-              <div style={{ fontSize: 12, color: '#9ca3af' }}>
-                Tạo: {new Date(order.createdAt).toLocaleString('vi-VN')}
-                {order.paidAt && ` · Thanh toán: ${new Date(order.paidAt).toLocaleString('vi-VN')}`}
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span
-                style={{
-                  padding: '4px 12px', borderRadius: 999, fontSize: 13, fontWeight: 600,
-                  background: '#F0F3FA', color: statusColor(order.status),
-                }}
-              >
-                {ORDER_STATUS_LABELS[order.status]}
-              </span>
-              {order.status === 'PENDING' && (
-                <>
-                  <button
-                    onClick={() => handlePay(order.id)}
-                    style={{
-                      padding: '8px 16px', borderRadius: 6, border: 'none',
-                      background: '#628ECB', color: '#fff', cursor: 'pointer',
-                    }}
-                  >
-                    Thanh toán
-                  </button>
-                  <button
-                    onClick={() => handleCancel(order.id)}
-                    style={{
-                      padding: '8px 16px', borderRadius: 6, border: '1px solid #D5DEEF',
-                      background: '#fff', cursor: 'pointer',
-                    }}
-                  >
-                    Hủy
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
+      {orders.length === 0 && !loading && (
+        <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[#cbd5e1] bg-card px-6 py-12 text-center">
+          <span className="material-symbols-outlined text-[28px] text-ink-variant">receipt_long</span>
+          <p className="m-0 text-body-md text-ink-variant">
+            No orders yet — <Link to="/packages" className="text-primary no-underline hover:underline">view packages</Link>.
+          </p>
         </div>
-      ))}
+      )}
 
-      <p style={{ marginTop: 24 }}>
-        <Link to="/packages" style={{ color: '#628ECB', marginRight: 16 }}>← Xem gói dịch vụ</Link>
-        <Link to="/dashboard" style={{ color: '#628ECB' }}>← Về Dashboard</Link>
+      {orders.length > 0 && (
+        <div className="overflow-x-auto rounded-lg border border-[#e2e8f0] bg-card">
+          <table className={tableClass}>
+            <thead>
+              <tr>
+                <th className={thClass}>Package</th>
+                <th className={thClass}>Order Code</th>
+                <th className={thClass}>Amount</th>
+                <th className={thClass}>Payment Method</th>
+                <th className={thClass}>Status</th>
+                <th className={thClass}>Date</th>
+                <th className={thClass}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((order) => (
+                <tr key={order.id} className="transition-colors hover:bg-surface-low">
+                  <td className={tdClass}>
+                    <strong className="text-headline-sm text-ink">{order.packageName}</strong>
+                  </td>
+                  <td className={`${tdClass} text-body-sm text-ink-variant`}>{order.orderCode}</td>
+                  <td className={`${tdClass} whitespace-nowrap text-headline-sm text-primary`}>{formatVnd(order.amount)}</td>
+                  <td className={`${tdClass} whitespace-nowrap text-body-sm text-ink-variant`}>
+                    {PAYMENT_METHOD_LABELS[order.paymentMethod || ''] || order.paymentMethod}
+                  </td>
+                  <td className={tdClass}>
+                    <StatusBadge status={order.status} label={ORDER_STATUS_LABELS[order.status]} />
+                  </td>
+                  <td className={`${tdClass} text-body-sm text-ink-variant`}>
+                    <div>Created: {new Date(order.createdAt).toLocaleString('vi-VN')}</div>
+                    {order.paidAt && <div>· Paid: {new Date(order.paidAt).toLocaleString('vi-VN')}</div>}
+                  </td>
+                  <td className={tdClass}>
+                    {order.status === 'PENDING' && (
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => handlePay(order.id)} className={buttonClass('primary')}>
+                          Pay
+                        </button>
+                        <button onClick={() => handleCancel(order.id)} className={buttonClass('secondary')}>
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <p className="pt-6">
+        <Link to="/packages" className="text-label-md text-ink-variant no-underline transition-colors hover:text-primary">
+          ← View Packages
+        </Link>
       </p>
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AuthService from '../../services/auth.service';
+import { SsoConfig } from '../../models/Api.model';
 
 declare global {
   interface Window {
@@ -46,8 +47,17 @@ const GoogleIcon: React.FC = () => (
   </svg>
 );
 
+const OAUTH_PROVIDER_KEY = 'oauth_provider';
+const OAUTH_STATE_KEY = 'oauth_state';
+const OAUTH_NONCE_KEY = 'oauth_nonce';
+
+const randomToken = () =>
+  window.crypto && 'randomUUID' in window.crypto
+    ? window.crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
 const LoginPage: React.FC = () => {
-  const { login, loginWithGoogle, loginWithGithub, loading, error } = useAuth();
+  const { login, loginWithGoogle, loginWithGithub, loginWithSso, loading, error } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [form, setForm] = useState({ email: '', password: '' });
   const [rememberMe, setRememberMe] = useState(true);
@@ -55,6 +65,7 @@ const LoginPage: React.FC = () => {
   const [notice, setNotice] = useState('');
   const [googleClientId, setGoogleClientId] = useState('');
   const [githubClientId, setGithubClientId] = useState('');
+  const [ssoConfig, setSsoConfig] = useState<SsoConfig | null>(null);
 
   const rememberMeRef = useRef(rememberMe);
   rememberMeRef.current = rememberMe;
@@ -75,36 +86,48 @@ const LoginPage: React.FC = () => {
         if (alive) setGithubClientId(res.data.data || '');
       })
       .catch(() => {});
+    AuthService.getSsoConfig()
+      .then((res) => {
+        if (alive) setSsoConfig(res.data.data || null);
+      })
+      .catch(() => {});
     return () => {
       alive = false;
     };
   }, []);
 
-  // GitHub OAuth callback: /login?code=...&state=...
-  const githubCallbackRef = useRef(false);
+  // Callback OAuth chung: /login?code=...&state=... — provider (github|sso) nhớ trong sessionStorage
+  const oauthHandledRef = useRef(false);
   useEffect(() => {
-    if (githubCallbackRef.current) return;
+    if (oauthHandledRef.current) return;
 
     const code = searchParams.get('code');
-    const ghError = searchParams.get('error');
-    if (!code && !ghError) return;
-    githubCallbackRef.current = true;
+    const oauthError = searchParams.get('error');
+    if (!code && !oauthError) return;
+    oauthHandledRef.current = true;
 
-    const state = searchParams.get('state') || '';
-    const savedState = sessionStorage.getItem('github_oauth_state');
-    sessionStorage.removeItem('github_oauth_state');
+    const provider = sessionStorage.getItem(OAUTH_PROVIDER_KEY);
+    const savedState = sessionStorage.getItem(OAUTH_STATE_KEY);
+    const nonce = sessionStorage.getItem(OAUTH_NONCE_KEY) || '';
+    sessionStorage.removeItem(OAUTH_PROVIDER_KEY);
+    sessionStorage.removeItem(OAUTH_STATE_KEY);
+    sessionStorage.removeItem(OAUTH_NONCE_KEY);
     setSearchParams({}, { replace: true });
 
-    if (ghError) {
-      setNotice(ghError === 'access_denied' ? 'GitHub sign-in was cancelled.' : 'GitHub sign-in failed. Please try again.');
+    if (oauthError) {
+      setNotice(oauthError === 'access_denied' ? 'Sign-in was cancelled.' : 'Sign-in failed. Please try again.');
       return;
     }
-    if (!savedState || state !== savedState) {
-      setNotice('GitHub sign-in link expired. Please try again.');
+    if (!provider || !savedState || savedState !== searchParams.get('state')) {
+      setNotice('Sign-in link expired. Please try again.');
       return;
     }
-    loginWithGithub(code!, redirectUri, rememberMeRef.current);
-  }, [searchParams, setSearchParams, loginWithGithub, redirectUri]);
+    if (provider === 'github') {
+      loginWithGithub(code!, redirectUri, rememberMeRef.current);
+    } else {
+      loginWithSso(code!, redirectUri, nonce, rememberMeRef.current);
+    }
+  }, [searchParams, setSearchParams, loginWithGithub, loginWithSso, redirectUri]);
 
   const handleGithubLogin = () => {
     setNotice('');
@@ -112,11 +135,9 @@ const LoginPage: React.FC = () => {
       comingSoon('Sign in with GitHub');
       return;
     }
-    const state =
-      window.crypto && 'randomUUID' in window.crypto
-        ? window.crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    sessionStorage.setItem('github_oauth_state', state);
+    const state = randomToken();
+    sessionStorage.setItem(OAUTH_PROVIDER_KEY, 'github');
+    sessionStorage.setItem(OAUTH_STATE_KEY, state);
     const params = new URLSearchParams({
       client_id: githubClientId,
       redirect_uri: redirectUri,
@@ -126,25 +147,68 @@ const LoginPage: React.FC = () => {
     window.location.assign(`https://github.com/login/oauth/authorize?${params.toString()}`);
   };
 
-  const handleGoogleLogin = async () => {
+  const handleSsoLogin = () => {
     setNotice('');
-    if (!googleClientId) {
-      comingSoon('Sign in with Google');
+    if (!ssoConfig?.enabled || !ssoConfig.authorizationEndpoint) {
+      comingSoon('Enterprise SSO');
       return;
     }
-    try {
-      await loadGsiScript();
-      window.google.accounts.id.initialize({
-        client_id: googleClientId,
-        auto_select: false,
-        cancel_on_tap_outside: false,
-        callback: (resp: { credential: string }) =>
-          loginWithGoogle(resp.credential, rememberMeRef.current),
+    const state = randomToken();
+    const nonce = randomToken();
+    sessionStorage.setItem(OAUTH_PROVIDER_KEY, 'sso');
+    sessionStorage.setItem(OAUTH_STATE_KEY, state);
+    sessionStorage.setItem(OAUTH_NONCE_KEY, nonce);
+    const params = new URLSearchParams({
+      client_id: ssoConfig.clientId,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: ssoConfig.scopes || 'openid email profile',
+      state,
+      nonce,
+    });
+    window.location.assign(`${ssoConfig.authorizationEndpoint}?${params.toString()}`);
+  };
+
+  const loginWithGoogleRef = useRef(loginWithGoogle);
+  loginWithGoogleRef.current = loginWithGoogle;
+
+  // Nút Google do GSI render (chuẩn FedCM). One Tap prompt() cũ bị suppression nên bấm không ra popup.
+  const googleMountRef = useRef<HTMLDivElement>(null);
+  const [googleButtonReady, setGoogleButtonReady] = useState(false);
+  const [googleGsiUnavailable, setGoogleGsiUnavailable] = useState(false);
+
+  useEffect(() => {
+    if (!googleClientId) return;
+    let alive = true;
+    loadGsiScript()
+      .then(() => {
+        if (!alive || !googleMountRef.current) return;
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          auto_select: false,
+          callback: (resp: { credential: string }) =>
+            loginWithGoogleRef.current(resp.credential, rememberMeRef.current),
+        });
+        const hostWidth = googleMountRef.current.parentElement?.offsetWidth || 200;
+        window.google.accounts.id.renderButton(googleMountRef.current, {
+          theme: 'outline',
+          size: 'large',
+          text: 'continue_with',
+          shape: 'rectangular',
+          width: Math.min(400, Math.max(50, hostWidth)),
+        });
+        setGoogleButtonReady(true);
+      })
+      .catch(() => {
+        if (alive) setGoogleGsiUnavailable(true);
       });
-      window.google.accounts.id.prompt(() => {});
-    } catch {
-      comingSoon('Sign in with Google');
-    }
+    return () => {
+      alive = false;
+    };
+  }, [googleClientId]);
+
+  const handleGoogleUnavailable = () => {
+    setNotice('Sign in with Google is unavailable right now. Please use email and password.');
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -220,17 +284,29 @@ const LoginPage: React.FC = () => {
                   >
                     <GitHubIcon /> GitHub
                   </button>
+                  <div className="relative h-10 overflow-hidden rounded-lg bg-surface-low shadow-sm transition-colors hover:bg-surface-mid">
+                    <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center gap-1 text-label-md text-ink">
+                      <GoogleIcon /> Google
+                    </span>
+                    <div
+                      ref={googleMountRef}
+                      className={`absolute inset-0 ${googleClientId ? 'opacity-0' : 'hidden'} [&_iframe]:h-10`}
+                    />
+                    {(!googleClientId || googleGsiUnavailable) && (
+                      <button
+                        type="button"
+                        aria-label="Sign in with Google"
+                        className="absolute inset-0 h-10 w-full cursor-pointer rounded-lg border-0 bg-transparent text-[1px] text-transparent"
+                        onClick={handleGoogleUnavailable}
+                      >
+                        Sign in with Google
+                      </button>
+                    )}
+                  </div>
                   <button
                     type="button"
                     className="flex h-10 items-center justify-center gap-1 rounded-lg border-0 bg-surface-low px-3 text-label-md text-ink shadow-sm transition-colors hover:bg-surface-mid"
-                    onClick={handleGoogleLogin}
-                  >
-                    <GoogleIcon /> Google
-                  </button>
-                  <button
-                    type="button"
-                    className="flex h-10 items-center justify-center gap-1 rounded-lg border-0 bg-surface-low px-3 text-label-md text-ink shadow-sm transition-colors hover:bg-surface-mid"
-                    onClick={() => comingSoon('Enterprise SSO')}
+                    onClick={handleSsoLogin}
                   >
                     <span className="material-symbols-outlined text-[18px] text-primary">domain</span>
                     Enterprise SSO

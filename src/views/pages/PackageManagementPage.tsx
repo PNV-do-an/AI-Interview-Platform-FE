@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useOrderController } from '../../controllers/useOrderController';
 import { formatVnd, ServicePackage, ServicePackageRequest } from '../../models/Order.model';
+import {
+  Badge, ErrorBanner, PageHeader, buttonClass, inputClass, labelClass,
+} from '../components/ui';
 
 const emptyForm: ServicePackageRequest = {
   name: '',
@@ -11,6 +13,11 @@ const emptyForm: ServicePackageRequest = {
   jobPostLimit: 1,
   features: [],
 };
+
+// inputClass bỏ `h-9` thay `py-2` khi dùng cho textarea.
+const textareaClass =
+  'min-h-[90px] w-full resize-y rounded-md border border-[#e2e8f0] bg-card px-2.5 py-2 text-body-md text-ink ' +
+  'transition-all placeholder:text-[#94a3b8] focus:border-[#6366f1] focus:outline-none focus:ring-1 focus:ring-[#6366f1]';
 
 const PackageManagementPage: React.FC = () => {
   const {
@@ -69,146 +76,127 @@ const PackageManagementPage: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm('Xóa gói này? Gói đã có đơn hàng sẽ không xóa được.')) return;
+    if (!window.confirm('Delete this package? Packages with existing orders cannot be deleted.')) return;
     clearMessages();
     if (await deletePackage(id)) fetchAllPackages();
   };
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '10px 12px', border: '1px solid #D5DEEF',
-    borderRadius: 4, boxSizing: 'border-box', fontSize: 14,
-  };
-  const labelStyle: React.CSSProperties = {
-    display: 'block', marginBottom: 6, color: '#395886', fontWeight: 600,
-  };
-
   return (
-    <div style={{ padding: '40px', maxWidth: 1000, margin: '0 auto' }}>
-      <h1 style={{ color: '#395886' }}>Quản lý gói dịch vụ</h1>
+    <div>
+      <PageHeader title="Service Packages" />
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {successMsg && <p style={{ color: 'green' }}>{successMsg}</p>}
+      <ErrorBanner message={error} />
+      {successMsg && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text" role="status">
+          <span className="material-symbols-outlined shrink-0 text-[18px]">check_circle</span>
+          <span>{successMsg}</span>
+        </div>
+      )}
 
-      <div style={{
-        background: '#F0F3FA', borderRadius: 8, padding: 20, marginBottom: 24,
-      }}>
-        <h3 style={{ color: '#395886', marginTop: 0 }}>
-          {editingId ? `Chỉnh sửa gói #${editingId}` : 'Tạo gói mới'}
-        </h3>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="mb-6 rounded-lg border border-[#e2e8f0] bg-surface-low p-4">
+        <h2 className="m-0 mb-3 text-headline-sm text-ink">
+          {editingId ? `Edit package #${editingId}` : 'Create new package'}
+        </h2>
+        <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
           <div>
-            <label style={labelStyle}>Tên gói *</label>
+            <label className={labelClass} htmlFor="pkg-name">Package name *</label>
             <input
-              style={inputStyle} required value={form.name}
+              id="pkg-name"
+              className={inputClass} required value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="VD: Cơ bản"
+              placeholder="e.g. Basic"
             />
           </div>
           <div>
-            <label style={labelStyle}>Mô tả</label>
+            <label className={labelClass} htmlFor="pkg-desc">Description</label>
             <input
-              style={inputStyle} value={form.description || ''}
+              id="pkg-desc"
+              className={inputClass} value={form.description || ''}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
-              <label style={labelStyle}>Giá (VND) *</label>
+              <label className={labelClass} htmlFor="pkg-price">Price (VND) *</label>
               <input
-                style={inputStyle} type="number" min={0} required value={form.price}
+                id="pkg-price"
+                className={`${inputClass} tabular-nums`} type="number" min={0} required value={form.price}
                 onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
               />
             </div>
             <div>
-              <label style={labelStyle}>Thời hạn (ngày) *</label>
+              <label className={labelClass} htmlFor="pkg-duration">Duration (days) *</label>
               <input
-                style={inputStyle} type="number" min={1} required value={form.durationDays}
+                id="pkg-duration"
+                className={`${inputClass} tabular-nums`} type="number" min={1} required value={form.durationDays}
                 onChange={(e) => setForm({ ...form, durationDays: Number(e.target.value) })}
               />
             </div>
             <div>
-              <label style={labelStyle}>Giới hạn tin đăng *</label>
+              <label className={labelClass} htmlFor="pkg-limit">Job post limit *</label>
               <input
-                style={inputStyle} type="number" min={1} required value={form.jobPostLimit}
+                id="pkg-limit"
+                className={`${inputClass} tabular-nums`} type="number" min={1} required value={form.jobPostLimit}
                 onChange={(e) => setForm({ ...form, jobPostLimit: Number(e.target.value) })}
               />
             </div>
           </div>
           <div>
-            <label style={labelStyle}>Đặc quyền (mỗi dòng một ý)</label>
+            <label className={labelClass} htmlFor="pkg-features">Features (one per line)</label>
             <textarea
-              style={{ ...inputStyle, minHeight: 90 }}
+              id="pkg-features"
+              className={textareaClass}
               value={featuresText}
               onChange={(e) => setFeaturesText(e.target.value)}
-              placeholder={'Đăng tối đa 3 tin tuyển dụng\nNhận hồ sơ không giới hạn'}
+              placeholder={'Up to 3 job postings\nUnlimited resumes'}
             />
           </div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button
-              type="submit"
-              style={{
-                padding: '12px 24px', borderRadius: 8, border: 'none',
-                background: '#628ECB', color: '#fff', fontSize: 15, fontWeight: 600, cursor: 'pointer',
-              }}
-            >
-              {editingId ? 'Lưu thay đổi' : 'Tạo gói'}
+          <div className="flex flex-wrap gap-2">
+            <button type="submit" className={buttonClass('primary')}>
+              <span className="material-symbols-outlined text-[18px]">{editingId ? 'save' : 'add'}</span>
+              {editingId ? 'Save changes' : 'Create package'}
             </button>
             {editingId && (
-              <button
-                type="button" onClick={resetForm}
-                style={{
-                  padding: '12px 20px', borderRadius: 8, border: '1px solid #D5DEEF',
-                  background: '#fff', cursor: 'pointer',
-                }}
-              >
-                Hủy chỉnh sửa
+              <button type="button" onClick={resetForm} className={buttonClass('secondary')}>
+                Cancel
               </button>
             )}
           </div>
         </form>
       </div>
 
-      {allPackages.map((pkg) => (
-        <div
-          key={pkg.id}
-          style={{
-            border: '1px solid #D5DEEF', borderRadius: 8, padding: '16px 20px',
-            marginBottom: 12, background: '#fff',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-            flexWrap: 'wrap', gap: 8,
-          }}
-        >
-          <div>
-            <strong style={{ color: '#395886' }}>{pkg.name}</strong>
-            <span style={{ color: '#888', fontSize: 13 }}> · #{pkg.id}</span>
-            <div style={{ fontSize: 13, color: '#6b7280' }}>
-              {formatVnd(pkg.price)} · {pkg.durationDays} ngày · tối đa {pkg.jobPostLimit} tin
+      <div className="flex flex-col gap-3">
+        {allPackages.map((pkg) => (
+          <div
+            key={pkg.id}
+            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#e2e8f0] bg-card p-4 transition-colors hover:bg-surface-low"
+          >
+            <div className="min-w-0">
+              <span className="text-headline-sm text-ink">{pkg.name}</span>
+              <span className="text-body-sm tabular-nums text-ink-variant"> · #{pkg.id}</span>
+              <div className="text-body-sm tabular-nums text-ink-variant">
+                {formatVnd(pkg.price)} · {pkg.durationDays} days · up to {pkg.jobPostLimit} posts
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {pkg.active
+                ? <Badge tone="success">Active</Badge>
+                : <Badge tone="neutral">Disabled</Badge>}
+              <button type="button" onClick={() => startEdit(pkg)} className={buttonClass('secondary')}>
+                <span className="material-symbols-outlined text-[16px]">edit</span>
+                Edit
+              </button>
+              <button type="button" onClick={() => handleToggle(pkg.id)} className={buttonClass('secondary')}>
+                {pkg.active ? 'Disable' : 'Enable'}
+              </button>
+              <button type="button" onClick={() => handleDelete(pkg.id)} className={buttonClass('danger')}>
+                <span className="material-symbols-outlined text-[16px]">delete</span>
+                Delete
+              </button>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span
-              style={{
-                padding: '4px 12px', borderRadius: 999, fontSize: 13, fontWeight: 600,
-                background: pkg.active ? '#F0F3FA' : '#f3f4f6',
-                color: pkg.active ? '#16a34a' : '#9ca3af',
-              }}
-            >
-              {pkg.active ? 'Đang bán' : 'Đã tắt'}
-            </span>
-            <button onClick={() => startEdit(pkg)} style={{ padding: '8px 14px', borderRadius: 6, border: '1px solid #D5DEEF', background: '#fff', cursor: 'pointer' }}>
-              Sửa
-            </button>
-            <button onClick={() => handleToggle(pkg.id)} style={{ padding: '8px 14px', borderRadius: 6, border: '1px solid #D5DEEF', background: '#fff', cursor: 'pointer' }}>
-              {pkg.active ? 'Tắt' : 'Bật'}
-            </button>
-            <button onClick={() => handleDelete(pkg.id)} style={{ padding: '8px 14px', borderRadius: 6, border: '1px solid #D5DEEF', background: '#fff', color: '#B33', cursor: 'pointer' }}>
-              Xóa
-            </button>
-          </div>
-        </div>
-      ))}
-
-      <p style={{ marginTop: 24 }}><Link to="/dashboard" style={{ color: '#628ECB' }}>← Về Dashboard</Link></p>
+        ))}
+      </div>
     </div>
   );
 };

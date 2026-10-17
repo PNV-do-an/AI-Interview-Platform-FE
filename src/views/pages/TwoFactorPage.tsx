@@ -1,0 +1,221 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+
+type Method = 'app' | 'key' | 'sms';
+
+const METHODS: { id: Method; icon: string; label: string }[] = [
+  { id: 'app', icon: 'smartphone', label: 'Authenticator app' },
+  { id: 'key', icon: 'key', label: 'Security key' },
+  { id: 'sms', icon: 'sms', label: 'SMS backup' },
+];
+
+const ALTERNATIVES = [
+  { icon: 'sms', label: 'SMS verification' },
+  { icon: 'key', label: 'Security key' },
+  { icon: 'key_off', label: 'Backup codes' },
+];
+
+const TwoFactorPage: React.FC = () => {
+  const [method, setMethod] = useState<Method>('app');
+  // Demo code from the mockup (592...) kept as initial state; typing updates locally only.
+  const [digits, setDigits] = useState<string[]>(['5', '9', '2', '', '', '']);
+
+  const setDigit = (index: number, value: string) => {
+    const clean = value.replace(/[^0-9]/g, '').slice(-1);
+    setDigits((prev) => prev.map((d, i) => (i === index ? clean : d)));
+  };
+
+  return (
+    <div className="flex min-h-screen flex-col bg-surface font-sans text-ink">
+      <header className="fixed inset-x-0 top-0 z-50 bg-surface/80 shadow-header backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-6">
+          <div className="flex items-center gap-6">
+            <Link to="/" className="flex items-center gap-2 no-underline">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-on-primary shadow-sm transition-colors">
+                <span className="material-symbols-outlined text-[20px]">psychology</span>
+              </span>
+              <span className="text-[15px] font-semibold tracking-[-0.01em] text-ink">InterviewAI</span>
+            </Link>
+            <Link to="/" className="hidden text-label-md text-ink-variant no-underline transition-colors hover:text-ink sm:block">
+              Back to Home
+            </Link>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="hidden items-center gap-1 rounded-lg border border-outline/30 bg-surface-low px-2.5 py-1 text-label-sm text-ink-variant md:flex">
+              <span className="material-symbols-outlined text-[16px]">language</span>
+              <span>EN</span>
+              <span className="material-symbols-outlined text-[14px]">expand_more</span>
+            </div>
+            <button type="button" aria-label="Toggle Theme" className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-variant transition-colors hover:bg-surface-high hover:text-ink">
+              <span className="material-symbols-outlined text-[20px]">light_mode</span>
+            </button>
+            <Link to="/login" className="inline-flex h-9 items-center justify-center rounded-lg bg-primary-container px-4 text-label-md text-on-primary shadow-sm no-underline transition-colors hover:bg-primary">
+              Sign In
+            </Link>
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-on-primary">
+              <span className="material-symbols-outlined text-[18px]">person</span>
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex flex-1 flex-col justify-center w-full max-w-[1280px] px-6 pt-16 mx-auto">
+        <div className="flex w-full flex-col py-6 md:py-8">
+          {/* Sub-header: back link + security status pill */}
+          <div className="mx-auto mb-6 flex w-full max-w-[1152px] flex-col justify-between gap-4 px-1 md:flex-row md:items-center">
+            <div className="flex flex-wrap items-center gap-3">
+              <Link to="/login" className="group inline-flex items-center gap-1.5 text-label-md text-ink-variant no-underline transition-colors hover:text-ink">
+                <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                <span>Back to sign in</span>
+              </Link>
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-card px-3 py-1 text-label-sm text-ink shadow-sm">
+              {/* emerald status dot/label from mockup ribbon */}
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="font-medium text-emerald-800">Security Verification</span>
+            </div>
+          </div>
+
+          <div className="mx-auto grid w-full max-w-[1152px] grid-cols-1 items-start gap-6 lg:grid-cols-12">
+            {/* LEFT: 2FA verification card */}
+            <div className="flex flex-col gap-4 lg:col-span-7">
+              <div className="relative overflow-hidden rounded-xl bg-card p-6 shadow-sm sm:p-8">
+                <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-secondary to-primary-container" />
+
+                <h1 className="mb-2 text-headline-lg tracking-tight text-ink">Two-Factor Authentication</h1>
+                <p className="mb-6 text-body-md leading-relaxed text-ink-variant">
+                  Enter the 6-digit code generated by your authenticator app.
+                </p>
+
+                {/* Verification method switcher */}
+                <div className="mb-6">
+                  <div className="flex flex-col gap-1 rounded-lg bg-surface-mid p-1 sm:flex-row">
+                    {METHODS.map((m) => {
+                      const active = method === m.id;
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => setMethod(m.id)}
+                          className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-label-md transition-colors ${
+                            active
+                              ? 'bg-card font-semibold text-ink shadow-sm'
+                              : 'text-ink-variant hover:bg-surface-high hover:text-ink'
+                          }`}
+                        >
+                          <span className={`material-symbols-outlined text-[18px] ${active ? 'text-primary' : ''}`}>{m.icon}</span>
+                          <span>{m.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 6-digit code inputs */}
+                <div className="mb-6">
+                  <div className="mb-2.5 flex items-center justify-between">
+                    <span className="text-label-sm font-semibold uppercase tracking-wide text-ink">Verification Code</span>
+                    <span className="text-[12px] text-ink-variant">6-digit security code</span>
+                  </div>
+                  <div className="mb-3 grid grid-cols-6 gap-2 sm:gap-3">
+                    {digits.map((d, i) => (
+                      <input
+                        key={i}
+                        className={`h-14 w-full rounded-lg text-center text-metric-stat font-bold transition-all caret-primary sm:h-16 ${
+                          i === 3 && !d
+                            ? 'bg-info/30 ring-2 ring-primary' // primary-fixed/30 active cell in mockup (info token shares that hex)
+                            : 'bg-card text-ink shadow-sm focus:outline-none focus:ring-2 focus:ring-primary'
+                        }`}
+                        inputMode="numeric"
+                        maxLength={1}
+                        type="text"
+                        value={d}
+                        onChange={(e) => setDigit(i, e.target.value)}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="group flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary text-headline-sm text-on-primary shadow-md transition-all hover:bg-secondary active:scale-[0.99]"
+                >
+                  <span>Verify &amp; Continue</span>
+                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                </button>
+
+                {/* Recovery & alternative options */}
+                <div className="mt-6 flex flex-col items-center justify-between gap-3 bg-card pt-5 text-center sm:flex-row sm:text-left">
+                  <button type="button" className="inline-flex items-center gap-1 text-label-md font-medium text-primary transition-colors hover:text-secondary">
+                    <span className="material-symbols-outlined text-[16px]">key_off</span>
+                    <span>Use emergency recovery code</span>
+                  </button>
+                  <button type="button" className="inline-flex items-center gap-1 text-label-md font-medium text-ink-variant transition-colors hover:text-ink">
+                    <span className="material-symbols-outlined text-[16px]">help_outline</span>
+                    <span>Didn't receive a code? Try another way</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT: alternative methods + support dock */}
+            <div className="flex flex-col gap-4 lg:col-span-5">
+              <div className="rounded-xl bg-card p-6 shadow-sm">
+                <div className="mb-4 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[20px] text-primary">security</span>
+                  <span className="text-headline-sm text-ink">Alternative Methods</span>
+                </div>
+                <div className="flex flex-col gap-2.5">
+                  {ALTERNATIVES.map((a) => (
+                    <button
+                      key={a.label}
+                      type="button"
+                      className="flex w-full items-center justify-between rounded-lg bg-surface-low p-3 text-left text-ink transition-colors hover:bg-surface-mid"
+                    >
+                      <span className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-[18px] text-primary">{a.icon}</span>
+                        <span className="text-label-md font-medium">{a.label}</span>
+                      </span>
+                      <span className="material-symbols-outlined text-[16px] text-ink-variant">chevron_right</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-4 rounded-xl bg-surface-low p-4 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-info text-primary">
+                    {/* primary-fixed box from mockup (info token shares that hex) */}
+                    <span className="material-symbols-outlined text-[18px]">support_agent</span>
+                  </span>
+                  <div>
+                    <p className="m-0 text-label-md font-semibold text-ink">Need help?</p>
+                    <p className="m-0 text-[12px] text-ink-variant">Contact support</p>
+                  </div>
+                </div>
+                <button type="button" className="inline-flex items-center gap-1 rounded-lg bg-card px-3 py-1 text-label-sm font-semibold text-ink shadow-sm transition-colors hover:text-primary">
+                  <span>Support</span>
+                  <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer className="bg-surface-low">
+        <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-4 px-6 py-8 text-label-sm text-ink-variant md:flex-row">
+          <span>© 2025 InterviewAI Inc. All rights reserved.</span>
+          <nav className="flex flex-wrap items-center gap-6">
+            <a href="#" className="no-underline transition-colors hover:text-ink">Privacy Policy</a>
+            <a href="#" className="no-underline transition-colors hover:text-ink">Terms of Service</a>
+            <a href="#" className="no-underline transition-colors hover:text-ink">Security</a>
+            <a href="#" className="no-underline transition-colors hover:text-ink">Support</a>
+          </nav>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
+export default TwoFactorPage;

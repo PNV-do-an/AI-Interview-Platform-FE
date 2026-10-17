@@ -1,4 +1,5 @@
 import React from 'react';
+import { buttonClass } from './ui';
 
 interface Props {
   open: boolean;
@@ -11,47 +12,35 @@ interface Props {
   onCancel: () => void;
 }
 
+/**
+ * Dialog xác nhận dùng chung.
+ * Props API giữ nguyên (open / title / message / confirmLabel / cancelLabel / danger / onConfirm / onCancel).
+ */
 const ConfirmDialog: React.FC<Props> = ({
-  open, title, message, confirmLabel = 'Xác nhận', cancelLabel = 'Hủy',
+  open, title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel',
   danger = false, onConfirm, onCancel,
 }) => {
   if (!open) return null;
   return (
-    <div style={styles.overlay}>
-      <div style={styles.dialog}>
-        <h3 style={{ marginTop: 0, marginBottom: 12 }}>{title}</h3>
-        <p style={{ marginBottom: 24, color: '#555' }}>{message}</p>
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-          <button onClick={onCancel} style={styles.cancelBtn}>{cancelLabel}</button>
-          <button
-            onClick={onConfirm}
-            style={{ ...styles.confirmBtn, background: danger ? '#ef4444' : '#3b82f6' }}
-          >
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 p-4">
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        className="w-full max-w-[480px] rounded-lg border border-[#e2e8f0] bg-card p-6 shadow-card"
+      >
+        <h3 className="m-0 mb-3 text-headline-md text-ink">{title}</h3>
+        <p className="m-0 mb-6 text-body-md text-ink-variant">{message}</p>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <button type="button" onClick={onCancel} className={buttonClass('secondary')}>
+            {cancelLabel}
+          </button>
+          <button type="button" onClick={onConfirm} className={buttonClass(danger ? 'danger' : 'primary')}>
             {confirmLabel}
           </button>
         </div>
       </div>
     </div>
   );
-};
-
-const styles: Record<string, React.CSSProperties> = {
-  overlay: {
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-  },
-  dialog: {
-    background: '#fff', borderRadius: 10, padding: '28px 32px',
-    minWidth: 340, maxWidth: 480, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-  },
-  cancelBtn: {
-    padding: '8px 20px', borderRadius: 6, border: '1px solid #d1d5db',
-    background: '#f9fafb', cursor: 'pointer', fontSize: 14,
-  },
-  confirmBtn: {
-    padding: '8px 20px', borderRadius: 6, border: 'none',
-    color: '#fff', cursor: 'pointer', fontSize: 14,
-  },
 };
 
 export default ConfirmDialog;
