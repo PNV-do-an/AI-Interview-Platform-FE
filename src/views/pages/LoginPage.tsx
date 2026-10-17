@@ -269,12 +269,17 @@ const LoginPage: React.FC = () => {
 
       <main className="flex flex-1 items-center px-4 pt-16">
         <div className="mx-auto my-6 w-full max-w-[1152px]">
-          <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-12">
-            <div className="lg:col-span-7">
-              <div className="flex flex-col gap-4 rounded-xl bg-card p-6 shadow-card">
-                <h1 className="m-0 text-headline-lg text-ink">
-                  Welcome back to Interview<em className="not-italic text-primary">AI</em>
-                </h1>
+          <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
+            <div className="flex flex-col justify-center lg:col-span-7">
+              <div className="flex h-full flex-col justify-between gap-4 rounded-xl bg-card p-6 shadow-card">
+                <div className="flex flex-col gap-1">
+                  <h1 className="m-0 text-headline-lg text-ink">
+                    Welcome back to Interview<em className="not-italic text-primary">AI</em>
+                  </h1>
+                  <p className="m-0 text-body-sm text-ink-variant">
+                    Sign in to access your technical interviews, benchmarks, and candidate analytics.
+                  </p>
+                </div>
 
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                   <button
@@ -313,7 +318,7 @@ const LoginPage: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="relative my-0.5 flex items-center justify-center">
+                <div className="relative my-1 flex items-center justify-center">
                   <div className="h-px w-full bg-surface-high" />
                   <span className="absolute bg-card px-3 text-label-sm uppercase tracking-[0.06em] text-ink-variant">OR</span>
                 </div>
@@ -410,34 +415,31 @@ const LoginPage: React.FC = () => {
                       <span className="material-symbols-outlined text-[18px]">lock_open</span>
                       {loading ? 'Signing in...' : 'Sign In'}
                     </button>
-                    <button
-                      type="button"
-                      className="flex h-10 w-full items-center justify-center gap-1 rounded-lg border-0 bg-surface-low text-label-md text-ink transition-colors hover:bg-surface-mid"
-                      onClick={() => comingSoon('Email magic link')}
-                    >
-                      <span className="material-symbols-outlined text-[18px] text-primary">mail</span>
-                      Email me a magic link
-                    </button>
                   </div>
                 </form>
 
-                <div className="flex items-center justify-center gap-1 pt-1 text-body-sm text-ink-variant">
+                <div className="flex items-center justify-center gap-1 border-t border-surface-high/60 pt-1 text-body-sm text-ink-variant">
                   <span>Don't have an InterviewAI account?</span>
                   <Link to="/register" className="text-[13px] font-semibold text-primary no-underline hover:underline">Sign up for free</Link>
                 </div>
               </div>
             </div>
 
-            <div className="lg:col-span-5">
-              <div className="flex flex-col gap-4 rounded-xl bg-card p-6 shadow-proof">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                      <span className="material-symbols-outlined text-[20px]">verified</span>
-                    </span>
-                    <h2 className="m-0 text-headline-sm text-ink">Fair, Objective Evaluations</h2>
+            <div className="flex flex-col justify-center lg:col-span-5">
+              <div className="flex h-full flex-col justify-between gap-4 rounded-xl bg-card p-6 shadow-proof">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <span className="material-symbols-outlined text-[20px]">verified</span>
+                      </span>
+                      <h2 className="m-0 text-headline-sm text-ink">Fair, Objective Evaluations</h2>
+                    </div>
+                    <span className="whitespace-nowrap rounded-full bg-surface-mid px-2 py-0.5 text-label-sm font-semibold text-primary">Enterprise Ready</span>
                   </div>
-                  <span className="whitespace-nowrap rounded-full bg-surface-mid px-2 py-0.5 text-label-sm font-semibold text-primary">Enterprise Ready</span>
+                  <p className="m-0 text-body-sm text-ink-variant">
+                    Calibrated AI technical interviews designed to eliminate bias and accelerate your hiring cycles.
+                  </p>
                 </div>
                 <div className="flex flex-col gap-3 rounded-lg bg-surface-low p-3">
                   <div className="flex items-center gap-2">
@@ -450,17 +452,24 @@ const LoginPage: React.FC = () => {
                   <p className="m-0 text-body-sm italic text-ink">
                     “InterviewAI reduced our engineering loop from two weeks to under 48 hours while creating a far more consistent, fair experience for candidates.”
                   </p>
-                  <div className="flex items-center gap-3 border-t border-surface-high/60 pt-2">
-                    <div className="flex flex-col">
-                      <span className="text-metric-stat text-primary">92%</span>
-                      <span className="text-label-sm text-ink-variant">Faster hiring cycles</span>
-                    </div>
-                    <span className="h-8 w-px bg-outline" />
-                    <div className="flex flex-col">
-                      <span className="text-metric-stat text-primary">4.9/5</span>
-                      <span className="text-label-sm text-ink-variant">Candidate rating</span>
-                    </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 border-t border-surface-high/60 pt-2">
+                  <div className="flex flex-col">
+                    <span className="text-metric-stat text-primary">92%</span>
+                    <span className="text-label-sm text-ink-variant">Faster hiring cycles</span>
                   </div>
+                  <div className="flex flex-col">
+                    <span className="text-metric-stat text-primary">4.9/5</span>
+                    <span className="text-label-sm text-ink-variant">Candidate rating</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-metric-stat text-primary">10k+</span>
+                    <span className="text-label-sm text-ink-variant">AI interviews</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 text-label-sm text-ink-variant">
+                  <span className="material-symbols-outlined text-[16px] text-primary">shield</span>
+                  <span>Trusted by over 400+ engineering teams globally</span>
                 </div>
               </div>
             </div>
