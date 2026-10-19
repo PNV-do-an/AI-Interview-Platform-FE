@@ -25,9 +25,40 @@ const initialState: AuthState = {
   isLoading: true,
 };
 
+// Bean validation của BE (GlobalExceptionHandler) trả 400 + message "Validation failed", còn
+// thông báo từng field nằm trong map `detail`. Nếu chỉ đọc `message`, người dùng thấy nhãn
+// chung "Validation failed" và không biết mình thiếu/sai chỗ nào.
+// `detail` phía BE là HashMap nên thứ tự key không ổn định -> sắp lại theo thứ tự field trên form.
+const FIELD_ORDER = ['fullName', 'email', 'password'];
+// lockedUntil là dữ liệu kỹ thuật (đã có nhánh 423 riêng), không phải thông báo hiển thị.
+const DETAIL_TECHNICAL_KEYS = ['lockedUntil'];
+
+const readFieldMessages = (detail: unknown): string[] => {
+  if (!detail || typeof detail !== 'object') return [];
+  const map = detail as Record<string, unknown>;
+  return Object.keys(map)
+    .filter((key) => DETAIL_TECHNICAL_KEYS.indexOf(key) === -1)
+    .filter((key) => typeof map[key] === 'string' && (map[key] as string).trim())
+    .sort((a, b) => {
+      const ia = FIELD_ORDER.indexOf(a);
+      const ib = FIELD_ORDER.indexOf(b);
+      return (ia < 0 ? FIELD_ORDER.length : ia) - (ib < 0 ? FIELD_ORDER.length : ib);
+    })
+    .map((key) => (map[key] as string).trim());
+};
+
+const readErrorMessage = (err: any, fallback: string): string => {
+  const data = err.response?.data;
+  const message: string = data?.message || data?.errorMessage || '';
+  const fieldMessages = readFieldMessages(data?.detail).join('; ');
+  if (message === 'Validation failed') return fieldMessages || fallback;
+  return message || fieldMessages || fallback;
+};
+
 export const useAuthController = () => {
   const [state, setState] = useState<AuthState>(initialState);
   const [error, setError] = useState<string>('');
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -69,6 +100,7 @@ export const useAuthController = () => {
   const login = useCallback(
     async (data: LoginRequest, rememberMe = false) => {
       setError('');
+      setErrorStatus(null);
       setLoading(true);
       try {
         const res = await AuthService.login(data);
@@ -85,12 +117,12 @@ export const useAuthController = () => {
         }
       } catch (err: any) {
         const status = err.response?.status;
-        const msg = err.response?.data?.message || err.response?.data?.errorMessage || 'Sign in failed. Please try again.';
-        if (status === 423 && err.response?.data?.extra?.lockedUntil) {
-          const until = err.response.data.extra.lockedUntil;
-          setError(msg + ` Unlocks at: ${new Date(until).toLocaleString('vi-VN')}`);
-        } else if (status === 423) {
-          setError(msg);
+        setErrorStatus(typeof status === 'number' ? status : null);
+        const msg = readErrorMessage(err, 'Sign in failed. Please try again.');
+        // ErrorModel của BE tên field là `detail`, không phải `extra` -> đọc sai thì mất giờ mở khoá.
+        const lockedUntil = err.response?.data?.detail?.lockedUntil;
+        if (status === 423 && lockedUntil) {
+          setError(msg + ` Unlocks at: ${new Date(lockedUntil).toLocaleString('vi-VN')}`);
         } else {
           setError(msg);
         }
@@ -104,6 +136,7 @@ export const useAuthController = () => {
   const loginWithGoogle = useCallback(
     async (idToken: string, rememberMe: boolean) => {
       setError('');
+      setErrorStatus(null);
       setLoading(true);
       try {
         const res = await AuthService.googleLogin(idToken);
@@ -122,6 +155,7 @@ export const useAuthController = () => {
   const loginWithGithub = useCallback(
     async (code: string, redirectUri: string, rememberMe: boolean) => {
       setError('');
+      setErrorStatus(null);
       setLoading(true);
       try {
         const res = await AuthService.githubLogin(code, redirectUri);
@@ -140,6 +174,7 @@ export const useAuthController = () => {
   const loginWithSso = useCallback(
     async (code: string, redirectUri: string, nonce: string, rememberMe: boolean) => {
       setError('');
+      setErrorStatus(null);
       setLoading(true);
       try {
         const res = await AuthService.ssoLogin(code, redirectUri, nonce);
@@ -158,12 +193,15 @@ export const useAuthController = () => {
   const register = useCallback(
     async (data: RegisterRequest) => {
       setError('');
+      setErrorStatus(null);
       setLoading(true);
       try {
         await AuthService.register(data);
         navigate('/login?registered=true');
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Registration failed. Please try again.');
+        const status = err.response?.status;
+        setErrorStatus(typeof status === 'number' ? status : null);
+        setError(readErrorMessage(err, 'Registration failed. Please try again.'));
       } finally {
         setLoading(false);
       }
@@ -182,5 +220,16 @@ export const useAuthController = () => {
     navigate('/login');
   }, [navigate]);
 
-  return { ...state, error, loading, login, loginWithGoogle, loginWithGithub, loginWithSso, register, logout };
+  return {
+    ...state,
+    error,
+    errorStatus,
+    loading,
+    login,
+    loginWithGoogle,
+    loginWithGithub,
+    loginWithSso,
+    register,
+    logout,
+  };
 };

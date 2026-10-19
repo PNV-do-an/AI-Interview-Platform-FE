@@ -57,7 +57,7 @@ const randomToken = () =>
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 const LoginPage: React.FC = () => {
-  const { login, loginWithGoogle, loginWithGithub, loginWithSso, loading, error } = useAuth();
+  const { login, loginWithGoogle, loginWithGithub, loginWithSso, loading, error, errorStatus } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [form, setForm] = useState({ email: '', password: '' });
   const [rememberMe, setRememberMe] = useState(true);
@@ -66,6 +66,15 @@ const LoginPage: React.FC = () => {
   const [googleClientId, setGoogleClientId] = useState('');
   const [githubClientId, setGithubClientId] = useState('');
   const [ssoConfig, setSsoConfig] = useState<SsoConfig | null>(null);
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const [resendError, setResendError] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return undefined;
+    const id = window.setInterval(() => setResendCooldown((s) => (s <= 1 ? 0 : s - 1)), 1000);
+    return () => window.clearInterval(id);
+  }, [resendCooldown]);
 
   const rememberMeRef = useRef(rememberMe);
   rememberMeRef.current = rememberMe;
@@ -225,6 +234,23 @@ const LoginPage: React.FC = () => {
     setNotice(`${feature} is coming soon. Please use email and password.`);
   };
 
+  // BE trả 401 + "Tài khoản chưa được kích hoạt..." khi user chưa bấm link verify.
+  const needsVerification = errorStatus === 401 && /chưa được kích hoạt/i.test(error);
+
+  const handleResendVerification = async () => {
+    if (!form.email || resendState === 'sending' || resendCooldown > 0) return;
+    setResendError('');
+    setResendState('sending');
+    try {
+      await AuthService.resendVerification(form.email);
+      setResendState('sent');
+      setResendCooldown(60);
+    } catch (err: any) {
+      setResendError(err.response?.data?.message || 'Could not resend the verification email. Please try again.');
+      setResendState('idle');
+    }
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-surface font-sans text-ink">
       <header className="fixed inset-x-0 top-0 z-50 bg-surface/80 shadow-header backdrop-blur-xl">
@@ -326,14 +352,39 @@ const LoginPage: React.FC = () => {
                 <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
                   {registered === 'true' && (
                     <div className="flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text">
-                      <span className="material-symbols-outlined shrink-0 text-[18px]">check_circle</span>
-                      <span>Registration successful! Please sign in to continue.</span>
+                      <span className="material-symbols-outlined shrink-0 text-[18px]">mark_email_unread</span>
+                      <span>Account created! Check your inbox and click the verification link before signing in.</span>
                     </div>
                   )}
                   {error && (
                     <div className="flex items-start gap-2 rounded-lg bg-danger-bg px-3 py-2.5 text-body-sm text-danger-text" role="alert">
                       <span className="material-symbols-outlined shrink-0 text-[18px]">error</span>
                       <span>{error}</span>
+                    </div>
+                  )}
+                  {needsVerification && (
+                    <div className="flex items-center justify-between gap-2 rounded-lg bg-surface-low px-3 py-2 text-body-sm text-ink-variant">
+                      <span>Didn't get the email?</span>
+                      <button
+                        type="button"
+                        onClick={handleResendVerification}
+                        disabled={resendState === 'sending' || resendCooldown > 0}
+                        className="cursor-pointer border-0 bg-transparent p-0 text-label-sm font-medium text-primary no-underline hover:underline disabled:cursor-not-allowed disabled:text-ink-variant disabled:no-underline"
+                      >
+                        {resendState === 'sending'
+                          ? 'Sending...'
+                          : resendCooldown > 0
+                            ? `Resend available in ${resendCooldown}s`
+                            : resendState === 'sent'
+                              ? 'Verification email sent'
+                              : 'Resend verification email'}
+                      </button>
+                    </div>
+                  )}
+                  {resendError && (
+                    <div className="flex items-start gap-2 rounded-lg bg-danger-bg px-3 py-2.5 text-body-sm text-danger-text" role="alert">
+                      <span className="material-symbols-outlined shrink-0 text-[18px]">error</span>
+                      <span>{resendError}</span>
                     </div>
                   )}
                   {notice && (
