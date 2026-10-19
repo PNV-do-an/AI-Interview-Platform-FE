@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AuthService from '../../services/auth.service';
 import { SsoConfig } from '../../models/Api.model';
+import { readApiErrorMessage } from '../../utils/apiError';
 
 declare global {
   interface Window {
@@ -246,7 +247,7 @@ const LoginPage: React.FC = () => {
       setResendState('sent');
       setResendCooldown(60);
     } catch (err: any) {
-      setResendError(err.response?.data?.message || 'Could not resend the verification email. Please try again.');
+      setResendError(readApiErrorMessage(err, 'Could not resend the verification email. Please try again.', ['email']));
       setResendState('idle');
     }
   };

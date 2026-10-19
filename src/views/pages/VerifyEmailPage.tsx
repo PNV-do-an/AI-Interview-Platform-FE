@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import AuthService from '../../services/auth.service';
+import { readApiErrorMessage } from '../../utils/apiError';
 
 type Status = 'loading' | 'success' | 'error';
 
@@ -23,7 +24,7 @@ const VerifyEmailPage: React.FC = () => {
       })
       .catch((err: any) => {
         setStatus('error');
-        setMessage(err.response?.data?.message || 'This verification link is invalid or expired.');
+        setMessage(readApiErrorMessage(err, 'This verification link is invalid or expired.', ['token']));
       });
   }, [token]);
 

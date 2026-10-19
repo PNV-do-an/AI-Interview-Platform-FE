@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import AuthService from '../../services/auth.service';
 import { PasswordResetResult, ResetTokenInfo } from '../../models/Api.model';
+import { readApiErrorMessage } from '../../utils/apiError';
 
 /** Phải khớp đúng ký tự mà PASSWORD_PATTERN ở backend chấp nhận, nếu không client báo "Strong" mà server vẫn 400. */
 const SPECIAL_CHARS = '@#$%^&+=!';
@@ -57,8 +58,10 @@ const roleLabel = (role: string) => {
   return clean.charAt(0) + clean.slice(1).toLowerCase();
 };
 
+// BE 400 đẩy thông báo từng field vào map `detail`, nên phải đọc cả `message` lẫn `detail`.
+// err.message giữ làm fallback cho lỗi network (không có response).
 const messageFrom = (err: any, fallback: string) =>
-  err?.response?.data?.message || err?.message || fallback;
+  readApiErrorMessage(err, err?.message || fallback, ['token', 'password', 'confirmPassword']);
 
 const ResetPasswordPage: React.FC = () => {
   const [searchParams] = useSearchParams();

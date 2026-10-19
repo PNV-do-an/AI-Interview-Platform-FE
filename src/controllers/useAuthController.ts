@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import AuthService from '../services/auth.service';
 import { User, AuthState } from '../models/User.model';
 import { LoginRequest, RegisterRequest } from '../models/Api.model';
+import { readApiErrorMessage } from '../utils/apiError';
 
 const STORAGE_KEYS = {
   ACCESS_TOKEN: 'accessToken',
@@ -25,35 +26,10 @@ const initialState: AuthState = {
   isLoading: true,
 };
 
-// Bean validation của BE (GlobalExceptionHandler) trả 400 + message "Validation failed", còn
-// thông báo từng field nằm trong map `detail`. Nếu chỉ đọc `message`, người dùng thấy nhãn
-// chung "Validation failed" và không biết mình thiếu/sai chỗ nào.
-// `detail` phía BE là HashMap nên thứ tự key không ổn định -> sắp lại theo thứ tự field trên form.
-const FIELD_ORDER = ['fullName', 'email', 'password'];
-// lockedUntil là dữ liệu kỹ thuật (đã có nhánh 423 riêng), không phải thông báo hiển thị.
-const DETAIL_TECHNICAL_KEYS = ['lockedUntil'];
-
-const readFieldMessages = (detail: unknown): string[] => {
-  if (!detail || typeof detail !== 'object') return [];
-  const map = detail as Record<string, unknown>;
-  return Object.keys(map)
-    .filter((key) => DETAIL_TECHNICAL_KEYS.indexOf(key) === -1)
-    .filter((key) => typeof map[key] === 'string' && (map[key] as string).trim())
-    .sort((a, b) => {
-      const ia = FIELD_ORDER.indexOf(a);
-      const ib = FIELD_ORDER.indexOf(b);
-      return (ia < 0 ? FIELD_ORDER.length : ia) - (ib < 0 ? FIELD_ORDER.length : ib);
-    })
-    .map((key) => (map[key] as string).trim());
-};
-
-const readErrorMessage = (err: any, fallback: string): string => {
-  const data = err.response?.data;
-  const message: string = data?.message || data?.errorMessage || '';
-  const fieldMessages = readFieldMessages(data?.detail).join('; ');
-  if (message === 'Validation failed') return fieldMessages || fallback;
-  return message || fieldMessages || fallback;
-};
+// Thứ tự field trên từng form, dùng để sắp message trong map `detail` của BE 400.
+const LOGIN_FIELD_ORDER = ['email', 'password'];
+const REGISTER_FIELD_ORDER = ['fullName', 'email', 'password'];
+const OAUTH_FIELD_ORDER = ['idToken', 'code', 'redirectUri'];
 
 export const useAuthController = () => {
   const [state, setState] = useState<AuthState>(initialState);
@@ -118,7 +94,7 @@ export const useAuthController = () => {
       } catch (err: any) {
         const status = err.response?.status;
         setErrorStatus(typeof status === 'number' ? status : null);
-        const msg = readErrorMessage(err, 'Sign in failed. Please try again.');
+        const msg = readApiErrorMessage(err, 'Sign in failed. Please try again.', LOGIN_FIELD_ORDER);
         // ErrorModel của BE tên field là `detail`, không phải `extra` -> đọc sai thì mất giờ mở khoá.
         const lockedUntil = err.response?.data?.detail?.lockedUntil;
         if (status === 423 && lockedUntil) {
@@ -144,7 +120,7 @@ export const useAuthController = () => {
         persistSession(accessToken, refreshToken, user as User, rememberMe);
         navigate(user?.role === 'ROLE_ADMIN' ? '/admin/users' : '/dashboard');
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Google sign in failed. Please try again.');
+        setError(readApiErrorMessage(err, 'Google sign in failed. Please try again.', OAUTH_FIELD_ORDER));
       } finally {
         setLoading(false);
       }
@@ -163,7 +139,7 @@ export const useAuthController = () => {
         persistSession(accessToken, refreshToken, user as User, rememberMe);
         navigate(user?.role === 'ROLE_ADMIN' ? '/admin/users' : '/dashboard', { replace: true });
       } catch (err: any) {
-        setError(err.response?.data?.message || 'GitHub sign-in failed. Please try again.');
+        setError(readApiErrorMessage(err, 'GitHub sign-in failed. Please try again.', OAUTH_FIELD_ORDER));
       } finally {
         setLoading(false);
       }
@@ -182,7 +158,7 @@ export const useAuthController = () => {
         persistSession(accessToken, refreshToken, user as User, rememberMe);
         navigate(user?.role === 'ROLE_ADMIN' ? '/admin/users' : '/dashboard', { replace: true });
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Enterprise SSO sign-in failed. Please try again.');
+        setError(readApiErrorMessage(err, 'Enterprise SSO sign-in failed. Please try again.', OAUTH_FIELD_ORDER));
       } finally {
         setLoading(false);
       }
@@ -201,7 +177,7 @@ export const useAuthController = () => {
       } catch (err: any) {
         const status = err.response?.status;
         setErrorStatus(typeof status === 'number' ? status : null);
-        setError(readErrorMessage(err, 'Registration failed. Please try again.'));
+        setError(readApiErrorMessage(err, 'Registration failed. Please try again.', REGISTER_FIELD_ORDER));
       } finally {
         setLoading(false);
       }

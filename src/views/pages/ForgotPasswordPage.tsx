@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import AuthService from '../../services/auth.service';
+import { readApiErrorMessage } from '../../utils/apiError';
 
 /** Cửa sổ chờ giữa hai lần gửi link, tính từ lúc client bấm Send/Resend. */
 const RESEND_COOLDOWN_SECONDS = 30;
+
+// Nút Resend gọi thẳng sendResetLink, không đi qua validate của form, nên phải tự chặn ở đây.
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const RECOVERY_TIPS = [
   {
@@ -41,13 +45,20 @@ const ForgotPasswordPage: React.FC = () => {
   const sendResetLink = async () => {
     setError('');
     setNotice('');
+    // BE trả lời 200 cho mọi trường hợp (chống dò email), nên nếu client gửi đi ô trống
+    // thì màn hình hiện ngay card "Check your inbox" trong khi chẳng có mail nào được gửi.
+    const checkedEmail = email.trim();
+    if (!EMAIL_PATTERN.test(checkedEmail)) {
+      setError('Enter a valid email address.');
+      return;
+    }
     setLoading(true);
     try {
-      await AuthService.forgotPassword(email);
+      await AuthService.forgotPassword(checkedEmail);
       setSent(true);
       setCooldown(RESEND_COOLDOWN_SECONDS);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Something went wrong. Please try again.');
+      setError(readApiErrorMessage(err, 'Something went wrong. Please try again.', ['email']));
     } finally {
       setLoading(false);
     }
