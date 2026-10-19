@@ -8,6 +8,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string;
+  errorStatus: number | null;
   loading: boolean;
   login: (data: LoginRequest, rememberMe?: boolean) => Promise<void>;
   loginWithGoogle: (idToken: string, rememberMe: boolean) => Promise<void>;

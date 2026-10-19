@@ -11,11 +11,17 @@ const publicHttp = axios.create({
 });
 
 const AuthService = {
+  // login/register đi publicHttp: 401 của chúng KHÔNG được rơi vào interceptor
+  // refresh-token (xóa storage + window.location.href='/login'), nếu không trình
+  // duyệt reload ngay và nuốt mất thông báo lỗi (mật khẩu sai / chưa kích hoạt).
   login: (data: LoginRequest) =>
-    httpService.post<ApiResponse<AuthResponse>>('/api/v1/auth/login', data),
+    publicHttp.post<ApiResponse<AuthResponse>>('/api/v1/auth/login', data),
 
   register: (data: RegisterRequest) =>
-    httpService.post<ApiResponse<AuthResponse>>('/api/v1/auth/register', data),
+    publicHttp.post<ApiResponse<AuthResponse>>('/api/v1/auth/register', data),
+
+  resendVerification: (email: string) =>
+    publicHttp.post<ApiResponse<string>>('/api/v1/auth/resend-verification', { email }),
 
   getMe: () =>
     httpService.get<ApiResponse<AuthResponse['user']>>('/api/v1/auth/me'),

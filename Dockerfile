@@ -2,8 +2,9 @@
 FROM node:24-alpine AS build
 WORKDIR /app
 # Rỗng -> axios dùng đường dẫn tương đối /api/..., nginx trong container proxy sang backend
-ARG REACT_APP_API_URL=""
-ENV REACT_APP_API_URL=$REACT_APP_API_URL
+# API URL lấy từ .env.production trong repo (staging). ARG vẫn được chấp nhận
+# để ghi đè khi build tay, nhưng không set ENV rỗng vì nó thắng .env.production.
+ARG REACT_APP_API_URL
 COPY package*.json ./
 RUN npm ci
 COPY . .
