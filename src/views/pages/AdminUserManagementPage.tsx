@@ -1,15 +1,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useAdminUserController } from '../../controllers/useAdminUserController';
 import {
-  AuditLog, AUDIT_ACTIONS, PagedResponse, Role, ROLE_LABELS, UserDetail, UserSummary,
+  ACCOUNT_STATUS_LABELS, AuditLog, AUDIT_ACTIONS, PagedResponse, Role, ROLE_LABELS,
+  UserDetail, UserStats, UserSummary,
 } from '../../models/User.model';
 import ConfirmDialog from '../components/ConfirmDialog';
 import EditProfileModal from '../components/EditProfileModal';
 import InviteMemberModal from '../components/InviteMemberModal';
 import UserDetailModal from '../components/UserDetailModal';
 import {
-  Badge, ErrorBanner, LoadingState, PageHeader, StatusBadge, statusTone,
-  buttonClass, inputClass, tableClass, tdClass, thClass,
+  Badge, ErrorBanner, LoadingState, statusTone, buttonClass, tableClass, tdClass,
 } from '../components/ui';
 
 const AUDIT_ACTION_LABELS: Record<string, string> = {
@@ -21,7 +21,28 @@ const AUDIT_ACTION_LABELS: Record<string, string> = {
 };
 
 const ROLE_ICONS: Record<Role, string> = {
-  ROLE_USER: 'school', ROLE_STAFF: 'badge', ROLE_ADMIN: 'admin_panel_settings', ROLE_INTERVIEWER: 'support_agent',
+  ROLE_USER: 'school', ROLE_STAFF: 'business', ROLE_ADMIN: 'admin_panel_settings', ROLE_INTERVIEWER: 'support_agent',
+};
+
+const MONO = 'font-mono text-label-sm';
+
+// Bản local của `thClass` để cột checkbox/actions đổi padding mà không xung đột `px-3` gốc.
+const thBase =
+  'h-8 border-y border-[#e2e8f0] bg-surface-low text-label-sm font-semibold uppercase tracking-[0.04em] text-ink-variant';
+
+// Vai tro cua `primary-fixed` / `secondary-fixed` trong mockup -> token `info` (#e2dfff).
+const ROLE_PILL: Record<Role, string> = {
+  ROLE_USER: 'bg-primary/10 text-primary',
+  ROLE_STAFF: 'bg-info text-secondary',
+  ROLE_INTERVIEWER: 'bg-surface-mid text-ink',
+  ROLE_ADMIN: 'bg-info text-primary font-semibold',
+};
+
+const AVATAR_TONE: Record<Role, string> = {
+  ROLE_USER: 'bg-info text-info-text',
+  ROLE_STAFF: 'bg-info text-info-text',
+  ROLE_INTERVIEWER: 'bg-surface-mid text-ink-variant',
+  ROLE_ADMIN: 'bg-primary-container text-on-primary',
 };
 
 // Dot mau theo tone that cua status (khong phai online-realtime; BE khong co last_seen).
@@ -47,26 +68,46 @@ const fmtDateTime = (iso: string) =>
     month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 
-// Cot "Last Active" theo mockup: "10 mins ago" / "3 days ago"; chua tung login -> "Never".
-const fmtLastActive = (iso: string | null): string => {
-  if (!iso) return 'Never';
+/**
+ * Cột "Last Active" theo mockup: "10 mins ago" / "3 days ago"; chưa từng login -> "Never".
+ * `recent` = mới hơn 1 giờ -> hàng màu xanh kèm chấm dot (đúng hình thái mockup), nguồn là
+ * `lastLoginAt` thật, không phải cờ realtime.
+ */
+const relativeOf = (iso: string | null): { text: string; recent: boolean } => {
+  if (!iso) return { text: 'Never', recent: false };
   const diffMs = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins} min${mins > 1 ? 's' : ''} ago`;
+  if (mins < 1) return { text: 'Just now', recent: true };
+  if (mins < 60) return { text: `${mins} min${mins > 1 ? 's' : ''} ago`, recent: true };
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  if (hours < 24) return { text: `${hours} hour${hours > 1 ? 's' : ''} ago`, recent: false };
   const days = Math.floor(hours / 24);
-  if (days < 30) return `${days} day${days > 1 ? 's' : ''} ago`;
-  return fmtDate(iso);
+  if (days < 30) return { text: `${days} day${days > 1 ? 's' : ''} ago`, recent: false };
+  return { text: fmtDate(iso), recent: false };
 };
 
 type TabType = 'users' | 'pending' | 'deleted' | 'permissions' | 'auditLogs';
 
-// inputClass ép `w-full` nên select dùng bản riêng (bỏ w-full) để bo theo nội dung.
-const selectClass =
-  'h-9 cursor-pointer rounded-md border border-[#e2e8f0] bg-card px-2.5 text-body-md text-ink ' +
-  'transition-all focus:border-[#6366f1] focus:outline-none focus:ring-1 focus:ring-[#6366f1]';
+// inputClass ép `w-full` + `bg-card` nên ô tìm kiếm và select của ribbon lọc dùng bản riêng.
+const searchInputClass =
+  'h-9 w-full box-border rounded-md bg-surface-low pl-10 pr-4 text-body-md text-ink shadow-inner ' +
+  'transition-colors placeholder:text-outline-strong focus:bg-card focus:outline-none focus:ring-1 focus:ring-primary';
+
+const filterSelectClass =
+  'h-9 cursor-pointer rounded-md bg-surface-low px-2.5 text-label-md text-ink ' +
+  'transition-colors focus:outline-none focus:ring-1 focus:ring-primary';
+
+// Nút hành động dạng chữ trong bảng (mockup: Edit / Lock / Resend / Reactivate).
+const rowBtnClass = (tone: 'neutral' | 'primary' | 'success' | 'warning' | 'danger' = 'neutral') =>
+  'inline-flex h-7 items-center gap-1 rounded px-2 text-label-sm font-medium transition-colors ' +
+  'disabled:cursor-not-allowed disabled:opacity-60 ' +
+  ({
+    neutral: 'bg-surface-mid text-ink hover:bg-surface-high',
+    primary: 'bg-primary/10 text-primary hover:bg-primary/20',
+    success: 'bg-success-bg text-success-text hover:brightness-95',
+    warning: 'bg-[#fef3c7] text-[#78350f] /* amber-100/900 nut reactivate mockup */ hover:brightness-95',
+    danger: 'bg-danger-bg text-danger-text hover:brightness-95',
+  }[tone]);
 
 const AdminUserManagementPage: React.FC = () => {
   const ctrl = useAdminUserController();
@@ -77,6 +118,7 @@ const AdminUserManagementPage: React.FC = () => {
   const [deletedSearchInput, setDeletedSearchInput] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editUser, setEditUser] = useState<UserDetail | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean; title: string; message: string;
     confirmLabel: string; danger: boolean;
@@ -120,7 +162,7 @@ const AdminUserManagementPage: React.FC = () => {
     askConfirm(
       'Delete account',
       `Are you sure you want to delete the account "${email}"? The account can be restored later from the Deleted tab.`,
-      async () => { closeConfirm(); await ctrl.deleteUser(id); },
+      async () => { closeConfirm(); setSelectedIds([]); await ctrl.deleteUser(id); },
       { confirmLabel: 'Delete', danger: true },
     );
   };
@@ -134,8 +176,22 @@ const AdminUserManagementPage: React.FC = () => {
     );
   };
 
+  const runBulk = (action: 'lock' | 'unlock' | 'delete') => {
+    const labels = {
+      lock: ['Lock selected accounts', `Lock ${selectedIds.length} selected account(s)? Each of them loses sign-in access.`, 'Lock'],
+      unlock: ['Unlock selected accounts', `Unlock ${selectedIds.length} selected account(s)?`, 'Unlock'],
+      delete: ['Delete selected accounts', `Soft-delete ${selectedIds.length} selected account(s)? They return from the Deleted tab.`, 'Delete'],
+    }[action];
+    askConfirm(
+      labels[0], labels[1],
+      async () => { closeConfirm(); await ctrl.runBulkAction(action, selectedIds); setSelectedIds([]); },
+      { confirmLabel: labels[2], danger: action === 'delete' || action === 'lock' },
+    );
+  };
+
   const switchTab = (t: TabType) => {
     setTab(t);
+    setSelectedIds([]);
     if (t === 'auditLogs' && !ctrl.auditLogs) ctrl.fetchAuditLogs(0);
     if (t === 'deleted' && !ctrl.deletedUsers) ctrl.fetchDeletedUsers(0);
     // Tab "Pending Invites" = danh sách thật với bộ lọc status=PENDING (BE UserStatusFilter.PENDING),
@@ -154,94 +210,87 @@ const AdminUserManagementPage: React.FC = () => {
 
   const handleExport = () => { void ctrl.exportUsersCsv(); };
 
-  return (
-    <div>
-      <PageHeader
-        title="User Directory"
-        description="Every account on the platform, with the audit trail of admin actions."
-        actions={
-          <>
-            <button
-              type="button"
-              className={buttonClass('secondary')}
-              onClick={handleExport}
-              disabled={ctrl.exporting}
-            >
-              <span className="material-symbols-outlined text-[18px]">download</span>
-              {ctrl.exporting ? 'Exporting...' : 'Export CSV'}
-            </button>
-            <button
-              type="button"
-              className={buttonClass('primary')}
-              onClick={() => setInviteOpen(true)}
-            >
-              <span className="material-symbols-outlined text-[18px]">person_add</span>
-              Invite Members
-            </button>
-          </>
-        }
-      />
+  const openEdit = (id: number) => {
+    void ctrl.loadProfileForEdit(id).then(p => p && setEditUser(p));
+  };
 
-      {/* KPI cards - GET /users/stats dem bang that trong DB, cung bo loc search/role voi danh sach. */}
-      {ctrl.stats && (
-        <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-          <KpiCard
-            label="Total Members" icon="group" value={ctrl.stats.total}
-            sub={`${ctrl.stats.active.toLocaleString('en-US')} active`}
-          />
-          <KpiCard
-            label="Active (30 days)" icon="bolt" value={ctrl.stats.activeLast30Days}
-            sub={ctrl.stats.total > 0
-              ? `${Math.round((ctrl.stats.activeLast30Days / ctrl.stats.total) * 100)}% signed in recently`
-              : 'No accounts yet'}
-          />
-          <KpiCard
-            label="Pending Invitations" icon="hourglass_top" value={ctrl.stats.pendingVerification}
-            sub="Invitation link not used yet"
-          />
-          <KpiCard
-            label="Suspended / Locked" icon="lock" value={ctrl.stats.locked}
-            sub={`${ctrl.stats.disabled.toLocaleString('en-US')} disabled · ${ctrl.stats.deleted.toLocaleString('en-US')} deleted`}
-            danger={ctrl.stats.locked > 0}
-          />
+  const rows = ctrl.users?.content ?? [];
+  const pageIds = rows.map(u => u.id);
+  const allChecked = pageIds.length > 0 && pageIds.every(id => selectedIds.includes(id));
+
+  const toggleRow = (id: number) =>
+    setSelectedIds(cur => cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id]);
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Breadcrumb + hành động cấp trang (mockup: Administration / User Directory) */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-body-sm">
+          <span className="text-ink-variant">Administration</span>
+          <span className="text-[11px] text-outline-strong">/</span>
+          <span className="font-semibold text-ink">User Directory</span>
         </div>
-      )}
+        <div className="flex items-center gap-2">
+          <button type="button" className={buttonClass('secondary')} onClick={handleExport} disabled={ctrl.exporting}>
+            <span className="material-symbols-outlined text-[18px]">download</span>
+            {ctrl.exporting ? 'Exporting...' : 'Export CSV'}
+          </button>
+          <button type="button" className={buttonClass('primary')} onClick={() => setInviteOpen(true)}>
+            <span className="material-symbols-outlined text-[18px]">mail</span>
+            Invite Members
+          </button>
+        </div>
+      </div>
+
+      <div className="-mt-2 flex flex-col gap-1">
+        <h1 className="m-0 text-display-mobile text-ink sm:text-display">User Management &amp; Access Control</h1>
+        <p className="m-0 text-body-md text-ink-variant">
+          Manage member accounts, permissions, roles, and security policies across your organization.
+        </p>
+      </div>
+
+      {/* KPI cards - GET /users/stats đếm thật trong DB, cùng bộ lọc search/role với danh sách. */}
+      {ctrl.stats && <KpiRow stats={ctrl.stats} />}
 
       {/* Tabs */}
-      <div className="mb-6 flex border-b border-[#e2e8f0]">
-        {([
-          { key: 'users', label: 'All Members', icon: 'group' },
-          { key: 'pending', label: 'Pending Invites', icon: 'hourglass_top' },
-          { key: 'permissions', label: 'Role Permissions', icon: 'key' },
-          { key: 'deleted', label: 'Deleted', icon: 'person_off' },
-          { key: 'auditLogs', label: 'Audit Log', icon: 'history' },
-        ] as const).map(t => (
-          <button
-            key={t.key}
-            type="button"
-            className={`-mb-px flex h-9 items-center gap-1.5 border-b-2 px-4 text-label-md transition-colors ${
-              tab === t.key
-                ? 'border-primary font-semibold text-primary'
-                : 'border-transparent text-ink-variant hover:text-ink'
-            }`}
-            onClick={() => switchTab(t.key)}
-          >
-            <span className="material-symbols-outlined text-[18px]">{t.icon}</span>
-            {t.label}
-            {(t.key === 'users' || t.key === 'pending') && ctrl.stats && (
-              <span className="rounded-full bg-surface-mid px-1.5 text-label-sm tabular-nums text-ink-variant">
-                {(t.key === 'users' ? ctrl.stats.total : ctrl.stats.pendingVerification)
-                  .toLocaleString('en-US')}
-              </span>
-            )}
-          </button>
-        ))}
+      <div className="-mt-2 flex flex-wrap items-center justify-between gap-2 border-b border-[#e2e8f0]">
+        <div className="flex flex-wrap items-center gap-2">
+          {([
+            { key: 'users' as TabType, label: 'All Members', icon: 'group', count: ctrl.stats?.total },
+            { key: 'pending' as TabType, label: 'Pending Invites', icon: 'pending_actions', count: ctrl.stats?.pendingVerification },
+            { key: 'permissions' as TabType, label: 'Role Permissions', icon: 'admin_panel_settings', count: undefined },
+            { key: 'deleted' as TabType, label: 'Deleted', icon: 'person_off', count: ctrl.deletedUsers?.totalElements },
+            { key: 'auditLogs' as TabType, label: 'Audit Log', icon: 'security', count: ctrl.auditLogs?.totalElements },
+          ]).map(t => (
+            <button
+              key={t.key}
+              type="button"
+              className={`-mb-px flex h-10 items-center gap-2 border-b-2 px-3 text-label-md transition-colors ${
+                tab === t.key
+                  ? 'border-primary font-semibold text-primary'
+                  : 'border-transparent text-ink-variant hover:text-ink'
+              }`}
+              onClick={() => switchTab(t.key)}
+            >
+              <span className="material-symbols-outlined text-[18px]">{t.icon}</span>
+              {t.label}
+              {t.count != null && (
+                <span className={`rounded-full px-1.5 py-0.5 font-mono text-[11px] font-semibold tabular-nums ${
+                  tab === t.key ? 'bg-primary/10 text-primary' : 'bg-surface-mid text-ink-variant'
+                }`}
+                >
+                  {t.count.toLocaleString('en-US')}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Messages */}
       <ErrorBanner message={ctrl.error} />
       {ctrl.successMsg && (
-        <div className="mb-4 flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text" role="status">
+        <div className="-mt-3 flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text" role="status">
           <span className="material-symbols-outlined shrink-0 text-[18px]">check_circle</span>
           <span>{ctrl.successMsg}</span>
         </div>
@@ -249,144 +298,149 @@ const AdminUserManagementPage: React.FC = () => {
 
       {(tab === 'users' || tab === 'pending') && (
         <>
-          {/* Filters */}
-          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-[#e2e8f0] bg-card p-3">
-            <div className="relative min-w-[220px] flex-1">
-              <span className="material-symbols-outlined pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[18px] text-[#94a3b8]">search</span>
+          {/* Filter ribbon */}
+          <div className="flex flex-col items-center justify-between gap-3 rounded-xl border border-[#e2e8f0] bg-card p-3 lg:flex-row">
+            <div className="relative flex w-full items-center lg:w-96">
+              <span className="material-symbols-outlined pointer-events-none absolute left-3 text-[18px] text-outline-strong">search</span>
               <input
-                className={`${inputClass} pl-9`}
+                className={searchInputClass}
                 placeholder="Search by name, email, or user ID..."
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
               />
             </div>
-            <button type="button" className={buttonClass('primary', 'shrink-0')} onClick={handleSearch}>Search</button>
-
-            <span className="material-symbols-outlined text-[18px] text-ink-variant">filter_list</span>
-            <select className={selectClass} value={statusFilter}
-              onChange={e => handleFilterChange('status', e.target.value)}>
-              <option value="">All statuses</option>
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-              <option value="LOCKED">Locked</option>
-              <option value="PENDING">Pending invite</option>
-              {/* DELETED bi BE chan o list nay (400) - xem tab "Deleted" */}
-            </select>
-
-            <select className={selectClass} value={roleFilter}
-              onChange={e => handleFilterChange('role', e.target.value)}>
-              <option value="">All roles</option>
-              {Object.entries(ROLE_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
+            <div className="flex w-full flex-wrap items-center justify-end gap-3 lg:w-auto">
+              <label className="flex items-center gap-2">
+                <span className="text-label-sm uppercase tracking-wider text-ink-variant">Role:</span>
+                <select className={filterSelectClass} value={roleFilter}
+                  onChange={e => handleFilterChange('role', e.target.value)}>
+                  <option value="">All Roles</option>
+                  {Object.entries(ROLE_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex items-center gap-2">
+                <span className="text-label-sm uppercase tracking-wider text-ink-variant">Status:</span>
+                <select className={filterSelectClass} value={statusFilter}
+                  onChange={e => handleFilterChange('status', e.target.value)}>
+                  <option value="">All Statuses</option>
+                  <option value="ACTIVE">Active</option>
+                  <option value="INACTIVE">Inactive</option>
+                  <option value="LOCKED">Locked</option>
+                  <option value="PENDING">Pending Invite</option>
+                  {/* DELETED bị BE chặn ở list này (400) - xem tab "Deleted" */}
+                </select>
+              </label>
+              <button type="button" className={buttonClass('secondary', 'shrink-0')} onClick={handleSearch}>
+                <span className="material-symbols-outlined text-[18px]">filter_list</span>
+                Search
+              </button>
+            </div>
           </div>
+
+          {/* Bulk bar — BE chưa có /users/bulk nên mỗi tick gọi endpoint đơn của từng tài khoản. */}
+          {selectedIds.length > 0 && (
+            <div className="-mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-[#e2e8f0] bg-surface-low px-3 py-2">
+              <span className="text-label-md font-medium text-ink tabular-nums">
+                {selectedIds.length} selected
+              </span>
+              <button type="button" className={rowBtnClass('warning')} disabled={ctrl.actionLoading}
+                onClick={() => runBulk('lock')}>
+                <span className="material-symbols-outlined text-[16px]">lock</span>Lock
+              </button>
+              <button type="button" className={rowBtnClass('success')} disabled={ctrl.actionLoading}
+                onClick={() => runBulk('unlock')}>
+                <span className="material-symbols-outlined text-[16px]">lock_open</span>Unlock
+              </button>
+              <button type="button" className={rowBtnClass('danger')} disabled={ctrl.actionLoading}
+                onClick={() => runBulk('delete')}>
+                <span className="material-symbols-outlined text-[16px]">delete</span>Delete
+              </button>
+              <button type="button" className={buttonClass('ghost', 'ml-auto h-7')}
+                onClick={() => setSelectedIds([])}>
+                <span className="material-symbols-outlined text-[16px]">close</span>Clear
+              </button>
+            </div>
+          )}
 
           {/* Table */}
           {ctrl.loading ? (
             <LoadingState />
           ) : (
-            <>
-              <div className="overflow-x-auto rounded-lg border border-[#e2e8f0] bg-card">
+            <div className="overflow-hidden rounded-xl border border-[#e2e8f0] bg-card">
+              <div className="overflow-x-auto">
                 <table className={tableClass}>
                   <thead>
                     <tr>
-                      {['User / Member', 'Assigned Role', 'Status', 'Joined Date', 'Last Active', 'Actions'].map(h => (
-                        <th key={h} className={thClass}>{h}</th>
+                      <th className={`${thBase} w-12 px-4 text-center`}>
+                        <input
+                          type="checkbox"
+                          aria-label="Select all accounts on this page"
+                          className="h-4 w-4 cursor-pointer rounded accent-primary"
+                          checked={allChecked}
+                          disabled={rows.length === 0}
+                          onChange={() => setSelectedIds(allChecked ? [] : pageIds)}
+                        />
+                      </th>
+                      {['User / Member', 'Assigned Role', 'Status', 'Joined Date', 'Last Active'].map(h => (
+                        <th key={h} className={`${thBase} px-3 text-left`}>{h}</th>
                       ))}
+                      <th className={`${thBase} px-4 text-right`}>Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {ctrl.users?.content.length === 0 && (
-                      <tr><td colSpan={6} className="px-3 py-12 text-center text-body-sm text-ink-variant">No data</td></tr>
+                  <tbody className="divide-y divide-[#e2e8f0]">
+                    {rows.length === 0 && (
+                      <tr><td colSpan={7} className="px-3 py-12 text-center text-body-sm text-ink-variant">No data</td></tr>
                     )}
-                    {ctrl.users?.content.map((u: UserSummary) => {
-                      const ini = initialsOf(u.fullName);
-                      return (
-                        <tr
-                          key={u.id}
-                          className={`cursor-pointer transition-colors ${
-                            ctrl.selectedUser?.id === u.id ? 'bg-info-bg' : 'hover:bg-surface-low'
-                          }`}
-                          onClick={() => ctrl.fetchUserDetail(u.id)}
-                        >
-                          <td className={tdClass}>
-                            <div className="flex min-w-0 items-center gap-3">
-                              {ini && (
-                                <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-info text-label-sm font-bold text-info-text">
-                                  {ini}
-                                  <span className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-card ${DOT_CLASS[statusTone(u.status)]}`} />
-                                </div>
-                              )}
-                              <div className="flex min-w-0 flex-col">
-                                <span className="truncate text-headline-sm text-ink">{u.fullName}</span>
-                                <span className="truncate text-body-sm text-ink-variant">{u.email}</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className={tdClass}>
-                            <Badge tone={u.role === 'ROLE_ADMIN' ? 'info' : 'neutral'} icon={ROLE_ICONS[u.role] ?? 'shield'}>
-                              {ROLE_LABELS[u.role] ?? u.role}
-                            </Badge>
-                          </td>
-                          <td className={tdClass}>
-                            {u.pendingVerification
-                              ? <Badge tone="warning" icon="hourglass_top">Pending invite</Badge>
-                              : <StatusBadge status={u.status} />}
-                          </td>
-                          <td className={`${tdClass} whitespace-nowrap font-mono tabular-nums text-ink-variant`}>
-                            {fmtDate(u.createdAt)}
-                          </td>
-                          <td className={`${tdClass} whitespace-nowrap tabular-nums text-ink-variant`}>
-                            {fmtLastActive(u.lastLoginAt)}
-                          </td>
-                          <td className={`${tdClass} whitespace-nowrap`} onClick={e => e.stopPropagation()}>
-                            <ActionButtons
-                              user={u}
-                              loading={ctrl.actionLoading}
-                              onLock={() => ctrl.lockUser(u.id)}
-                              onUnlock={() => ctrl.unlockUser(u.id)}
-                              onEdit={() => void ctrl.loadProfileForEdit(u.id).then(p => p && setEditUser(p))}
-                              onDelete={() => handleDelete(u.id, u.email)}
-                              onReset={() => ctrl.resetPassword(u.id)}
-                              onResendInvite={() => ctrl.resendInvitation(u.id)}
-                              onRevokeInvite={() => askConfirm(
-                                'Revoke invitation',
-                                `Revoke the pending invitation link for "${u.email}"? The account keeps its role and can be invited again later.`,
-                                async () => { closeConfirm(); await ctrl.revokeInvitation(u.id); },
-                                { confirmLabel: 'Revoke link', danger: false },
-                              )}
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {rows.map((u: UserSummary) => (
+                      <MemberRow
+                        key={u.id}
+                        user={u}
+                        loading={ctrl.actionLoading}
+                        checked={selectedIds.includes(u.id)}
+                        onToggle={() => toggleRow(u.id)}
+                        onOpen={() => ctrl.fetchUserDetail(u.id)}
+                        onLock={() => ctrl.lockUser(u.id)}
+                        onUnlock={() => ctrl.unlockUser(u.id)}
+                        onEdit={() => openEdit(u.id)}
+                        onDelete={() => handleDelete(u.id, u.email)}
+                        onReset={() => ctrl.resetPassword(u.id)}
+                        onResendInvite={() => ctrl.resendInvitation(u.id)}
+                        onRevokeInvite={() => askConfirm(
+                          'Revoke invitation',
+                          `Revoke the pending invitation link for "${u.email}"? The account keeps its role and can be invited again later.`,
+                          async () => { closeConfirm(); await ctrl.revokeInvitation(u.id); },
+                          { confirmLabel: 'Revoke link', danger: false },
+                        )}
+                        onHistory={() => handleViewHistory(u.id)}
+                      />
+                    ))}
                   </tbody>
                 </table>
               </div>
-
-              {/* Pagination */}
-              {ctrl.users && ctrl.users.totalPages > 1 && (
-                <Pagination
+              {ctrl.users && (
+                <TableFooter
+                  paged={ctrl.users}
                   currentPage={ctrl.currentPage}
-                  totalPages={ctrl.users.totalPages}
-                  totalElements={ctrl.users.totalElements}
+                  exporting={ctrl.exporting}
+                  onExport={handleExport}
                   onPageChange={p => ctrl.fetchUsers(p)}
                 />
               )}
-            </>
+            </div>
           )}
         </>
       )}
 
       {tab === 'deleted' && (
         <>
-          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-[#e2e8f0] bg-card p-3">
-            <div className="relative min-w-[220px] flex-1">
-              <span className="material-symbols-outlined pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[18px] text-[#94a3b8]">search</span>
+          <div className="flex flex-col items-center justify-between gap-3 rounded-xl border border-[#e2e8f0] bg-card p-3 lg:flex-row">
+            <div className="relative flex w-full items-center lg:w-96">
+              <span className="material-symbols-outlined pointer-events-none absolute left-3 text-[18px] text-outline-strong">search</span>
               <input
-                className={`${inputClass} pl-9`}
+                className={searchInputClass}
                 placeholder="Search deleted accounts by name or email..."
                 value={deletedSearchInput}
                 onChange={e => setDeletedSearchInput(e.target.value)}
@@ -395,9 +449,10 @@ const AdminUserManagementPage: React.FC = () => {
             </div>
             <button
               type="button"
-              className={buttonClass('primary', 'shrink-0')}
+              className={buttonClass('secondary', 'w-full shrink-0 lg:w-auto')}
               onClick={() => ctrl.fetchDeletedUsers(0, deletedSearchInput)}
             >
+              <span className="material-symbols-outlined text-[18px]">search</span>
               Search
             </button>
           </div>
@@ -405,24 +460,25 @@ const AdminUserManagementPage: React.FC = () => {
           {ctrl.loadingDeleted ? (
             <LoadingState />
           ) : (
-            <>
-              <div className="overflow-x-auto rounded-lg border border-[#e2e8f0] bg-card">
+            <div className="overflow-hidden rounded-xl border border-[#e2e8f0] bg-card">
+              <div className="overflow-x-auto">
                 <table className={tableClass}>
                   <thead>
                     <tr>
-                      {['User / Member', 'Assigned Role', 'Joined Date', 'Deleted Date', 'Actions'].map(h => (
-                        <th key={h} className={thClass}>{h}</th>
+                      {['User / Member', 'Assigned Role', 'Joined Date', 'Deleted Date'].map(h => (
+                        <th key={h} className={`${thBase} px-3 text-left`}>{h}</th>
                       ))}
+                      <th className={`${thBase} px-4 text-right`}>Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-[#e2e8f0]">
                     {ctrl.deletedUsers?.content.length === 0 && (
                       <tr><td colSpan={5} className="px-3 py-12 text-center text-body-sm text-ink-variant">No deleted accounts</td></tr>
                     )}
                     {ctrl.deletedUsers?.content.map((u: UserSummary) => {
                       const ini = initialsOf(u.fullName);
                       return (
-                        <tr key={u.id} className="transition-colors hover:bg-surface-low">
+                        <tr key={u.id} className="transition-colors hover:bg-surface-low/60">
                           <td className={tdClass}>
                             <div className="flex min-w-0 items-center gap-3">
                               {ini && (
@@ -437,22 +493,19 @@ const AdminUserManagementPage: React.FC = () => {
                             </div>
                           </td>
                           <td className={tdClass}>
-                            <Badge tone="neutral" icon={ROLE_ICONS[u.role] ?? 'shield'}>
-                              {ROLE_LABELS[u.role] ?? u.role}
-                            </Badge>
+                            <RolePill role={u.role} />
                           </td>
-                          <td className={`${tdClass} whitespace-nowrap font-mono tabular-nums text-ink-variant`}>
+                          <td className={`${tdClass} whitespace-nowrap ${MONO} text-ink-variant`}>
                             {fmtDate(u.createdAt)}
                           </td>
-                          <td className={`${tdClass} whitespace-nowrap font-mono tabular-nums text-ink-variant`}>
+                          <td className={`${tdClass} whitespace-nowrap ${MONO} text-ink-variant`}>
                             {u.deletedAt ? fmtDate(u.deletedAt) : '—'}
                           </td>
-                          <td className={`${tdClass} whitespace-nowrap`}>
-                            <SmBtn
-                              label="Restore" icon="restore" tone="success"
-                              disabled={ctrl.actionLoading}
-                              onClick={() => handleRestore(u.id, u.email)}
-                            />
+                          <td className={`${tdClass} whitespace-nowrap text-right`}>
+                            <button type="button" className={rowBtnClass('success')} disabled={ctrl.actionLoading}
+                              onClick={() => handleRestore(u.id, u.email)}>
+                              <span className="material-symbols-outlined text-[16px]">restore</span>Reactivate
+                            </button>
                           </td>
                         </tr>
                       );
@@ -460,16 +513,14 @@ const AdminUserManagementPage: React.FC = () => {
                   </tbody>
                 </table>
               </div>
-
-              {ctrl.deletedUsers && ctrl.deletedUsers.totalPages > 1 && (
-                <Pagination
+              {ctrl.deletedUsers && (
+                <TableFooter
+                  paged={ctrl.deletedUsers}
                   currentPage={ctrl.deletedPage}
-                  totalPages={ctrl.deletedUsers.totalPages}
-                  totalElements={ctrl.deletedUsers.totalElements}
                   onPageChange={p => ctrl.fetchDeletedUsers(p)}
                 />
               )}
-            </>
+            </div>
           )}
         </>
       )}
@@ -533,22 +584,324 @@ const AdminUserManagementPage: React.FC = () => {
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 
-const KpiCard: React.FC<{
-  label: string; icon: string; value: number; sub: string; danger?: boolean;
-}> = ({ label, icon, value, sub, danger }) => (
-  <div className="rounded-lg border border-[#e2e8f0] bg-card p-4 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)]">
-    <div className="flex items-center justify-between gap-2">
-      <p className="m-0 text-label-sm uppercase tracking-wider text-ink-variant">{label}</p>
-      <span className={`material-symbols-outlined text-[18px] ${danger ? 'text-danger-text' : 'text-ink-variant'}`}>
-        {icon}
-      </span>
+/** 4 thẻ KPI theo đúng hình thái mockup: nhãn uppercase + icon màu, số lớn + chip, caption. */
+const KpiRow: React.FC<{ stats: UserStats }> = ({ stats }) => {
+  const activePct = stats.total > 0
+    ? `${Math.round((stats.activeLast30Days / stats.total) * 100)}% active`
+    : 'No accounts yet';
+
+  return (
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <KpiCard
+        label="Total Users" icon="group" iconClass="text-primary"
+        value={stats.total} caption="All registered profiles"
+      />
+      <KpiCard
+        label="Active Members" icon="verified_user" iconClass="text-success-text"
+        value={stats.activeLast30Days} chip={stats.total > 0 ? activePct : undefined}
+        chipClass="bg-success-bg text-success-text"
+        caption="Signed in within the last 30 days"
+      />
+      <KpiCard
+        label="Pending Invitations" icon="mail" iconClass="text-secondary"
+        value={stats.pendingVerification}
+        chip={stats.pendingVerification > 0 ? 'Awaiting' : undefined}
+        chipClass="bg-[#fffbeb] text-[#92400e] /* amber pending */"
+        caption="Awaiting email verification"
+      />
+      <KpiCard
+        label="Suspended / Locked" icon="gpp_bad" iconClass="text-danger-text"
+        value={stats.locked}
+        chip={stats.locked > 0 ? 'Flagged' : undefined}
+        chipClass="bg-danger-bg text-danger-text"
+        danger={stats.locked > 0}
+        caption={`${stats.disabled.toLocaleString('en-US')} disabled · ${stats.deleted.toLocaleString('en-US')} deleted`}
+      />
     </div>
-    <p className={`mt-1 mb-0 text-metric-stat tabular-nums ${danger ? 'text-danger-text' : 'text-ink'}`}>
-      {value.toLocaleString('en-US')}
-    </p>
-    <p className="mt-1 mb-0 text-body-sm text-ink-variant">{sub}</p>
+  );
+};
+
+const KpiCard: React.FC<{
+  label: string; icon: string; iconClass: string; value: number; caption: string;
+  chip?: string; chipClass?: string; danger?: boolean;
+}> = ({ label, icon, iconClass, value, caption, chip, chipClass, danger }) => (
+  <div className="flex flex-col justify-between rounded-xl border border-[#e2e8f0] bg-card p-3 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)]">
+    <div className="flex items-center justify-between gap-2 text-ink-variant">
+      <span className="text-label-sm uppercase tracking-wider">{label}</span>
+      <span className={`material-symbols-outlined text-[18px] ${iconClass}`}>{icon}</span>
+    </div>
+    <div className="mt-2 flex items-baseline justify-between gap-2">
+      <span className={`text-metric-stat tabular-nums ${danger ? 'text-danger-text' : 'text-ink'}`}>
+        {value.toLocaleString('en-US')}
+      </span>
+      {chip && (
+        <span className={`shrink-0 rounded px-1.5 py-0.5 ${MONO} font-medium ${chipClass}`}>{chip}</span>
+      )}
+    </div>
+    <p className="mt-1 mb-0 text-body-sm text-ink-variant">{caption}</p>
   </div>
 );
+
+const RolePill: React.FC<{ role: Role }> = ({ role }) => (
+  <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-label-sm font-medium ${ROLE_PILL[role]}`}>
+    <span className="material-symbols-outlined text-[14px]">{ROLE_ICONS[role] ?? 'shield'}</span>
+    {ROLE_LABELS[role] ?? role}
+  </span>
+);
+
+const MemberRow: React.FC<{
+  user: UserSummary;
+  loading: boolean;
+  checked: boolean;
+  onToggle: () => void;
+  onOpen: () => void;
+  onLock: () => void;
+  onUnlock: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onReset: () => void;
+  onResendInvite: () => void;
+  onRevokeInvite: () => void;
+  onHistory: () => void;
+}> = ({
+  user, loading, checked, onToggle, onOpen, onLock, onUnlock, onEdit, onDelete,
+  onReset, onResendInvite, onRevokeInvite, onHistory,
+}) => {
+  const ini = initialsOf(user.fullName);
+  const last = relativeOf(user.lastLoginAt);
+  // Pending invite = INACTIVE-chua-verify: chấm amber nhưng KHÔNG là dòng bị khóa.
+  const tone = user.pendingVerification ? 'warning' : statusTone(user.status);
+  const suspended = user.status === 'LOCKED';
+  const pillLabel = user.pendingVerification
+    ? ACCOUNT_STATUS_LABELS.PENDING
+    : ACCOUNT_STATUS_LABELS[user.status] ?? user.status;
+
+  return (
+    <tr
+      className={`cursor-pointer transition-colors ${
+        suspended ? 'bg-[#fff1f2]/50 hover:bg-[#fff1f2] /* rose-50 dong bi suspend */' : 'hover:bg-surface-low/60'
+      }`}
+      onClick={onOpen}
+    >
+      <td className={`${tdClass} w-12 px-4 text-center`} onClick={e => e.stopPropagation()}>
+        <input
+          type="checkbox"
+          aria-label={`Select ${user.email}`}
+          className="h-4 w-4 cursor-pointer rounded accent-primary"
+          checked={checked}
+          disabled={loading}
+          onChange={onToggle}
+        />
+      </td>
+      <td className={tdClass}>
+        <div className="flex min-w-0 items-center gap-3">
+          {ini && (
+            <div className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-label-sm font-bold ${
+              user.status === 'LOCKED' ? 'bg-danger-bg text-danger-text' : AVATAR_TONE[user.role]
+            }`}
+            >
+              {ini}
+              <span className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-card ${DOT_CLASS[tone]}`} />
+            </div>
+          )}
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-headline-sm text-ink">{user.fullName}</span>
+            <span className={`truncate text-body-sm ${suspended ? 'text-danger-text' : 'text-ink-variant'}`}>
+              {user.email}
+            </span>
+          </div>
+        </div>
+      </td>
+      <td className={tdClass}>
+        <RolePill role={user.role} />
+      </td>
+      <td className={tdClass}>
+        <Badge tone={tone} pill dot icon={suspended ? 'block' : undefined}>{pillLabel}</Badge>
+      </td>
+      <td className={`${tdClass} whitespace-nowrap ${MONO} text-ink-variant`}>{fmtDate(user.createdAt)}</td>
+      <td className={`${tdClass} whitespace-nowrap`}>
+        {last.text === 'Never' ? (
+          <span className="text-body-sm italic text-ink-variant">Never</span>
+        ) : last.recent ? (
+          <span className="inline-flex items-center gap-1 text-label-sm font-medium text-[#047857] /* emerald-700 mockup */">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#10b981]" />
+            {last.text}
+          </span>
+        ) : (
+          <span className="text-body-sm tabular-nums text-ink-variant">{last.text}</span>
+        )}
+      </td>
+      <td className={`${tdClass} whitespace-nowrap px-4 text-right`} onClick={e => e.stopPropagation()}>
+        {user.pendingVerification ? (
+          <div className="inline-flex items-center justify-end gap-1.5">
+            <button type="button" className={rowBtnClass('primary')} disabled={loading} onClick={onResendInvite}>Resend</button>
+            <button type="button" className={rowBtnClass()} disabled={loading} onClick={onRevokeInvite}>Revoke</button>
+            <RowMenu
+              disabled={loading}
+              items={[
+                { label: 'View details', icon: 'visibility', onClick: onOpen },
+                { label: 'Edit profile', icon: 'edit_note', onClick: onEdit },
+                { label: 'View history', icon: 'history', onClick: onHistory },
+              ]}
+            />
+          </div>
+        ) : (
+          <div className="inline-flex items-center justify-end gap-1.5">
+            <button type="button" className={rowBtnClass()} disabled={loading} onClick={onEdit}>Edit</button>
+            {user.status === 'LOCKED'
+              ? <button type="button" className={rowBtnClass('warning')} disabled={loading} onClick={onUnlock}>Reactivate</button>
+              : <button type="button" className={rowBtnClass()} disabled={loading} onClick={onLock}>Lock</button>
+            }
+            <RowMenu
+              disabled={loading}
+              items={[
+                { label: 'View details', icon: 'visibility', onClick: onOpen },
+                { label: 'Send password reset', icon: 'key', onClick: onReset },
+                { label: 'View history', icon: 'history', onClick: onHistory },
+                { label: 'Delete account', icon: 'delete', onClick: onDelete, danger: true },
+              ]}
+            />
+          </div>
+        )}
+      </td>
+    </tr>
+  );
+};
+
+/**
+ * Menu kebab của dòng. Dropdown đặt `fixed` theo rect của nút (giá trị động duy nhất được phép
+ * dùng `style`) vì thẻ bảng có `overflow-hidden` + `overflow-x-auto` -> menu absolute sẽ bị
+ * cắt mất vài item ở những dòng cuối trang.
+ */
+const RowMenu: React.FC<{
+  disabled?: boolean;
+  items: { label: string; icon: string; onClick: () => void; danger?: boolean }[];
+}> = ({ disabled, items }) => {
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+
+  const toggle = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (pos) { setPos(null); return; }
+    const r = e.currentTarget.getBoundingClientRect();
+    setPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+  };
+
+  return (
+    <span className="relative inline-flex">
+      <button
+        type="button"
+        aria-label="More actions"
+        aria-expanded={pos !== null}
+        title="More actions"
+        disabled={disabled}
+        className="inline-flex h-7 w-7 items-center justify-center rounded text-outline-strong transition-colors hover:bg-surface-mid hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+        onClick={toggle}
+      >
+        <span className="material-symbols-outlined text-[18px]">more_vert</span>
+      </button>
+      {pos && (
+        <>
+          <span className="fixed inset-0 z-[940]" onClick={() => setPos(null)} />
+          <span
+            className="fixed z-[950] flex w-56 flex-col rounded-lg border border-[#e2e8f0] bg-card py-1 shadow-[0_4px_12px_-2px_rgba(15,23,42,0.08)]"
+            style={{ top: pos.top, right: pos.right }}
+          >
+            {items.map(it => (
+              <button
+                key={it.label}
+                type="button"
+                className={`flex items-center gap-2 px-3 py-1.5 text-left text-label-md transition-colors hover:bg-surface-low ${
+                  it.danger ? 'text-danger-text' : 'text-ink'
+                }`}
+                onClick={() => { setPos(null); it.onClick(); }}
+              >
+                <span className="material-symbols-outlined text-[16px]">{it.icon}</span>
+                {it.label}
+              </button>
+            ))}
+          </span>
+        </>
+      )}
+    </span>
+  );
+};
+
+/** Chân bảng trong mockup: "Showing 1-10 of 3,420 registered members" + link CSV + pager số trang. */
+const TableFooter: React.FC<{
+  paged: PagedResponse<unknown>;
+  currentPage: number;
+  exporting?: boolean;
+  onExport?: () => void;
+  onPageChange: (p: number) => void;
+}> = ({ paged, currentPage, exporting, onExport, onPageChange }) => {
+  const from = paged.content.length === 0 ? 0 : currentPage * paged.size + 1;
+  const to = currentPage * paged.size + paged.content.length;
+
+  return (
+    <div className="flex flex-col items-center justify-between gap-2 border-t border-[#e2e8f0] bg-surface-low p-3 sm:flex-row">
+      <div className="flex flex-wrap items-center gap-2 text-body-sm text-ink-variant">
+        <span className="tabular-nums">
+          Showing {from.toLocaleString('en-US')}-{to.toLocaleString('en-US')} of{' '}
+          {paged.totalElements.toLocaleString('en-US')} registered members
+        </span>
+        {onExport && (
+          <>
+            <span className="text-outline-strong">•</span>
+            <button type="button" className="text-label-sm font-medium text-primary hover:underline"
+              onClick={onExport} disabled={exporting}>
+              {exporting ? 'Exporting...' : 'Download CSV Export'}
+            </button>
+          </>
+        )}
+      </div>
+      <Pager currentPage={currentPage} totalPages={paged.totalPages} onPageChange={onPageChange} />
+    </div>
+  );
+};
+
+const Pager: React.FC<{
+  currentPage: number; totalPages: number; onPageChange: (p: number) => void;
+}> = ({ currentPage, totalPages, onPageChange }) => {
+  // Cửa sổ trang lân cận + trang đầu/cuối, chỗ nào nhảy cóc thì thắn "…".
+  const pages = Array.from(new Set([
+    0, 1, currentPage - 1, currentPage, currentPage + 1, totalPages - 2, totalPages - 1,
+  ])).filter(p => p >= 0 && p < totalPages).sort((a, b) => a - b);
+
+  const cells: (number | 'gap')[] = [];
+  pages.forEach((p, i) => {
+    if (i > 0 && p - pages[i - 1] > 1) cells.push('gap');
+    cells.push(p);
+  });
+
+  return (
+    <div className="flex items-center gap-1">
+      <button type="button" className={pageBtnClass(false)} disabled={currentPage === 0}
+        aria-label="Previous page" onClick={() => onPageChange(currentPage - 1)}>
+        <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+      </button>
+      {cells.map((c, i) => c === 'gap'
+        ? <span key={`gap-${i}`} className="px-1 text-outline-strong">…</span>
+        : (
+          <button
+            key={c}
+            type="button"
+            className={pageBtnClass(c === currentPage)}
+            onClick={() => onPageChange(c)}
+          >
+            <span className={MONO}>{c + 1}</span>
+          </button>
+        ))}
+      <button type="button" className={pageBtnClass(false)} disabled={currentPage >= totalPages - 1}
+        aria-label="Next page" onClick={() => onPageChange(currentPage + 1)}>
+        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+      </button>
+    </div>
+  );
+};
+
+const pageBtnClass = (active: boolean) =>
+  'inline-flex h-7 min-w-[30px] items-center justify-center rounded px-2.5 py-1 transition-colors ' +
+  'disabled:cursor-not-allowed disabled:opacity-40 ' +
+  (active ? 'bg-primary font-bold text-on-primary' : 'bg-card text-ink hover:bg-surface-mid');
 
 /**
  * Ma tran quyen: dong = kha nang That cua BE, lay tu chu thich `@PreAuthorize`
@@ -573,143 +926,53 @@ const PERMISSION_MATRIX: { capability: string; roles: Role[] }[] = [
 const ALL_ROLES: Role[] = ['ROLE_USER', 'ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'];
 
 const RolePermissionsTab: React.FC = () => (
-  <div className="overflow-x-auto rounded-lg border border-[#e2e8f0] bg-card">
-    <table className={tableClass}>
-      <thead>
-        <tr>
-          <th className={thClass}>Capability</th>
-          {ALL_ROLES.map(r => (
-            <th key={r} className={`${thClass} text-center`}>{ROLE_LABELS[r]}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {PERMISSION_MATRIX.map(row => (
-          <tr key={row.capability}>
-            <td className={tdClass}>{row.capability}</td>
+  <div className="overflow-hidden rounded-xl border border-[#e2e8f0] bg-card">
+    <div className="overflow-x-auto">
+      <table className={tableClass}>
+        <thead>
+          <tr>
+            <th className={`${thBase} px-3 text-left`}>Capability</th>
             {ALL_ROLES.map(r => (
-              <td key={r} className={`${tdClass} text-center`}>
-                {row.roles.includes(r)
-                  ? <span className="material-symbols-outlined text-[18px] text-success-text">check_circle</span>
-                  : <span className="material-symbols-outlined text-[18px] text-[#cbd5e1]">remove</span>}
-              </td>
+              <th key={r} className={`${thBase} px-3 text-center`}>{ROLE_LABELS[r]}</th>
             ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
-    <p className="m-0 px-3 py-2 text-body-sm text-ink-variant">
+        </thead>
+        <tbody className="divide-y divide-[#e2e8f0]">
+          {PERMISSION_MATRIX.map(row => (
+            <tr key={row.capability} className="transition-colors hover:bg-surface-low/60">
+              <td className={tdClass}>{row.capability}</td>
+              {ALL_ROLES.map(r => (
+                <td key={r} className={`${tdClass} text-center`}>
+                  {row.roles.includes(r)
+                    ? <span className="material-symbols-outlined text-[18px] text-success-text">check_circle</span>
+                    : <span className="material-symbols-outlined text-[18px] text-outline">remove</span>}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p className="m-0 border-t border-[#e2e8f0] bg-surface-low px-3 py-2 text-body-sm text-ink-variant">
       Source: Spring `@PreAuthorize` rules in the backend controllers. There is no role-permission API yet.
     </p>
   </div>
 );
 
-type ActionTone = 'success' | 'warning' | 'info' | 'danger';
-
-const ACTION_TONE: Record<ActionTone, string> = {
-  success: 'bg-success-bg text-success-text',
-  warning: 'bg-[#fffbeb] text-[#92400e]',
-  info: 'bg-info-bg text-info-text',
-  danger: 'bg-danger-bg text-danger-text',
-};
-
-const ActionButtons: React.FC<{
-  user: UserSummary;
-  loading: boolean;
-  onLock: () => void;
-  onUnlock: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  onReset: () => void;
-  onResendInvite: () => void;
-  onRevokeInvite: () => void;
-}> = ({ user, loading, onLock, onUnlock, onEdit, onDelete, onReset, onResendInvite, onRevokeInvite }) => {
-  if (user.status === 'DELETED') return <span className="text-body-sm text-ink-variant">—</span>;
-
-  // Tài khoản chờ mời chưa đặt mật khẩu nên Lock/Reset PW chưa có nghĩa - chỉ Resend/Revoke.
-  if (user.pendingVerification) {
-    return (
-      <div className="flex flex-wrap items-center gap-1.5">
-        <SmBtn label="Resend" icon="send" tone="info" disabled={loading} onClick={onResendInvite} />
-        <SmBtn label="Revoke" icon="link_off" tone="warning" disabled={loading} onClick={onRevokeInvite} />
-        <IconBtn label="Edit profile" icon="edit" disabled={loading} onClick={onEdit} />
-      </div>
-    );
+// Icon + nền cho từng nhóm audit action (mockup: "Recent Security & Access Log" dạng tile).
+const AUDIT_TILE = (action: string, succeeded: boolean): { cls: string; icon: string } => {
+  if (!succeeded) return { cls: 'bg-danger-bg text-danger-text', icon: 'error' };
+  if (['LOCK_USER', 'DISABLE_USER', 'DELETE_USER', 'REVOKE_INVITATION'].includes(action)) {
+    return { cls: 'bg-danger-bg text-danger-text', icon: 'lock' };
   }
-
-  return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      {user.status === 'LOCKED'
-        ? <SmBtn label="Unlock" icon="lock_open" tone="success" disabled={loading} onClick={onUnlock} />
-        : <SmBtn label="Lock" icon="lock" tone="warning" disabled={loading} onClick={onLock} />
-      }
-      <SmBtn label="Reset PW" icon="key" tone="info" disabled={loading} onClick={onReset} />
-      <IconBtn label="Edit profile" icon="edit" disabled={loading} onClick={onEdit} />
-      <SmBtn label="Delete" icon="delete" tone="danger" disabled={loading} onClick={onDelete} />
-    </div>
-  );
+  if (['UNLOCK_USER', 'ENABLE_USER', 'RESTORE_USER', 'INVITE_USER', 'RESEND_INVITATION'].includes(action)) {
+    return { cls: 'bg-success-bg text-success-text', icon: action.startsWith('INVITE') || action === 'RESEND_INVITATION' ? 'person_add' : 'lock_open' };
+  }
+  if (['CHANGE_ROLE', 'UPDATE_PROFILE', 'RESET_PASSWORD'].includes(action)) {
+    return { cls: 'bg-info text-info-text', icon: action === 'RESET_PASSWORD' ? 'key' : 'shield' };
+  }
+  return { cls: 'bg-surface-mid text-ink-variant', icon: 'history' };
 };
-
-const IconBtn: React.FC<{ label: string; icon: string; disabled?: boolean; onClick: () => void }> = ({
-  label, icon, disabled, onClick,
-}) => (
-  <button
-    type="button" onClick={onClick} disabled={disabled} aria-label={label} title={label}
-    className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-variant transition-colors hover:bg-surface-low hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
-  >
-    <span className="material-symbols-outlined text-[16px]">{icon}</span>
-  </button>
-);
-
-const SmBtn: React.FC<{
-  label: string; icon: string; tone: ActionTone; disabled?: boolean; onClick: () => void;
-}> = ({ label, icon, tone, disabled, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick} disabled={disabled}
-    className={`inline-flex h-8 items-center gap-1 rounded-md px-2.5 text-label-sm font-medium transition-[filter] hover:brightness-95 active:brightness-90 disabled:cursor-not-allowed disabled:opacity-60 ${ACTION_TONE[tone]}`}
-  >
-    <span className="material-symbols-outlined text-[16px]">{icon}</span>
-    {label}
-  </button>
-);
-
-const Pagination: React.FC<{
-  currentPage: number; totalPages: number; totalElements: number;
-  onPageChange: (p: number) => void;
-}> = ({ currentPage, totalPages, totalElements, onPageChange }) => (
-  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-    <span className="text-body-sm tabular-nums text-ink-variant">
-      Total: {totalElements.toLocaleString('en-US')} users
-    </span>
-    <div className="flex items-center gap-1">
-      <button type="button" className={pageBtnClass(false)} disabled={currentPage === 0}
-        onClick={() => onPageChange(currentPage - 1)}>‹</button>
-      {Array.from({ length: totalPages }, (_, i) => i)
-        .filter(p => Math.abs(p - currentPage) <= 2)
-        .map(p => (
-          <button
-            key={p}
-            type="button"
-            className={pageBtnClass(p === currentPage)}
-            onClick={() => onPageChange(p)}
-          >
-            {p + 1}
-          </button>
-        ))}
-      <button type="button" className={pageBtnClass(false)} disabled={currentPage >= totalPages - 1}
-        onClick={() => onPageChange(currentPage + 1)}>›</button>
-    </div>
-  </div>
-);
-
-const pageBtnClass = (active: boolean) =>
-  `inline-flex h-8 min-w-[32px] items-center justify-center rounded-md border px-2 text-label-sm tabular-nums ` +
-  `transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-    active
-      ? 'border-primary bg-primary text-on-primary'
-      : 'border-[#e2e8f0] bg-card text-ink hover:bg-surface-low'
-  }`;
 
 const AuditLogTab: React.FC<{
   logs: PagedResponse<AuditLog> | null;
@@ -724,22 +987,29 @@ const AuditLogTab: React.FC<{
 
   if (!logs) return <LoadingState />;
   return (
-    <>
-      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-[#e2e8f0] bg-card p-3">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <h2 className="m-0 text-headline-md text-ink">Recent Security &amp; Access Log</h2>
+        <p className="m-0 text-body-sm text-ink-variant">
+          Audit trail of administrative role changes, invitation actions, and account state changes.
+        </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[#e2e8f0] bg-card p-3">
         <span className="material-symbols-outlined text-[18px] text-ink-variant">filter_list</span>
-        <select className={selectClass} value={action} onChange={e => setAction(e.target.value)}>
+        <select className={filterSelectClass} value={action} onChange={e => setAction(e.target.value)}>
           <option value="">All actions</option>
           {AUDIT_ACTIONS.map(a => <option key={a} value={a}>{AUDIT_ACTION_LABELS[a] ?? a}</option>)}
         </select>
         <label className="flex items-center gap-1.5 text-label-md text-ink-variant">
           From
-          <input type="date" className={`${inputClass} w-auto`} value={from} onChange={e => setFrom(e.target.value)} />
+          <input type="date" className={`${filterSelectClass} tabular-nums`} value={from} onChange={e => setFrom(e.target.value)} />
         </label>
         <label className="flex items-center gap-1.5 text-label-md text-ink-variant">
           To
-          <input type="date" className={`${inputClass} w-auto`} value={to} onChange={e => setTo(e.target.value)} />
+          <input type="date" className={`${filterSelectClass} tabular-nums`} value={to} onChange={e => setTo(e.target.value)} />
         </label>
-        <button type="button" className={buttonClass('primary')}
+        <button type="button" className={buttonClass('secondary')}
           onClick={() => onApplyFilters({ action, from, to, targetUserId: filters.targetUserId })}>
           Apply
         </button>
@@ -752,58 +1022,53 @@ const AuditLogTab: React.FC<{
         )}
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-[#e2e8f0] bg-card">
-        <table className={tableClass}>
-          <thead>
-            <tr>
-              {['Admin', 'Action', 'Target user', 'Detail', 'Result', 'Time'].map(h => (
-                <th key={h} className={thClass}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {logs.content.length === 0 && (
-              <tr><td colSpan={6} className="px-3 py-12 text-center text-body-sm text-ink-variant">No logs yet</td></tr>
-            )}
-            {logs.content.map(l => (
-              <tr key={l.id} className="transition-colors hover:bg-surface-low">
-                <td className={`${tdClass} break-all`}>{l.adminEmail}</td>
-                <td className={tdClass}>
-                  <Badge tone={l.succeeded ? 'info' : 'danger'} icon={l.succeeded ? 'verified_user' : 'error'}>
-                    {AUDIT_ACTION_LABELS[l.action] ?? l.action}
-                  </Badge>
-                </td>
-                <td className={`${tdClass} min-w-0`}>
-                  {l.targetUserId == null ? '—' : (
-                    l.targetEmail ? (
-                      <div className="flex min-w-0 flex-col">
-                        <span className="truncate text-body-sm text-ink">{l.targetFullName ?? ''}</span>
-                        <span className="truncate text-body-sm text-ink-variant">{l.targetEmail}</span>
-                      </div>
-                    ) : <span className="tabular-nums text-body-sm text-ink-variant">#{l.targetUserId}</span>
-                  )}
-                </td>
-                <td className={`${tdClass} max-w-[240px] truncate`}>{l.detail ?? '—'}</td>
-                <td className={tdClass}>
-                  {l.succeeded
-                    ? <span className="text-body-sm text-success-text">OK</span>
-                    : <span className="text-body-sm text-danger-text" title={l.reason ?? ''}>{l.reason ?? 'Rejected'}</span>}
-                </td>
-                <td className={`${tdClass} whitespace-nowrap tabular-nums`}>
-                  {fmtDateTime(l.createdAt)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="divide-y divide-[#e2e8f0] overflow-hidden rounded-xl border border-[#e2e8f0] bg-card">
+        {logs.content.length === 0 && (
+          <p className="px-3 py-12 text-center text-body-sm text-ink-variant">No logs yet</p>
+        )}
+        {logs.content.map(l => {
+          const tile = AUDIT_TILE(l.action, l.succeeded);
+          const target = l.targetUserId == null
+            ? null
+            : (l.targetEmail ? `${l.targetFullName ?? ''} — ${l.targetEmail}` : `#${l.targetUserId}`);
+          return (
+            <div key={l.id} className="flex items-center justify-between gap-3 p-3 transition-colors hover:bg-surface-low/60">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${tile.cls}`}>
+                  <span className="material-symbols-outlined text-[18px]">{tile.icon}</span>
+                </div>
+                <div className="flex min-w-0 flex-col">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-label-md font-semibold text-ink">
+                      {AUDIT_ACTION_LABELS[l.action] ?? l.action}
+                    </span>
+                    {target && <span className="truncate text-body-sm text-ink-variant">{target}</span>}
+                    {!l.succeeded && (
+                      <span className="text-body-sm text-danger-text">{l.reason ?? 'Rejected'}</span>
+                    )}
+                  </div>
+                  <span className="text-body-sm text-ink-variant">
+                    by {l.adminEmail}
+                    {l.detail ? ` · ${l.detail}` : ''}
+                  </span>
+                </div>
+              </div>
+              <span
+                className="shrink-0 text-body-sm tabular-nums text-ink-variant"
+                title={fmtDateTime(l.createdAt)}
+              >
+                {relativeOf(l.createdAt).text}
+              </span>
+            </div>
+          );
+        })}
       </div>
       {logs.totalPages > 1 && (
-        <Pagination
-          currentPage={page} totalPages={logs.totalPages}
-          totalElements={logs.totalElements} onPageChange={onPageChange}
-        />
+        <div className="flex justify-center rounded-xl border border-[#e2e8f0] bg-card p-2">
+          <Pager currentPage={page} totalPages={logs.totalPages} onPageChange={onPageChange} />
+        </div>
       )}
-    </>
+    </div>
   );
 };
 

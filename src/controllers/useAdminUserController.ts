@@ -221,6 +221,40 @@ export const useAdminUserController = () => {
     } finally { setActionLoading(false); }
   }, [fetchUserDetail, refreshAfterAction, selectedUser]);
 
+  /**
+   * Bulk = loop từng request đơn (BE chưa có POST /users/bulk — việc 6.5 trong spec).
+   * Mỗi item vẫn qua rule nghiệp vụ riêng của BE nên phải đi hết danh sách rồi đếm
+   * thành công/thất bại, không dừng ở lỗi đầu tiên.
+   */
+  const runBulkAction = useCallback(async (
+    action: 'lock' | 'unlock' | 'delete', ids: number[],
+  ): Promise<void> => {
+    if (!ids.length) return;
+    setActionLoading(true);
+    clearMessages();
+    const call = {
+      lock: AdminService.lockUser, unlock: AdminService.unlockUser, delete: AdminService.deleteUser,
+    }[action];
+    let done = 0;
+    let firstError = '';
+    for (const id of ids) {
+      try {
+        await call(id);
+        done += 1;
+      } catch (e: any) {
+        if (!firstError) firstError = readApiErrorMessage(e, 'Rejected by validation');
+      }
+    }
+    const past = { lock: 'Locked', unlock: 'Unlocked', delete: 'Deleted' }[action];
+    if (done > 0) setSuccessMsg(`${past} ${done} of ${ids.length} account(s)`);
+    if (done < ids.length) {
+      setError(`${ids.length - done} of ${ids.length} account(s) were rejected — ${firstError}`);
+    }
+    await fetchUsers(currentPage);
+    if (selectedUser && ids.includes(selectedUser.id)) await fetchUserDetail(selectedUser.id);
+    setActionLoading(false);
+  }, [currentPage, fetchUserDetail, fetchUsers, selectedUser]);
+
   const fetchAuditLogs = useCallback(async (page = 0, f: AuditFilters = auditFilters) => {
     try {
       const res = await AdminService.getAuditLogs({
@@ -342,6 +376,7 @@ export const useAdminUserController = () => {
     fetchUsers, fetchDeletedUsers, fetchUserDetail, fetchAuditLogs, fetchStats, loadProfileForEdit,
     lockUser, unlockUser, setUserStatus, deleteUser, restoreUser, resetPassword, changeRole,
     inviteUser, resendInvitation, revokeInvitation, updateProfile,
+    runBulkAction,
     applyFilters, applyAuditFilters, exportUsersCsv,
     setSelectedUser, clearMessages,
   };

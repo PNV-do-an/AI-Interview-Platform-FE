@@ -66,6 +66,18 @@ export const ROLE_LABELS: Record<Role, string> = {
   ROLE_INTERVIEWER: 'Interviewer',
 };
 
+/**
+ * Nhãn trạng thái tài khoản (chrome tiếng Anh theo mockup). PENDING không phải giá trị
+ * `AccountStatus` mà là bộ lọc/`pendingVerification` -> vẫn cần nhãn cho pill.
+ */
+export const ACCOUNT_STATUS_LABELS: Record<string, string> = {
+  ACTIVE: 'Active',
+  INACTIVE: 'Inactive',
+  LOCKED: 'Locked',
+  DELETED: 'Deleted',
+  PENDING: 'Pending invite',
+};
+
 /** Enum AuditAction kín phía BE - nguồn: model/enums/AuditAction.java. */
 export const AUDIT_ACTIONS = [
   'VIEW_USER', 'LOCK_USER', 'UNLOCK_USER', 'ENABLE_USER', 'DISABLE_USER',
