@@ -12,20 +12,25 @@ const TONE_CLASS: Record<Tone, string> = {
 
 export const STATUS_TONE: Record<string, Tone> = {
   ACTIVE: 'success', APPROVED: 'success', PAID: 'success', COMPLETED: 'success', PUBLISHED: 'success', PASSED: 'success', ACCEPTED: 'success', OPEN: 'success',
-  PENDING: 'warning', SCHEDULED: 'warning', DRAFT: 'neutral', NEW: 'info', PROCESSING: 'info', INTERVIEWED: 'info', PENDING_VERIFICATION: 'warning', LOCKED: 'warning',
+  PENDING: 'warning', SCHEDULED: 'warning', DRAFT: 'neutral', NEW: 'info', PROCESSING: 'info', INTERVIEWED: 'info', PENDING_VERIFICATION: 'warning',
+  LOCKED: 'danger',
   REJECTED: 'danger', CANCELLED: 'danger', CLOSED: 'danger', INACTIVE: 'danger', FAILED: 'danger', BANNED: 'danger', DELETED: 'neutral',
 };
 
 export const statusTone = (status?: string): Tone => STATUS_TONE[(status || '').toUpperCase()] ?? 'neutral';
 
-export const Badge: React.FC<{ tone?: Tone; children: React.ReactNode; icon?: string }> = ({
-  tone = 'neutral',
-  children,
-  icon,
-}) => (
+/**
+ * Badge trạng thái / vai trò.
+ * `pill` = viên thuốc bo tròn (mockup dùng riêng cho role + status), `dot` = chấm màu trước nhãn.
+ * Không truyền 2 prop này thì giữ hình dạng gốc (pill góc vuông 4px) cho các trang khác.
+ */
+export const Badge: React.FC<{
+  tone?: Tone; children: React.ReactNode; icon?: string; pill?: boolean; dot?: boolean;
+}> = ({ tone = 'neutral', children, icon, pill = false, dot = false }) => (
   <span
-    className={`inline-flex items-center gap-1 whitespace-nowrap rounded px-2 py-0.5 text-label-sm font-medium ${TONE_CLASS[tone]}`}
+    className={`inline-flex items-center gap-1.5 whitespace-nowrap px-2 py-0.5 text-label-sm font-medium ${pill ? 'rounded-full px-2.5' : 'rounded'} ${TONE_CLASS[tone]}`}
   >
+    {dot && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-80" />}
     {icon && <span className="material-symbols-outlined text-[14px]">{icon}</span>}
     {children}
   </span>
