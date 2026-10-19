@@ -12,8 +12,8 @@ const TONE_CLASS: Record<Tone, string> = {
 
 export const STATUS_TONE: Record<string, Tone> = {
   ACTIVE: 'success', APPROVED: 'success', PAID: 'success', COMPLETED: 'success', PUBLISHED: 'success', PASSED: 'success', ACCEPTED: 'success', OPEN: 'success',
-  PENDING: 'warning', SCHEDULED: 'warning', DRAFT: 'neutral', NEW: 'info', PROCESSING: 'info', INTERVIEWED: 'info',
-  REJECTED: 'danger', CANCELLED: 'danger', CLOSED: 'danger', INACTIVE: 'danger', FAILED: 'danger', BANNED: 'danger',
+  PENDING: 'warning', SCHEDULED: 'warning', DRAFT: 'neutral', NEW: 'info', PROCESSING: 'info', INTERVIEWED: 'info', PENDING_VERIFICATION: 'warning', LOCKED: 'warning',
+  REJECTED: 'danger', CANCELLED: 'danger', CLOSED: 'danger', INACTIVE: 'danger', FAILED: 'danger', BANNED: 'danger', DELETED: 'neutral',
 };
 
 export const statusTone = (status?: string): Tone => STATUS_TONE[(status || '').toUpperCase()] ?? 'neutral';
