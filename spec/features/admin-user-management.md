@@ -121,6 +121,27 @@ ROLE_STAFF→Staff, ROLE_ADMIN→Administrator. Việc đưa "Employer" vào h�
 | Checkbox + bulk | 6.5 | 2 | — |
 | Online dot realtime | không có realtime layer; dot chỉ phản ánh `status` | 1 | — |
 
+**Wave 3 (2026-10-19) — dựng lại layout đúng mockup Stitch `admin_workspace_user_directory_job_approvals`.**
+Logic/state/controller giữ nguyên, chỉ đổi render. Các khối của mockup đã áp dụng:
+
+| Khối mockup | FE render | Nguồn số liệu |
+|---|---|---|
+| Breadcrumb "Administration / User Directory" + hàng Export CSV / Invite Members | `AdminUserManagementPage` header | — |
+| H1 display "User Management & Access Control" + subtitle | `text-display-mobile sm:text-display` | — |
+| 4 KPI card (label uppercase + icon tint / metric mono / caption) | `KpiRow` + `KpiCard` | `GET /users/stats` |
+| Chip dưới metric KPI | chỉ render khi tính được từ số thật | Active = `{pct}% active` |
+| Tab strip có icon + count pill | `users/pending/permissions/deleted/auditLogs` | `stats`, `totalElements` |
+| Filter ribbon: search `w-96 bg-surface-low shadow-inner` + label `Role:`/`Status:` + select | `searchInputClass`, `filterSelectClass` | — |
+| Bảng: checkbox col, avatar initials + status dot ring, role pill, status pill có dot, joined date mono, Last Active | `MemberRow` | `UserSummary` |
+| Hành động dòng: Edit + Lock/Reactivate + kebab `more_vert` | `rowBtnClass` + `RowMenu` (fixed, không bị `overflow-hidden` của card cắt) | — |
+| Footer "Showing x-y of N registered members • Download CSV Export" + pager có `…` | `TableFooter` + `Pager` | `Page` của API |
+| "Recent Security & Access Log" dạng icon tile | `AuditLogTab` + `AUDIT_TILE(action, succeeded)` | `GET /audit-logs` |
+
+Kiểu só: `Badge` thêm `pill`/`dot` (rounded-full + chấm `bg-current`), `STATUS_TONE.LOCKED` đổi
+`warning` → `danger` cho khớp pill "Suspended" màu rose, thêm `ACCOUNT_STATUS_LABELS` trong
+`User.model.ts` (chrome tiếng Anh). Row pending invite render tone `warning` (không phải rose):
+`statusTone('INACTIVE')` là `danger`, nên màu rose chỉ dành cho account `status === 'LOCKED'`.
+
 ## 5. Khối mockup cần backend mới (không bỏ — chuyển thành việc mục 6)
 
 - **4 KPI cards** — Total + Locked đếm được bằng API hiện có (2.7); Active-in-30-days và Pending
@@ -139,6 +160,15 @@ ROLE_STAFF→Staff, ROLE_ADMIN→Administrator. Việc đưa "Employer" vào h�
 - **"All services operational" pill** — health-check endpoint không thuộc màn admin user; nếu giữ thì
   map vào `GET /actuator/health` (BE Spring Boot mặc định có actuator — **chưa verify**, phải đo trước
   khi nối). Tạm render từ status API health thật, không hard-code "operational".
+
+**Wave 3 — khối mockup chủ động bỏ (không bịa số liệu, không phải chỗ trống trang trí):**
+
+- Chip delta "+12% so với tháng trước" dưới KPI — `GET /users/stats` không có time-series → bỏ hẳn.
+- Pill "All services operational" ở tab strip — 6.8 chưa nối → tab strip không có pill.
+- Role "Employer" — enum `Role` BE không có giá trị đó (9.3) → `ROLE_PILL` chỉ map các role thật.
+- Ảnh avatar — không có endpoint upload avatar → giữ initials + dot `status` (đã ghi ở mục trên).
+- Nút "More Filters" — mockup để mở panel lọc; FE không có bộ lọc nào ngoài Role/Status/search, nên
+  giữ đúng vị trí nhưng là nút **Search** thật (áp bộ lọc), không phải nút trang trí.
 
 ## 6. Việc backend cần làm (repo BE — contract FE mong muốn)
 
@@ -266,6 +296,20 @@ Chi tiết contract FE từng đề xuất (giữ lại để đối chiếu tê
   - Audit tab: `action=REVOKE_INVITATION` filter → total 1; `EXPORT_USERS` có row `targetUserId=null`
     (FE hiển thị `—`), `detail` ghi rõ số dòng + bộ lọc.
 - [x] Actuator: chưa nối pill "All services operational" (mục 6.8 vẫn mở).
+- [x] **Wave 3 (restyle theo mockup) — đo 2026-10-19:**
+  - `node node_modules/typescript/bin/tsc --noEmit` sạch.
+  - Không vào được `/admin/users` bằng browser dùng chung (đang là phiên OAuth của anh Huy + `.env.production` baked
+    trỏ staging chưa có endpoint mới) → verify ảnh bằng đường **render component thật**: jsdom dump DOM của
+    `AdminUserManagementPage` với controller mock, style bằng Tailwind CSS generate từ chính app
+    (`tailwind.config.js`), chụp bằng headless Chrome (`--virtual-time-budget=8000` để font + Material Symbols
+    load kịp — lần chụp đầu không có flag này bị font dự phòng). Không viết UI giả.
+  - Probe 3/3 PASS: (1) dump DOM screen User Directory, (2) kebab dòng cuối mở menu và wire đủ 4 item,
+    (3) chọn nhiều dòng hiện bulk bar và hỏi xác nhận.
+  - `docker compose build frontend` exit 0 → `up -d frontend` recreate → `localhost:3000` serve
+    `main.4e9c91a8.js`; grep trong bundle chứa chuỗi mới: "Access Control", "registered members",
+    "Pending invite", "Reactivate", "Recent Security".
+  - Artefact tạm đã xoá sạch trước commit: `src/views/pages/probe-render.test.tsx` + thư mục
+    `/d/tmp/stitchadm/harness` (serve.js, html, png) — không commit.
 - [x] Ghi lại mục này + cập nhật dòng `/admin/users` trong `spec/INDEX.md`.
 
 ## 9. Câu hỏi mở cho anh Huy
