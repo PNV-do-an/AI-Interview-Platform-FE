@@ -19,13 +19,13 @@ Trạng thái: `DATA` = dựng theo mockup + số liệu thật; `UI` = theo moc
 | ai_mock_session_live_interactive_interview | /mock-interviews/:id | `views/pages/MockInterviewSessionPage.tsx` | DATA | Bỏ: waveform/audio, persona card, tab voice/code, hint drawer, scratchpad, remaining time. |
 | candidate_evaluation_ai_detailed_results_feedback | /mock-interviews/:id/result | `views/pages/MockInterviewResultPage.tsx` | DATA | Bỏ: percentile, 3 thẻ tiêu chí (chỉ có điểm từng câu), strengths/curriculum, audio replay. |
 | ai_interview_prep_device_check | /device-check | `views/pages/DeviceCheckPage.tsx` | STATIC | Chưa gọi getUserMedia; sidebar chưa có link vào màn này. |
-| interviewai_sign_in | /login | `views/pages/LoginPage.tsx` | DATA | OAuth Google + GitHub thật; Enterprise SSO (Keycloak) là luồng riêng. |
+| interviewai_sign_in | /login | `views/pages/LoginPage.tsx` | DATA | OAuth Google + GitHub thật; Enterprise SSO (Keycloak) là luồng riêng. Hợp đồng thông báo lỗi: `features/auth-flows.md`. |
 | interviewai_create_account | /register | `views/pages/RegisterPage.tsx` | DATA | Bản cũ inline-style đã được dựng lại theo mockup 2 cột (branch `feature/create-api-sign-up`, 2026-10-17): bỏ phone + confirm password theo mockup, thêm Google/GitHub (GitHub callback về `/login`), terms checkbox client-only. |
 | — (mockup không có màn này) | /verify | `views/pages/VerifyEmailPage.tsx` | DATA | Trang nhận `?token=` từ email, gọi `GET /api/v1/auth/verify`, hiển thị message API nguyên văn + link Sign in. |
 | interviewai_two_factor_authentication_2fa | /two-factor | `views/pages/TwoFactorPage.tsx` | STATIC | Không có API 2FA. |
 | interviewai_magic_link_confirmation | /magic-link | `views/pages/MagicLinkPage.tsx` | STATIC | Nút "Email me a magic link" ở LoginPage đang là chỗ trống. |
-| interviewai_reset_password | /forgot-password | `views/pages/ForgotPasswordPage.tsx` | DATA | Plan `features/password-reset.md`. Nút SMS chỉ hiện notice (không có API SMS); resend có cooldown 30s. |
-| interviewai_set_new_password_confirmation | /reset-password | `views/pages/ResetPasswordPage.tsx` | DATA | Plan `features/password-reset.md`. Pill đếm thời gian + chip danh tính lấy từ `GET /reset-password?token=`; modal hiển thị `eventId` + trạng thái thu hồi thật, không đếm số phiên. |
+| interviewai_reset_password | /forgot-password | `views/pages/ForgotPasswordPage.tsx` | DATA | Plan FE `features/auth-flows.md` + plan BE `spec/features/password-reset.md`. Nút SMS chỉ hiện notice (không có API SMS); resend có cooldown 30s. |
+| interviewai_set_new_password_confirmation | /reset-password | `views/pages/ResetPasswordPage.tsx` | DATA | Plan FE `features/auth-flows.md` + plan BE `spec/features/password-reset.md`. Pill đếm thời gian + chip danh tính lấy từ `GET /reset-password?token=`; modal hiển thị `eventId` + trạng thái thu hồi thật, không đếm số phiên. |
 | interviewai_public_landing_page | `/` khi chưa đăng nhập | `views/pages/LandingPage.tsx` | STATIC | `HomeRoute` trong `App.tsx` quyết định: đã đăng nhập -> /dashboard. |
 | interviewai_public_job_board | /opportunities | `views/pages/PublicJobBoardPage.tsx` | STATIC | 5 job demo copy từ mockup, filter local. Route công khai. |
 
