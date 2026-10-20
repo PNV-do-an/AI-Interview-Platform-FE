@@ -37,6 +37,13 @@ import TwoFactorPage from './views/pages/TwoFactorPage';
 import MagicLinkPage from './views/pages/MagicLinkPage';
 import DeviceCheckPage from './views/pages/DeviceCheckPage';
 import JobApprovalPage from './views/pages/JobApprovalPage';
+import JobReviewDetailPage from './views/pages/JobReviewDetailPage';
+import JobModerationHistoryPage from './views/pages/JobModerationHistoryPage';
+import AdminDashboardPage from './views/pages/AdminDashboardPage';
+import AdminUserDetailPage from './views/pages/AdminUserDetailPage';
+import AdminRolePermissionPage from './views/pages/AdminRolePermissionPage';
+import AdminSystemSettingsPage from './views/pages/AdminSystemSettingsPage';
+import AdminAccountSettingsPage from './views/pages/AdminAccountSettingsPage';
 import CandidateEvaluationPage from './views/pages/CandidateEvaluationPage';
 import RubricStudioPage from './views/pages/RubricStudioPage';
 import HiringAnalyticsPage from './views/pages/HiringAnalyticsPage';
@@ -102,6 +109,9 @@ const App: React.FC = () => {
               </Route>
               <Route element={<ProtectedRoute allowedRoles={['ROLE_ADMIN', 'ROLE_STAFF']} />}>
                 <Route path="/admin/job-approvals" element={<JobApprovalPage />} />
+                {/* 2 màn screen 18.1/18.2: STATIC (chưa có endpoint kiểm duyệt JD) */}
+                <Route path="/admin/job-approvals/history" element={<JobModerationHistoryPage />} />
+                <Route path="/admin/job-approvals/:id" element={<JobReviewDetailPage />} />
                 <Route path="/admin/rubrics" element={<RubricStudioPage />} />
                 <Route path="/admin/analytics" element={<HiringAnalyticsPage />} />
               </Route>
@@ -109,6 +119,12 @@ const App: React.FC = () => {
               {/* Admin-only routes */}
               <Route element={<ProtectedRoute allowedRoles={['ROLE_ADMIN']} />}>
                 <Route path="/admin/users" element={<AdminUserManagementPage />} />
+                <Route path="/admin/users/:id" element={<AdminUserDetailPage />} />
+                {/* 3 màn screen 22 còn lại + dashboard screen 16: STATIC, chưa có API nên không gắn sidebar */}
+                <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+                <Route path="/admin/roles" element={<AdminRolePermissionPage />} />
+                <Route path="/admin/settings" element={<AdminSystemSettingsPage />} />
+                <Route path="/admin/account" element={<AdminAccountSettingsPage />} />
               </Route>
 
               {/* Admin & staff routes */}

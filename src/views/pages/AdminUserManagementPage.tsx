@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAdminUserController } from '../../controllers/useAdminUserController';
 import {
   ACCOUNT_STATUS_LABELS, AuditLog, AUDIT_ACTIONS, PagedResponse, Role, ROLE_LABELS,
   UserDetail, UserStats, UserSummary,
 } from '../../models/User.model';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { parseServerTimestamp } from '../../utils/date';
 import EditProfileModal from '../components/EditProfileModal';
 import InviteMemberModal from '../components/InviteMemberModal';
-import UserDetailModal from '../components/UserDetailModal';
 import {
   Badge, ErrorBanner, LoadingState, statusTone, buttonClass, tableClass, tdClass,
 } from '../components/ui';
@@ -46,12 +47,15 @@ const AVATAR_TONE: Record<Role, string> = {
 };
 
 // Dot mau theo tone that cua status (khong phai online-realtime; BE khong co last_seen).
+// Cac hex duoi day la mau mockup khong co token: #10b981 emerald-500, #f59e0b amber-500,
+// #f43f5e rose-500, #94a3b8 slate-400. Tuong tu: #fffbeb/#92400e va #fef3c7/#78350f (amber bg/text),
+// #047857 emerald-700, #fff1f2 rose-50 (dong tam giu), #e2e8f0 duong vi hairline.
 const DOT_CLASS: Record<string, string> = {
-  success: 'bg-[#10b981] /* emerald-500 cham dot mockup */',
-  warning: 'bg-[#f59e0b] /* amber-500 */',
-  danger: 'bg-[#f43f5e] /* rose-500 */',
-  info: 'bg-[#10b981] /* emerald-500 */',
-  neutral: 'bg-[#94a3b8] /* slate-400 */',
+  success: 'bg-[#10b981]',
+  warning: 'bg-[#f59e0b]',
+  danger: 'bg-[#f43f5e]',
+  info: 'bg-[#10b981]',
+  neutral: 'bg-[#94a3b8]',
 };
 
 const initialsOf = (name: string): string | null => {
@@ -60,11 +64,12 @@ const initialsOf = (name: string): string | null => {
   return parts.slice(0, 2).map(p => p[0].toUpperCase()).join('');
 };
 
-// Ding dang mockup: "Jan 10, 2025".
+// Ding dang mockup: "Jan 10, 2025". BE tra `LocalDateTime` khong kem offset nen phai qua
+// parseServerTimestamp (coi la UTC) quy ve gio may tinh, neu khong lech 7h o VN.
 const fmtDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  (parseServerTimestamp(iso) ?? new Date(NaN)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 const fmtDateTime = (iso: string) =>
-  new Date(iso).toLocaleString('en-US', {
+  (parseServerTimestamp(iso) ?? new Date(NaN)).toLocaleString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit',
   });
 
@@ -75,7 +80,9 @@ const fmtDateTime = (iso: string) =>
  */
 const relativeOf = (iso: string | null): { text: string; recent: boolean } => {
   if (!iso) return { text: 'Never', recent: false };
-  const diffMs = Date.now() - new Date(iso).getTime();
+  const stamp = parseServerTimestamp(iso);
+  if (!stamp) return { text: 'Never', recent: false };
+  const diffMs = Date.now() - stamp.getTime();
   const mins = Math.floor(diffMs / 60000);
   if (mins < 1) return { text: 'Just now', recent: true };
   if (mins < 60) return { text: `${mins} min${mins > 1 ? 's' : ''} ago`, recent: true };
@@ -105,12 +112,13 @@ const rowBtnClass = (tone: 'neutral' | 'primary' | 'success' | 'warning' | 'dang
     neutral: 'bg-surface-mid text-ink hover:bg-surface-high',
     primary: 'bg-primary/10 text-primary hover:bg-primary/20',
     success: 'bg-success-bg text-success-text hover:brightness-95',
-    warning: 'bg-[#fef3c7] text-[#78350f] /* amber-100/900 nut reactivate mockup */ hover:brightness-95',
+    warning: 'bg-[#fef3c7] text-[#78350f] hover:brightness-95',
     danger: 'bg-danger-bg text-danger-text hover:brightness-95',
   }[tone]);
 
 const AdminUserManagementPage: React.FC = () => {
   const ctrl = useAdminUserController();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<TabType>('users');
   const [searchInput, setSearchInput] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -209,7 +217,6 @@ const AdminUserManagementPage: React.FC = () => {
   };
 
   const handleViewHistory = (id: number) => {
-    ctrl.setSelectedUser(null);
     setTab('auditLogs');
     ctrl.applyAuditFilters({ action: '', from: '', to: '', targetUserId: id });
   };
@@ -403,7 +410,7 @@ const AdminUserManagementPage: React.FC = () => {
                         loading={ctrl.actionLoading}
                         checked={selectedIds.includes(u.id)}
                         onToggle={() => toggleRow(u.id)}
-                        onOpen={() => ctrl.fetchUserDetail(u.id)}
+                        onOpen={() => navigate(`/admin/users/${u.id}`)}
                         onLock={() => ctrl.lockUser(u.id)}
                         onUnlock={() => ctrl.unlockUser(u.id)}
                         onEdit={() => openEdit(u.id)}
@@ -539,23 +546,6 @@ const AdminUserManagementPage: React.FC = () => {
         />
       )}
 
-      {/* User detail modal */}
-      <UserDetailModal
-        user={ctrl.selectedUser}
-        onClose={() => ctrl.setSelectedUser(null)}
-        onLock={ctrl.lockUser}
-        onUnlock={ctrl.unlockUser}
-        onSetStatus={ctrl.setUserStatus}
-        onDelete={id => handleDelete(id, ctrl.selectedUser?.email ?? '')}
-        onResetPassword={ctrl.resetPassword}
-        onChangeRole={ctrl.changeRole}
-        onViewHistory={handleViewHistory}
-        onEditProfile={setEditUser}
-        onResendInvitation={ctrl.resendInvitation}
-        onRevokeInvitation={ctrl.revokeInvitation}
-        actionLoading={ctrl.actionLoading}
-      />
-
       {/* Confirm dialog */}
       <ConfirmDialog
         open={confirmDialog.open}
@@ -608,7 +598,7 @@ const KpiRow: React.FC<{ stats: UserStats }> = ({ stats }) => {
         label="Pending Invitations" icon="mail" iconClass="text-secondary"
         value={stats.pendingVerification}
         chip={stats.pendingVerification > 0 ? 'Awaiting' : undefined}
-        chipClass="bg-[#fffbeb] text-[#92400e] /* amber pending */"
+        chipClass="bg-[#fffbeb] text-[#92400e]"
         caption="Awaiting email verification"
       />
       <KpiCard
@@ -681,7 +671,7 @@ const MemberRow: React.FC<{
   return (
     <tr
       className={`cursor-pointer transition-colors ${
-        suspended ? 'bg-[#fff1f2]/50 hover:bg-[#fff1f2] /* rose-50 dong bi suspend */' : 'hover:bg-surface-low/60'
+        suspended ? 'bg-[#fff1f2]/50 hover:bg-[#fff1f2]' : 'hover:bg-surface-low/60'
       }`}
       onClick={onOpen}
     >
@@ -725,7 +715,7 @@ const MemberRow: React.FC<{
         {last.text === 'Never' ? (
           <span className="text-body-sm italic text-ink-variant">Never</span>
         ) : last.recent ? (
-          <span className="inline-flex items-center gap-1 text-label-sm font-medium text-[#047857] /* emerald-700 mockup */">
+          <span className="inline-flex items-center gap-1 text-label-sm font-medium text-[#047857]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#10b981]" />
             {last.text}
           </span>
