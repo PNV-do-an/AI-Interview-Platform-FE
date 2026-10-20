@@ -1,70 +1,45 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import AuthService from '../../services/auth.service';
 import { PasswordResetResult, ResetTokenInfo } from '../../models/Api.model';
 import { readApiErrorMessage } from '../../utils/apiError';
 import logoWordmark from '../../assets/logo-wordmark.png';
 
-/** Phải khớp đúng ký tự mà PASSWORD_PATTERN ở backend chấp nhận, nếu không client báo "Strong" mà server vẫn 400. */
+/** Phải khớp đúng ký tự mà PASSWORD_PATTERN ở backend chấp nhận, nếu không client báo "Rất mạnh" mà server vẫn 400. */
 const SPECIAL_CHARS = '@#$%^&+=!';
 
 const RULES: { label: string; test: (v: string) => boolean }[] = [
-  { label: 'At least 8 characters', test: (v) => v.length >= 8 },
-  { label: 'Upper & lowercase letters', test: (v) => /[a-z]/.test(v) && /[A-Z]/.test(v) },
-  { label: 'At least one number (0-9)', test: (v) => /\d/.test(v) },
-  { label: `Special character (${SPECIAL_CHARS})`, test: (v) => new RegExp(`[${SPECIAL_CHARS.replace(/[-[\]/^$.|?*+()]/g, '\\$&')}]`).test(v) },
+  { label: 'Tối thiểu 8 ký tự', test: (v) => v.length >= 8 },
+  { label: 'Chữ hoa & chữ thường', test: (v) => /[a-z]/.test(v) && /[A-Z]/.test(v) },
+  { label: 'Chứa ít nhất 1 chữ số', test: (v) => /\d/.test(v) },
+  {
+    label: 'Ký tự đặc biệt (@, #, $)',
+    test: (v) => new RegExp(`[${SPECIAL_CHARS.replace(/[-[\]/^$.|?*+()]/g, '\\$&')}]`).test(v),
+  },
 ];
 
 const STRENGTH_LEVELS = [
-  { label: 'Weak', textClass: 'text-error' },
-  { label: 'Fair', textClass: 'text-outline-strong' },
-  { label: 'Good', textClass: 'text-secondary' },
-  { label: 'Strong', textClass: 'text-primary' },
+  { label: 'Yếu', textClass: 'text-rose-500' },
+  { label: 'Trung bình', textClass: 'text-amber-500' },
+  { label: 'Tốt', textClass: 'text-emerald-500' },
+  { label: 'Rất mạnh', textClass: 'text-emerald-600' },
 ];
-
-const SECURITY_TIPS = [
-  {
-    icon: 'shield',
-    title: 'End-to-end Encryption',
-    body: 'Your password is encrypted with modern industry standards and never stored in plain text.',
-  },
-  {
-    icon: 'devices',
-    title: 'Automatic Session Refresh',
-    body: 'Setting a new password immediately invalidates expired tokens and unrecognized devices.',
-  },
-  {
-    icon: 'key',
-    title: 'Use a Password Manager',
-    body: 'We recommend storing unique passwords with trusted tools like 1Password, Bitwarden, or Apple Keychain.',
-  },
-];
-
-const TRUST_BADGES = [
-  { icon: 'lock', label: 'End-to-End Encrypted' },
-  { icon: 'verified_user', label: 'Industry Standard Protection' },
-  { icon: 'fingerprint', label: 'Two-Factor Authentication Ready' },
-];
-
-const initialsOf = (fullName: string) =>
-  fullName
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0].toUpperCase())
-    .join('') || 'AC';
-
-const roleLabel = (role: string) => {
-  const clean = role.replace(/^ROLE_/i, '');
-  return clean.charAt(0) + clean.slice(1).toLowerCase();
-};
 
 // BE 400 đẩy thông báo từng field vào map `detail`, nên phải đọc cả `message` lẫn `detail`.
-// err.message giữ làm fallback cho lỗi network (không có response).
 const messageFrom = (err: any, fallback: string) =>
   readApiErrorMessage(err, err?.message || fallback, ['token', 'password', 'confirmPassword']);
 
+const formatDoneTime = (at: number) => {
+  const time = new Intl.DateTimeFormat('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Asia/Ho_Chi_Minh',
+  }).format(new Date(at));
+  return `Vừa xong (${time} UTC+7)`;
+};
+
 const ResetPasswordPage: React.FC = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') || '';
 
@@ -76,11 +51,10 @@ const ResetPasswordPage: React.FC = () => {
 
   const [form, setForm] = useState({ password: '', confirmPassword: '' });
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [signOutEverywhere, setSignOutEverywhere] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [result, setResult] = useState<PasswordResetResult | null>(null);
+  const [resultAt, setResultAt] = useState(0);
 
   useEffect(() => {
     if (!token) return undefined;
@@ -96,7 +70,7 @@ const ResetPasswordPage: React.FC = () => {
       })
       .catch((err) => {
         if (!alive) return;
-        setTokenError(messageFrom(err, 'This reset link is not valid. Please request a new one.'));
+        setTokenError(messageFrom(err, 'Link đặt lại mật khẩu không hợp lệ.'));
         setStatus('invalid');
       });
     return () => {
@@ -111,448 +85,327 @@ const ResetPasswordPage: React.FC = () => {
   }, [status]);
 
   const remainingSeconds = Math.max(0, Math.floor((expiresAt - now) / 1000));
-  const remainingMinutes = Math.ceil(remainingSeconds / 60);
   const linkExpired = status === 'valid' && remainingSeconds <= 0;
 
   const passedRules = RULES.filter((rule) => rule.test(form.password)).length;
   const strength = STRENGTH_LEVELS[Math.min(3, Math.max(0, passedRules - 1))];
   const passwordsMatch = form.password.length > 0 && form.password === form.confirmPassword;
-  const canSubmit =
-    status === 'valid' &&
-    !linkExpired &&
-    !submitting &&
-    passedRules === RULES.length &&
-    passwordsMatch;
+  const canSubmit = status === 'valid' && !linkExpired && !submitting && passedRules === RULES.length && passwordsMatch;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError('');
     setSubmitting(true);
     try {
-      const res = await AuthService.resetPassword(
-        token,
-        form.password,
-        form.confirmPassword,
-        signOutEverywhere
-      );
-      if (res.data.data) setResult(res.data.data);
+      const res = await AuthService.resetPassword(token, form.password, form.confirmPassword, true);
+      if (res.data.data) {
+        setResult(res.data.data);
+        setResultAt(Date.now());
+      }
     } catch (err: any) {
-      setSubmitError(messageFrom(err, 'Something went wrong. Please try again.'));
+      setSubmitError(messageFrom(err, 'Đã xảy ra lỗi. Vui lòng thử lại.'));
     } finally {
       setSubmitting(false);
     }
   };
 
-  const toggleClass =
-    'absolute inset-y-0 right-0 flex cursor-pointer items-center border-0 bg-transparent pr-3.5 text-ink-variant transition-colors hover:text-ink';
+  const expiredView = (errorDetail: string) => (
+    <div id="view-expired" className="relative z-10 flex flex-col items-center py-2 text-center">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-rose-100 bg-rose-50 text-rose-600 shadow-sm">
+        <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-rose-100 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
+        Liên kết hết hạn
+      </span>
+      <h2 className="mb-2 text-xl font-bold text-slate-900">Liên kết đã hết hiệu lực</h2>
+      <p className="mb-6 max-w-[340px] text-xs leading-relaxed text-slate-500">
+        {errorDetail || 'Liên kết đặt lại mật khẩu đã quá thời hạn 15 phút hoặc đã được sử dụng. Vui lòng tạo yêu cầu mới.'}
+      </p>
+      <button
+        type="button"
+        onClick={() => navigate('/forgot-password')}
+        className="flex h-11 w-full cursor-pointer items-center justify-center rounded-xl bg-indigo-600 text-sm font-semibold text-white shadow-md shadow-indigo-200 transition-all hover:bg-indigo-700"
+      >
+        <span>Gửi lại liên kết mới</span>
+      </button>
+      <Link to="/" className="mt-4 text-xs font-medium text-slate-500 transition-colors hover:text-slate-700">
+        Quay lại trang chủ
+      </Link>
+    </div>
+  );
 
-  const inputClass =
-    'h-11 w-full box-border rounded-lg border border-outline/30 bg-surface pl-10 pr-12 text-body-md text-ink shadow-sm ' +
-    'transition-all placeholder:text-ink-variant/50 focus:border-primary focus:bg-card focus:outline-none';
-
-  return (
-    <div className="flex min-h-screen flex-col bg-surface font-sans text-ink">
-      <header className="fixed inset-x-0 top-0 z-50 bg-surface/80 shadow-header backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-6">
-          <div className="flex items-center gap-4">
-                        <Link to="/" className="flex items-center no-underline">
-              <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto" />
-            </Link>
-            <span className="hidden h-4 w-px bg-outline sm:block" />
-            <Link to="/" className="hidden items-center gap-1 text-label-sm text-ink-variant no-underline transition-colors hover:text-ink sm:flex">
-              <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-              Back to home
-            </Link>
-          </div>
-          <nav className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <button type="button" className="flex items-center gap-1 rounded-lg px-2 py-1 text-label-sm text-ink-variant transition-colors hover:text-ink">
-                <span className="material-symbols-outlined text-[18px]">language</span>
-                <span>EN</span>
-                <span className="material-symbols-outlined text-[14px]">expand_more</span>
-              </button>
-              <button type="button" aria-label="Theme indicator" className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-variant transition-colors hover:text-ink">
-                <span className="material-symbols-outlined text-[18px]">light_mode</span>
-              </button>
-            </div>
-            <span className="h-4 w-px bg-outline" />
-            <div className="flex items-center gap-3">
-              <Link to="/login" className="text-label-md text-ink-variant no-underline transition-colors hover:text-ink">Sign In</Link>
-              <Link to="/register" className="text-label-md text-ink-variant no-underline transition-colors hover:text-ink">Sign Up</Link>
-            </div>
-            <Link to="/dashboard" className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-on-primary no-underline">
-              <span className="material-symbols-outlined text-[18px]">person</span>
-            </Link>
-          </nav>
+  const inputView = (
+    <div id="view-input" className="relative z-10 flex flex-col">
+      <div className="mb-6 flex flex-col items-center text-center">
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-indigo-100 bg-indigo-50 text-indigo-600 shadow-sm">
+          <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
         </div>
-      </header>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Đặt lại mật khẩu mới</h1>
+        <p className="mt-2 text-sm leading-relaxed text-slate-500">
+          Vui lòng thiết lập mật khẩu mới có độ bảo mật cao để bảo vệ tài khoản của bạn.
+        </p>
+      </div>
 
-      <main className="w-full flex-1 px-4 pb-16 pt-24 sm:px-6">
-        <div className="mx-auto w-full max-w-[1024px]">
-          <div className="flex w-full flex-wrap items-center justify-between gap-3 pb-6">
-            <Link to="/login" className="group inline-flex items-center gap-1.5 text-label-md text-ink-variant no-underline transition-colors hover:text-ink">
-              <span className="material-symbols-outlined text-[16px] transition-transform group-hover:-translate-x-0.5">arrow_back</span>
-              Back to sign in
-            </Link>
-            {status === 'valid' && !linkExpired && (
-              <span className="inline-flex items-center gap-2 rounded-full border border-outline/30 bg-surface-low px-3 py-1 text-label-sm font-medium text-ink">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-secondary/75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-                </span>
-                <span className="font-medium text-primary">
-                  {account ? `Verified Session • ${remainingMinutes}m remaining` : 'Verified Session'}
-                </span>
+      {status === 'checking' && <p className="-mt-3 mb-4 text-center text-body-sm text-slate-500">Đang kiểm tra liên kết...</p>}
+
+      <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+        {account && (
+          <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            <span className="material-symbols-outlined text-[16px] text-indigo-600">person</span>
+            <span className="truncate font-semibold text-slate-800">{account.fullName}</span>
+            <span className="truncate text-slate-400">· {account.email}</span>
+          </div>
+        )}
+
+        {submitError && (
+          <div role="alert" className="flex items-start gap-2 rounded-lg bg-danger-bg px-3 py-2.5 text-body-sm text-danger-text">
+            <span className="material-symbols-outlined shrink-0 text-[18px]">error</span>
+            <span>{submitError}</span>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between text-xs font-semibold">
+            <label htmlFor="password-input" className="text-slate-800">
+              Mật khẩu mới
+            </label>
+            {form.password.length > 0 && (
+              <span className={`flex items-center gap-1 font-medium ${strength.textClass}`}>
+                <span className="h-1.5 w-1.5 rounded-full bg-current" />• Độ mạnh: {strength.label}
               </span>
             )}
           </div>
-
-          {status === 'invalid' ? (
-            <div className="mx-auto w-full max-w-[560px] rounded-xl border border-outline/30 bg-card p-6 shadow-sm sm:p-8">
-              <h1 className="text-headline-lg text-ink">Reset password</h1>
-              <div role="alert" className="mt-4 flex items-start gap-2 rounded-lg bg-danger-bg px-3 py-2.5 text-body-sm text-danger-text">
-                <span className="material-symbols-outlined shrink-0 text-[18px]">error</span>
-                <p className="m-0">
-                  {tokenError || 'This link is missing or no longer valid. Please request a new one.'}{' '}
-                  <Link to="/forgot-password" className="font-medium text-primary no-underline hover:underline">
-                    Request a new reset link
-                  </Link>
-                </p>
-              </div>
+          <div className="relative flex items-center">
+            <div className="pointer-events-none absolute left-3.5 text-slate-400">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
-              <div className="flex flex-col gap-6 lg:col-span-7">
-                <div className="relative flex flex-col gap-6 overflow-hidden rounded-xl border border-outline/30 bg-card p-6 shadow-sm sm:p-8">
-                  <span className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-secondary to-primary-container" />
-
-                  <div className="flex items-center">
-                    <span className="inline-flex items-center gap-2 rounded-full bg-surface-mid px-3 py-1 text-label-sm font-medium tracking-wide text-primary">
-                      <span className="material-symbols-outlined text-[14px]">shield</span>
-                      Security &amp; Credentials
-                      <span className="text-outline">•</span>
-                      <span className="text-ink-variant">Encrypted</span>
-                    </span>
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <h1 className="text-headline-lg font-semibold tracking-[-0.02em] text-ink">Set a new password</h1>
-                    <p className="m-0 text-body-md text-ink-variant">
-                      Create a strong, memorable password to secure your InterviewAI account.
-                    </p>
-                  </div>
-
-                  {account && (
-                    <div className="flex items-center justify-between gap-4 rounded-xl border border-outline/30 bg-surface-low p-3.5 sm:p-4">
-                      <div className="flex min-w-0 items-center gap-3">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-headline-sm font-semibold text-on-primary shadow-sm">
-                          {initialsOf(account.fullName)}
-                        </span>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate text-headline-sm font-semibold text-ink">{account.fullName}</span>
-                            <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-surface-mid px-2 py-0.5 text-label-sm font-medium text-primary">
-                              <span className="material-symbols-outlined text-[12px]">verified</span>
-                              Verified Account
-                            </span>
-                          </div>
-                          <span className="block truncate text-body-sm text-ink-variant">{account.email}</span>
-                        </div>
-                      </div>
-                      <span className="shrink-0 rounded-full bg-surface-mid px-2.5 py-1 text-label-sm font-medium text-ink-variant">
-                        {roleLabel(account.role)}
-                      </span>
-                    </div>
-                  )}
-
-                  {status === 'checking' && (
-                    <p className="m-0 text-body-sm text-ink-variant">Verifying your reset link...</p>
-                  )}
-
-                  {linkExpired && (
-                    <div role="alert" className="flex items-start gap-2 rounded-lg bg-danger-bg px-3 py-2.5 text-body-sm text-danger-text">
-                      <span className="material-symbols-outlined shrink-0 text-[18px]">timer_off</span>
-                      <p className="m-0">
-                        This link has expired.{' '}
-                        <Link to="/forgot-password" className="font-medium text-primary no-underline hover:underline">
-                          Request a new reset link
-                        </Link>
-                      </p>
-                    </div>
-                  )}
-
-                  <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center justify-between">
-                        <label className="text-label-md font-medium text-ink" htmlFor="new-password">New Password</label>
-                        <span className="font-mono text-[12px] text-ink-variant">Min. 8 characters</span>
-                      </div>
-                      <div className="relative">
-                        <span className="material-symbols-outlined pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[18px] text-ink-variant">lock</span>
-                        <input
-                          className={inputClass}
-                          id="new-password"
-                          name="password"
-                          type={showPassword ? 'text' : 'password'}
-                          placeholder="Enter strong password"
-                          autoComplete="new-password"
-                          required
-                          disabled={status !== 'valid' || linkExpired}
-                          value={form.password}
-                          onChange={(e) => setForm({ ...form, password: e.target.value })}
-                        />
-                        <button
-                          type="button"
-                          className={toggleClass}
-                          aria-label="Toggle password visibility"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          <span className="material-symbols-outlined text-[18px]">{showPassword ? 'visibility_off' : 'visibility'}</span>
-                        </button>
-                      </div>
-
-                      <div className="mt-1 flex flex-col gap-2 rounded-lg border border-outline/30 bg-surface-low p-3">
-                        <div className="flex items-center justify-between text-label-sm">
-                          <span className="flex items-center gap-1.5 text-ink-variant">
-                            <span className="material-symbols-outlined text-[14px] text-primary">speed</span>
-                            Password strength:
-                          </span>
-                          <span className={`font-mono text-[12px] font-semibold ${strength.textClass}`}>{strength.label}</span>
-                        </div>
-                        <div className="grid h-1.5 w-full grid-cols-4 gap-1.5">
-                          {[0, 1, 2, 3].map((index) => (
-                            <span
-                              key={index}
-                              className={`rounded-full transition-all duration-300 ${index < passedRules ? 'bg-primary' : 'bg-surface-high'}`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-2 pt-1 text-body-sm sm:grid-cols-2">
-                        {RULES.map((rule) => {
-                          const pass = rule.test(form.password);
-                          return (
-                            <span
-                              key={rule.label}
-                              className={`flex items-center gap-2 transition-colors ${pass ? 'text-primary' : 'text-ink-variant/60'}`}
-                            >
-                              <span className="material-symbols-outlined text-[16px]">
-                                {pass ? 'check_circle' : 'radio_button_unchecked'}
-                              </span>
-                              {rule.label}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center justify-between">
-                        <label className="text-label-md font-medium text-ink" htmlFor="confirm-password">Confirm New Password</label>
-                        {form.confirmPassword.length > 0 && (
-                          passwordsMatch ? (
-                            <span className="inline-flex items-center gap-1 text-label-sm font-medium text-primary">
-                              <span className="material-symbols-outlined text-[14px]">done_all</span>
-                              Passwords match
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-label-sm font-medium text-error">
-                              <span className="material-symbols-outlined text-[14px]">close</span>
-                              Passwords do not match
-                            </span>
-                          )
-                        )}
-                      </div>
-                      <div className="relative">
-                        <span className="material-symbols-outlined pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-[18px] text-ink-variant">lock_reset</span>
-                        <input
-                          className={inputClass}
-                          id="confirm-password"
-                          name="confirmPassword"
-                          type={showConfirm ? 'text' : 'password'}
-                          placeholder="Re-enter password"
-                          autoComplete="new-password"
-                          required
-                          disabled={status !== 'valid' || linkExpired}
-                          value={form.confirmPassword}
-                          onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-                        />
-                        <button
-                          type="button"
-                          className={toggleClass}
-                          aria-label="Toggle password confirmation visibility"
-                          onClick={() => setShowConfirm(!showConfirm)}
-                        >
-                          <span className="material-symbols-outlined text-[18px]">{showConfirm ? 'visibility_off' : 'visibility'}</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3.5 rounded-xl border border-outline/30 bg-surface-low p-4">
-                      <input
-                        id="revoke-sessions"
-                        type="checkbox"
-                        className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded accent-primary"
-                        checked={signOutEverywhere}
-                        disabled={status !== 'valid' || linkExpired}
-                        onChange={(e) => setSignOutEverywhere(e.target.checked)}
+            <input
+              id="password-input"
+              type={showPassword ? 'text' : 'password'}
+              className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-11 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              placeholder="Nhập mật khẩu mới"
+              autoComplete="new-password"
+              required
+              disabled={status !== 'valid' || linkExpired}
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+            />
+            <button
+              type="button"
+              aria-label="Toggle password visibility"
+              className="absolute right-3.5 text-slate-400 transition-colors hover:text-slate-600"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </button>
+          </div>
+          <div className="mt-1 grid grid-cols-4 gap-1.5">
+            {[0, 1, 2, 3].map((index) => (
+              <div key={index} className={`h-1.5 rounded-full ${index < passedRules ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+            ))}
+          </div>
+          <div className="mt-2 flex flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs text-slate-600">
+            {RULES.map((rule) => {
+              const pass = rule.test(form.password);
+              return (
+                <div key={rule.label} className="flex items-center gap-2">
+                  {pass ? (
+                    <svg className="h-4 w-4 shrink-0 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
                       />
-                      <div className="flex flex-col gap-1">
-                        <label className="flex cursor-pointer items-center gap-2 text-label-md font-semibold text-ink" htmlFor="revoke-sessions">
-                          Sign out of all other sessions
-                          <span className="rounded-full bg-info px-2 py-0.5 text-label-sm font-medium text-primary">Recommended</span>
-                        </label>
-                        <p className="m-0 text-body-sm text-ink-variant">
-                          Recommended if you suspect unauthorized access or used a public computer.
-                        </p>
-                      </div>
-                    </div>
-
-                    {submitError && (
-                      <div role="alert" className="flex items-start gap-2 rounded-lg bg-danger-bg px-3 py-2.5 text-body-sm text-danger-text">
-                        <span className="material-symbols-outlined shrink-0 text-[18px]">error</span>
-                        <span>{submitError}</span>
-                      </div>
-                    )}
-
-                    <div className="flex flex-col gap-3 pt-2">
-                      <button
-                        type="submit"
-                        disabled={!canSubmit}
-                        className="group flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-0 bg-primary-container text-label-md font-semibold text-on-primary shadow-sm transition-all hover:bg-primary active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {submitting ? 'Saving...' : 'Save New Password & Continue'}
-                        <span className="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-1">arrow_forward</span>
-                      </button>
-                      <div className="flex items-center justify-center">
-                        <Link to="/login" className="inline-flex items-center gap-1.5 py-1 text-label-md text-ink-variant no-underline transition-colors hover:text-ink">
-                          Cancel and return to sign in
-                        </Link>
-                      </div>
-                    </div>
-                  </form>
+                    </svg>
+                  ) : (
+                    <span className="material-symbols-outlined shrink-0 text-[16px] text-slate-300">radio_button_unchecked</span>
+                  )}
+                  <span>{rule.label}</span>
                 </div>
+              );
+            })}
+          </div>
+        </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-4 px-3 py-1 text-label-sm text-ink-variant">
-                  {TRUST_BADGES.map((badge) => (
-                    <span key={badge.label} className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[16px] text-primary">{badge.icon}</span>
-                      {badge.label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-6 lg:col-span-5">
-                <div className="flex flex-col gap-5 rounded-xl border border-outline/30 bg-card p-6 shadow-sm sm:p-7">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-mid text-primary">
-                        <span className="material-symbols-outlined text-[18px]">shield</span>
-                      </span>
-                      <h2 className="text-headline-sm font-semibold text-ink">Password Security Tips</h2>
-                    </div>
-                    <span className="rounded bg-info px-2 py-0.5 text-label-sm font-medium text-primary">Best Practices</span>
-                  </div>
-                  <div className="flex flex-col gap-4">
-                    {SECURITY_TIPS.map((tip) => (
-                      <div key={tip.title} className="flex gap-3">
-                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-mid text-primary">
-                          <span className="material-symbols-outlined text-[14px]">{tip.icon}</span>
-                        </span>
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-label-md font-semibold text-ink">{tip.title}</span>
-                          <p className="m-0 text-body-sm text-ink-variant">{tip.body}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3.5 rounded-xl border border-outline/30 bg-surface-low p-5">
-                  <span className="material-symbols-outlined mt-0.5 shrink-0 text-[20px] text-primary">help_outline</span>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-label-md font-semibold text-ink">Didn't request this reset?</span>
-                    <p className="m-0 text-body-sm text-ink-variant">
-                      If you did not initiate this change, your account may be at risk. Please contact our
-                      security support team immediately.
-                    </p>
-                    <a
-                      href="mailto:support@interviewai.com"
-                      className="mt-1 inline-flex items-center gap-1 text-label-sm font-semibold text-primary no-underline hover:underline"
-                    >
-                      Contact Support
-                      <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-                    </a>
-                  </div>
-                </div>
-              </div>
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="confirm-password-input" className="text-xs font-semibold text-slate-800">
+            Xác nhận mật khẩu mới
+          </label>
+          <div className="relative flex items-center">
+            <div className="pointer-events-none absolute left-3.5 text-slate-400">
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
             </div>
+            <input
+              id="confirm-password-input"
+              type="password"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-11 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              placeholder="Nhập lại mật khẩu mới"
+              autoComplete="new-password"
+              required
+              disabled={status !== 'valid' || linkExpired}
+              value={form.confirmPassword}
+              onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+            />
+            {passwordsMatch && (
+              <div className="absolute right-3.5 flex items-center text-emerald-500">
+                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+            )}
+          </div>
+          {passwordsMatch && (
+            <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-emerald-600">
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Mật khẩu trùng khớp</span>
+            </p>
           )}
+        </div>
+
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-medium text-white shadow-md shadow-indigo-200 transition-all hover:bg-indigo-700 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <span>{submitting ? 'Đang cập nhật...' : 'Cập nhật mật khẩu mới →'}</span>
+        </button>
+        <Link
+          to="/login"
+          className="mt-4 block text-center text-xs font-medium text-slate-500 transition-colors hover:text-slate-700"
+        >
+          ← Hủy và quay lại đăng nhập
+        </Link>
+      </form>
+    </div>
+  );
+
+  const successView = result ? (
+    <div id="view-success" className="relative z-10 flex flex-col items-center py-2 text-center">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-600 shadow-sm">
+        <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+        Đã xác thực bảo mật
+      </span>
+      <h2 className="mb-2 text-xl font-bold text-slate-900">Đổi mật khẩu thành công!</h2>
+      <p className="mb-6 max-w-[340px] text-xs leading-relaxed text-slate-500">
+        Mật khẩu mới đã được cập nhật an toàn. Bạn có thể sử dụng mật khẩu mới này để đăng nhập vào tài khoản ngay bây
+        giờ.
+      </p>
+      <div className="mb-6 flex w-full flex-col gap-2 rounded-xl border border-slate-100 bg-slate-50 p-3.5 text-left text-xs">
+        <div className="flex justify-between gap-3">
+          <span className="text-slate-500">Thời gian cập nhật:</span>
+          <span className="font-semibold text-slate-900">{formatDoneTime(resultAt)}</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span className="text-slate-500">Phiên đăng nhập khác:</span>
+          <span className={`font-semibold ${result.signedOutEverywhere ? 'text-emerald-600' : 'text-slate-900'}`}>
+            {result.signedOutEverywhere ? 'Tự động đăng xuất' : 'Giữ phiên hiện tại'}
+          </span>
+        </div>
+      </div>
+      <Link
+        to="/login"
+        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 text-sm font-semibold text-white shadow-md shadow-indigo-200 transition-all hover:bg-indigo-700"
+      >
+        <span>Đăng nhập ngay</span>
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+        </svg>
+      </Link>
+      <button
+        type="button"
+        onClick={() => setResult(null)}
+        className="mt-4 flex items-center gap-1 border-0 bg-transparent text-xs font-medium text-slate-500 transition-colors hover:text-indigo-600"
+      >
+        <span>Quay lại biểu mẫu</span>
+      </button>
+    </div>
+  ) : null;
+
+  return (
+    <div className="relative flex min-h-screen flex-col justify-between overflow-x-hidden bg-surface font-sans text-ink">
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary-fixed opacity-60 blur-3xl" />
+        <div className="absolute -right-28 top-1/4 h-80 w-80 rounded-full bg-[#6df5e1] opacity-40 blur-3xl" />
+        <div className="absolute -bottom-24 left-1/3 h-96 w-96 rounded-full bg-surface-high opacity-50 blur-3xl" />
+      </div>
+
+      <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
+        <Link to="/" className="flex items-center gap-3 no-underline focus:outline-none">
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+            <img src={logoWordmark} alt="AI Interview Logo" className="h-full w-full object-contain" />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-bold leading-tight tracking-tight text-slate-900 transition-colors hover:text-indigo-600">
+              AI Interview
+            </span>
+          </div>
+        </Link>
+        <div className="flex items-center gap-6 text-sm font-medium">
+          <button
+            type="button"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:text-slate-900"
+          >
+            <span className="text-xs">🌐</span>
+            <span>Tiếng Việt</span>
+          </button>
+          <a href="#" className="hidden text-xs font-medium text-slate-500 transition-colors hover:text-slate-900 sm:inline-block">
+            Trợ giúp
+          </a>
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-indigo-600 transition-colors hover:bg-indigo-50 hover:text-indigo-700"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+            </svg>
+            <span>Quay lại đăng nhập</span>
+          </Link>
+        </div>
+      </header>
+
+      <main className="relative z-10 flex w-full flex-1 flex-col items-center justify-center px-4 py-8 sm:px-6">
+        <div className="relative mx-auto w-full max-w-[460px] overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-8 shadow-xl shadow-slate-200/50 transition-all">
+          <div className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-indigo-50 opacity-80 blur-2xl" />
+
+          {status === 'invalid' || linkExpired
+            ? expiredView(tokenError)
+            : result
+              ? successView
+              : inputView}
         </div>
       </main>
 
-      <footer className="bg-surface-low">
-        <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-4 px-6 py-8 md:flex-row">
-          <p className="m-0 text-label-sm text-ink-variant">© 2025 InterviewAI Inc. All rights reserved.</p>
-          <nav className="flex flex-wrap items-center gap-6 text-label-sm text-ink-variant">
-            <a href="#" className="no-underline transition-colors hover:text-ink">Privacy Policy</a>
-            <a href="#" className="no-underline transition-colors hover:text-ink">Terms of Service</a>
-            <a href="#" className="no-underline transition-colors hover:text-ink">Security</a>
-            <a href="#" className="no-underline transition-colors hover:text-ink">Support</a>
-          </nav>
+      <footer className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-2 px-6 py-6 text-xs text-slate-500 sm:flex-row">
+        <p>© 2026 AI Interview Platform. Bảo lưu mọi quyền.</p>
+        <div className="flex items-center gap-4 font-medium">
+          <a href="#" className="transition-colors hover:text-slate-700">Điều khoản</a>
+          <span>•</span>
+          <a href="#" className="transition-colors hover:text-slate-700">Chính sách bảo mật</a>
+          <span>•</span>
+          <a href="#" className="transition-colors hover:text-slate-700">Trung tâm trợ giúp</a>
         </div>
       </footer>
-
-      {result && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="reset-done-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 backdrop-blur-sm"
-        >
-          <div className="relative flex w-full max-w-[448px] flex-col gap-5 overflow-hidden rounded-xl border border-outline/30 bg-card p-6 text-center shadow-card sm:p-8">
-            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-info text-primary shadow-sm">
-              <span className="material-symbols-outlined text-[32px]">task_alt</span>
-            </span>
-            <div className="flex flex-col gap-2">
-              <h2 id="reset-done-title" className="text-headline-lg text-ink">Password Updated Successfully</h2>
-              <p className="m-0 text-body-md text-ink-variant">
-                Your credentials have been securely updated. You can now sign in to your interview workspace.
-              </p>
-            </div>
-            <div className="space-y-1 rounded-lg border border-outline/30 bg-surface-low p-3 text-left font-mono text-[12px] text-ink-variant">
-              <div className="flex justify-between">
-                <span>REVOCATION_STATUS:</span>
-                <span className="font-medium text-primary">
-                  {result.signedOutEverywhere ? 'COMPLETED (ALL SESSIONS)' : 'SKIPPED (THIS DEVICE ONLY)'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>EVENT_ID:</span>
-                <span className="text-ink">{result.eventId}</span>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2 pt-2">
-              <Link
-                to="/login"
-                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary-container text-label-md font-semibold text-on-primary no-underline shadow-sm transition-colors hover:bg-primary"
-              >
-                Continue to sign in
-                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-              </Link>
-              <button
-                type="button"
-                className="cursor-pointer border-0 bg-transparent py-2 text-label-md text-ink-variant transition-colors hover:text-ink"
-                onClick={() => setResult(null)}
-              >
-                Stay on this page
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -173,7 +173,7 @@ export const useAuthController = () => {
       setLoading(true);
       try {
         await AuthService.register(data);
-        navigate('/login?registered=true');
+        navigate(`/check-email?email=${encodeURIComponent(data.email)}`);
       } catch (err: any) {
         const status = err.response?.status;
         setErrorStatus(typeof status === 'number' ? status : null);

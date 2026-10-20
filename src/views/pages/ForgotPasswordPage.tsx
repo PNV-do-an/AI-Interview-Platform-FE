@@ -1,35 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import AuthService from '../../services/auth.service';
 import { readApiErrorMessage } from '../../utils/apiError';
 import logoWordmark from '../../assets/logo-wordmark.png';
 
-/** Cửa sổ chờ giữa hai lần gửi link, tính từ lúc client bấm Send/Resend. */
+/** Cửa sổ chờ giữa hai lần gửi link, tính từ lúc client bấm Gửi/Gửi lại. */
 const RESEND_COOLDOWN_SECONDS = 30;
 
 // Nút Resend gọi thẳng sendResetLink, không đi qua validate của form, nên phải tự chặn ở đây.
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const RECOVERY_TIPS = [
-  {
-    icon: 'mark_email_unread',
-    title: 'Instant Delivery',
-    body: 'Reset emails typically arrive within a minute. Make sure to check your spam or promotional folders.',
-  },
-  {
-    icon: 'domain_verification',
-    title: 'Organization Accounts',
-    body: 'If your company uses Okta, Google Workspace, or Azure AD, try signing in through your organization portal directly.',
-  },
-  {
-    icon: 'security',
-    title: 'Secure Verification',
-    body: 'InterviewAI will never ask for your password or credentials via email, phone, or chat.',
-  },
-];
+const maskEmail = (email: string) => {
+  const [local, domain] = email.split('@');
+  if (!local || !domain) return email;
+  return `${local[0]}***@${domain}`;
+};
 
 const ForgotPasswordPage: React.FC = () => {
-  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -47,10 +34,10 @@ const ForgotPasswordPage: React.FC = () => {
     setError('');
     setNotice('');
     // BE trả lời 200 cho mọi trường hợp (chống dò email), nên nếu client gửi đi ô trống
-    // thì màn hình hiện ngay card "Check your inbox" trong khi chẳng có mail nào được gửi.
+    // thì màn hình hiện ngay "Kiểm tra email" trong khi chẳng có mail nào được gửi.
     const checkedEmail = email.trim();
     if (!EMAIL_PATTERN.test(checkedEmail)) {
-      setError('Enter a valid email address.');
+      setError('Vui lòng nhập địa chỉ email hợp lệ.');
       return;
     }
     setLoading(true);
@@ -59,7 +46,7 @@ const ForgotPasswordPage: React.FC = () => {
       setSent(true);
       setCooldown(RESEND_COOLDOWN_SECONDS);
     } catch (err: any) {
-      setError(readApiErrorMessage(err, 'Something went wrong. Please try again.', ['email']));
+      setError(readApiErrorMessage(err, 'Đã xảy ra lỗi. Vui lòng thử lại.', ['email']));
     } finally {
       setLoading(false);
     }
@@ -70,246 +57,239 @@ const ForgotPasswordPage: React.FC = () => {
     sendResetLink();
   };
 
-  return (
-    <div className="flex min-h-screen flex-col justify-between bg-surface font-sans text-ink">
-      <header className="fixed inset-x-0 top-0 z-50 bg-surface/80 shadow-header backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-6">
-          <div className="flex items-center gap-4">
-                        <Link to="/" className="flex items-center no-underline">
-              <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto" />
-            </Link>
-            <span className="hidden h-4 w-px bg-outline sm:block" />
-            <Link to="/" className="hidden items-center gap-1 text-label-sm text-ink-variant no-underline transition-colors hover:text-ink sm:flex">
-              <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-              Back to home
-            </Link>
+  if (sent) {
+    return (
+      <div className="relative flex min-h-screen flex-col justify-between overflow-x-hidden bg-surface font-sans text-ink">
+        <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+          <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-primary-fixed opacity-60 blur-3xl" />
+          <div className="absolute -right-28 top-1/4 h-80 w-80 rounded-full bg-[#6df5e1] opacity-40 blur-3xl" />
+          <div className="absolute -bottom-24 left-1/3 h-96 w-96 rounded-full bg-surface-high opacity-50 blur-3xl" />
+        </div>
+
+        <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
+          <Link to="/" className="flex items-center gap-3 no-underline">
+            <img src={logoWordmark} alt="AI Interview Logo" className="h-9 w-9 rounded-xl object-contain shadow-md" />
+            <span className="text-xl font-bold tracking-tight text-slate-900">AI Interview</span>
+          </Link>
+          <div className="flex items-center gap-5 text-sm font-medium text-slate-600">
+            <button type="button" className="flex items-center gap-1.5 transition-colors hover:text-slate-900">
+              <span className="material-symbols-outlined text-[18px]">language</span>
+              Tiếng Việt
+            </button>
+            <a href="#" className="hidden transition-colors hover:text-slate-900 sm:inline-block">
+              Trợ giúp
+            </a>
           </div>
-          <nav className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <button type="button" className="flex items-center gap-1 rounded-lg px-2 py-1 text-label-sm text-ink-variant transition-colors hover:text-ink">
-                <span className="material-symbols-outlined text-[18px]">language</span>
-                <span>EN</span>
-                <span className="material-symbols-outlined text-[14px]">expand_more</span>
-              </button>
-              <button type="button" aria-label="Theme indicator" className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-variant transition-colors hover:text-ink">
-                <span className="material-symbols-outlined text-[18px]">light_mode</span>
-              </button>
+        </header>
+
+        <main className="relative z-10 flex w-full flex-1 flex-col items-center justify-center px-4 py-8 sm:px-6">
+          <div className="mx-auto w-full max-w-[460px]">
+            <div className="relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-[0_8px_30px_rgb(0,0,0,0.06)]">
+              <div className="relative mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-50">
+                <span className="material-symbols-outlined text-[32px] text-indigo-600">mark_email_read</span>
+                <div className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white shadow-md shadow-emerald-500/20 ring-2 ring-white">
+                  <span className="material-symbols-outlined text-[15px] font-bold">check</span>
+                </div>
+              </div>
+              <h1 className="mb-2 text-2xl font-bold tracking-tight text-slate-900">Kiểm tra email của bạn</h1>
+              <p className="mx-auto mb-4 max-w-xs text-sm leading-relaxed text-slate-600">
+                Chúng tôi đã gửi hướng dẫn đặt lại mật khẩu đến địa chỉ email:
+              </p>
+              <div className="mb-6">
+                <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100/80 bg-indigo-50/70 px-4 py-1.5 text-indigo-700 shadow-sm">
+                  <span className="material-symbols-outlined text-[16px]">alternate_email</span>
+                  <span className="select-all text-sm font-semibold text-slate-800">{maskEmail(email.trim())}</span>
+                </div>
+              </div>
+              <div className="mb-6 flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50 p-4 text-left">
+                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-100/80 text-indigo-600">
+                  <span className="material-symbols-outlined text-[18px]">info</span>
+                </div>
+                <p className="flex-1 text-xs leading-relaxed text-slate-600">
+                  Nếu không thấy email trong hộp thư chính, vui lòng kiểm tra thêm mục Thư rác (Spam).
+                </p>
+              </div>
+              <div className="flex flex-col gap-4">
+                <a
+                  className="group flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-medium text-white shadow-md shadow-indigo-600/20 transition-all duration-200 hover:bg-indigo-700 hover:shadow-lg"
+                  href="https://mail.google.com"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <span className="material-symbols-outlined text-[18px]">mail</span>
+                  <span>Mở ứng dụng Email</span>
+                  <span className="material-symbols-outlined text-[16px] transition-transform duration-150 group-hover:translate-x-0.5">open_in_new</span>
+                </a>
+                {error && (
+                  <div role="alert" className="flex items-start gap-2 rounded-lg bg-danger-bg px-3 py-2.5 text-left text-body-sm text-danger-text">
+                    <span className="material-symbols-outlined shrink-0 text-[18px]">error</span>
+                    <span>{error}</span>
+                  </div>
+                )}
+                {notice && (
+                  <div role="status" className="flex items-start gap-2 rounded-lg bg-info-bg px-3 py-2.5 text-left text-body-sm text-info-text">
+                    <span className="material-symbols-outlined shrink-0 text-[18px]">info</span>
+                    <span>{notice}</span>
+                  </div>
+                )}
+                <div className="pt-1 text-center">
+                  <p className="flex flex-wrap items-center justify-center gap-1.5 text-sm text-slate-600">
+                    <span>Chưa nhận được email?</span>
+                    {cooldown > 0 ? (
+                      <span className="inline-flex items-center gap-1 font-semibold text-emerald-600">
+                        <span className="mr-0.5 inline-block h-2 w-2 animate-ping rounded-full bg-emerald-500" />
+                        Gửi lại sau ({cooldown}s)
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={sendResetLink}
+                        disabled={loading}
+                        className="inline-flex items-center gap-1 border-0 bg-transparent p-0 text-sm font-semibold text-indigo-600 underline-offset-2 transition-colors hover:text-indigo-700 hover:underline disabled:cursor-not-allowed disabled:text-slate-400"
+                      >
+                        {loading ? 'Đang gửi...' : 'Gửi lại ngay'}
+                      </button>
+                    )}
+                  </p>
+                </div>
+                <div className="pt-2 text-center">
+                  <Link
+                    to="/login"
+                    className="group inline-flex items-center justify-center gap-1.5 text-sm font-medium text-slate-500 transition-colors duration-150 hover:text-indigo-600"
+                  >
+                    <span className="material-symbols-outlined text-[18px] transition-transform duration-150 group-hover:-translate-x-1">arrow_back</span>
+                    <span>Quay lại đăng nhập</span>
+                  </Link>
+                </div>
+              </div>
             </div>
-            <span className="h-4 w-px bg-outline" />
-            <div className="flex items-center gap-3">
-              <Link to="/login" className="text-label-md text-ink-variant no-underline transition-colors hover:text-ink">Sign In</Link>
-              <Link to="/register" className="text-label-md text-ink-variant no-underline transition-colors hover:text-ink">Sign Up</Link>
-            </div>
-            <Link to="/dashboard" className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-on-primary no-underline">
-              <span className="material-symbols-outlined text-[18px]">person</span>
-            </Link>
-          </nav>
+          </div>
+        </main>
+
+        <footer className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-4 px-6 py-6 text-xs text-slate-500 sm:flex-row">
+          <p>© 2026 AI Interview Platform. Bảo lưu mọi quyền.</p>
+          <div className="flex items-center gap-6">
+            <a href="#" className="transition-colors hover:text-slate-800">Điều khoản</a>
+            <a href="#" className="transition-colors hover:text-slate-800">Chính sách bảo mật</a>
+            <a href="#" className="transition-colors hover:text-slate-800">Trung tâm trợ giúp</a>
+          </div>
+        </footer>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative flex min-h-screen flex-col justify-between bg-surface font-sans text-ink">
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-50/80">
+        <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:24px_24px] opacity-60" />
+        <div className="absolute right-1/4 top-0 h-96 w-96 rounded-full bg-indigo-50/60 blur-3xl" />
+        <div className="absolute bottom-10 left-1/4 h-80 w-80 rounded-full bg-slate-100/80 blur-3xl" />
+      </div>
+
+      <header className="relative z-20 w-full border-b border-slate-200/70 bg-white/80 px-6 py-3.5 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl items-center justify-between">
+          <Link to="/" className="group inline-flex items-center gap-3 no-underline">
+            <img src={logoWordmark} alt="AI Interview Logo" className="h-9 w-9 rounded-xl border border-slate-100 object-contain shadow-sm" />
+            <span className="text-lg font-bold tracking-tight text-slate-900 transition-colors group-hover:text-indigo-600">AI Interview</span>
+          </Link>
+          <div className="flex items-center gap-4 text-sm">
+            <a href="#" className="inline-flex items-center gap-1.5 font-medium text-slate-600 transition-colors hover:text-indigo-600">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Trợ giúp
+            </a>
+            <div className="h-4 w-px bg-slate-200" />
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white py-1 px-2.5 text-xs font-medium text-slate-600 transition-all hover:border-slate-300 hover:text-slate-900"
+            >
+              <span>🌐</span>
+              <span>Tiếng Việt</span>
+            </button>
+          </div>
         </div>
       </header>
 
-      <main className="flex w-full flex-1 flex-col items-center justify-center bg-surface px-4 pt-16">
-        <div className="mx-auto flex w-full max-w-[1152px] flex-col py-8 md:py-12">
-          <div className="mb-6 flex w-full items-center justify-between px-2">
-            <Link to="/login" className="group flex items-center gap-1.5 text-label-sm font-medium text-ink-variant no-underline transition-colors hover:text-primary">
-              <span className="material-symbols-outlined text-[16px] transition-transform group-hover:-translate-x-0.5">arrow_back</span>
-              Back to sign in
-            </Link>
-          </div>
-
-          <div className="grid w-full grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
-            <div className="flex flex-col lg:col-span-7">
-              <div className="flex h-full flex-col justify-between rounded-xl border border-outline/30 bg-card p-6 shadow-sm sm:p-8">
-                <div className="flex flex-col gap-6">
-                  <div>
-                    <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-label-sm font-medium text-primary">
-                      <span className="material-symbols-outlined text-[16px]">lock_reset</span>
-                      Password Recovery
-                    </span>
-                    <h1 className="mb-1.5 text-headline-lg tracking-[-0.02em] text-ink">Reset your password</h1>
-                    <p className="m-0 text-body-md text-ink-variant">
-                      Enter the email address linked to your account and we will send you a secure
-                      verification link to reset your password.
-                    </p>
+      <main className="relative z-10 flex w-full flex-1 flex-col items-center justify-center px-4 py-8 sm:px-6">
+        <div className="mx-auto w-full max-w-[460px]">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-[0_8px_30px_rgb(0,0,0,0.06)]">
+            <div className="mb-6 flex flex-col items-center text-center">
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-indigo-100 bg-indigo-50 text-indigo-600 shadow-sm">
+                <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+              </div>
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Quên mật khẩu?</h1>
+              <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                Đừng lo lắng! Nhập email tài khoản của bạn, chúng tôi sẽ gửi liên kết hướng dẫn đặt lại mật khẩu trong
+                giây lát.
+              </p>
+            </div>
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              <div className="space-y-1.5">
+                <label htmlFor="email" className="block text-sm font-medium text-slate-700">
+                  Email đăng ký <span className="text-red-500">*</span>
+                </label>
+                <div className="relative rounded-xl shadow-sm">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.75" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
                   </div>
-
-                  <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-label-md font-medium text-ink" htmlFor="work-email">
-                        Work or Personal Email
-                      </label>
-                      <div className="relative flex items-center">
-                        <span className="material-symbols-outlined pointer-events-none absolute left-3 text-[18px] text-ink-variant">mail</span>
-                        <input
-                          className="h-11 w-full box-border rounded-lg border border-outline/30 bg-card pl-10 pr-4 text-body-md text-ink shadow-sm transition-all placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
-                          id="work-email"
-                          name="email"
-                          type="email"
-                          required
-                          autoComplete="email"
-                          placeholder="name@example.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    {error && (
-                      <div role="alert" className="flex items-start gap-2 rounded-lg bg-danger-bg px-3 py-2.5 text-body-sm text-danger-text">
-                        <span className="material-symbols-outlined shrink-0 text-[18px]">error</span>
-                        <span>{error}</span>
-                      </div>
-                    )}
-                    {notice && (
-                      <div role="status" className="flex items-start gap-2 rounded-lg bg-info-bg px-3 py-2.5 text-body-sm text-info-text">
-                        <span className="material-symbols-outlined shrink-0 text-[18px]">info</span>
-                        <span>{notice}</span>
-                      </div>
-                    )}
-
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-0 bg-primary text-label-md font-semibold text-on-primary shadow-sm transition-all hover:bg-primary-container active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {loading ? 'Sending...' : 'Send Reset Link'}
-                      <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                    </button>
-
-                    <div className="mt-1 flex items-center gap-2 rounded-lg border border-outline/30 bg-surface-low p-3 text-label-sm text-ink-variant">
-                      <span className="material-symbols-outlined shrink-0 text-[16px] text-primary">info</span>
-                      <span>Reset link expires in 30 minutes. If you do not see it, check your spam folder.</span>
-                    </div>
-                  </form>
-
-                  {sent && (
-                    <div role="status" className="flex items-start gap-3 rounded-lg border border-outline/30 bg-surface-low p-4">
-                      <span className="material-symbols-outlined mt-0.5 shrink-0 text-[22px] text-primary">mark_email_read</span>
-                      <div className="flex-1">
-                        <h2 className="mb-0.5 text-headline-sm text-ink">Check your inbox</h2>
-                        <p className="mb-2 text-body-sm text-ink-variant">
-                          If an account exists with this email address, you'll receive a password reset link shortly.
-                        </p>
-                        <button
-                          type="button"
-                          className="cursor-pointer border-0 bg-transparent p-0 text-label-sm font-medium text-primary no-underline hover:underline disabled:cursor-not-allowed disabled:text-ink-variant disabled:no-underline"
-                          onClick={sendResetLink}
-                          disabled={cooldown > 0 || loading}
-                        >
-                          {cooldown > 0 ? `Resend available in ${cooldown}s` : 'Resend email'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="h-px w-full bg-surface-high" />
-                    </div>
-                    <div className="relative flex justify-center text-center">
-                      <span className="bg-card px-3 text-label-sm text-ink-variant">Need another option?</span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-3">
-                    <button
-                      type="button"
-                      className="flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-outline/30 bg-surface-low px-4 text-label-md font-medium text-ink transition-colors hover:bg-surface-mid"
-                      onClick={() => navigate('/login')}
-                    >
-                      <span className="material-symbols-outlined text-[18px] text-primary">vpn_key</span>
-                      Log in with Single Sign-On (SSO)
-                    </button>
-                    <button
-                      type="button"
-                      className="flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-outline/30 bg-surface-low px-4 text-label-md font-medium text-ink transition-colors hover:bg-surface-mid"
-                      onClick={() => setNotice('Verify via SMS code is not available yet. Use the reset link or Single Sign-On.')}
-                    >
-                      <span className="material-symbols-outlined text-[18px] text-primary">sms</span>
-                      Verify via SMS code
-                    </button>
-                  </div>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    required
+                    className="block w-full rounded-xl border border-slate-300 py-2.5 pl-11 pr-4 text-sm text-slate-900 placeholder:text-slate-400 transition-all focus:border-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-600"
+                    placeholder="nguyenvana@gmail.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                  />
                 </div>
-
-                <div className="mt-6 flex items-center justify-center border-t border-outline/30 pt-6">
-                  <p className="m-0 flex items-center gap-1.5 text-label-md text-ink-variant">
-                    Remember your password?{' '}
-                    <Link to="/login" className="group inline-flex items-center gap-0.5 font-medium text-primary no-underline hover:underline">
-                      Sign in
-                      <span className="material-symbols-outlined text-[16px] transition-transform group-hover:translate-x-0.5">arrow_forward</span>
-                    </Link>
-                  </p>
+                <div className="flex items-center gap-1.5 pt-1 text-xs text-slate-500">
+                  <svg className="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Liên kết đặt lại mật khẩu có hiệu lực trong 15 phút.</span>
                 </div>
               </div>
-            </div>
 
-            <div className="flex flex-col lg:col-span-5">
-              <div className="flex h-full flex-col justify-between rounded-xl border border-outline/30 bg-card p-6 shadow-sm sm:p-7">
-                <div className="flex flex-col gap-5">
-                  <div>
-                    <div className="mb-2 flex items-center gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-low text-primary">
-                        <span className="material-symbols-outlined text-[20px]">shield_person</span>
-                      </span>
-                      <div>
-                        <h2 className="text-headline-sm leading-tight text-ink">Help &amp; Security</h2>
-                        <p className="m-0 text-label-sm text-ink-variant">Common solutions for account access</p>
-                      </div>
-                    </div>
-                    <p className="m-0 text-body-sm text-ink-variant">
-                      Review quick troubleshooting steps below or reach out to our support team if you
-                      cannot access your account.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-3">
-                    {RECOVERY_TIPS.map((tip) => (
-                      <div key={tip.title} className="rounded-lg border border-outline/30 bg-surface-low/50 p-3.5">
-                        <div className="flex items-start gap-3">
-                          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                            <span className="material-symbols-outlined text-[16px]">{tip.icon}</span>
-                          </span>
-                          <div>
-                            <h3 className="mb-0.5 text-label-md font-semibold text-ink">{tip.title}</h3>
-                            <p className="m-0 text-label-sm text-ink-variant">{tip.body}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              {error && (
+                <div role="alert" className="flex items-start gap-2 rounded-lg bg-danger-bg px-3 py-2.5 text-body-sm text-danger-text">
+                  <span className="material-symbols-outlined shrink-0 text-[18px]">error</span>
+                  <span>{error}</span>
                 </div>
+              )}
 
-                <div className="mt-6 flex items-center justify-between border-t border-outline/30 pt-4">
-                  <div className="flex w-full flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-label-sm text-ink-variant">Still having trouble?</span>
-                      <a href="#" className="flex items-center gap-1 text-label-sm text-ink-variant no-underline transition-colors hover:text-ink">
-                        <span className="material-symbols-outlined text-[14px]">help</span>
-                        Help Center
-                      </a>
-                    </div>
-                    <a
-                      href="mailto:support@interviewai.com"
-                      className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-outline/30 bg-surface-low px-3 text-label-md font-medium text-primary no-underline transition-colors hover:bg-surface-mid"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">support_agent</span>
-                      Contact Support
-                    </a>
-                  </div>
-                </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-medium text-white shadow-md shadow-indigo-200 transition-all hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <span>{loading ? 'Đang gửi...' : 'Gửi liên kết đặt lại →'}</span>
+              </button>
+              <div className="pt-4 text-center">
+                <Link to="/login" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 transition-colors hover:text-indigo-600">
+                  <span>← Quay lại đăng nhập</span>
+                </Link>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       </main>
 
-      <footer className="bg-card/60 shadow-footer">
-        <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-3 px-6 py-4 sm:flex-row">
-          <span className="text-label-sm text-ink-variant">© 2025 InterviewAI Inc. All rights reserved.</span>
-          <div className="flex flex-wrap items-center justify-center gap-6 text-label-sm text-ink-variant">
-            <a href="#" className="no-underline transition-colors hover:text-ink">Privacy Policy</a>
-            <a href="#" className="no-underline transition-colors hover:text-ink">Terms of Service</a>
-            <a href="#" className="no-underline transition-colors hover:text-ink">Security</a>
-            <a href="#" className="no-underline transition-colors hover:text-ink">Contact Support</a>
+      <footer className="relative z-10 mt-auto w-full border-t border-slate-200/60 bg-white/50 px-4 py-6 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-xs text-slate-500 sm:flex-row">
+          <p>© 2026 AI Interview Platform. Bảo lưu mọi quyền.</p>
+          <div className="flex items-center gap-5">
+            <a href="#" className="transition-colors hover:text-indigo-600">Điều khoản</a>
+            <span className="text-slate-300">•</span>
+            <a href="#" className="transition-colors hover:text-indigo-600">Chính sách bảo mật</a>
+            <span className="text-slate-300">•</span>
+            <a href="#" className="transition-colors hover:text-indigo-600">Trung tâm trợ giúp</a>
           </div>
         </div>
       </footer>

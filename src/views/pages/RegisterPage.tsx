@@ -34,36 +34,48 @@ const loadGsiScript = () => {
 };
 
 const GoogleIcon: React.FC = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
-    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
+  <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z" fill="#4285F4" />
+    <path d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z" fill="#34A853" />
+    <path d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z" fill="#FBBC05" />
+    <path d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z" fill="#EA4335" />
   </svg>
 );
 
-const GitHubIcon: React.FC = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <path clipRule="evenodd" fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-  </svg>
-);
+// Phải khớp PASSWORD_PATTERN phía BE, nếu không strength báo "Rất tốt" mà server vẫn 400.
+const SPECIAL_CHARS = '@#$%^&+=!';
+const PASSWORD_RULES: ((v: string) => boolean)[] = [
+  (v) => v.length >= 8,
+  (v) => /[a-z]/.test(v) && /[A-Z]/.test(v),
+  (v) => /\d/.test(v),
+  (v) => new RegExp(`[${SPECIAL_CHARS.replace(/[-[\]/^$.|*+(){}?]/g, '\\$&')}]`).test(v),
+];
+const STRENGTH_LABELS = ['Yếu', 'Trung bình', 'Tốt', 'Rất tốt'];
 
-const OAUTH_PROVIDER_KEY = 'oauth_provider';
-const OAUTH_STATE_KEY = 'oauth_state';
-
-const randomToken = () =>
-  window.crypto && 'randomUUID' in window.crypto
-    ? window.crypto.randomUUID()
-    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const REGISTER_BENEFITS = [
+  {
+    title: 'Luyện phỏng vấn AI thông minh',
+    body: 'Mô phỏng 1:1 câu hỏi thực chiến sát thực tế từ hơn 1,000+ vị trí công nghệ hàng đầu.',
+  },
+  {
+    title: 'Đo lường & Phân tích chuyên sâu',
+    body: 'Chấm điểm phản xạ, độ khớp JD, tư duy giải quyết vấn đề và biểu cảm thuyết trình.',
+  },
+  {
+    title: 'Kết nối Mentor & Cơ hội việc làm',
+    body: 'Đặt lịch tư vấn định hướng cùng chuyên gia công nghệ và nhận đề xuất phỏng vấn tức thì.',
+  },
+];
 
 const RegisterPage: React.FC = () => {
   const { register, loginWithGoogle, loading, error, errorStatus } = useAuth();
-  const [form, setForm] = useState({ fullName: '', email: '', password: '' });
+  const [form, setForm] = useState({ fullName: '', email: '', password: '', confirmPassword: '' });
+  // BE /auth/register không nhận trường role (luôn gán ứng viên) — selector chỉ để đúng thiết kế.
+  const [role, setRole] = useState<'candidate' | 'recruiter'>('candidate');
   const [showPassword, setShowPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(true);
   const [notice, setNotice] = useState('');
   const [googleClientId, setGoogleClientId] = useState('');
-  const [githubClientId, setGithubClientId] = useState('');
   const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [resendError, setResendError] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -74,9 +86,6 @@ const RegisterPage: React.FC = () => {
     return () => window.clearInterval(id);
   }, [resendCooldown]);
 
-  // GitHub chỉ nhận callback đã đăng ký ở /login nên lượt về từ GitHub luôn về màn Sign In.
-  const githubRedirectUri = window.location.origin + '/login';
-
   const loginWithGoogleRef = useRef(loginWithGoogle);
   loginWithGoogleRef.current = loginWithGoogle;
 
@@ -85,11 +94,6 @@ const RegisterPage: React.FC = () => {
     AuthService.getGoogleClientId()
       .then((res) => {
         if (alive) setGoogleClientId(res.data.data || '');
-      })
-      .catch(() => {});
-    AuthService.getGithubClientId()
-      .then((res) => {
-        if (alive) setGithubClientId(res.data.data || '');
       })
       .catch(() => {});
     return () => {
@@ -129,44 +133,33 @@ const RegisterPage: React.FC = () => {
   }, [googleClientId]);
 
   const handleGoogleUnavailable = () => {
-    setNotice('Sign up with Google is unavailable right now. Please create your account with email.');
-  };
-
-  const handleGithubSignup = () => {
-    setNotice('');
-    if (!githubClientId) {
-      setNotice('Sign up with GitHub is unavailable right now. Please create your account with email.');
-      return;
-    }
-    const state = randomToken();
-    sessionStorage.setItem(OAUTH_PROVIDER_KEY, 'github');
-    sessionStorage.setItem(OAUTH_STATE_KEY, state);
-    const params = new URLSearchParams({
-      client_id: githubClientId,
-      redirect_uri: githubRedirectUri,
-      scope: 'read:user user:email',
-      state,
-    });
-    window.location.assign(`https://github.com/login/oauth/authorize?${params.toString()}`);
+    setNotice('Đăng ký với Google hiện không khả dụng. Vui lòng tạo tài khoản bằng email.');
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  const passedRules = PASSWORD_RULES.filter((test) => test(form.password)).length;
+  const strengthLabel = STRENGTH_LABELS[Math.min(3, Math.max(0, passedRules - 1))] ?? STRENGTH_LABELS[0];
+  const passwordsMatch = form.confirmPassword.length > 0 && form.password === form.confirmPassword;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setNotice('');
     if (!termsAccepted) {
-      setNotice('Please agree to the Terms of Service and Privacy Policy to continue.');
+      setNotice('Vui lòng đồng ý Điều khoản dịch vụ và Chính sách bảo mật để tiếp tục.');
       return;
     }
-    register(form);
+    if (form.password !== form.confirmPassword) {
+      setNotice('Mật khẩu xác nhận chưa trùng khớp.');
+      return;
+    }
+    register({ fullName: form.fullName, email: form.email, password: form.password });
   };
 
-  // BE trả 409 kèm "Email này đã đăng ký nhưng chưa xác thực..." khi tài khoản đã có nhưng
-  // chưa bấm link: đưa luôn nút gửi lại, nếu không người dùng chỉ còn cách bấm đăng ký lặp
-  // (mỗi lần lặp ghi thêm một failed attempt, đủ 5 là bị chặn 5 phút).
+  // BE trả 409 kèm "Email này đã đăng ký nhưng chưa xác thực..." — đưa nút gửi lại để
+  // người dùng không phải đăng ký lặp (mỗi lần lặp ghi thêm một failed attempt, đủ 5 là khóa 5 phút).
   const needsVerification = errorStatus === 409 && /chưa xác thực/i.test(error);
 
   const handleResendVerification = async () => {
@@ -178,92 +171,257 @@ const RegisterPage: React.FC = () => {
       setResendState('sent');
       setResendCooldown(60);
     } catch (err: any) {
-      setResendError(readApiErrorMessage(err, 'Could not resend the verification email. Please try again.', ['email']));
+      setResendError(readApiErrorMessage(err, 'Không gửi lại được email xác thực. Vui lòng thử lại.', ['email']));
       setResendState('idle');
     }
   };
 
+  const inputClass =
+    'w-full h-10 box-border rounded-xl border border-slate-300 bg-white pl-9 pr-3.5 text-xs text-slate-900 ' +
+    'placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all';
+
   return (
-    <div className="flex min-h-screen flex-col justify-between bg-surface font-sans text-ink">
-      <header className="fixed inset-x-0 top-0 z-50 bg-surface/80 shadow-header backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-6">
-          <div className="flex items-center gap-4">
-            <Link to="/" className="flex items-center no-underline">
-              <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto" />
-            </Link>
-            <span className="hidden h-4 w-px bg-outline sm:block" />
-            <Link to="/" className="hidden items-center gap-1 text-label-sm text-ink-variant no-underline transition-colors hover:text-ink sm:flex">
-              <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-              Back to home
-            </Link>
-          </div>
-          <nav className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <button type="button" className="flex items-center gap-1 rounded-lg px-2 py-1 text-label-sm text-ink-variant transition-colors hover:text-ink">
-                <span className="material-symbols-outlined text-[18px]">language</span>
-                <span>EN</span>
-                <span className="material-symbols-outlined text-[14px]">expand_more</span>
-              </button>
-              <button type="button" aria-label="Theme indicator" className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-variant transition-colors hover:text-ink">
-                <span className="material-symbols-outlined text-[18px]">light_mode</span>
-              </button>
-            </div>
-            <span className="h-4 w-px bg-outline" />
-            <div className="flex items-center gap-3">
-              <Link to="/login" className="text-label-md text-ink-variant no-underline transition-colors hover:text-ink">Sign In</Link>
-              <span className="text-[13px] font-semibold text-primary" aria-current="page">Sign Up</span>
-            </div>
-            <Link to="/dashboard" className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-on-primary no-underline">
-              <span className="material-symbols-outlined text-[18px]">person</span>
-            </Link>
-          </nav>
-        </div>
-      </header>
+    <div className="relative min-h-screen bg-surface font-sans text-ink">
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-[20%] left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-surface-high/60 blur-[120px]" />
+        <div className="absolute -bottom-[20%] right-[10%] h-[400px] w-[600px] rounded-full bg-secondary-fixed/20 blur-[100px]" />
+      </div>
 
-      <main className="flex w-full flex-1 flex-col items-center justify-center bg-surface px-4 pt-16">
-        <div className="mx-auto flex w-full max-w-[1024px] flex-1 items-center justify-center px-2 py-6">
-          <div className="grid w-full grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
-            <div className="flex flex-col justify-between rounded-xl border border-surface-mid bg-card p-6 shadow-md sm:p-10 lg:col-span-7">
-              <div className="flex flex-col">
-                <h1 className="mb-1 text-headline-lg text-ink sm:text-display">Create your account</h1>
-                <p className="mb-4 text-body-md text-ink-variant">Get started with AI-driven interview practice and hiring.</p>
+      <main className="flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-6 md:p-8">
+        <div className="flex w-full flex-col">
+          <div className="grid w-full min-h-screen grid-cols-1 overflow-hidden bg-surface lg:grid-cols-12">
+            {/* LEFT PANEL */}
+            <section className="relative flex flex-col justify-between overflow-hidden border-r border-slate-800/80 bg-[#0b0f19] p-8 text-white md:p-12 lg:col-span-5 lg:p-14">
+              <div className="pointer-events-none absolute -left-36 -top-36 h-96 w-96 rounded-full bg-primary-container/20 blur-[130px]" />
+              <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-cyan-500/10 blur-[120px]" />
 
-                <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <div className="relative h-10 overflow-hidden rounded-lg bg-surface-low shadow-sm transition-colors hover:bg-surface-mid">
-                    <span aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center gap-2.5 px-3 text-label-md text-ink">
-                      <GoogleIcon /> Continue with Google
-                    </span>
-                    <div
-                      ref={googleMountRef}
-                      className={`absolute inset-0 ${googleClientId ? 'opacity-0' : 'hidden'} [&_iframe]:h-10`}
-                    />
-                    {(!googleClientId || googleGsiUnavailable) && (
-                      <button
-                        type="button"
-                        aria-label="Continue with Google"
-                        className="absolute inset-0 h-full w-full cursor-pointer rounded-lg border-0 bg-transparent text-[1px] text-transparent"
-                        onClick={handleGoogleUnavailable}
-                      >
-                        Continue with Google
-                      </button>
-                    )}
+              <div className="relative z-10 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700/60 bg-slate-900/80 p-1.5 shadow-lg backdrop-blur-md">
+                    <img alt="AI Interview Platform Logo" className="h-full w-full rounded-lg object-contain" src={logoWordmark} />
                   </div>
+                  <div className="flex flex-col">
+                    <span className="flex items-center gap-2 text-[19px] font-bold tracking-tight text-white">AI Interview</span>
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">Nền tảng phỏng vấn AI</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative z-10 my-8 space-y-7">
+                <div className="space-y-3">
+                  <h1 className="text-3xl font-extrabold leading-[1.25] tracking-tight text-white lg:text-[34px]">
+                    Bắt đầu hành trình phỏng vấn cùng AI, tự tin{' '}
+                    <span className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">bứt phá</span>{' '}
+                    sự nghiệp
+                  </h1>
+                  <p className="max-w-lg text-sm leading-relaxed text-slate-300/90">
+                    Hệ thống giả lập phỏng vấn chuyên sâu với phản hồi trực tiếp, phân tích biểu cảm, giọng điệu và tối
+                    ưu hóa hồ sơ ứng tuyển theo chuẩn quốc tế.
+                  </p>
+                </div>
+
+                <div className="space-y-3.5 pt-1">
+                  {REGISTER_BENEFITS.map((benefit) => (
+                    <div key={benefit.title} className="flex items-start gap-3.5">
+                      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/15 text-emerald-400">
+                        <span className="material-symbols-outlined text-sm font-bold">check</span>
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-slate-100">{benefit.title}</h4>
+                        <p className="mt-0.5 text-xs leading-normal text-slate-400">{benefit.body}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="relative rounded-2xl border border-slate-700/80 bg-slate-900/90 p-4 shadow-2xl backdrop-blur-xl">
+                  <div className="mb-3 flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-400">
+                        <span className="material-symbols-outlined text-base">psychology</span>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-200">
+                          Đánh giá phỏng vấn AI
+                          <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                        </div>
+                        <div className="text-[11px] text-slate-400">Senior Frontend Engineer • 15 phút</div>
+                      </div>
+                    </div>
+                    <div className="rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-xs font-bold text-emerald-400">
+                      Xuất sắc 94/100
+                    </div>
+                  </div>
+
+                  <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-slate-700/50 bg-slate-800/60 p-3">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-lg text-emerald-400">groups</span>
+                      <div className="text-left">
+                        <div className="text-xs font-bold text-white">50,000+ ứng viên</div>
+                        <div className="text-[10px] text-slate-400">Tự tin vượt qua vòng phỏng vấn thực tế</div>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[11px] font-semibold text-emerald-400">
+                      <span className="material-symbols-outlined text-xs">star</span> 4.9/5
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2 rounded-lg border border-slate-700/40 bg-slate-800/40 p-2.5">
+                    <span className="material-symbols-outlined mt-0.5 text-sm text-indigo-400">format_quote</span>
+                    <p className="text-[11px] leading-snug text-slate-300">
+                      <span className="font-medium text-indigo-300">Nhận xét AI:</span> Ứng viên nắm vững kiến trúc
+                      component, khả năng phân tích hệ thống phản xạ nhanh và trình bày tự tin.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="relative z-10 border-t border-slate-800/80 pt-4">
+                <p className="mb-2.5 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  Được tin dùng bởi các tập đoàn hàng đầu
+                </p>
+                <div className="flex items-center justify-between px-2 text-xs font-bold tracking-wider text-slate-300/80 opacity-80">
+                  <span className="transition-colors hover:text-white">VNG</span>
+                  <span className="text-slate-600">•</span>
+                  <span className="transition-colors hover:text-white">FPT Software</span>
+                  <span className="text-slate-600">•</span>
+                  <span className="transition-colors hover:text-white">Viettel</span>
+                  <span className="text-slate-600">•</span>
+                  <span className="transition-colors hover:text-white">Shopee</span>
+                  <span className="text-slate-600">•</span>
+                  <span className="transition-colors hover:text-white">MoMo</span>
+                </div>
+              </div>
+            </section>
+
+            {/* RIGHT PANEL */}
+            <section className="flex min-h-screen flex-col justify-between overflow-y-auto bg-[#faf8ff] p-6 sm:p-8 md:p-10 lg:col-span-7 lg:p-12">
+              <div className="mx-auto flex w-full max-w-[480px] items-center justify-between pb-4">
+                <Link to="/" className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 transition-colors hover:text-primary">
+                  <span className="material-symbols-outlined text-base">arrow_back</span>
+                  <span>Về trang chủ</span>
+                </Link>
+                <div className="flex items-center gap-4 text-xs font-medium text-slate-600">
                   <button
                     type="button"
-                    className="flex h-10 items-center justify-center gap-2.5 rounded-lg border-0 bg-surface-low px-3 text-label-md text-ink shadow-sm transition-colors hover:bg-surface-mid"
-                    onClick={handleGithubSignup}
+                    className="inline-flex items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2.5 py-1 shadow-sm transition-colors hover:text-slate-900"
                   >
-                    <GitHubIcon /> Continue with GitHub
+                    <span className="material-symbols-outlined text-sm">language</span>
+                    <span>Tiếng Việt</span>
+                    <span className="material-symbols-outlined text-xs">expand_more</span>
                   </button>
+                  <a href="#" className="inline-flex items-center gap-0.5 transition-colors hover:text-primary">
+                    <span className="material-symbols-outlined text-sm">help_outline</span>
+                    <span>Trợ giúp</span>
+                  </a>
+                </div>
+              </div>
+
+              <div className="mx-auto w-full max-w-[480px] py-2">
+                <div className="mb-6 flex items-center rounded-xl bg-slate-200/60 p-1">
+                  <Link to="/login" className="flex-1 rounded-lg py-2 text-center text-xs font-semibold text-slate-600 transition-all hover:text-slate-900">
+                    Đăng nhập
+                  </Link>
+                  <span className="flex-1 rounded-lg bg-white py-2 text-center text-xs font-bold text-primary shadow-sm">
+                    Đăng ký tài khoản
+                  </span>
                 </div>
 
-                <div className="relative mb-4 flex items-center py-2">
-                  <div className="h-px flex-1 bg-surface-mid" />
-                  <span className="mx-3 text-label-sm uppercase tracking-[0.06em] text-ink-variant">OR</span>
-                  <div className="h-px flex-1 bg-surface-mid" />
+                <div className="mb-6 text-left">
+                  <h2 className="text-2xl font-bold tracking-tight text-slate-900 lg:text-[28px]">Tạo tài khoản mới</h2>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Bắt đầu trải nghiệm luyện phỏng vấn cùng trí tuệ nhân tạo thế hệ mới hoàn toàn miễn phí.
+                  </p>
                 </div>
 
-                <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
+                <div className="relative mb-5 h-11 w-full overflow-hidden rounded-xl border border-slate-300/80 bg-white shadow-sm transition-all hover:bg-slate-50">
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 flex items-center justify-center gap-3 text-xs font-semibold text-slate-700"
+                  >
+                    <GoogleIcon />
+                    <span>Đăng ký nhanh với Google</span>
+                  </span>
+                  <div ref={googleMountRef} className={`absolute inset-0 ${googleClientId ? 'opacity-0' : 'hidden'} [&_iframe]:h-11`} />
+                  {(!googleClientId || googleGsiUnavailable) && (
+                    <button
+                      type="button"
+                      aria-label="Đăng ký nhanh với Google"
+                      className="absolute inset-0 h-full w-full cursor-pointer rounded-xl border-0 bg-transparent text-[1px] text-transparent"
+                      onClick={handleGoogleUnavailable}
+                    >
+                      Đăng ký nhanh với Google
+                    </button>
+                  )}
+                </div>
+
+                <div className="relative mb-5 flex items-center">
+                  <div className="h-px flex-grow bg-slate-200" />
+                  <span className="mx-3 flex-shrink text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    hoặc tiếp tục với email
+                  </span>
+                  <div className="h-px flex-grow bg-slate-200" />
+                </div>
+
+                <div className="mb-5">
+                  <label className="mb-2 block text-xs font-semibold text-slate-700">Bạn tham gia với tư cách nào?</label>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <label
+                      className={`relative flex cursor-pointer items-start gap-3 rounded-xl p-3 transition-all ${
+                        role === 'candidate' ? 'border-2 border-primary bg-indigo-50/50' : 'border border-slate-200 bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      <input
+                        checked={role === 'candidate'}
+                        className="sr-only"
+                        name="userRole"
+                        type="radio"
+                        value="candidate"
+                        onChange={() => setRole('candidate')}
+                      />
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${role === 'candidate' ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'}`}>
+                        <span className="material-symbols-outlined text-lg">person</span>
+                      </div>
+                      <div className="min-w-0 flex-1 pr-4">
+                        <div className="text-xs font-bold leading-tight text-slate-900">Ứng viên</div>
+                        <div className="mt-0.5 text-[11px] leading-normal text-slate-500">Luyện thi &amp; tìm việc</div>
+                      </div>
+                      {role === 'candidate' && (
+                        <div className="absolute right-2.5 top-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-white">
+                          <span className="material-symbols-outlined text-[10px] font-bold">check</span>
+                        </div>
+                      )}
+                    </label>
+                    <label
+                      className={`relative flex cursor-pointer items-start gap-3 rounded-xl p-3 transition-all ${
+                        role === 'recruiter' ? 'border-2 border-primary bg-indigo-50/50' : 'border border-slate-200 bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      <input
+                        checked={role === 'recruiter'}
+                        className="sr-only"
+                        name="userRole"
+                        type="radio"
+                        value="recruiter"
+                        onChange={() => setRole('recruiter')}
+                      />
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${role === 'recruiter' ? 'bg-primary text-white' : 'bg-slate-100 text-slate-600'}`}>
+                        <span className="material-symbols-outlined text-lg">work</span>
+                      </div>
+                      <div className="min-w-0 flex-1 pr-2">
+                        <div className="text-xs font-bold leading-tight text-slate-900">Nhà tuyển dụng</div>
+                        <div className="mt-0.5 text-[11px] leading-normal text-slate-500">Đăng JD &amp; phỏng vấn</div>
+                      </div>
+                      {role === 'recruiter' && (
+                        <div className="absolute right-2.5 top-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-white">
+                          <span className="material-symbols-outlined text-[10px] font-bold">check</span>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </div>
+
+                <form className="flex flex-col gap-3.5" onSubmit={handleSubmit}>
                   {error && (
                     <div className="flex items-start gap-2 rounded-lg bg-danger-bg px-3 py-2.5 text-body-sm text-danger-text" role="alert">
                       <span className="material-symbols-outlined shrink-0 text-[18px]">error</span>
@@ -272,20 +430,20 @@ const RegisterPage: React.FC = () => {
                   )}
                   {needsVerification && (
                     <div className="flex items-center justify-between gap-2 rounded-lg bg-surface-low px-3 py-2 text-body-sm text-ink-variant">
-                      <span>Already registered but not verified?</span>
+                      <span>Email đã đăng ký nhưng chưa xác thực?</span>
                       <button
                         type="button"
                         onClick={handleResendVerification}
                         disabled={resendState === 'sending' || resendCooldown > 0}
-                        className="cursor-pointer border-0 bg-transparent p-0 text-label-sm font-medium text-primary no-underline hover:underline disabled:cursor-not-allowed disabled:text-ink-variant disabled:no-underline"
+                        className="cursor-pointer border-0 bg-transparent p-0 text-[12px] font-semibold text-primary no-underline hover:underline disabled:cursor-not-allowed disabled:text-ink-variant disabled:no-underline"
                       >
                         {resendState === 'sending'
-                          ? 'Sending...'
+                          ? 'Đang gửi...'
                           : resendCooldown > 0
-                            ? `Resend available in ${resendCooldown}s`
+                            ? `Gửi lại sau ${resendCooldown}s`
                             : resendState === 'sent'
-                              ? 'Verification email sent'
-                              : 'Resend verification email'}
+                              ? 'Đã gửi lại email xác thực'
+                              : 'Gửi lại email xác thực'}
                       </button>
                     </div>
                   )}
@@ -301,161 +459,166 @@ const RegisterPage: React.FC = () => {
                       <span>{notice}</span>
                     </div>
                   )}
+                  {form.confirmPassword.length > 0 && !passwordsMatch && (
+                    <div className="flex items-start gap-2 rounded-lg bg-danger-bg px-3 py-2 text-body-sm text-danger-text" role="alert">
+                      <span className="material-symbols-outlined shrink-0 text-[16px]">error</span>
+                      <span>Mật khẩu xác nhận chưa trùng khớp.</span>
+                    </div>
+                  )}
 
-                  <div className="flex flex-col gap-1">
-                    <label className="text-label-md font-medium text-ink" htmlFor="full-name">Full Name</label>
-                    <input
-                      className="h-10 rounded-lg border border-surface-mid bg-surface-low px-3 text-body-md text-ink shadow-sm transition-all placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary"
-                      id="full-name"
-                      name="fullName"
-                      type="text"
-                      placeholder="Jane Doe"
-                      required
-                      autoComplete="name"
-                      value={form.fullName}
-                      onChange={handleChange}
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-label-md font-medium text-ink" htmlFor="work-email">Work/Personal Email</label>
-                    <input
-                      className="h-10 rounded-lg border border-surface-mid bg-surface-low px-3 text-body-md text-ink shadow-sm transition-all placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary"
-                      id="work-email"
-                      name="email"
-                      type="email"
-                      placeholder="jane@example.com"
-                      required
-                      autoComplete="email"
-                      value={form.email}
-                      onChange={handleChange}
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-label-md font-medium text-ink" htmlFor="password-input">Password</label>
-                    <div className="relative">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold text-slate-700" htmlFor="fullName">
+                      Họ và tên
+                    </label>
+                    <div className="relative flex items-center">
+                      <span className="material-symbols-outlined pointer-events-none absolute left-3 text-lg text-slate-400">person</span>
                       <input
-                        className="h-10 w-full box-border rounded-lg border border-surface-mid bg-surface-low px-3 pr-10 text-body-md text-ink shadow-sm transition-all placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary"
-                        id="password-input"
-                        name="password"
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••••••"
+                        className={inputClass}
+                        id="fullName"
+                        name="fullName"
+                        placeholder="Nguyễn Văn A"
                         required
+                        type="text"
+                        autoComplete="name"
+                        value={form.fullName}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold text-slate-700" htmlFor="email">
+                      Địa chỉ Email
+                    </label>
+                    <div className="relative flex items-center">
+                      <span className="material-symbols-outlined pointer-events-none absolute left-3 text-lg text-slate-400">mail</span>
+                      <input
+                        className={inputClass}
+                        id="email"
+                        name="email"
+                        placeholder="name@company.com"
+                        required
+                        type="email"
+                        autoComplete="email"
+                        value={form.email}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <label className="text-xs font-semibold text-slate-700" htmlFor="password">
+                        Mật khẩu
+                      </label>
+                      {form.password.length > 0 && (
+                        <span className="text-[11px] font-bold text-emerald-600">Độ mạnh: {strengthLabel}</span>
+                      )}
+                    </div>
+                    <div className="relative flex items-center">
+                      <span className="material-symbols-outlined pointer-events-none absolute left-3 text-lg text-slate-400">lock</span>
+                      <input
+                        className={`${inputClass} pr-9`}
+                        id="password"
+                        name="password"
+                        required
+                        type={showPassword ? 'text' : 'password'}
                         autoComplete="new-password"
                         value={form.password}
                         onChange={handleChange}
                       />
                       <button
                         type="button"
-                        className="absolute right-3 top-2.5 flex items-center justify-center border-0 bg-transparent p-0 text-outline transition-colors hover:text-ink"
-                        aria-label="Toggle password visibility"
+                        aria-label="Hiện/ẩn mật khẩu"
+                        className="absolute right-3 flex items-center justify-center text-slate-400 transition-colors hover:text-slate-600"
                         onClick={() => setShowPassword(!showPassword)}
                       >
-                        <span className="material-symbols-outlined text-[18px]">
-                          {showPassword ? 'visibility_off' : 'visibility'}
-                        </span>
+                        <span className="material-symbols-outlined text-lg">{showPassword ? 'visibility_off' : 'visibility'}</span>
                       </button>
+                    </div>
+                    <div className="mt-1.5 grid h-1 w-full grid-cols-4 gap-1.5">
+                      {[0, 1, 2, 3].map((index) => (
+                        <div key={index} className={`rounded-full ${index < passedRules ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+                      ))}
+                    </div>
+                    <p className="mt-1 text-[11px] text-slate-400">
+                      Tối thiểu 8 ký tự, bao gồm chữ hoa, chữ thường và chữ số.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold text-slate-700" htmlFor="confirmPassword">
+                      Xác nhận mật khẩu
+                    </label>
+                    <div className="relative flex items-center">
+                      <span className="material-symbols-outlined pointer-events-none absolute left-3 text-lg text-slate-400">lock_reset</span>
+                      <input
+                        className={inputClass}
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        required
+                        type="password"
+                        autoComplete="new-password"
+                        value={form.confirmPassword}
+                        onChange={handleChange}
+                      />
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-2.5 pt-1">
+                  <div className="flex items-start gap-2 pt-1">
                     <input
-                      className="h-4 w-4 cursor-pointer rounded accent-primary"
-                      id="terms-consent"
-                      type="checkbox"
                       checked={termsAccepted}
+                      className="mt-0.5 h-4 w-4 cursor-pointer rounded accent-primary"
+                      id="terms"
+                      type="checkbox"
                       onChange={(e) => setTermsAccepted(e.target.checked)}
                     />
-                    <label className="cursor-pointer text-body-sm text-ink-variant" htmlFor="terms-consent">
-                      I agree to the{' '}
-                      <a href="#" className="font-medium text-primary no-underline hover:underline">Terms of Service</a>
-                      {' '}and{' '}
-                      <a href="#" className="font-medium text-primary no-underline hover:underline">Privacy Policy</a>.
+                    <label className="select-none text-[11px] leading-relaxed text-slate-600" htmlFor="terms">
+                      Tôi đồng ý với{' '}
+                      <a className="font-semibold text-primary hover:underline" href="#">
+                        Điều khoản dịch vụ
+                      </a>{' '}
+                      và{' '}
+                      <a className="font-semibold text-primary hover:underline" href="#">
+                        Chính sách bảo mật
+                      </a>{' '}
+                      của AI Interview Platform.
                     </label>
                   </div>
 
-                  <div className="pt-2">
-                    <button
-                      type="submit"
-                      className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border-0 bg-primary text-label-md font-semibold tracking-wide text-on-primary shadow-md transition-all hover:bg-secondary active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={loading}
-                    >
-                      <span>{loading ? 'Creating account...' : 'Create Account'}</span>
-                      <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                    </button>
-                  </div>
+                  <button
+                    className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary text-xs font-bold text-white shadow-md shadow-primary/20 transition-all hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
+                    type="submit"
+                    disabled={loading}
+                  >
+                    <span>{loading ? 'Đang tạo tài khoản...' : 'Đăng ký tài khoản'}</span>
+                    <span className="material-symbols-outlined text-base">arrow_forward</span>
+                  </button>
+                  <p className="pt-1 text-center text-xs text-slate-500">
+                    Đã có tài khoản?{' '}
+                    <Link to="/login" className="font-semibold text-primary hover:underline">
+                      Đăng nhập ngay
+                    </Link>
+                  </p>
                 </form>
               </div>
 
-              <div className="mt-6 flex items-center justify-center gap-1 border-t border-surface-mid pt-6">
-                <span className="text-body-sm text-ink-variant">Already have an account?</span>
-                <Link to="/login" className="flex items-center gap-0.5 text-label-md font-semibold text-primary no-underline hover:underline">
-                  Sign in <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                </Link>
-              </div>
-            </div>
-
-            <div className="relative flex flex-col justify-between overflow-hidden rounded-xl bg-gradient-to-br from-primary to-secondary p-8 shadow-md sm:p-10 lg:col-span-5">
-              <div className="relative z-10 flex flex-col gap-6">
-                <div className="inline-flex w-fit items-center gap-2 rounded-full bg-white/20 px-3 py-1.5 text-label-sm text-on-primary backdrop-blur-md">
-                  <span className="material-symbols-outlined text-[16px]">stars</span>
-                  <span>AI-Powered Technical Assessment</span>
-                </div>
-                <h2 className="m-0 text-headline-lg tracking-tight text-white">
-                  Join 50,000+ candidates and companies streamlining technical interviews.
-                </h2>
-                <p className="m-0 text-body-md leading-relaxed text-white/80">
-                  Get realistic interview simulations with real-time feedback, deep codebase analysis, and objective
-                  multi-dimensional candidate evaluation.
-                </p>
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {[
-                    { icon: 'verified', label: 'Fair AI evaluations' },
-                    { icon: 'checklist', label: 'Automated rubrics' },
-                    { icon: 'bolt', label: 'Instant feedback' },
-                  ].map((chip) => (
-                    <div
-                      key={chip.label}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/15 px-3 py-1.5 text-label-sm text-white backdrop-blur-sm"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">{chip.icon}</span>
-                      <span>{chip.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="relative z-10 pt-6">
-                <div className="flex items-start gap-3 rounded-xl border border-white/15 bg-white/10 p-4 backdrop-blur-md">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 font-semibold text-white">
-                    ER
-                  </span>
-                  <div className="flex flex-col">
-                    <p className="m-0 text-body-sm italic text-white">
-                      “InterviewAI identified my system architecture gaps in minutes. Landed my L5 role in two weeks!”
-                    </p>
-                    <span className="mt-1 text-label-sm font-semibold text-white/90">
-                      Elena R. · Senior Backend Engineer
-                    </span>
+              <div className="mx-auto w-full max-w-[480px] border-t border-slate-200/80 pt-4 text-center">
+                <div className="flex flex-col items-center justify-center gap-1.5 text-xs text-slate-500">
+                  <p className="text-[11px] font-medium text-slate-500">© 2026 AI Interview Platform. Bảo lưu mọi quyền.</p>
+                  <div className="flex items-center justify-center gap-3 text-[11px] text-slate-400">
+                    <a href="#" className="transition-colors hover:text-primary">Điều khoản sử dụng</a>
+                    <span>•</span>
+                    <a href="#" className="transition-colors hover:text-primary">Chính sách bảo mật</a>
+                    <span>•</span>
+                    <a href="#" className="transition-colors hover:text-primary">Trợ giúp</a>
                   </div>
                 </div>
               </div>
-            </div>
+            </section>
           </div>
         </div>
       </main>
-
-      <footer className="bg-card/60 shadow-footer">
-        <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-3 px-6 py-4 sm:flex-row">
-          <span className="text-label-sm text-ink-variant">© 2025 InterviewAI Inc. All rights reserved.</span>
-          <div className="flex flex-wrap items-center justify-center gap-6 text-label-sm text-ink-variant">
-            <a href="#" className="no-underline transition-colors hover:text-ink">Privacy Policy</a>
-            <a href="#" className="no-underline transition-colors hover:text-ink">Terms of Service</a>
-            <a href="#" className="no-underline transition-colors hover:text-ink">Security</a>
-            <a href="#" className="no-underline transition-colors hover:text-ink">Contact Support</a>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };
