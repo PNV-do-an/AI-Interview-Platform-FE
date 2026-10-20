@@ -7,7 +7,7 @@ URL Stitch (`stitch.withgoogle.com/projects/...`) không đọc được bằng 
 
 Trạng thái: `DATA` = dựng theo mockup + số liệu thật; `UI` = theo mockup nhưng còn khối tiếng Việt/chưa nối hết API; `STATIC` = màn tĩnh cố ý (không có backend), số liệu là bản copy từ mockup; `TODO` = chưa có file.
 
-**App chrome (dùng chung mọi màn, không thuộc một file trang nào)** — lấy theo `admin_workspace_user_directory_job_approvals`: brand = wordmark `src/assets/logo-wordmark.png` (thay tile icon + chữ "InterviewAI"), header có context chip `{Workspace · Page}` cạnh ô search. Chi tiết class + quy tắc suy nhãn: `conventions/frontend-ui.md` mục 4.
+**App chrome (dùng chung mọi màn, không thuộc một file trang nào)** — lấy theo `admin_workspace_user_directory_job_approvals`: brand = wordmark `src/assets/logo-wordmark.png` (thay tile icon + chữ "InterviewAI"). Context chip `{Workspace · Page}` cạnh ô search đã gỡ theo yêu cầu 20/10. Chi tiết class + quy tắc: `conventions/frontend-ui.md` mục 4.
 
 ## Luồng ứng viên (làm trước, theo chốt của anh Huy)
 

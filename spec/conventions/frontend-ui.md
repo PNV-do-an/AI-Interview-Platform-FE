@@ -37,7 +37,7 @@
 - Bảng mật độ cao: header `thClass` (cao 32px, uppercase, tracking 0.04em), row `tdClass` (cao 40px), hover `bg-surface-low/60`, border dưới `#e2e8f0`.
 - Không thêm animation/chrome ngoài mockup: không skeleton tự chế, không transition thừa, không shadow to hơn `shadow-[0_1px_3px_rgba(15,23,42,0.04)]` cho card nội dung.
 - **Brand mark**: chỉ một nguồn `src/assets/logo-wordmark.png` (wordmark "AI Interview", đã cắt nền trắng ra trong suốt, 491×80). Render `h-5 w-auto` trong sidebar + header `AppLayout` và các trang standalone (login/register/forgot/reset/magic-link/2FA), `h-6` ở header landing & job board. Không dựng lại kiểu cũ "tile icon `neurology`/`psychology` + chữ InterviewAI".
-- **Context chip trong header app** (`AppLayout`, ngay ô search): `rounded-lg border border-primary/20 bg-primary/10 px-3 py-1 text-label-sm font-semibold text-primary`, icon = icon của nav item đang active, nhãn `{Workspace · Page}` suy từ `location.pathname` (khớp `to` dài nhất), `hidden md:flex`. Không hard-code nhãn "[👑 ADMIN] ..." như mockup; route không có trong sidebar thì ẩn chip.
+- **Không có context chip trong header app**: mockup Stitch vẽ chip "[👑 ADMIN] ..." cạnh ô search nhưng đã bị yêu cầu gỡ (20/10). Header `AppLayout` chỉ gồm ô search + cụm thông báo/avatar; ngữ cảnh màn đọc ở breadcrumb của chính màn đó.
 
 ## 5. Code
 
