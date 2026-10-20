@@ -64,9 +64,10 @@ FE chia 2 wave. **Wave 1 = API đã có, làm ngay trong branch này:**
 - Chuyển tab **Pending Invites → All Members** phải `GET /users` lại **không kèm `status`** và reset
   select Status về "All Statuses". Trước đó `switchTab` chỉ xử lý nhánh `pending`, nên tab All Members
   giữ nguyên 7 dòng pending (đo jsdom: không có request nào gửi đi).
-- Phân trang: `size` mặc định **10** (mockup "Showing 1-10 of ..."), chọn 10/20/50 ở chân bảng;
-  đổi size quay về trang 1 và áp cho cả list Deleted/Audit. `totalPages <= 1` thì **ẩn pager**
-  (để nút "1" bấm không đi đâu trông như hỏng). DB local chỉ 3 tài khoản → luôn 1 trang.
+- Phân trang: **giữ nguyên pager cũ** (số trang + mũi tên, luôn hiển thị). Chỉ đổi `size` 20 → **10**
+  cho đúng mockup "Showing 1-10 of ...". Đã đo để chốt không có lỗi: BE `page=1&size=2` trả
+  `number=1, totalPages=2, ids=[1]`; FE bấm trang 2/3 gửi đúng `page` và footer đổi "Showing 11-20 of 25".
+  Lý do không sang được trang trên máy local: DB dev chỉ **3 tài khoản** → `totalPages=1`.
 
 Không làm (ngoài màn này): section "Job Approval Moderation Queue" cuối mockup là màn riêng
 `/admin/job-approvals`, đã có dòng trong `spec/INDEX.md` (vẫn STATIC).
