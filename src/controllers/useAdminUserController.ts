@@ -31,8 +31,7 @@ export interface ProfileEditInput {
   phone?: string;
 }
 
-const DEFAULT_PAGE_SIZE = 10;
-export const PAGE_SIZE_OPTIONS = [10, 20, 50];
+const PAGE_SIZE = 10;
 
 const EMPTY_FILTERS: Filters = { search: '', status: '', role: '' };
 const EMPTY_AUDIT_FILTERS: AuditFilters = { action: '', from: '', to: '' };
@@ -49,7 +48,6 @@ export const useAdminUserController = () => {
   const [deletedPage, setDeletedPage] = useState(0);
   const [deletedSearch, setDeletedSearch] = useState('');
   const [auditPage, setAuditPage] = useState(0);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [loading, setLoading] = useState(false);
   const [loadingDeleted, setLoadingDeleted] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -73,13 +71,13 @@ export const useAdminUserController = () => {
     }
   }, []);
 
-  const fetchUsers = useCallback(async (page = 0, f: Filters = filters, size = pageSize) => {
+  const fetchUsers = useCallback(async (page = 0, f: Filters = filters) => {
     setLoading(true);
     clearMessages();
     try {
       const params = {
         page,
-        size,
+        size: PAGE_SIZE,
         ...(f.search ? { search: f.search } : {}),
         ...(f.status ? { status: f.status } : {}),
         ...(f.role ? { role: f.role } : {}),
@@ -94,14 +92,14 @@ export const useAdminUserController = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters, pageSize, fetchStats]);
+  }, [filters, fetchStats]);
 
-  const fetchDeletedUsers = useCallback(async (page = 0, search = deletedSearch, size = pageSize) => {
+  const fetchDeletedUsers = useCallback(async (page = 0, search = deletedSearch) => {
     setLoadingDeleted(true);
     clearMessages();
     try {
       const res = await AdminService.getDeletedUsers({
-        page, size, ...(search ? { search } : {}),
+        page, size: PAGE_SIZE, ...(search ? { search } : {}),
       });
       setDeletedUsers(res.data.data!);
       setDeletedPage(page);
@@ -111,7 +109,7 @@ export const useAdminUserController = () => {
     } finally {
       setLoadingDeleted(false);
     }
-  }, [deletedSearch, pageSize]);
+  }, [deletedSearch]);
 
   const fetchUserDetail = useCallback(async (id: number) => {
     try {
@@ -257,10 +255,10 @@ export const useAdminUserController = () => {
     setActionLoading(false);
   }, [currentPage, fetchUserDetail, fetchUsers, selectedUser]);
 
-  const fetchAuditLogs = useCallback(async (page = 0, f: AuditFilters = auditFilters, size = pageSize) => {
+  const fetchAuditLogs = useCallback(async (page = 0, f: AuditFilters = auditFilters) => {
     try {
       const res = await AdminService.getAuditLogs({
-        page, size,
+        page, size: PAGE_SIZE,
         ...(f.action ? { action: f.action } : {}),
         ...(f.from ? { from: f.from } : {}),
         ...(f.to ? { to: f.to } : {}),
@@ -272,7 +270,7 @@ export const useAdminUserController = () => {
     } catch (e: any) {
       setError(readApiErrorMessage(e, 'Failed to load audit logs'));
     }
-  }, [auditFilters, pageSize]);
+  }, [auditFilters]);
 
   const applyFilters = useCallback((newFilters: Filters) => {
     fetchUsers(0, newFilters);
@@ -373,13 +371,13 @@ export const useAdminUserController = () => {
   return {
     users, deletedUsers, selectedUser, auditLogs, stats,
     filters, auditFilters,
-    currentPage, deletedPage, deletedSearch, auditPage, pageSize,
+    currentPage, deletedPage, deletedSearch, auditPage,
     loading, loadingDeleted, actionLoading, exporting, error, successMsg,
     fetchUsers, fetchDeletedUsers, fetchUserDetail, fetchAuditLogs, fetchStats, loadProfileForEdit,
     lockUser, unlockUser, setUserStatus, deleteUser, restoreUser, resetPassword, changeRole,
     inviteUser, resendInvitation, revokeInvitation, updateProfile,
     runBulkAction,
-    applyFilters, applyAuditFilters, exportUsersCsv, setPageSize,
+    applyFilters, applyAuditFilters, exportUsersCsv,
     setSelectedUser, clearMessages,
   };
 };
