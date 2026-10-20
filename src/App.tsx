@@ -11,6 +11,7 @@ import UnauthorizedPage from './views/pages/UnauthorizedPage';
 import ForgotPasswordPage from './views/pages/ForgotPasswordPage';
 import ResetPasswordPage from './views/pages/ResetPasswordPage';
 import VerifyEmailPage from './views/pages/VerifyEmailPage';
+import CheckEmailPage from './views/pages/CheckEmailPage';
 import JobsPage from './views/pages/JobsPage';
 import JobDetailPage from './views/pages/JobDetailPage';
 import JobFormPage from './views/pages/JobFormPage';
@@ -58,6 +59,7 @@ const App: React.FC = () => {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify" element={<VerifyEmailPage />} />
+          <Route path="/check-email" element={<CheckEmailPage />} />
           <Route path="/two-factor" element={<TwoFactorPage />} />
           <Route path="/magic-link" element={<MagicLinkPage />} />
           <Route path="/opportunities" element={<PublicJobBoardPage />} />

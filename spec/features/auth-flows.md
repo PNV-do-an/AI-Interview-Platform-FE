@@ -101,3 +101,36 @@ Host không chạy được `npm start` (`node_modules/.bin` là symlink hỏng,
 - Case 7 (chặn email trống ở quên mật khẩu) có làm ở client không, hay để BE trả 200 generic rồi UX hiện "Check your inbox"? **Đã làm ở client** theo đề xuất này (`EMAIL_PATTERN` chặn trước khi gọi API, đã đo mục 8.4). Nếu anh muốn ngược lại thì chỉ cần bỏ đoạn chặn trong `ForgotPasswordPage.sendResetLink`.
 - Có sửa luôn `useAdminUserController` / `useCandidateController` (cùng họ lỗi đọc `message` thô) không? **Đề xuất: chưa**, ngoài phạm vi 3 luồng.
 - `.env.production` commit hay cho vào `.gitignore`? **Đề xuất: `.gitignore`**, vì build Docker local trỏ browser vào backend staging dùng chung.
+
+## 10. Wave restyle 6 màn auth theo thiết kế Stitch (2026-10-20)
+
+Nguồn chân lý là ZIP Stitch (`stitch_ai_interview_platform`) — 6 màn: login, register, forgot-password (form + sent), reset-password (input + success + expired), check-email sau đăng ký. Làm trên nhánh `feature/create-job`, không đụng trang ngoài auth.
+
+**File sửa/tạo:**
+
+- Viết lại 4 trang: `LoginPage.tsx`, `RegisterPage.tsx`, `ForgotPasswordPage.tsx`, `ResetPasswordPage.tsx`; tạo mới `CheckEmailPage.tsx` + route `/check-email` trong `App.tsx`.
+- `useAuthController.ts`: sau register điều hướng `/login?registered=true` -> `/check-email?email=...` (1 dòng).
+- `tailwind.config.js`: thêm 4 token không trùng `surface-highest`, `primary-fixed`, `secondary-fixed`, `secondary-fixed-dim`; các token còn lại map sang token sẵn có (`surface-container-lowest`->`card`, `on-surface`->`ink`, v.v.), màu one-off dùng giá trị arbitrary.
+
+**Quyết định theo anh Huy và theo thiết kế:**
+
+- Bỏ nút GitHub + Enterprise SSO ở Login/Register (**"Bỏ, đúng thiết kế"**) — service layer `google/github/sso` giữ nguyên, chỉ gỡ UI; nút Google giữ pattern GSI overlay cũ.
+- Selector role Ứng viên/Nhà tuyển dụng ở Register chỉ là UI — BE `/auth/register` không nhận role; radio mặc định Ứng viên.
+- Đồ demo của Stitch thay bằng state thật: tab preview reset-password bỏ, "Gửi lại liên kết mới" điều hướng `/forgot-password` thay alert giả, countdown cứng 51s thay bằng cooldown thật (forgot 30s, resend verification 60s giữ nguyên).
+- Giữ quyết định cũ: remember-me mặc định checked; chữ "15 phút" ở forgot/reset lấy theo thiết kế.
+- Sau register success view bỏ EventId (thiết kế không có); `signOutEverywhere` gửi cứng `true` (checkbox bị thiết kế bỏ).
+
+**Đã verify (Docker local, bundle `main.57781e51.js`):**
+
+- `tsc --noEmit` sạch; build `EXIT=0`; `.env.production` backup/restore so `cmp` trùng byte.
+- DOM snapshot 6 màn khớp cấu trúc Stitch; browser-use không chụp được ảnh (viewport ẩn) nên so theo DOM, không so pixel.
+- Register: bấm radio Nhà tuyển dụng -> checked; gõ `TechTalent2026!` -> label `"Độ mạnh: Rất tốt"` (4/4 rule).
+- Forgot: submit email sai format -> form không gửi đi, **0 request API** (native `type="email"` chặn trước cả `EMAIL_PATTERN`); submit `@example.com` -> sent view với email che `v***@example.com`, cooldown đếm `"Gửi lại sau (29s)"`.
+- Reset không token / token sai -> expired view nguyên văn; `/check-email` thiếu email -> redirect `/login`.
+- Console sạch trên các màn đã đo. Chưa đo được: input view reset-password (cần token thật còn hạn) và success view (cần reset thật -> ghi DB).
+
+**Còn mở:**
+
+- TTL "15 phút" trên UI chưa đối chiếu với giá trị thật của BE (FE không thấy hằng số nào).
+- Logo đang dùng asset wordmark có sẵn của app, không phải đúng file PNG trong ZIP (ZIP dùng ảnh Google-hosted).
+- Màn `/verify?token=` (trang kết quả verify) không có nguồn Stitch -> giữ nguyên.
