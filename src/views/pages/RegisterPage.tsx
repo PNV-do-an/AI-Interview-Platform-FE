@@ -183,7 +183,7 @@ const RegisterPage: React.FC = () => {
     'placeholder:text-outline-strong transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15';
 
   const roleCardClass = (active: boolean) =>
-    `relative flex cursor-pointer items-start gap-3 rounded-xl p-3 transition-colors ${
+    `relative flex cursor-pointer items-center gap-3 rounded-xl p-3 transition-colors ${
       active ? 'border-2 border-primary bg-primary-fixed/50' : 'border border-outline bg-card hover:border-outline-strong'
     }`;
 
@@ -203,10 +203,7 @@ const RegisterPage: React.FC = () => {
               <div className="flex h-10 items-center justify-center rounded-xl bg-white px-3 shadow-lg">
                 <img alt="AI Interview Platform Logo" className="h-4 w-auto object-contain" src={logoWordmark} />
               </div>
-              <div className="flex flex-col">
-                <span className="text-[17px] font-bold tracking-tight text-white">AI Interview</span>
-                <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">Nền tảng phỏng vấn AI</span>
-              </div>
+              <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">Nền tảng phỏng vấn AI</span>
             </div>
 
             <div className="relative z-10 my-auto space-y-5 py-3">
