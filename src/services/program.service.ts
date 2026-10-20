@@ -36,6 +36,9 @@ const ProgramService = {
   updateJob: (id: number, body: JobRequest) =>
     httpService.put<ApiResponse<JobDetail>>(`${JOBS}/${id}`, body),
 
+  submitJobForReview: (id: number) =>
+    httpService.patch<ApiResponse<JobDetail>>(`${JOBS}/${id}/submit`),
+
   changeJobStatus: (id: number, status: JobStatus) =>
     httpService.patch<ApiResponse<JobDetail>>(`${JOBS}/${id}/status`, null, { params: { status } }),
 

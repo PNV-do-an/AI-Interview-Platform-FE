@@ -1,4 +1,6 @@
-export type JobStatus = 'OPEN' | 'CLOSED';
+export type JobStatus = 'DRAFT' | 'PENDING_APPROVAL' | 'OPEN' | 'CLOSED';
+export type WorkplaceModel = 'ONSITE' | 'HYBRID' | 'REMOTE';
+export type AiScreeningTrack = 'LIVE_CODING' | 'SYSTEM_DESIGN' | 'ASYNC_TECHNICAL' | 'CULTURAL_FIT';
 export type ApplicationStatus =
   | 'PENDING'
   | 'SCHEDULED'
@@ -35,6 +37,21 @@ export interface JobDetail {
   employerEmail?: string;
   createdAt: string;
   updatedAt?: string;
+  department?: string | null;
+  experienceLevel?: string | null;
+  employmentType?: string | null;
+  workplaceModel?: WorkplaceModel | null;
+  timezoneRequirement?: string | null;
+  salaryCurrency?: string | null;
+  salaryMin?: number | null;
+  salaryMax?: number | null;
+  equityBand?: string | null;
+  annualBonus?: string | null;
+  aiScreeningEnabled?: boolean | null;
+  aiScreeningTrack?: AiScreeningTrack | null;
+  aiScreeningPassScore?: number | null;
+  aiQuestionFocusAreas?: string | null;
+  reviewNote?: string | null;
 }
 
 export interface JobRequest {
@@ -46,7 +63,41 @@ export interface JobRequest {
   description?: string;
   requirements?: string;
   requiredSkills?: string;
+  department?: string;
+  experienceLevel?: string;
+  employmentType?: string;
+  workplaceModel?: WorkplaceModel;
+  timezoneRequirement?: string;
+  salaryCurrency?: string;
+  salaryMin?: number;
+  salaryMax?: number;
+  equityBand?: string;
+  annualBonus?: string;
+  aiScreeningEnabled?: boolean;
+  aiScreeningTrack?: AiScreeningTrack | null;
+  aiScreeningPassScore?: number | null;
+  aiQuestionFocusAreas?: string | null;
 }
+
+export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
+  DRAFT: 'Draft',
+  PENDING_APPROVAL: 'Pending review',
+  OPEN: 'Active',
+  CLOSED: 'Closed',
+};
+
+export const WORKPLACE_MODEL_LABELS: Record<WorkplaceModel, string> = {
+  ONSITE: 'On-site',
+  HYBRID: 'Hybrid',
+  REMOTE: 'Fully Remote',
+};
+
+export const AI_SCREENING_TRACK_LABELS: Record<AiScreeningTrack, string> = {
+  LIVE_CODING: 'Live Coding (45 mins)',
+  SYSTEM_DESIGN: 'System Design Deep Dive (60 mins)',
+  ASYNC_TECHNICAL: 'Async Technical Assessment (90 mins)',
+  CULTURAL_FIT: 'Cultural Fit & Engineering Philosophy (30 mins)',
+};
 
 export interface Slot {
   id: number;

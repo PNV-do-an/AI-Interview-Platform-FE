@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useEmployerJobController } from '../../controllers/useEmployerJobController';
-import { APPLICATION_STATUS_LABELS, Application, JobSummary } from '../../models/Program.model';
+import { APPLICATION_STATUS_LABELS, Application, JOB_STATUS_LABELS, JobSummary } from '../../models/Program.model';
 import {
-  Badge,
   EmptyState,
   ErrorBanner,
   LoadingState,
@@ -19,16 +18,35 @@ const textareaClass = `${inputClass.replace('h-9', 'py-2')} min-h-[80px] resize-
 const MyJobsPage: React.FC = () => {
   const {
     myJobs, applications, suggestions, loading, error, successMsg,
-    fetchMyJobs, changeStatus, deleteJob, fetchApplications, fetchSuggestions, evaluate,
+    fetchMyJobs, changeStatus, deleteJob, fetchApplications, fetchSuggestions, fetchReviewNotes, evaluate,
   } = useEmployerJobController();
 
   const [page, setPage] = useState(0);
   const [selectedJob, setSelectedJob] = useState<JobSummary | null>(null);
+  const [reviewNotes, setReviewNotes] = useState<Record<number, string>>({});
   const [evalApp, setEvalApp] = useState<Application | null>(null);
   const [score, setScore] = useState<string>('');
   const [feedback, setFeedback] = useState('');
 
   useEffect(() => { fetchMyJobs(page); }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const draftIds = (myJobs?.content ?? []).filter((job) => job.status === 'DRAFT').map((job) => job.id);
+    if (draftIds.length === 0) {
+      setReviewNotes({});
+      return;
+    }
+    let cancelled = false;
+    fetchReviewNotes(draftIds).then((notes) => {
+      if (!cancelled) setReviewNotes(notes);
+    });
+    return () => { cancelled = true; };
+  }, [myJobs, fetchReviewNotes]);
+
+  const toggleStatus = async (job: JobSummary) => {
+    const ok = await changeStatus(job.id, job.status === 'OPEN' ? 'CLOSED' : 'OPEN');
+    if (ok) await fetchMyJobs(page);
+  };
 
   const openApplications = async (job: JobSummary) => {
     setSelectedJob(job);
@@ -85,40 +103,59 @@ const MyJobsPage: React.FC = () => {
       )}
 
       <div className="flex flex-col gap-3">
-        {myJobs?.content.map((job) => (
-          <div key={job.id} className="flex flex-col gap-2 rounded-lg border border-[#e2e8f0] bg-card p-4 shadow-card">
-            <div className="flex flex-wrap items-center gap-2">
-              <strong className="min-w-0 flex-1 truncate text-headline-sm text-ink">{job.title}</strong>
-              <Badge tone={job.status === 'OPEN' ? 'success' : 'danger'}>
-                {job.status === 'OPEN' ? 'Active' : 'Closed'}
-              </Badge>
+        {myJobs?.content.map((job) => {
+          const pipelineAvailable = job.status === 'OPEN' || job.status === 'CLOSED';
+          const reviewNote = job.status === 'DRAFT' ? reviewNotes[job.id] : '';
+          return (
+            <div key={job.id} className="flex flex-col gap-2 rounded-lg border border-[#e2e8f0] bg-card p-4 shadow-card">
+              <div className="flex flex-wrap items-center gap-2">
+                <strong className="min-w-0 flex-1 truncate text-headline-sm text-ink">{job.title}</strong>
+                <StatusBadge status={job.status} label={JOB_STATUS_LABELS[job.status]} />
+              </div>
+              <p className="m-0 flex items-center gap-1 text-body-sm text-ink-variant">
+                <span className="material-symbols-outlined text-[18px]">work</span>
+                {job.companyName}
+              </p>
+              {reviewNote && (
+                <div className="flex items-start gap-2 rounded-lg bg-[#fffbeb] px-3 py-2.5 text-body-sm text-[#92400e]" role="status">
+                  <span className="material-symbols-outlined shrink-0 text-[18px]">rate_review</span>
+                  <div>
+                    <strong className="block">Changes requested</strong>
+                    <span className="whitespace-pre-wrap">{reviewNote}</span>
+                  </div>
+                </div>
+              )}
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <Link to={`/jobs/${job.id}`} className={buttonClass('ghost', 'no-underline')}>View</Link>
+                {job.status !== 'PENDING_APPROVAL' && (
+                  <Link to={`/jobs/${job.id}/edit`} className={buttonClass('ghost', 'no-underline')}>
+                    <span className="material-symbols-outlined text-[18px]">edit</span>
+                    Edit
+                  </Link>
+                )}
+                {pipelineAvailable && (
+                  <>
+                    <button className={buttonClass('secondary')} onClick={() => toggleStatus(job)}>
+                      <span className="material-symbols-outlined text-[18px]">schedule</span>
+                      {job.status === 'OPEN' ? 'Close' : 'Reopen'}
+                    </button>
+                    <button className={buttonClass('secondary')} onClick={() => openApplications(job)}>Applicants</button>
+                    <button className={buttonClass('secondary')} onClick={() => openSuggestions(job)}>Suggested Candidates</button>
+                  </>
+                )}
+                {job.status !== 'PENDING_APPROVAL' && (
+                  <button
+                    className={buttonClass('danger')}
+                    onClick={() => { if (window.confirm('Delete this job posting?')) deleteJob(job.id).then(() => fetchMyJobs(page)); }}
+                  >
+                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                    Delete
+                  </button>
+                )}
+              </div>
             </div>
-            <p className="m-0 flex items-center gap-1 text-body-sm text-ink-variant">
-              <span className="material-symbols-outlined text-[18px]">work</span>
-              {job.companyName}
-            </p>
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              <Link to={`/jobs/${job.id}`} className={buttonClass('ghost', 'no-underline')}>View</Link>
-              <Link to={`/jobs/${job.id}/edit`} className={buttonClass('ghost', 'no-underline')}>
-                <span className="material-symbols-outlined text-[18px]">edit</span>
-                Edit
-              </Link>
-              <button className={buttonClass('secondary')} onClick={() => openApplications(job)}>Applicants</button>
-              <button className={buttonClass('secondary')} onClick={() => openSuggestions(job)}>Suggested Candidates</button>
-              <button className={buttonClass('secondary')} onClick={() => changeStatus(job.id, job.status === 'OPEN' ? 'CLOSED' : 'OPEN')}>
-                <span className="material-symbols-outlined text-[18px]">schedule</span>
-                {job.status === 'OPEN' ? 'Close' : 'Reopen'}
-              </button>
-              <button
-                className={buttonClass('danger')}
-                onClick={() => { if (window.confirm('Delete this job posting?')) deleteJob(job.id).then(() => fetchMyJobs(page)); }}
-              >
-                <span className="material-symbols-outlined text-[18px]">delete</span>
-                Delete
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {myJobs && myJobs.content.length === 0 && !loading && (
