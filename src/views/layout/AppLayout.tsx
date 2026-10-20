@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import logoWordmark from '../../assets/logo-wordmark.png';
 
 interface NavItem {
   to: string;
@@ -83,10 +84,7 @@ const AppLayout: React.FC = () => {
     <>
       <div className="flex flex-col">
         <div className="flex h-16 items-center gap-2 px-6">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-on-primary">
-            <span className="material-symbols-outlined text-[20px]">neurology</span>
-          </span>
-          <span className="text-headline-sm text-ink">InterviewAI</span>
+          <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto" />
         </div>
 
         <div className="px-6 py-1">
@@ -184,10 +182,6 @@ const AppLayout: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="hidden items-center gap-1 rounded-full bg-surface-mid px-2 py-0.5 sm:flex">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-            <span className="text-label-sm text-ink">System Active</span>
-          </div>
           <span className="relative flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface-high">
             <span className="material-symbols-outlined text-[20px] text-ink-variant">notifications</span>
             <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-error" />

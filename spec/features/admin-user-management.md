@@ -59,6 +59,16 @@ FE chia 2 wave. **Wave 1 = API đã có, làm ngay trong branch này:**
 - Export CSV chuyển sang endpoint server-side `GET /users/export` (bỏ loop client-side của wave 1).
 - Bulk action theo checkbox: **chưa làm** — mockup chưa chốt hành động bulk, BE chưa có endpoint (6.5).
 
+**Wave 5 = sửa lỗi đo trên production build (2026-10-20):**
+
+- Chuyển tab **Pending Invites → All Members** phải `GET /users` lại **không kèm `status`** và reset
+  select Status về "All Statuses". Trước đó `switchTab` chỉ xử lý nhánh `pending`, nên tab All Members
+  giữ nguyên 7 dòng pending (đo jsdom: không có request nào gửi đi).
+- Phân trang: **giữ nguyên pager cũ** (số trang + mũi tên, luôn hiển thị). Chỉ đổi `size` 20 → **10**
+  cho đúng mockup "Showing 1-10 of ...". Đã đo để chốt không có lỗi: BE `page=1&size=2` trả
+  `number=1, totalPages=2, ids=[1]`; FE bấm trang 2/3 gửi đúng `page` và footer đổi "Showing 11-20 of 25".
+  Lý do không sang được trang trên máy local: DB dev chỉ **3 tài khoản** → `totalPages=1`.
+
 Không làm (ngoài màn này): section "Job Approval Moderation Queue" cuối mockup là màn riêng
 `/admin/job-approvals`, đã có dòng trong `spec/INDEX.md` (vẫn STATIC).
 
@@ -167,8 +177,9 @@ Kiểu só: `Badge` thêm `pill`/`dot` (rounded-full + chấm `bg-current`), `ST
 - Pill "All services operational" ở tab strip — 6.8 chưa nối → tab strip không có pill.
 - Role "Employer" — enum `Role` BE không có giá trị đó (9.3) → `ROLE_PILL` chỉ map các role thật.
 - Ảnh avatar — không có endpoint upload avatar → giữ initials + dot `status` (đã ghi ở mục trên).
-- Nút "More Filters" — mockup để mở panel lọc; FE không có bộ lọc nào ngoài Role/Status/search, nên
-  giữ đúng vị trí nhưng là nút **Search** thật (áp bộ lọc), không phải nút trang trí.
+- **Nút Search trong ribbon lọc All Members/Pending — gỡ (20/10)**: ribbon chỉ còn ô search (Enter để áp)
+  + 2 select Role/Status áp ngay khi đổi. Nút Search của tab Deleted giữ nguyên vì tab đó không có select.
+- Context chip `{Workspace · Page}` ở header app (wave 4) — **gỡ 20/10**, xem `conventions/frontend-ui.md` mục 4.
 
 ## 6. Việc backend cần làm (repo BE — contract FE mong muốn)
 

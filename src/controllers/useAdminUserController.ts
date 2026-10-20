@@ -31,7 +31,7 @@ export interface ProfileEditInput {
   phone?: string;
 }
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 const EMPTY_FILTERS: Filters = { search: '', status: '', role: '' };
 const EMPTY_AUDIT_FILTERS: AuditFilters = { action: '', from: '', to: '' };

@@ -200,6 +200,12 @@ const AdminUserManagementPage: React.FC = () => {
       setStatusFilter('PENDING');
       ctrl.applyFilters({ search: searchInput, status: 'PENDING', role: roleFilter });
     }
+    // nguoc lai quay ve All Members phai xoa bo loc PENDING va goi lai list, neu khong
+    // bang van giu 7 dong pending trong khi tab bao "All Members".
+    if (t === 'users') {
+      setStatusFilter('');
+      ctrl.applyFilters({ search: searchInput, status: '', role: roleFilter });
+    }
   };
 
   const handleViewHistory = (id: number) => {
@@ -333,10 +339,6 @@ const AdminUserManagementPage: React.FC = () => {
                   {/* DELETED bị BE chặn ở list này (400) - xem tab "Deleted" */}
                 </select>
               </label>
-              <button type="button" className={buttonClass('secondary', 'shrink-0')} onClick={handleSearch}>
-                <span className="material-symbols-outlined text-[18px]">filter_list</span>
-                Search
-              </button>
             </div>
           </div>
 

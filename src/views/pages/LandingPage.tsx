@@ -1,33 +1,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import logoWordmark from '../../assets/logo-wordmark.png';
 
 /* ------------------------------------------------------------------ */
 /* Shared bits (marketing chrome, tokens from tailwind.config.js)      */
 /* ------------------------------------------------------------------ */
 
 const Logo: React.FC<{ size?: 'header' | 'footer' }> = ({ size = 'header' }) => (
-  <div className="flex items-center gap-2.5">
-    <div
-      className={
-        size === 'header'
-          ? 'w-7 h-7 rounded-lg bg-primary flex items-center justify-center text-on-primary shadow-sm shadow-primary/20'
-          : 'w-6 h-6 rounded-md bg-primary flex items-center justify-center text-on-primary'
-      }
-    >
-      <span className={`material-symbols-outlined ${size === 'header' ? 'text-[18px]' : 'text-[15px]'}`}>
-        psychology
-      </span>
-    </div>
-    <span
-      className={
-        size === 'header'
-          ? 'text-headline-md font-bold tracking-tight text-ink'
-          : 'text-headline-sm font-bold tracking-tight text-ink'
-      }
-    >
-      Interview<span className="text-primary">AI</span>
-    </span>
-  </div>
+  <img
+    src={logoWordmark}
+    alt="AI Interview"
+    className={`w-auto ${size === 'header' ? 'h-6' : 'h-5'}`}
+  />
 );
 
 const NAV_ITEMS: { label: string; to?: string; active?: boolean }[] = [
@@ -42,7 +26,7 @@ const SiteHeader: React.FC = () => (
   <header className="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-md border-b border-outline/40">
     <div className="h-16 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between gap-4">
       <div className="flex items-center gap-6">
-        <Link to="/" aria-label="InterviewAI home">
+        <Link to="/" aria-label="AI Interview home">
           <Logo />
         </Link>
         <nav className="hidden lg:flex items-center gap-6">
