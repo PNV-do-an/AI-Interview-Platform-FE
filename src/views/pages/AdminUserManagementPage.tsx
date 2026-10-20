@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useAdminUserController } from '../../controllers/useAdminUserController';
+import { useAdminUserController, PAGE_SIZE_OPTIONS } from '../../controllers/useAdminUserController';
 import {
   ACCOUNT_STATUS_LABELS, AuditLog, AUDIT_ACTIONS, PagedResponse, Role, ROLE_LABELS,
   UserDetail, UserStats, UserSummary,
@@ -200,6 +200,12 @@ const AdminUserManagementPage: React.FC = () => {
       setStatusFilter('PENDING');
       ctrl.applyFilters({ search: searchInput, status: 'PENDING', role: roleFilter });
     }
+    // nguoc lai quay ve All Members phai xoa bo loc PENDING va goi lai list, neu khong
+    // bang van giu 7 dong pending trong khi tab bao "All Members".
+    if (t === 'users') {
+      setStatusFilter('');
+      ctrl.applyFilters({ search: searchInput, status: '', role: roleFilter });
+    }
   };
 
   const handleViewHistory = (id: number) => {
@@ -333,10 +339,6 @@ const AdminUserManagementPage: React.FC = () => {
                   {/* DELETED bị BE chặn ở list này (400) - xem tab "Deleted" */}
                 </select>
               </label>
-              <button type="button" className={buttonClass('secondary', 'shrink-0')} onClick={handleSearch}>
-                <span className="material-symbols-outlined text-[18px]">filter_list</span>
-                Search
-              </button>
             </div>
           </div>
 
@@ -424,6 +426,11 @@ const AdminUserManagementPage: React.FC = () => {
                 <TableFooter
                   paged={ctrl.users}
                   currentPage={ctrl.currentPage}
+                  pageSize={ctrl.pageSize}
+                  onPageSizeChange={s => {
+                    ctrl.setPageSize(s);
+                    ctrl.fetchUsers(0, ctrl.filters, s);
+                  }}
                   exporting={ctrl.exporting}
                   onExport={handleExport}
                   onPageChange={p => ctrl.fetchUsers(p)}
@@ -517,6 +524,11 @@ const AdminUserManagementPage: React.FC = () => {
                 <TableFooter
                   paged={ctrl.deletedUsers}
                   currentPage={ctrl.deletedPage}
+                  pageSize={ctrl.pageSize}
+                  onPageSizeChange={s => {
+                    ctrl.setPageSize(s);
+                    ctrl.fetchDeletedUsers(0, ctrl.deletedSearch, s);
+                  }}
                   onPageChange={p => ctrl.fetchDeletedUsers(p)}
                 />
               )}
@@ -829,10 +841,12 @@ const RowMenu: React.FC<{
 const TableFooter: React.FC<{
   paged: PagedResponse<unknown>;
   currentPage: number;
+  pageSize: number;
+  onPageSizeChange: (size: number) => void;
   exporting?: boolean;
   onExport?: () => void;
   onPageChange: (p: number) => void;
-}> = ({ paged, currentPage, exporting, onExport, onPageChange }) => {
+}> = ({ paged, currentPage, pageSize, onPageSizeChange, exporting, onExport, onPageChange }) => {
   const from = paged.content.length === 0 ? 0 : currentPage * paged.size + 1;
   const to = currentPage * paged.size + paged.content.length;
 
@@ -853,7 +867,23 @@ const TableFooter: React.FC<{
           </>
         )}
       </div>
-      <Pager currentPage={currentPage} totalPages={paged.totalPages} onPageChange={onPageChange} />
+      <div className="flex items-center gap-3">
+        <label className="flex items-center gap-2">
+          <span className="text-label-sm uppercase tracking-wider text-ink-variant">Rows:</span>
+          <select
+            className={filterSelectClass}
+            value={pageSize}
+            aria-label="Rows per page"
+            onChange={e => onPageSizeChange(Number(e.target.value))}
+          >
+            {PAGE_SIZE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </label>
+        {/* 1 trang thi khong co gi de sang -> an pager thay vi de nut "1" bam khong chang den dau. */}
+        {paged.totalPages > 1 && (
+          <Pager currentPage={currentPage} totalPages={paged.totalPages} onPageChange={onPageChange} />
+        )}
+      </div>
     </div>
   );
 };
