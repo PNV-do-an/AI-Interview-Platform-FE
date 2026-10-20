@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import logoWordmark from '../../assets/logo-wordmark.png';
 
 const NEXT_STEPS = [
   { icon: 'mail', title: '1. Check your inbox', body: 'Open the email sent from InterviewAI in your mail client.' },
@@ -21,13 +22,8 @@ const MagicLinkPage: React.FC = () => {
       <header className="fixed inset-x-0 top-0 z-50 bg-surface/80 shadow-header backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-6">
           <div className="flex items-center gap-4">
-            <Link to="/" className="flex items-center gap-2 no-underline">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary text-on-primary shadow-sm">
-                <span className="material-symbols-outlined text-[20px]">neurology</span>
-              </span>
-              <span className="text-[15px] font-semibold tracking-[-0.01em] text-ink">
-                Interview<em className="not-italic text-primary">AI</em>
-              </span>
+                        <Link to="/" className="flex items-center no-underline">
+              <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto" />
             </Link>
             <span className="hidden h-4 w-px bg-outline sm:block" />
             <Link to="/" className="hidden items-center gap-1 text-label-sm text-ink-variant no-underline transition-colors hover:text-ink sm:flex">

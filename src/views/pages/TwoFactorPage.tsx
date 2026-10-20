@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import logoWordmark from '../../assets/logo-wordmark.png';
 
 type Method = 'app' | 'key' | 'sms';
 
@@ -30,11 +31,8 @@ const TwoFactorPage: React.FC = () => {
       <header className="fixed inset-x-0 top-0 z-50 bg-surface/80 shadow-header backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-6">
           <div className="flex items-center gap-6">
-            <Link to="/" className="flex items-center gap-2 no-underline">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-on-primary shadow-sm transition-colors">
-                <span className="material-symbols-outlined text-[20px]">psychology</span>
-              </span>
-              <span className="text-[15px] font-semibold tracking-[-0.01em] text-ink">InterviewAI</span>
+                        <Link to="/" className="flex items-center no-underline">
+              <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto" />
             </Link>
             <Link to="/" className="hidden text-label-md text-ink-variant no-underline transition-colors hover:text-ink sm:block">
               Back to Home

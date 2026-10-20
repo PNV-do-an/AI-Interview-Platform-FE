@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import logoWordmark from '../../assets/logo-wordmark.png';
 
 interface NavItem {
   to: string;
@@ -57,6 +58,7 @@ const NAV_ITEM_ACTIVE_CLASS = 'bg-primary-container font-label-md text-on-primar
 const AppLayout: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [query, setQuery] = useState('');
 
@@ -79,14 +81,17 @@ const AppLayout: React.FC = () => {
     navigate(`/jobs?q=${encodeURIComponent(query)}`);
   };
 
+  const isOn = (to: string) => location.pathname === to || location.pathname.startsWith(`${to}/`);
+  const activeEntry = workspaces
+    .flatMap((section) => section.items.map((item) => ({ section: section.title, item })))
+    .filter((entry) => isOn(entry.item.to))
+    .sort((a, b) => b.item.to.length - a.item.to.length)[0];
+
   const sidebar = (
     <>
       <div className="flex flex-col">
         <div className="flex h-16 items-center gap-2 px-6">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-on-primary">
-            <span className="material-symbols-outlined text-[20px]">neurology</span>
-          </span>
-          <span className="text-headline-sm text-ink">InterviewAI</span>
+          <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto" />
         </div>
 
         <div className="px-6 py-1">
@@ -181,13 +186,17 @@ const AppLayout: React.FC = () => {
             />
             <kbd className="rounded bg-surface-mid px-1 py-0.5 font-mono text-[12px] text-ink-variant">⌘K</kbd>
           </form>
+          {activeEntry && (
+            <div className="hidden items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 px-3 py-1 md:flex">
+              <span className="material-symbols-outlined text-[16px] text-primary">{activeEntry.item.icon}</span>
+              <span className="text-label-sm font-semibold tracking-wide text-primary">
+                {activeEntry.section.replace(' Workspace', '')} · {activeEntry.item.label}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="hidden items-center gap-1 rounded-full bg-surface-mid px-2 py-0.5 sm:flex">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-            <span className="text-label-sm text-ink">System Active</span>
-          </div>
           <span className="relative flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface-high">
             <span className="material-symbols-outlined text-[20px] text-ink-variant">notifications</span>
             <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-error" />
