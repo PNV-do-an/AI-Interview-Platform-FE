@@ -39,7 +39,18 @@ services:
       DB_NAME: ai_interview_db
       DB_USERNAME: root
       DB_PASSWORD: admin123
-      MAIL_TEST_CONNECTION: "false"
+      # Mail xác thực đi qua Gmail API. Thiếu 4 giá trị này thì POST /register trả 502 có chủ đích
+      # (không tạo tài khoản mà không gửi được link). Điền value thật vào file .env cùng thư mục
+      # (đã gitignored) — lấy 4 credential từ Render env của service staging.
+      GMAIL_CLIENT_ID: ${GMAIL_CLIENT_ID:-}
+      GMAIL_CLIENT_SECRET: ${GMAIL_CLIENT_SECRET:-}
+      GMAIL_REFRESH_TOKEN: ${GMAIL_REFRESH_TOKEN:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      # Link trong mail trỏ về FE local; muốn test mà chưa có credential thì trỏ 2 biến dưới
+      # vào một Gmail API giả (xem memory "Do mail khong can Gmail that").
+      GMAIL_TOKEN_URI: ${GMAIL_TOKEN_URI:-https://oauth2.googleapis.com/token}
+      GMAIL_API_BASE_URL: ${GMAIL_API_BASE_URL:-https://gmail.googleapis.com}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     ports:
       - "8081:8080"
     depends_on:
