@@ -141,3 +141,16 @@ Nguồn chân lý là ZIP Stitch (`stitch_ai_interview_platform`) — 6 màn: lo
 - Panel trái còn cuộn trên màn laptop -> nén khoảng cách dọc (padding `lg:p-8`, gap giảm) và thêm breakpoint theo chiều cao `short` (`max-height: 819px`, khai báo trong `tailwind.config.js`) để ẩn card demo "Đánh giá phỏng vấn AI"/"Nguyễn Minh Anh" ở màn thấp; màn cao >=820px hiện đủ thiết kế.
 - Logo wordmark (chữ navy nền trong suốt) chìm trên nền tối -> đặt lên chip trắng bo góc ở cả login + register.
 - Bỏ chữ "30 ngày" ở checkbox "Ghi nhớ đăng nhập" (login), giữ nguyên hành vi remember 30 ngày phía code.
+
+**Wave redesign bố cục theo flow (20/10):**
+
+Làm lại bố cục cả 6 màn auth theo một hệ thống chung, bỏ trạng thái "mỗi trang một kiểu":
+
+- Login + Register: cùng khung `lg:grid-cols-12` (trái showcase tối 5/12, phải form 7/12), cùng anatomy: logo chip trắng -> hero chữ gradient -> 3 benefit (icon + tiêu đề + mô tả) -> card proof (chỉ hiện ở màn cao >=900px, dùng arbitrary variant `[@media(max-height:899px)]:hidden` thay cho `short`) -> dải company chips; panel phải cùng nhịp: topbar chỉ còn "Về trang chủ" (bỏ language switcher + Trợ giúp trang trí), tab switcher, nút Google GSI, divider, form, footer 1 dòng.
+- Thống nhất token: register bỏ slate/cyan/indigo/purple/emerald trang trí, chuyển sang surface/ink/outline/secondary-fixed; hero 2 trang dùng cùng gradient `primary-fixed -> secondary-fixed-dim -> secondary-fixed`; input/label/button chung một bộ class (`h-11`, `border-outline`, ring `primary/15`; nút `h-12 bg-primary`).
+- Forgot + Check-email + Reset: gom chung shell `AuthShell` mới (`src/views/components/AuthShell.tsx`) — blob nền, header logo wordmark + "Về trang chủ", footer 1 dòng; thay toàn bộ indigo-600 (sai màu thương hiệu) bằng `primary`; card `border-outline/60 shadow-card`; bỏ header dính (sticky) và nút language emoji.
+- VerifyEmail: đổi lockup "InterviewAI" lạc quỹ sang wordmark chung, Việt hóa nhãn tĩnh.
+- Chống tràn chiều cao: card proof ẩn dưới 900px; register rút `gap`/`py` và ẩn footer + label role selector ở màn ngắn (`short:*`) — panel form còn tự cuộn trong ở màn thấp (đúng kiến trúc 2 panel tự cuộn đã chốt), panel trái không cuộn.
+- GSI mount thêm `flex justify-center` để iframe nút Google (rộng tối đa 400px) căn giữa trong host 440px.
+
+**Đã verify (Docker local, bundle `main.2000c4a8.js`, viewport 534x554):** `tsc` sạch; 6 màn không tràn ngang (`scrollWidth == clientWidth`); login panel phải 643px, register trái 481 / phải 853; toggle mật khẩu flip `password -> text`; tab switcher điều hướng `/login <-> /register`; radio role 2 chiều; gõ `Abc12345!` -> 4/4 bar + "Độ mạnh: Rất tốt"; reset token sai -> expired view; `/check-email` che email `te***@example.com`; `/verify` thiếu token -> alert lỗi tiếng Việt. `.env.production` backup/restore so `cmp` trùng byte. Chưa đo được: login/register ở đúng viewport desktop >=1024px (browser-use chỉ có 534px) — bố cục lg dùng cùng cấu trúc đã verify bằng đo chiều cao nội dung.
