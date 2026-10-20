@@ -134,3 +134,10 @@ Nguồn chân lý là ZIP Stitch (`stitch_ai_interview_platform`) — 6 màn: lo
 - TTL "15 phút" trên UI chưa đối chiếu với giá trị thật của BE (FE không thấy hằng số nào).
 - Logo đang dùng asset wordmark có sẵn của app, không phải đúng file PNG trong ZIP (ZIP dùng ảnh Google-hosted).
 - Màn `/verify?token=` (trang kết quả verify) không có nguồn Stitch -> giữ nguyên.
+
+**Sửa sau khi anh Huy test (cùng ngày):**
+
+- Register dựng lại theo bản HTML mới anh gửi: bỏ khung padding + `min-h-screen`, thay bằng khoá `h-screen overflow-hidden` ở desktop (>=1024px) và cho 2 panel `h-full` **tự cuộn bên trong**; mobile giữ cuộn trang thường. Hết tràn ngang.
+- Panel trái còn cuộn trên màn laptop -> nén khoảng cách dọc (padding `lg:p-8`, gap giảm) và thêm breakpoint theo chiều cao `short` (`max-height: 819px`, khai báo trong `tailwind.config.js`) để ẩn card demo "Đánh giá phỏng vấn AI"/"Nguyễn Minh Anh" ở màn thấp; màn cao >=820px hiện đủ thiết kế.
+- Logo wordmark (chữ navy nền trong suốt) chìm trên nền tối -> đặt lên chip trắng bo góc ở cả login + register.
+- Bỏ chữ "30 ngày" ở checkbox "Ghi nhớ đăng nhập" (login), giữ nguyên hành vi remember 30 ngày phía code.

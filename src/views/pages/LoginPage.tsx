@@ -159,7 +159,9 @@ const LoginPage: React.FC = () => {
 
         <div className="relative z-10 flex flex-col gap-6">
           <div className="flex items-center gap-2">
-            <img src={logoWordmark} alt="AI Interview Logo" className="h-9 w-9 rounded-xl object-contain shadow-md" />
+            <div className="flex h-9 items-center justify-center rounded-xl bg-white px-2.5 shadow-md">
+              <img src={logoWordmark} alt="AI Interview Logo" className="h-4 w-auto object-contain" />
+            </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="text-[16px] font-bold tracking-tight text-white">AI Interview</span>
@@ -191,7 +193,7 @@ const LoginPage: React.FC = () => {
             ))}
           </div>
 
-          <div className="max-w-xl rounded-2xl border border-surface-highest/15 bg-card/10 p-4 text-white shadow-2xl backdrop-blur-md">
+          <div className="max-w-xl rounded-2xl border border-surface-highest/15 bg-card/10 p-4 text-white shadow-2xl backdrop-blur-md short:hidden">
             <div className="flex items-start justify-between gap-3 border-b border-surface-highest/15 pb-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-primary to-primary-container text-[15px] font-bold shadow-md">
@@ -415,7 +417,7 @@ const LoginPage: React.FC = () => {
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
                 />
-                <span className="text-[12px] leading-[18px] text-ink">Ghi nhớ đăng nhập 30 ngày</span>
+                <span className="text-[12px] leading-[18px] text-ink">Ghi nhớ đăng nhập</span>
               </label>
             </div>
 

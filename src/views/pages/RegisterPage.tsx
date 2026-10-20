@@ -187,18 +187,21 @@ const RegisterPage: React.FC = () => {
         <div className="absolute -bottom-[20%] right-[10%] h-[400px] w-[600px] rounded-full bg-secondary-fixed/20 blur-[100px]" />
       </div>
 
-      <main className="flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-6 md:p-8">
-        <div className="flex w-full flex-col">
-          <div className="grid w-full min-h-screen grid-cols-1 overflow-hidden bg-surface lg:grid-cols-12">
+      {/* Desktop khoá đúng chiều cao màn hình, mỗi panel tự cuộn trong; mobile vẫn cuộn trang bình thường. */}
+      <main className="w-full lg:h-screen lg:overflow-hidden">
+        <div className="w-full lg:h-full">
+          <div className="grid w-full min-h-screen grid-cols-1 overflow-hidden bg-surface lg:h-screen lg:grid-cols-12">
             {/* LEFT PANEL */}
-            <section className="relative flex flex-col justify-between overflow-hidden border-r border-slate-800/80 bg-[#0b0f19] p-8 text-white md:p-12 lg:col-span-5 lg:p-14">
-              <div className="pointer-events-none absolute -left-36 -top-36 h-96 w-96 rounded-full bg-primary-container/20 blur-[130px]" />
-              <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-cyan-500/10 blur-[120px]" />
+            <section className="relative flex flex-col justify-between overflow-x-hidden overflow-y-auto border-r border-slate-800/80 bg-[#0b0f19] p-6 text-white sm:p-8 lg:col-span-5 lg:h-full lg:p-8">
+              <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                <div className="absolute -left-36 -top-36 h-96 w-96 rounded-full bg-primary-container/20 blur-[130px]" />
+                <div className="absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-cyan-500/10 blur-[120px]" />
+              </div>
 
               <div className="relative z-10 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700/60 bg-slate-900/80 p-1.5 shadow-lg backdrop-blur-md">
-                    <img alt="AI Interview Platform Logo" className="h-full w-full rounded-lg object-contain" src={logoWordmark} />
+                  <div className="flex h-11 items-center justify-center rounded-xl bg-white px-3 shadow-lg">
+                    <img alt="AI Interview Platform Logo" className="h-4 w-auto object-contain" src={logoWordmark} />
                   </div>
                   <div className="flex flex-col">
                     <span className="flex items-center gap-2 text-[19px] font-bold tracking-tight text-white">AI Interview</span>
@@ -207,9 +210,9 @@ const RegisterPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="relative z-10 my-8 space-y-7">
+              <div className="relative z-10 my-auto space-y-4 py-2">
                 <div className="space-y-3">
-                  <h1 className="text-3xl font-extrabold leading-[1.25] tracking-tight text-white lg:text-[34px]">
+                  <h1 className="text-3xl font-extrabold leading-[1.25] tracking-tight text-white lg:text-[30px]">
                     Bắt đầu hành trình phỏng vấn cùng AI, tự tin{' '}
                     <span className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">bứt phá</span>{' '}
                     sự nghiệp
@@ -220,7 +223,7 @@ const RegisterPage: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="space-y-3.5 pt-1">
+                <div className="space-y-2.5 pt-1">
                   {REGISTER_BENEFITS.map((benefit) => (
                     <div key={benefit.title} className="flex items-start gap-3.5">
                       <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/15 text-emerald-400">
@@ -234,8 +237,8 @@ const RegisterPage: React.FC = () => {
                   ))}
                 </div>
 
-                <div className="relative rounded-2xl border border-slate-700/80 bg-slate-900/90 p-4 shadow-2xl backdrop-blur-xl">
-                  <div className="mb-3 flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="relative rounded-2xl border border-slate-700/80 bg-slate-900/90 p-3 shadow-2xl backdrop-blur-xl short:hidden">
+                  <div className="mb-2.5 flex items-center justify-between border-b border-slate-800 pb-2.5">
                     <div className="flex items-center gap-2.5">
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/20 text-indigo-400">
                         <span className="material-symbols-outlined text-base">psychology</span>
@@ -253,7 +256,7 @@ const RegisterPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-slate-700/50 bg-slate-800/60 p-3">
+                  <div className="mb-2.5 flex items-center justify-between gap-3 rounded-xl border border-slate-700/50 bg-slate-800/60 p-2.5">
                     <div className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-lg text-emerald-400">groups</span>
                       <div className="text-left">
@@ -276,8 +279,8 @@ const RegisterPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="relative z-10 border-t border-slate-800/80 pt-4">
-                <p className="mb-2.5 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              <div className="relative z-10 border-t border-slate-800/80 pt-3">
+                <p className="mb-2 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                   Được tin dùng bởi các tập đoàn hàng đầu
                 </p>
                 <div className="flex items-center justify-between px-2 text-xs font-bold tracking-wider text-slate-300/80 opacity-80">
@@ -295,7 +298,7 @@ const RegisterPage: React.FC = () => {
             </section>
 
             {/* RIGHT PANEL */}
-            <section className="flex min-h-screen flex-col justify-between overflow-y-auto bg-[#faf8ff] p-6 sm:p-8 md:p-10 lg:col-span-7 lg:p-12">
+            <section className="flex min-h-screen flex-col justify-between overflow-x-hidden overflow-y-auto bg-[#faf8ff] p-6 sm:p-8 lg:col-span-7 lg:h-full lg:p-10">
               <div className="mx-auto flex w-full max-w-[480px] items-center justify-between pb-4">
                 <Link to="/" className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 transition-colors hover:text-primary">
                   <span className="material-symbols-outlined text-base">arrow_back</span>
