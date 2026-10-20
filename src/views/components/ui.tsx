@@ -10,9 +10,18 @@ const TONE_CLASS: Record<Tone, string> = {
   info: 'bg-info text-info-text',
 };
 
+export const richTextContentClass = [
+  '[&_p]:my-2 [&_div]:my-2 [&_h2]:mb-2 [&_h2]:mt-4 [&_h2]:text-headline-md',
+  '[&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5',
+  '[&_li]:my-1 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-surface-low [&_pre]:p-3',
+  '[&_pre]:font-mono [&_pre]:text-body-sm [&_code]:font-mono',
+  '[&_blockquote]:border-l-2 [&_blockquote]:border-primary-container [&_blockquote]:pl-3 [&_blockquote]:text-ink-variant',
+  '[&_a]:text-primary [&_a]:underline',
+].join(' ');
+
 export const STATUS_TONE: Record<string, Tone> = {
   ACTIVE: 'success', APPROVED: 'success', PAID: 'success', COMPLETED: 'success', PUBLISHED: 'success', PASSED: 'success', ACCEPTED: 'success', OPEN: 'success',
-  PENDING: 'warning', SCHEDULED: 'warning', DRAFT: 'neutral', NEW: 'info', PROCESSING: 'info', INTERVIEWED: 'info', PENDING_VERIFICATION: 'warning',
+  PENDING: 'warning', PENDING_APPROVAL: 'warning', SCHEDULED: 'warning', DRAFT: 'neutral', NEW: 'info', PROCESSING: 'info', INTERVIEWED: 'info', PENDING_VERIFICATION: 'warning',
   LOCKED: 'danger',
   REJECTED: 'danger', CANCELLED: 'danger', CLOSED: 'danger', INACTIVE: 'danger', FAILED: 'danger', BANNED: 'danger', DELETED: 'neutral',
 };

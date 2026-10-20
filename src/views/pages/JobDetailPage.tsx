@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useJobController } from '../../controllers/useJobController';
 import { useAuth } from '../../context/AuthContext';
+import { parseServerTimestamp } from '../../utils/date';
+import { isRichTextHtml, sanitizeRichText } from '../../utils/richText';
 import {
   Card,
   ErrorBanner,
@@ -10,6 +12,7 @@ import {
   buttonClass,
   inputClass,
   labelClass,
+  richTextContentClass,
 } from '../components/ui';
 
 const textareaClass = inputClass.replace('h-9', 'py-2');
@@ -125,7 +128,9 @@ const JobDetailPage: React.FC = () => {
                   {jobDetail.position && (
                     <MetaCell label="Engagement">{jobDetail.position}</MetaCell>
                   )}
-                  <MetaCell label="Published">{new Date(jobDetail.createdAt).toLocaleDateString('vi-VN')}</MetaCell>
+                  <MetaCell label="Published">
+                    {parseServerTimestamp(jobDetail.createdAt)?.toLocaleDateString('vi-VN') ?? '—'}
+                  </MetaCell>
                 </div>
 
                 {/* Tags Row */}
@@ -145,7 +150,14 @@ const JobDetailPage: React.FC = () => {
                 <Card className={cardShell}>
                   <div className="flex flex-col gap-4">
                     <SectionHeading accentClass="bg-primary">Mission &amp; Overview</SectionHeading>
-                    <p className="m-0 whitespace-pre-wrap text-body-lg leading-relaxed text-ink-variant">{jobDetail.description}</p>
+                    {isRichTextHtml(jobDetail.description) ? (
+                      <div
+                        className={`text-body-lg leading-relaxed text-ink-variant ${richTextContentClass}`}
+                        dangerouslySetInnerHTML={{ __html: sanitizeRichText(jobDetail.description) }}
+                      />
+                    ) : (
+                      <p className="m-0 whitespace-pre-wrap text-body-lg leading-relaxed text-ink-variant">{jobDetail.description}</p>
+                    )}
                   </div>
                 </Card>
               )}

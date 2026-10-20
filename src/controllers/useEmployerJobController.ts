@@ -9,6 +9,15 @@ import {
   MatchSuggestion,
 } from '../models/Program.model';
 import { PagedResponse } from '../models/User.model';
+import { readApiErrorMessage } from '../utils/apiError';
+
+const JOB_REQUEST_FIELDS = [
+  'title', 'companyName', 'position', 'location', 'salaryRange', 'description',
+  'requirements', 'requiredSkills', 'department', 'experienceLevel', 'employmentType',
+  'workplaceModel', 'timezoneRequirement', 'salaryCurrency', 'salaryMin', 'salaryMax',
+  'equityBand', 'annualBonus', 'aiScreeningEnabled', 'aiScreeningTrack',
+  'aiScreeningPassScore', 'aiQuestionFocusAreas',
+];
 
 export const useEmployerJobController = () => {
   const [myJobs, setMyJobs] = useState<PagedResponse<JobSummary> | null>(null);
@@ -27,7 +36,7 @@ export const useEmployerJobController = () => {
       const res = await ProgramService.getMyJobs({ page, size: 10 });
       setMyJobs(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to load your job postings');
+      setError(readApiErrorMessage(e, 'Failed to load your job postings'));
     } finally {
       setLoading(false);
     }
@@ -40,7 +49,7 @@ export const useEmployerJobController = () => {
       setSuccessMsg('Job posting created');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to create job posting');
+      setError(readApiErrorMessage(e, 'Failed to create job posting', JOB_REQUEST_FIELDS));
       return false;
     }
   }, []);
@@ -52,8 +61,61 @@ export const useEmployerJobController = () => {
       setSuccessMsg('Job posting updated');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to update job posting');
+      setError(readApiErrorMessage(e, 'Failed to update job posting', JOB_REQUEST_FIELDS));
       return false;
+    }
+  }, []);
+
+  const saveJob = useCallback(async (id: number | null, body: JobRequest): Promise<JobDetail | null> => {
+    clearMessages();
+    try {
+      const res = id == null
+        ? await ProgramService.createJob(body)
+        : await ProgramService.updateJob(id, body);
+      return res.data.data ?? null;
+    } catch (e: any) {
+      setError(readApiErrorMessage(e, 'Failed to save job posting', JOB_REQUEST_FIELDS));
+      return null;
+    }
+  }, []);
+
+  const fetchJobDetail = useCallback(async (id: number): Promise<JobDetail | null> => {
+    setLoading(true);
+    clearMessages();
+    try {
+      const res = await ProgramService.getJobDetail(id);
+      return res.data.data ?? null;
+    } catch (e: any) {
+      setError(readApiErrorMessage(e, 'Failed to load job posting'));
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchReviewNotes = useCallback(async (ids: number[]): Promise<Record<number, string>> => {
+    const notes: Record<number, string> = {};
+    await Promise.all(ids.map(async (id) => {
+      try {
+        const res = await ProgramService.getJobDetail(id);
+        const note = res.data.data?.reviewNote;
+        if (note) notes[id] = note;
+      } catch {
+        // Summary API không trả reviewNote; job không đọc được thì bỏ qua, không chặn danh sách.
+      }
+    }));
+    return notes;
+  }, []);
+
+  const submitJob = useCallback(async (id: number): Promise<JobDetail | null> => {
+    clearMessages();
+    try {
+      const res = await ProgramService.submitJobForReview(id);
+      setSuccessMsg('Submitted for admin review');
+      return res.data.data ?? null;
+    } catch (e: any) {
+      setError(readApiErrorMessage(e, 'Failed to submit job posting for review', JOB_REQUEST_FIELDS));
+      return null;
     }
   }, []);
 
@@ -64,7 +126,7 @@ export const useEmployerJobController = () => {
       setSuccessMsg('Status updated');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to update status');
+      setError(readApiErrorMessage(e, 'Failed to update status'));
       return false;
     }
   }, []);
@@ -76,7 +138,7 @@ export const useEmployerJobController = () => {
       setSuccessMsg('Job posting deleted');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to delete job posting');
+      setError(readApiErrorMessage(e, 'Failed to delete job posting'));
       return false;
     }
   }, []);
@@ -88,7 +150,7 @@ export const useEmployerJobController = () => {
       const res = await ProgramService.getJobApplications(jobId, { page, size: 10 });
       setApplications(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to load applicants');
+      setError(readApiErrorMessage(e, 'Failed to load applicants'));
     } finally {
       setLoading(false);
     }
@@ -100,7 +162,7 @@ export const useEmployerJobController = () => {
       const res = await ProgramService.getMatchingCandidates(jobId);
       setSuggestions(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to load suggested candidates');
+      setError(readApiErrorMessage(e, 'Failed to load suggested candidates'));
     }
   }, []);
 
@@ -111,7 +173,7 @@ export const useEmployerJobController = () => {
       setSuccessMsg('Evaluation updated');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to save evaluation');
+      setError(readApiErrorMessage(e, 'Failed to save evaluation'));
       return false;
     }
   }, []);
@@ -119,8 +181,8 @@ export const useEmployerJobController = () => {
   return {
     myJobs, applications, suggestions,
     loading, error, successMsg,
-    fetchMyJobs, createJob, updateJob, changeStatus, deleteJob,
-    fetchApplications, fetchSuggestions, evaluate, clearMessages,
+    fetchMyJobs, createJob, updateJob, saveJob, fetchJobDetail, fetchReviewNotes, submitJob,
+    changeStatus, deleteJob, fetchApplications, fetchSuggestions, evaluate, clearMessages,
   };
 };
 
