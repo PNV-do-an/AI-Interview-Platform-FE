@@ -3,6 +3,9 @@ module.exports = {
   content: ['./src/**/*.{ts,tsx}', './public/index.html'],
   theme: {
     extend: {
+      screens: {
+        short: { raw: '(max-height: 819px)' },
+      },
       colors: {
         primary: '#3525cd',
         'primary-hover': '#3323cc',
