@@ -68,3 +68,16 @@ Bảng rỗng -> màn `DATA` chỉ verify được empty state, phải nói rõ 
 ## 8. Backend
 
 Test local bắt buộc `mvn clean test` (cache cũ làm fail âm). Commit/push chỉ sau khi `docker compose build` + chạy thật; kiểm tra `git rev-parse --abbrev-ref HEAD` vì anh đổi branch giữa phiên. Không commit: `spec/` khi chưa chốt, script tạm, file probe, secret (`staging.env.local`, OAuth secret).
+
+## 9. Bẫy cache Docker (đo 2026-10-20)
+
+Sửa `.tsx` xong `docker compose build frontend` có thể báo `COPY . .  CACHED` -> image vẫn là bundle cũ, bằng chứng là hash bundle không đổi (`main.<hash>.js` giữ nguyên sau `up -d`). Lần này phải `docker compose build --no-cache frontend` (~20 phút, chạy nền) mới thực sự vào image. **Luôn đối chiếu hash bundle serve từ `:3000` với lần build trước**: hash không đổi = code chưa được build, đừng kết luận "fix không ăn".
+
+## 10. Bẫy `ctrl` trong deps của useEffect (đo 2026-10-20)
+
+Mọi controller (`useAdminUserController`, `useAuthController`, ...) trả object mới sau mỗi render. Viết `useEffect(..., [validId, userId, ctrl])` thành vòng lặp fetch -> setState -> render -> fetch. Ở `AdminUserDetailPage` vòng này sinh **10.521 dòng `VIEW_USER` trong `admin_audit_log` chỉ vì mở trang 1 lần trong ~8 phút** (BE ghi audit cho mỗi `GET /admin/users/{id}`), nên bug không lộ ra bằng mắt thường — nó lộ bằng số dòng audit. Cách chống: deps chỉ để giá trị nguyên thủy (`validId`, `userId`), gọi controller qua `useRef` (`ctrlRef.current`); cách đo nhanh = test jsdom đếm số lần `getUserDetail` được gọi (kỳ vọng 1, không quá 2 kể cả rerender 20 lần).
+
+## 11. Bẫy comment nhét trong chuỗi `className` (đo 2026-10-20)
+
+Rule "hex phải kèm comment chỉ vai trò màu mockup" dễ bị hiểu sai thành viết comment **bên trong** chuỗi class: `className="... text-[#004598] /* tertiary mockup */"`. Tailwind vẫn sinh utility (nó tách theo khoảng trắng) nên nhìn qua CSS không thấy gì sai, nhưng `/*`, `mockup`, `*/` rơi xuống DOM thành class rác. Wave admin có **46 chỗ** như vậy ở 8 trang (`AdminAccountSettingsPage`, `AdminDashboardPage`, `AdminSystemSettingsPage`, `AdminRolePermissionPage`, `AdminUserManagementPage`, `AdminUserDetailPage`, `JobApprovalPage`, `JobReviewDetailPage`); đã chuyển hết sang bảng kê vai trò màu ở comment đầu file.
+Cách quét: duyệt từng dòng, với mỗi `/* ... */` một dòng, đếm số dấu nháy `'`/`"`/`` ` `` đứng trước — lẻ nghĩa là comment nằm trong chuỗi. Sau khi sửa phải quét lại toàn `src` (kết quả 0), chạy `tsc --noEmit`, rồi đối chiếu bundle: `main.31141b95.js` -> `main.0abfeaaf.js`, `grep -F 'mockup */' ` trong JS serve ra = 0, các utility hex (`10b981`, `004598`, `e2e8f0`, ...) vẫn còn trong `main.7e87c453.css`.

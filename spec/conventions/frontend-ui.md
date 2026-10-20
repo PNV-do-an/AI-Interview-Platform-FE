@@ -13,9 +13,9 @@
 | Trạng thái | `success` / `danger` / `info` — mỗi nhóm có `DEFAULT`, `-bg`, `-text`; `error` `#ba1a1a` là màu dot |
 | Chữ số lớn | `text-metric-stat`; heading `text-headline-lg|md|sm`; body `text-body-lg|md|sm`; nhãn nhỏ `text-label-md|sm`; code/date `font-mono` |
 
-- Viềnhairline thống nhất `border-[#e2e8f0]`; radius: `rounded-md` cho control, `rounded-lg` cho card nhỏ, `rounded-xl` cho panel dashboard, `rounded-full` **chỉ** cho badge trạng thái/dot.
+- Viền hairline thống nhất `border-[#e2e8f0]`; radius: `rounded-md` cho control, `rounded-lg` cho card nhỏ, `rounded-xl` cho panel dashboard, `rounded-full` **chỉ** cho badge trạng thái/dot.
 - Icon: `<span className="material-symbols-outlined">tên_icon</span>` (Material Symbols Outlined, đã load toàn app). Không dùng svg tự chế cho icon.
-- Màu mockup chưa có token: được viết `bg-[#hex]` nhưng phải kèm comment ngắn chỉ tên vai trò màu trong mockup (ví dụ `// secondary-fixed-dim`). Ưu tiên map về token có sẵn (`primary-fixed` -> `info`) hơn là thêm hex mới. **Không** tự ý thêm token vào `tailwind.config.js` khi chỉ một trang cần.
+- Màu mockup chưa có token: được viết `bg-[#hex]` nhưng phải kèm comment ngắn chỉ tên vai trò màu trong mockup (ví dụ `// secondary-fixed-dim`). Comment nằm **ngoài** chuỗi class (`//`, `{/* */}`, hoặc bảng kê ở đầu file) — nhét `/* */` vào trong `className` thì nó lọt xuống DOM thành class rác. Ưu tiên map về token có sẵn (`primary-fixed` -> `info`) hơn là thêm hex mới. **Không** tự ý thêm token vào `tailwind.config.js` khi chỉ một trang cần.
 
 ## 2. Ngôn ngữ
 
