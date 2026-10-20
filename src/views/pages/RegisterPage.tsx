@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AuthService from '../../services/auth.service';
+import { readApiErrorMessage } from '../../utils/apiError';
 
 declare global {
   interface Window {
@@ -55,13 +56,22 @@ const randomToken = () =>
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 const RegisterPage: React.FC = () => {
-  const { register, loginWithGoogle, loading, error } = useAuth();
+  const { register, loginWithGoogle, loading, error, errorStatus } = useAuth();
   const [form, setForm] = useState({ fullName: '', email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(true);
   const [notice, setNotice] = useState('');
   const [googleClientId, setGoogleClientId] = useState('');
   const [githubClientId, setGithubClientId] = useState('');
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const [resendError, setResendError] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return undefined;
+    const id = window.setInterval(() => setResendCooldown((s) => (s <= 1 ? 0 : s - 1)), 1000);
+    return () => window.clearInterval(id);
+  }, [resendCooldown]);
 
   // GitHub chỉ nhận callback đã đăng ký ở /login nên lượt về từ GitHub luôn về màn Sign In.
   const githubRedirectUri = window.location.origin + '/login';
@@ -151,6 +161,25 @@ const RegisterPage: React.FC = () => {
       return;
     }
     register(form);
+  };
+
+  // BE trả 409 kèm "Email này đã đăng ký nhưng chưa xác thực..." khi tài khoản đã có nhưng
+  // chưa bấm link: đưa luôn nút gửi lại, nếu không người dùng chỉ còn cách bấm đăng ký lặp
+  // (mỗi lần lặp ghi thêm một failed attempt, đủ 5 là bị chặn 5 phút).
+  const needsVerification = errorStatus === 409 && /chưa xác thực/i.test(error);
+
+  const handleResendVerification = async () => {
+    if (!form.email || resendState === 'sending' || resendCooldown > 0) return;
+    setResendError('');
+    setResendState('sending');
+    try {
+      await AuthService.resendVerification(form.email);
+      setResendState('sent');
+      setResendCooldown(60);
+    } catch (err: any) {
+      setResendError(readApiErrorMessage(err, 'Could not resend the verification email. Please try again.', ['email']));
+      setResendState('idle');
+    }
   };
 
   return (
@@ -243,6 +272,31 @@ const RegisterPage: React.FC = () => {
                     <div className="flex items-start gap-2 rounded-lg bg-danger-bg px-3 py-2.5 text-body-sm text-danger-text" role="alert">
                       <span className="material-symbols-outlined shrink-0 text-[18px]">error</span>
                       <span>{error}</span>
+                    </div>
+                  )}
+                  {needsVerification && (
+                    <div className="flex items-center justify-between gap-2 rounded-lg bg-surface-low px-3 py-2 text-body-sm text-ink-variant">
+                      <span>Already registered but not verified?</span>
+                      <button
+                        type="button"
+                        onClick={handleResendVerification}
+                        disabled={resendState === 'sending' || resendCooldown > 0}
+                        className="cursor-pointer border-0 bg-transparent p-0 text-label-sm font-medium text-primary no-underline hover:underline disabled:cursor-not-allowed disabled:text-ink-variant disabled:no-underline"
+                      >
+                        {resendState === 'sending'
+                          ? 'Sending...'
+                          : resendCooldown > 0
+                            ? `Resend available in ${resendCooldown}s`
+                            : resendState === 'sent'
+                              ? 'Verification email sent'
+                              : 'Resend verification email'}
+                      </button>
+                    </div>
+                  )}
+                  {resendError && (
+                    <div className="flex items-start gap-2 rounded-lg bg-danger-bg px-3 py-2.5 text-body-sm text-danger-text" role="alert">
+                      <span className="material-symbols-outlined shrink-0 text-[18px]">error</span>
+                      <span>{resendError}</span>
                     </div>
                   )}
                   {notice && (
