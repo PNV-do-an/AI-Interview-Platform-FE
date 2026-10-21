@@ -4,6 +4,8 @@
 
 ## 1. Màu và chữ — chỉ dùng token
 
+Bảng dưới áp dụng cho màn candidate/employer; khu vực `/admin/*` dùng bộ token thứ hai ở §1b.
+
 | Nhu cầu | Token |
 |---|---|
 | Màu chính, nút chính, link | `primary` `#3525cd`, hover `primary-hover`; nền đậm chữ trắng: `primary-container` + `on-primary` |
@@ -17,11 +19,32 @@
 - Icon: `<span className="material-symbols-outlined">tên_icon</span>` (Material Symbols Outlined, đã load toàn app). Không dùng svg tự chế cho icon.
 - Màu mockup chưa có token: được viết `bg-[#hex]` nhưng phải kèm comment ngắn chỉ tên vai trò màu trong mockup (ví dụ `// secondary-fixed-dim`). Comment nằm **ngoài** chuỗi class (`//`, `{/* */}`, hoặc bảng kê ở đầu file) — nhét `/* */` vào trong `className` thì nó lọt xuống DOM thành class rác. Ưu tiên map về token có sẵn (`primary-fixed` -> `info`) hơn là thêm hex mới. **Không** tự ý thêm token vào `tailwind.config.js` khi chỉ một trang cần.
 
+### 1b. Từ vựng token thứ hai — khu vực `/admin/*`
+
+Wave admin 2026-10-21 chép markup từ mockup Stitch nên dùng **đúng tên token trong design export**, không map về bảng trên:
+
+| Nhu cầu | Token admin |
+|---|---|
+| Nền | `background` `#faf8ff`, `surface`, `surface-container-lowest/low/DEFAULT/high/highest`, `surface-dim`, `surface-variant` |
+| Chữ | `on-surface`, `on-surface-variant`, `on-background` |
+| Đường viền | `outline-variant` `#c7c4d8` (app cũ gọi `outline`), `error-container` |
+| Primary | `primary`, `primary-container` `#4f46e5` + `on-primary`, `primary-fixed`/`-dim`, `on-primary-fixed`/`-variant` |
+| Secondary teal | `secondary-teal` `#006b5f` + `on-secondary-teal`, `secondary-fixed`, `secondary-container` — design dùng `secondary` cho teal trong khi app này `secondary` = `#4648d4`, nên teal bắt buộc mang tên `secondary-teal` |
+| Tertiary (khóa/bảo mật) | `tertiary`, `tertiary-container`, `tertiary-fixed`, `tertiary-fixed-dim`, `on-tertiary-fixed-variant` |
+| Chữ | `text-ds-display-lg`, `text-ds-headline-xl/lg/md/sm`, `text-ds-body-lg/md/sm`, `text-ds-label-lg/md/sm` (bộ `ds-*` song song với `headline-*`/`body-*` ở trên) |
+| Khoảng cách | `space-xs/sm/md/lg/xl/2xl`, `gutter` |
+
+- Primitive riêng cho admin: `views/components/adminKit.tsx` (`adminButton`, `AdminCard`, `AdminPageHeader`, `StatCard`, `Pill`, `SearchField`, `Toggle`, `Pagination`, `ModalBackdrop`, `RoleChip`, `StatusChip`, `fmtServer`, `timeAgo`, `ROLE_VN`, `STATUS_VN`, `AUDIT_ACTION_VN`). Màn candidate/employer vẫn dùng `views/components/ui.tsx`.
+- Khối demo không có endpoint: gắn nhãn bằng `<Pill icon="hive">Khối demo — ...</Pill>` (component cục bộ của từng trang) và ghi khối đó vào bảng `spec/INDEX.md`.
+
 ## 2. Ngôn ngữ
 
-- Chrome (đầu trang, nhãn field, nút, menu, empty state) = **tiếng Anh đúng theo mockup**.
+- Có **hai từ vựng chrome**, ranh giới là route:
+  - `/admin/*` = **tiếng Việt 100%** (chốt 2026-10-21, theo đúng mockup trong `stitch_ai_interview_platform (3).zip`). Đầu trang, nhãn field, nút, menu, empty state, nhãn trạng thái admin khai trong `adminKit` (`ROLE_VN`, `STATUS_VN`, `AUDIT_ACTION_VN`).
+  - Màn candidate/employer/landing = **tiếng Anh đúng theo mockup cũ**.
 - Dữ liệu động giữ **nguyên văn từ API**: tên công việc, tên người, nhãn trạng thái trong `*_LABELS` của model (`APPLICATION_STATUS_LABELS`...). Không dịch tay trong từng trang; thiếu nhãn thì sửa map trong `models/*.model.ts`.
-- Nhãn trạng thái render qua `<StatusBadge status={x} label={LABELS[x]} />`. Tone màu chỉ khai ở `STATUS_TONE` trong `views/components/ui.tsx`, không khai lại trong trang.
+- Màn `DATA`/`UI` của admin: dữ liệu demo không có endpoint thì giữ nguyên văn mockup (tiếng Việt) nhưng phải có nhãn `Khối demo — ...`.
+- Nhãn trạng thái render qua `<StatusBadge status={x} label={LABELS[x]} />` (candidate/employer) hoặc `<StatusChip status={x} />` (admin). Tone màu chỉ khai ở `STATUS_TONE` trong `views/components/ui.tsx` và `STATUS_VN` trong `adminKit.tsx`, không khai lại trong trang.
 
 ## 3. Số liệu — chỉ đồ thật
 
@@ -32,7 +55,8 @@
 ## 4. Layout dùng chung
 
 - Mọi route đăng nhập nằm trong `AppLayout` (sidebar `w-72` + header `h-16`, `main` `px-4 pt-16 lg:px-6`). Trang **không** tự vẽ lại sidebar/header, kể cả khi mockup có `<aside>`.
-- Sidebar lọc theo role: candidate / employer / admin. Thêm route mới thì quyết định có hiện trong sidebar hay không; route màn tĩnh thì không gắn sidebar.
+- Route `/admin/*` nằm trong **`AdminLayout`** (shell riêng, dựng lại theo mockup admin 2026-10-21): aside `w-72`, header `fixed left-72`, vùng nội dung `pl-72`. Hệ quả: thanh action sticky của màn admin phải là `fixed bottom-0 left-72 right-0`, không dùng `left-0`. Thân màn admin vẫn **không** tự vẽ `<aside>`.
+- Sidebar lọc theo role: candidate / employer (sidebar `AppLayout`) và 7 mục "Quản trị hệ thống" (sidebar `AdminLayout`). Thêm route mới thì chọn vai trò nav khớp với guard route để không dẫn tới 403; mockup đã vẽ item nav thì phải gắn item đó — xem §3.
 - Trang đăng nhập/đăng ký/khôi phục mật khẩu là trang standalone 2 cột với panel gradient `from-primary to-secondary`, có header/footer riêng.
 - Bảng mật độ cao: header `thClass` (cao 32px, uppercase, tracking 0.04em), row `tdClass` (cao 40px), hover `bg-surface-low/60`, border dưới `#e2e8f0`.
 - Không thêm animation/chrome ngoài mockup: không skeleton tự chế, không transition thừa, không shadow to hơn `shadow-[0_1px_3px_rgba(15,23,42,0.04)]` cho card nội dung.
