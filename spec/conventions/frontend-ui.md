@@ -26,7 +26,7 @@
 ## 3. Số liệu — chỉ đồ thật
 
 - Màn `DATA`/`UI`: thành phần nào không có endpoint hoặc không có column thì **bỏ hẳn**, không ô trống kiểu `—`, không tự chế con số (percentile, "Top 10%", "95% precision", "Match score 94%", radar, leaderboard, streak...). Ghi lại khối đã bỏ + lý do vào `spec/INDEX.md` hoặc file plan.
-- Màn `STATIC`: được phép giữ số liệu demo **nguyên văn từ mockup**, nhưng không nối vào sidebar, và tên file/route phải tự nói lên đó là màn mockup.
+- Màn `STATIC`: được phép giữ số liệu demo **nguyên văn từ mockup**, tên file/route phải tự nói lên đó là màn mockup, và **không được viết số liệu mới ngoài những gì mockup đã kê**. Nguyên tắc cũ "không nối sidebar" đã bỏ (2026-10-21): mockup nào có item trên sidebar thì dựng xong phải gắn nav, nếu không anh em mở app sẽ thấy "giao diện không đổi" và không soi được màn mới. Vai trò gắn nav phải khớp guard route để không dẫn tới 403.
 - Không gọi thêm API mới để "làm cho đầy". Không optimistic write giả.
 
 ## 4. Layout dùng chung
@@ -45,6 +45,7 @@
 - **Không** `style={{...}}`, ngoại trừ giá trị động thật sự (`width: ${pct}%`).
 - Một màn = một file `views/pages/<Name>Page.tsx`, default export. Component phụ để trong cùng file, không tách unless dùng lại.
 - State/handler/controller của trang cũ giữ nguyên khi restyle; chỉ đổi phần render. Restyle không được làm mất logic (fetch, phân trang, guard role, banner).
+- Màn dựng xong phải **mở được bằng đường có thật trong app** (item sidebar mà mockup đã vẽ, hoặc link từ màn khác). Route chỉ soi bằng URL tay thì coi như chưa xong: người xem mở app sẽ thấy "giao diện không đổi".
 - Script probe/test dùng một lần: tạo rồi xoá trong phiên, không commit.
 
 ## 6. Trước khi báo xong
