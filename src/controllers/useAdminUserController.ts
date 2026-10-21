@@ -327,7 +327,7 @@ export const useAdminUserController = () => {
         try { parsed = { ...e, response: { ...e.response, data: JSON.parse(e.response.data) } }; }
         catch { /* khong phai JSON -> dung message goc */ }
       }
-      setError(readApiErrorMessage(parsed, 'Export failed'));
+      setError(readApiErrorMessage(parsed, 'Không xuất được file CSV.'));
       return false;
     } finally {
       setExporting(false);

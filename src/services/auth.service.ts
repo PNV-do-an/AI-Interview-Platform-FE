@@ -61,6 +61,12 @@ const AuthService = {
 
   verifyEmail: (token: string) =>
     publicHttp.get<ApiResponse<string>>('/api/v1/auth/verify', { params: { token } }),
+
+  // hồ sơ tự phục vụ: base /api/user (KHÔNG có /v1) -> dùng httpService để có auth interceptor.
+  // GET trả {email, fullName, phone, counterFail, role}; POST đổi mật khẩu thì BE tăng
+  // tokenVersion => mọi refresh token cũ chết ngay (FE phải bắt người dùng đăng nhập lại).
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    httpService.post<ApiResponse<null>>('/api/user/change-password', data),
 };
 
 export default AuthService;

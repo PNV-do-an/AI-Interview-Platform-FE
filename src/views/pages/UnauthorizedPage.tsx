@@ -1,92 +1,96 @@
+/**
+ * Màn 403 "Bạn không có quyền truy cập trang này" — bản dựng lại theo mockup Stitch mới (2026-10-21).
+ * Chrome tiếng Việt + token ds-* (adminKit), bỏ ảnh khoá svg và glow trang trí thừa theo
+ * spec/conventions/frontend-ui.md mục 3-4.
+ * Khối mockup không có nguồn dữ liệu nên đã cắt: email support@aiinterview.vn, hotline 1900 8888,
+ * link footer System Status / Support Desk / Privacy. Ô "Phiên hiện tại" thay bằng email + vai trò
+ * thật từ AuthContext (dùng nhãn tiếng Việt ROLE_VN).
+ */
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import logoWordmark from '../../assets/logo-wordmark.png';
 import { useAuth } from '../../context/AuthContext';
-import { ROLE_LABELS } from '../../models/User.model';
-import { buttonClass } from '../components/ui';
+import { ROLE_VN, adminButton } from '../components/adminKit';
 
-/**
- * Màn 403 theo mockup `l_i_403_kh_ng_c_quy_n_truy_c_p_ai_interview_platform`.
- * Bỏ theo luật `spec/conventions/frontend-ui.md` mục 3: art khoá svg + ambient glow/animation,
- * ảnh logo hosting của Stitch, email support + hotline 1900 8888 (không có nguồn dữ liệu thật).
- * Dòng phiên thay bằng email + role thật từ AuthContext.
- */
 const UnauthorizedPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
   return (
-    <div className="relative flex min-h-screen flex-col bg-surface font-sans text-ink">
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-[20%] left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-surface-high/60 blur-[120px]" />
-        <div className="absolute -bottom-[20%] right-[10%] h-[400px] w-[600px] rounded-full bg-secondary-fixed/20 blur-[100px]" />
-      </div>
-
-      <header className="relative z-10 mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-5">
-        <Link to="/" className="inline-flex items-center no-underline">
+    <div className="min-h-screen bg-background text-on-surface flex flex-col justify-between selection:bg-primary-container selection:text-on-primary-container">
+      <header className="w-full pt-space-xl px-margin flex justify-center items-center">
+        <Link to="/" className="inline-flex items-center gap-space-sm no-underline text-inherit">
           <img src={logoWordmark} alt="AI Interview" className="h-8 w-auto object-contain" />
-        </Link>
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink-variant transition-colors hover:text-ink"
-        >
-          <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-          <span>Back to home</span>
         </Link>
       </header>
 
-      <main className="relative z-10 flex w-full flex-1 items-center justify-center px-4 py-6 sm:px-6">
-        <section className="w-full max-w-[560px] rounded-xl border border-[#e2e8f0] bg-card px-6 py-8 text-center shadow-card sm:px-10">
-          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-danger-bg text-danger-text">
-            <span className="material-symbols-outlined text-[24px]">block</span>
-          </span>
+      <main className="w-full flex-1 flex flex-col items-center justify-center px-gutter py-space-xl">
+        <div className="relative w-full max-w-3xl flex flex-col items-center">
+          <div className="absolute -top-16 -left-16 w-72 h-72 rounded-full bg-primary-fixed opacity-60 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-12 -right-16 w-80 h-80 rounded-full bg-secondary-fixed opacity-50 blur-3xl pointer-events-none" />
 
-          <div className="mt-3 text-display tabular-nums text-ink">403</div>
-          <h1 className="mt-1 text-headline-md text-ink">You don&apos;t have access to this page</h1>
-          <p className="mx-auto mt-2 mb-6 max-w-[420px] text-body-md leading-relaxed text-ink-variant">
-            This area is restricted to authorized roles. Check that you are signed in with the right
-            account, or contact an administrator if you think this is a mistake.
-          </p>
+          <div className="relative w-full bg-surface-container-lowest rounded-xl shadow-proof px-gutter py-space-xl md:p-space-2xl flex flex-col items-center text-center overflow-hidden">
+            <span className="inline-flex items-center px-space-md py-1.5 rounded-full bg-surface-container-low text-ds-label-md text-on-surface-variant mb-space-lg">
+              Hệ Thống Phỏng Vấn AI Thông Minh
+            </span>
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
-            <Link to="/dashboard" className={`${buttonClass('primary')} w-full px-5 no-underline sm:w-auto`}>
-              <span className="material-symbols-outlined text-[18px]">home</span>
-              Go to dashboard
-            </Link>
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className={`${buttonClass('secondary')} w-full px-5 sm:w-auto`}
-            >
-              <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-              Go back
-            </button>
-          </div>
+            <span className="w-16 h-16 rounded-full bg-surface-container-low border border-outline-variant/50 flex items-center justify-center text-error mb-space-md">
+              <span className="material-symbols-outlined text-[32px]">lock</span>
+            </span>
 
-          <div className="mt-7 flex flex-col items-start gap-3 rounded-lg bg-surface-low px-4 py-3 text-left sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-label-sm uppercase tracking-[0.04em] text-ink-variant">Error code</span>
-              <span className="font-mono text-label-md text-ink">403_ACCESS_DENIED</span>
+            <div className="text-ds-display-lg md:text-[88px] md:leading-[92px] font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-on-surface via-primary to-on-surface select-none">
+              403
             </div>
-            <span className="hidden h-6 w-px bg-[#e2e8f0] sm:block" />
-            <div className="flex flex-col gap-0.5">
-              <span className="text-label-sm uppercase tracking-[0.04em] text-ink-variant">Current session</span>
-              <span className="text-label-md text-ink">
-                {user ? `${user.email} · ${ROLE_LABELS[user.role] ?? user.role}` : 'Not signed in'}
-              </span>
+            <h1 className="text-ds-headline-xl text-on-surface font-bold mb-space-xs">
+              Bạn không có quyền truy cập trang này
+            </h1>
+            <p className="text-ds-body-lg text-on-surface-variant max-w-lg mx-auto mb-space-xl">
+              Khu vực này được bảo vệ hoặc dành riêng cho người dùng được phân quyền. Vui lòng kiểm tra lại
+              tài khoản hoặc liên hệ quản trị viên nếu bạn cho rằng đây là sự nhầm lẫn.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-space-md w-full max-w-md mb-space-xl">
+              <Link to="/dashboard" className={`${adminButton('primary', 'w-full sm:w-auto flex-1 shadow-md')} no-underline`}>
+                <span className="material-symbols-outlined text-[20px]">home</span>
+                Về trang chủ
+              </Link>
+              <button type="button" onClick={() => navigate(-1)} className={adminButton('ghost', 'w-full sm:w-auto flex-1')}>
+                <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+                Quay lại
+              </button>
             </div>
+
+            <div className="w-full max-w-xl rounded-lg bg-surface-container-low p-space-md flex flex-col sm:flex-row items-center justify-between gap-space-sm text-left">
+              <div className="flex items-center gap-space-sm">
+                <span className="w-8 h-8 rounded-full bg-surface-container text-primary flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[18px]">info</span>
+                </span>
+                <span className="flex flex-col">
+                  <span className="text-ds-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">Mã định danh lỗi</span>
+                  <span className="text-ds-label-md text-on-surface font-medium">403_ACCESS_DENIED</span>
+                </span>
+              </div>
+              <span className="hidden sm:block h-6 w-px bg-outline-variant" />
+              <div className="flex flex-col">
+                <span className="text-ds-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">Phiên hiện tại</span>
+                <span className="text-ds-label-md text-on-surface font-medium">
+                  {user ? `${user.email} · ${ROLE_VN[user.role] ?? user.role}` : 'Chưa đăng nhập'}
+                </span>
+              </div>
+            </div>
+
+            {user && (
+              <p className="mt-space-lg flex items-center gap-space-sm text-ds-body-sm text-on-surface-variant">
+                <span className="w-2 h-2 rounded-full bg-secondary-teal" />
+                Hệ thống ghi nhận phiên bảo mật của bạn đang hoạt động bình thường
+              </p>
+            )}
           </div>
-        </section>
+        </div>
       </main>
 
-      <footer className="relative z-10 pb-5 pt-2 text-center text-[12px] leading-[18px] text-ink-variant">
-        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
-          <span>© 2026 AI Interview Platform</span>
-          <span className="text-outline">·</span>
-          <a href="#" className="transition-colors hover:text-ink">Terms</a>
-          <span className="text-outline">·</span>
-          <a href="#" className="transition-colors hover:text-ink">Privacy</a>
-        </div>
+      <footer className="w-full pb-space-lg px-margin flex items-center justify-center text-center text-ds-body-sm text-on-surface-variant">
+        <p>© 2026 AI Interview Platform. Bảo lưu toàn quyền.</p>
       </footer>
     </div>
   );

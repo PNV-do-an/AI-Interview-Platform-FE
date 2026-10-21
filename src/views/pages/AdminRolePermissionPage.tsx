@@ -1,478 +1,554 @@
-/**
- * STATIC mockup — screen_22 "Phân quyền hệ thống" (Role permission management).
- * BE chưa có endpoint role-permission (matrix đang đọc từ @PreAuthorize), nên trang này
- * chạy hoàn toàn bằng dữ liệu demo: không gọi API, không link sidebar.
- * Data demo giữ nguyên văn tiếng Việt theo mockup; chrome (breadcrumb, nhãn chung) tiếng Anh.
- * Màu mockup không có token dự án (giữ dạng hex): #e2e8f0 hairline, #004598 tertiary (icon Edit),
- * #005cc6 tertiary-container (icon nhóm pipeline/admin), #4fdbc8 secondary-fixed-dim (chấm "có thay đổi"),
- * #10b981 emerald-500 (nhịp pulse thanh save).
- */
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, buttonClass } from '../components/ui';
+import AdminService from '../../services/admin.service';
+import { PermissionMatrix } from '../../models/AdminConsole.model';
+import {
+  ICON,
+  LoadingBlock,
+  adminButton,
+  errorText,
+} from '../components/adminKit';
 
-const MONO = 'font-mono text-label-sm';
+/**
+ * Phân quyền hệ thống (mockup Stitch `phân quyền hệ thống`) — DATA page.
+ * Nguồn số thật: GET /admin/permissions/matrix -> 4 vai trò + userCount thật, 9 module × 5 hành động,
+ * mỗi ô là `granted[role]` dẫn xuất từ @PreAuthorize trong code BE (không phải bảng DB).
+ * Vì matrix là code nên FE hiển thị READ-ONLY: checkbox/toggle không sửa được và nút Lưu bị khóa.
+ * Khác mockup (ghi ở spec/INDEX.md):
+ *   - Mockup 3 thẻ vai trò, BE trả 4 (thêm Nhân viên vận hành) -> grid 3 cột, thẻ thứ tư tự xuống hàng.
+ *   - Mockup có ô "Không áp dụng" (remove) -> ánh xạ từ hành động mà BE không cấp cho vai trò nào.
+ *   - Mô tả module không có trong payload -> lấy theo chuỗi mockup cho module trùng key.
+ *   - "Thêm vai trò" và thanh Lưu: BE chưa có API ghi phân quyền -> nút khóa kèm giải thích.
+ */
 
-type PermKey = 'view' | 'create' | 'edit' | 'delete' | 'approve';
+const ROLE_ORDER = ['ROLE_USER', 'ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] as const;
 
-const ACTIONS: { key: PermKey; label: string; icon: string; iconClass: string }[] = [
-  { key: 'view', label: 'View', icon: 'visibility', iconClass: 'text-primary' },
-  { key: 'create', label: 'Create', icon: 'add_circle', iconClass: 'text-secondary' },
-  { key: 'edit', label: 'Edit', icon: 'edit_square', iconClass: 'text-[#004598]' },
-  { key: 'delete', label: 'Delete', icon: 'delete', iconClass: 'text-danger-text' },
-  { key: 'approve', label: 'Approve', icon: 'verified', iconClass: 'text-primary-container' },
+const ACTIONS: { key: string; label: string; icon: string; iconClass: string }[] = [
+  { key: 'VIEW', label: 'Xem', icon: 'visibility', iconClass: 'text-primary' },
+  { key: 'CREATE', label: 'Tạo', icon: 'add_circle', iconClass: 'text-secondary-teal' },
+  { key: 'UPDATE', label: 'Sửa', icon: 'edit_square', iconClass: 'text-tertiary' },
+  { key: 'DELETE', label: 'Xóa', icon: 'delete', iconClass: 'text-error' },
+  { key: 'APPROVE', label: 'Duyệt', icon: 'verified', iconClass: 'text-primary-container' },
 ];
 
-/** 'y' = được cấp, '' = chưa cấp, 'x' = không áp dụng, 'lock' = chỉ cấp quản trị cao. */
-type Cell = 'y' | '' | 'x' | 'lock';
-
-interface ModuleRow {
-  id: string;
-  name: string;
-  desc: string;
-  icon: string;
-  iconClass: string;
-  tag?: { label: string; cls: string };
-  perms: Record<PermKey, Cell>;
-}
-
-const INITIAL_MATRIX: ModuleRow[] = [
-  {
-    id: 'profile', name: 'Hồ sơ ứng viên & CV kho dữ liệu', icon: 'badge', iconClass: 'bg-surface-mid text-primary',
-    desc: 'Truy xuất thông tin chi tiết ứng viên, tải CV gốc và hồ sơ kỹ năng trích xuất bởi AI',
-    perms: { view: 'y', create: 'y', edit: 'y', delete: '', approve: 'x' },
-  },
-  {
-    id: 'jd', name: 'Tin tuyển dụng (Job Description)', icon: 'description', iconClass: 'bg-surface-mid text-secondary',
-    desc: 'Soạn thảo, xuất bản vị trí tuyển dụng, chỉnh sửa bộ câu hỏi phỏng vấn chuẩn hóa',
-    perms: { view: 'y', create: 'y', edit: 'y', delete: 'y', approve: 'lock' },
-  },
-  {
-    id: 'pipeline', name: 'Quản lý ứng tuyển (Candidate Pipeline)', icon: 'assignment_ind', iconClass: 'bg-surface-mid text-[#005cc6]',
-    desc: 'Theo dõi luồng ứng viên qua các phễu tuyển dụng, sàng lọc và phân loại trạng thái',
-    perms: { view: 'y', create: 'x', edit: 'y', delete: '', approve: 'y' },
-  },
-  {
-    id: 'schedule', name: 'Lịch phỏng vấn & Điều phối ca thi', icon: 'calendar_month', iconClass: 'bg-surface-mid text-primary',
-    desc: 'Tạo slot rảnh cho chuyên gia, gửi lời mời Google Meet / Zoom và đồng bộ lịch',
-    perms: { view: 'y', create: 'y', edit: 'y', delete: 'y', approve: 'x' },
-  },
-  {
-    id: 'ai-mock', name: 'Phỏng vấn giả lập AI (AI Mock Interview)', icon: 'smart_toy', iconClass: 'bg-success-bg text-success-text',
-    desc: 'Xem video ghi hình, bản transcript giọng nói và điểm radar năng lực AI đánh giá',
-    tag: { label: 'AI Core', cls: 'bg-success-bg text-success-text' },
-    perms: { view: 'y', create: 'x', edit: 'x', delete: 'x', approve: 'x' },
-  },
-  {
-    id: 'scoring', name: 'Bảng điểm & Đánh giá chuyên môn', icon: 'rate_review', iconClass: 'bg-surface-mid text-primary-container',
-    desc: 'Nhập tiêu chí chấm điểm sau phỏng vấn, nhận xét kỹ năng mềm và xác nhận Pass/Fail',
-    perms: { view: 'y', create: 'y', edit: 'y', delete: '', approve: 'y' },
-  },
-  {
-    id: 'users', name: 'Quản lý người dùng hệ thống', icon: 'manage_accounts', iconClass: 'bg-surface-high text-outline-strong',
-    desc: 'Khóa tài khoản, xem lịch sử đăng nhập, quản lý phiên và phân vai trò',
-    tag: { label: 'Admin Only', cls: 'bg-danger-bg text-danger-text' },
-    perms: { view: 'lock', create: 'lock', edit: 'lock', delete: 'lock', approve: 'lock' },
-  },
-  {
-    id: 'moderation', name: 'Kiểm duyệt JD & Vi phạm nội dung', icon: 'fact_check', iconClass: 'bg-surface-high text-outline-strong',
-    desc: 'Kiểm tra thông tin pháp lý doanh nghiệp và từ chối các tin tuyển dụng không hợp lệ',
-    tag: { label: 'Admin Only', cls: 'bg-danger-bg text-danger-text' },
-    perms: { view: 'lock', create: 'lock', edit: 'lock', delete: 'lock', approve: 'lock' },
-  },
-  {
-    id: 'report', name: 'Dashboard & Báo cáo tuyển dụng', icon: 'query_stats', iconClass: 'bg-surface-mid text-primary',
-    desc: 'Xem biểu đồ hiệu suất tin đăng, tỷ lệ chuyển đổi vòng phỏng vấn của doanh nghiệp',
-    perms: { view: 'y', create: 'x', edit: 'x', delete: 'x', approve: 'x' },
-  },
-];
-
-const LAST_SAVED = 'Lần lưu gần nhất: 14:32 - 12/05/2026 bởi Quản trị viên cấp cao';
-
-const ROLES = [
-  {
-    id: 'candidate', name: 'Ứng viên', chip: 'Mặc định hệ thống', chipCls: 'bg-surface-low text-ink-variant',
-    icon: 'person', iconCls: 'bg-surface-mid text-primary',
-    count: '12,450 người dùng', countCls: 'text-secondary', dotCls: 'bg-secondary',
-    desc: 'Quyền tìm việc làm, nộp CV trực tuyến, trải nghiệm phòng phỏng vấn giả lập AI và tham gia lịch phỏng vấn chính thức.',
-  },
-  {
-    id: 'employer', name: 'Nhà tuyển dụng / Cố vấn', chip: 'Doanh nghiệp', chipCls: 'bg-success-bg text-success-text',
-    icon: 'apartment', iconCls: 'bg-primary-container text-on-primary',
-    count: '860 người dùng kích hoạt', countCls: 'text-primary font-semibold', dotCls: 'bg-primary animate-pulse',
-    desc: 'Quyền đăng tin JD, tiếp nhận & duyệt hồ sơ ứng viên, đặt lịch phỏng vấn vòng chuyên môn và xem phân tích AI.',
-  },
-  {
-    id: 'admin', name: 'Quản trị viên', chip: 'Toàn quyền SuperAdmin', chipCls: 'bg-danger-bg text-danger-text',
-    icon: 'admin_panel_settings', iconCls: 'bg-surface-mid text-[#005cc6]',
-    count: '14 tài khoản quản trị', countCls: 'text-outline-strong', dotCls: 'bg-outline-strong',
-    desc: 'Toàn quyền hệ thống, phê duyệt tin tuyển dụng, phân quyền phân vai, cấu hình mô hình AI và xem audit logs.',
-  },
-];
-
-const FILTERS = [
-  { value: 'all', label: 'All modules (9)' },
-  { value: 'granted', label: 'Only modules with permissions' },
-  { value: 'restricted', label: 'Admin-only modules' },
-];
-
-const cellKey = (rowId: string, action: PermKey) => `${rowId}:${action}`;
-
-/** Map "mặc định đã cấp" của mockup -> state khởi điểm; checkbox sửa local state, không gọi API. */
-const initialGrants = (): Record<string, boolean> => {
-  const out: Record<string, boolean> = {};
-  INITIAL_MATRIX.forEach(row => {
-    ACTIONS.forEach(a => {
-      const c = row.perms[a.key];
-      if (c === 'y' || c === '') out[cellKey(row.id, a.key)] = c === 'y';
-    });
-  });
-  return out;
+const MODULE_ICON: Record<string, { icon: string; cls: string }> = {
+  'candidate-profile': { icon: 'badge', cls: 'bg-surface-container text-primary' },
+  jobs: { icon: 'description', cls: 'bg-surface-container text-secondary-teal' },
+  applications: { icon: 'assignment_ind', cls: 'bg-surface-container text-tertiary-container' },
+  slots: { icon: 'calendar_month', cls: 'bg-surface-container text-primary' },
+  'mock-interviews': { icon: 'smart_toy', cls: 'bg-secondary-container/60 text-secondary-teal' },
+  'packages-orders': { icon: 'shopping_bag', cls: 'bg-surface-container text-primary-container' },
+  reviews: { icon: 'rate_review', cls: 'bg-surface-container text-primary-container' },
+  'bug-reports': { icon: 'bug_report', cls: 'bg-surface-container text-error' },
+  'admin-console': { icon: 'manage_accounts', cls: 'bg-surface-container-high text-outline-strong' },
 };
 
-const selectableCell = (row: ModuleRow, action: PermKey): Cell => row.perms[action];
+const MODULE_DESC: Record<string, string> = {
+  'candidate-profile': 'Truy xuất thông tin chi tiết ứng viên, tải CV gốc và hồ sơ kỹ năng trích xuất bởi AI',
+  jobs: 'Soạn thảo, xuất bản vị trí tuyển dụng, chỉnh sửa bộ câu hỏi phỏng vấn chuẩn hóa',
+  applications: 'Theo dõi luồng ứng viên qua các phễu tuyển dụng, sàng lọc và phân loại trạng thái',
+  slots: 'Tạo slot rảnh cho chuyên gia, gửi lời mời phỏng vấn và đồng bộ lịch',
+  'mock-interviews': 'Xem video ghi hình, bản transcript giọng nói và điểm radar năng lực AI đánh giá',
+  'packages-orders': 'Danh mục gói dịch vụ, đơn hàng và hạn mức sử dụng của doanh nghiệp',
+  reviews: 'Đánh giá sau phiên phỏng vấn và phản hồi của người dùng gửi về hệ thống',
+  'bug-reports': 'Tiếp nhận báo lỗi từ người dùng và cập nhật trạng thái xử lý',
+  'admin-console': 'Toàn bộ endpoint /admin: kiểm duyệt JD, audit log, cấu hình hệ thống',
+};
+
+const MODULE_TAG: Record<string, { label: string; cls: string }> = {
+  'mock-interviews': { label: 'AI Core', cls: 'bg-secondary-container text-on-secondary-container' },
+};
+
+const ROLE_CARD: Record<string, { icon: string; iconCls: string; chip: string; chipCls: string; dot: string; countCls: string; desc: string }> = {
+  ROLE_USER: {
+    icon: 'person', iconCls: 'bg-surface-container text-primary',
+    chip: 'Mặc định hệ thống', chipCls: 'bg-surface-container-low text-on-surface-variant',
+    dot: 'bg-secondary-teal', countCls: 'text-secondary-teal',
+    desc: 'Quyền tìm việc làm, nộp CV trực tuyến, trải nghiệm phòng phỏng vấn giả lập AI và tham gia lịch phỏng vấn chính thức.',
+  },
+  ROLE_INTERVIEWER: {
+    icon: 'apartment', iconCls: 'bg-primary-container text-on-primary',
+    chip: 'Doanh nghiệp', chipCls: 'bg-secondary-container text-on-secondary-container',
+    dot: 'bg-primary', countCls: 'text-primary font-semibold',
+    desc: 'Quyền đăng tin JD, tiếp nhận & duyệt hồ sơ ứng viên, đặt lịch phỏng vấn vòng chuyên môn và xem phân tích AI.',
+  },
+  ROLE_STAFF: {
+    icon: 'badge', iconCls: 'bg-surface-container text-tertiary-container',
+    chip: 'Vận hành', chipCls: 'bg-surface-container-high text-on-surface-variant',
+    dot: 'bg-tertiary', countCls: 'text-tertiary',
+    desc: 'Kiểm duyệt tin tuyển dụng, xử lý phản ánh và hỗ trợ vận hành hằng ngày; không truy cập cấu hình hệ thống.',
+  },
+  ROLE_ADMIN: {
+    icon: 'admin_panel_settings', iconCls: 'bg-surface-container text-tertiary-container',
+    chip: 'Toàn quyền SuperAdmin', chipCls: 'bg-error-container text-on-error-container',
+    dot: 'bg-outline-strong', countCls: 'text-outline-strong',
+    desc: 'Toàn quyền hệ thống, phê duyệt tin tuyển dụng, phân quyền phân vai, cấu hình mô hình AI và xem audit logs.',
+  },
+};
+
+type CellKind = 'grant' | 'na' | 'lock';
+
+const roleSorted = (matrix: PermissionMatrix) =>
+  [...matrix.roles].sort(
+    (a, b) => ROLE_ORDER.indexOf(a.role as (typeof ROLE_ORDER)[number]) - ROLE_ORDER.indexOf(b.role as (typeof ROLE_ORDER)[number]),
+  );
+
+const actionOf = (module: PermissionMatrix['modules'][number], key: string) =>
+  module.actions.find((a) => a.action === key) ?? null;
+
+const cellKindOf = (
+  adminOnly: boolean,
+  role: string,
+  granted: Record<string, boolean> | null,
+): CellKind => {
+  if (!granted) return 'na';
+  const anyone = ROLE_ORDER.some((r) => granted[r]);
+  if (!anyone) return 'na';
+  if (adminOnly && role !== 'ROLE_ADMIN') return 'lock';
+  return 'grant';
+};
 
 const AdminRolePermissionPage: React.FC = () => {
-  const [roleId, setRoleId] = useState('employer');
-  const [grants, setGrants] = useState<Record<string, boolean>>(initialGrants);
-  const [filter, setFilter] = useState('all');
+  const [matrix, setMatrix] = useState<PermissionMatrix | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [roleId, setRoleId] = useState<string>('ROLE_INTERVIEWER');
+  const [filter, setFilter] = useState<'all' | 'granted' | 'restricted'>('all');
   const [showDesc, setShowDesc] = useState(true);
   const [bannerOpen, setBannerOpen] = useState(true);
+  const [search, setSearch] = useState('');
 
-  const changedKeys = useMemo(() => {
-    const base = initialGrants();
-    return Object.keys(grants).filter(k => grants[k] !== base[k]);
-  }, [grants]);
+  const alive = useRef(true);
+  useEffect(() => () => { alive.current = false; }, []);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await AdminService.getPermissionMatrix();
+      if (!alive.current) return;
+      const body = res.data.data!;
+      setMatrix(body);
+      if (!body.roles.some((r) => r.role === roleId)) {
+        setRoleId(body.roles[0]?.role ?? 'ROLE_INTERVIEWER');
+      }
+    } catch (err) {
+      if (alive.current) setError(errorText(err, 'Không tải được ma trận phân quyền.'));
+    } finally {
+      if (alive.current) setLoading(false);
+    }
+  }, [roleId]);
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const roles = useMemo(() => (matrix ? roleSorted(matrix) : []), [matrix]);
+
+  const modules = useMemo(() => {
+    if (!matrix) return [];
+    const kw = search.trim().toLowerCase();
+    return matrix.modules.filter((m) => {
+      if (kw && m.label.toLowerCase().indexOf(kw) === -1 && m.key.toLowerCase().indexOf(kw) === -1) return false;
+      if (filter === 'restricted') return m.adminOnly;
+      if (filter === 'granted') {
+        return m.actions.some((a) => cellKindOf(m.adminOnly, roleId, a.granted) === 'grant' && a.granted[roleId]);
+      }
+      return true;
+    });
+  }, [filter, matrix, roleId, search]);
 
   const grantedCount = useMemo(() => {
-    const cells = Object.keys(grants);
-    return { granted: cells.filter(k => grants[k]).length, total: cells.length };
-  }, [grants]);
-
-  const rows = useMemo(() => INITIAL_MATRIX.filter(row => {
-    if (filter === 'granted') {
-      return ACTIONS.some(a => grants[cellKey(row.id, a.key)] === true);
-    }
-    if (filter === 'restricted') return Object.values(row.perms).includes('lock');
-    return true;
-  }), [filter, grants]);
-
-  const activeRole = ROLES.find(r => r.id === roleId) ?? ROLES[1];
-
-  const toggle = (rowId: string, action: PermKey) =>
-    setGrants(g => ({ ...g, [cellKey(rowId, action)]: !g[cellKey(rowId, action)] }));
-
-  const grantAllView = () =>
-    setGrants(g => {
-      const next = { ...g };
-      INITIAL_MATRIX.forEach(row => {
-        if (selectableCell(row, 'view') === 'y' || selectableCell(row, 'view') === '') {
-          next[cellKey(row.id, 'view')] = true;
-        }
+    if (!matrix) return { granted: 0, total: 0 };
+    let granted = 0;
+    let total = 0;
+    matrix.modules.forEach((m) => {
+      ACTIONS.forEach((a) => {
+        const act = actionOf(m, a.key);
+        const kind = cellKindOf(m.adminOnly, roleId, act ? act.granted : null);
+        if (kind !== 'grant') return;
+        total += 1;
+        if (act && act.granted[roleId]) granted += 1;
       });
-      return next;
     });
+    return { granted, total };
+  }, [matrix, roleId]);
 
-  const resetDefaults = () => setGrants(initialGrants());
+  const activeRole = roles.find((r) => r.role === roleId) ?? null;
+
+  const exportCsv = () => {
+    if (!matrix) return;
+    const header = ['Module', 'Hành động', ...roles.map((r) => r.label)];
+    const body: (string | number)[][] = [];
+    matrix.modules.forEach((m) => {
+      ACTIONS.forEach((a) => {
+        const act = actionOf(m, a.key);
+        if (!act) {
+          body.push([m.label, a.label, ...roles.map(() => 'N/A')]);
+          return;
+        }
+        body.push([
+          m.label,
+          a.label,
+          ...roles.map((r) => {
+            const kind = cellKindOf(m.adminOnly, r.role, act.granted);
+            if (kind === 'na') return 'N/A';
+            if (kind === 'lock') return 'Admin only';
+            return act.granted[r.role] ? 'Yes' : 'No';
+          }),
+        ]);
+      });
+    });
+    const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+    const csv = [header, ...body].map((row) => row.map(esc).join(',')).join('\r\n');
+    const blob = new Blob([`${csv}`], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ma-tran-phan-quyen.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
-    <div className="flex flex-col gap-6 pb-24">
-      {/* Breadcrumb + title + actions */}
-      <div className="flex flex-col gap-3">
-        <nav className="flex items-center gap-1 text-label-md text-ink-variant">
-          <span className="hover:text-primary">System</span>
-          <span className="material-symbols-outlined text-[16px] text-outline-strong">chevron_right</span>
-          <span className="font-semibold text-ink">Roles &amp; Permissions</span>
-        </nav>
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="m-0 text-headline-lg text-ink">System permissions</h1>
-            <p className="mt-0.5 mb-0 text-body-md text-ink-variant">
-              Manage role-based access and control what each account type can do on the platform.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button type="button" className={buttonClass('secondary', 'h-10 rounded-lg')}>
-              <span className="material-symbols-outlined text-[18px]">download</span>
-              Export matrix
-            </button>
-            <button type="button" className={buttonClass('primary', 'h-10 rounded-lg')}>
-              <span className="material-symbols-outlined text-[18px]">add_moderator</span>
-              Add role
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* RBAC banner */}
-      {bannerOpen && (
-        <div className="flex items-start justify-between gap-4 rounded-xl bg-surface-high p-4 shadow-sm">
-          <div className="flex items-start gap-4">
-            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-on-primary">
-              <span className="material-symbols-outlined text-[20px]">shield</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-headline-sm font-semibold text-ink">
-                RBAC security policy (Role-Based Access Control)
-              </span>
-              <p className="mt-1 mb-0 text-body-sm leading-relaxed text-ink-variant">
-                Any attempt to reach a feature, run a query, or call an API outside the matrix below is
-                automatically rejected (
-                <code className={`${MONO} rounded bg-card px-1.5 py-0.5 font-bold text-primary`}>403 Forbidden</code>
-                ). Permission changes sync in real time and take effect in the next active session.
+    <div className="flex flex-col w-full">
+      <div className="px-space-xl py-space-lg flex flex-col gap-space-lg">
+        {/* Header */}
+        <div className="flex flex-col gap-space-xs">
+          <nav className="flex items-center gap-space-xs text-ds-label-md text-outline-strong">
+            <span>Hệ thống</span>
+            <span className={`${ICON} text-[16px] text-outline-variant`}>chevron_right</span>
+            <span className="text-on-surface font-semibold">Phân quyền & Vai trò</span>
+          </nav>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-space-md pt-space-xs">
+            <div>
+              <h1 className="text-ds-headline-xl text-on-surface tracking-tight font-bold">Phân quyền hệ thống</h1>
+              <p className="text-ds-body-md text-on-surface-variant mt-0.5">
+                Quản lý quyền truy cập theo vai trò và kiểm soát phạm vi hoạt động của người dùng trên nền tảng
               </p>
             </div>
-          </div>
-          <button
-            type="button"
-            aria-label="Dismiss"
-            className="p-1 text-outline-strong transition-colors hover:text-ink"
-            onClick={() => setBannerOpen(false)}
-          >
-            <span className="material-symbols-outlined text-[20px]">close</span>
-          </button>
-        </div>
-      )}
-
-      {/* Role cards */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {ROLES.map(r => {
-          const active = r.id === roleId;
-          return (
-            <div
-              key={r.id}
-              className={`relative flex flex-col justify-between rounded-xl bg-card p-6 transition-shadow ${
-                active ? 'shadow-md ring-2 ring-primary' : 'shadow-sm hover:shadow-md'
-              }`}
-            >
-              {active && (
-                <span className="absolute -top-3 left-6 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-label-sm font-bold text-on-primary shadow-sm">
-                  <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                  Editing this configuration
+            <div className="flex items-center gap-space-sm flex-wrap">
+              <div className="relative w-64">
+                <span className={`${ICON} absolute left-space-sm top-1/2 -translate-y-1/2 text-outline-strong pointer-events-none text-[18px]`}>
+                  search
                 </span>
-              )}
-              <div>
-                <div className="mb-4 flex items-start justify-between">
-                  <button
-                    type="button"
-                    aria-label={`Select role ${r.name}`}
-                    className={`flex h-12 w-12 items-center justify-center rounded-xl transition-transform ${r.iconCls} ${
-                      active ? '' : 'hover:scale-105'
-                    }`}
-                    onClick={() => setRoleId(r.id)}
-                  >
-                    <span className="material-symbols-outlined text-[26px]">{r.icon}</span>
-                  </button>
-                  <span className={`rounded-full px-2 py-1 text-label-sm font-medium ${r.chipCls}`}>{r.chip}</span>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <h3 className="m-0 text-headline-md font-bold text-ink">{r.name}</h3>
-                  <div className={`flex items-center gap-2 text-label-md ${r.countCls}`}>
-                    <span className={`h-2 w-2 rounded-full ${r.dotCls}`} />
-                    <span>{r.count}</span>
-                  </div>
-                  <p className="mt-2 mb-0 text-body-sm leading-relaxed text-ink-variant">{r.desc}</p>
-                </div>
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Tìm module..."
+                  className="w-full h-10 pl-10 pr-3 rounded-lg bg-surface-container-lowest border border-outline-variant text-on-surface text-ds-body-sm focus:border-primary focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+                />
               </div>
-              <div className="pt-4">
-                <button
-                  type="button"
-                  className={
-                    active
-                      ? 'flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary text-label-md font-medium text-on-primary shadow-sm transition-colors hover:bg-primary-hover'
-                      : 'flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-surface-low text-label-md font-medium text-ink transition-colors hover:bg-surface-mid'
-                  }
-                  onClick={() => setRoleId(r.id)}
-                >
-                  {active
-                    ? <span className="material-symbols-outlined text-[18px]">edit_note</span>
-                    : <span className="material-symbols-outlined text-[16px]">arrow_forward</span>}
-                  {active ? 'Editing permission matrix' : 'Edit permissions'}
-                </button>
-              </div>
+              <button type="button" onClick={exportCsv} disabled={!matrix} className={adminButton('ghost', 'disabled:opacity-50')}>
+                <span className={`${ICON} text-[18px]`}>download</span>
+                Xuất ma trận
+              </button>
+              <button
+                type="button"
+                disabled
+                title="Backend chưa có API tạo vai trò — 4 vai trò hệ thống là builtin"
+                className={`${adminButton('primary')} disabled:cursor-not-allowed disabled:opacity-50`}
+              >
+                <span className={`${ICON} text-[18px]`}>add_moderator</span>
+                Thêm vai trò
+              </button>
             </div>
-          );
-        })}
-      </div>
-
-      {/* Permission matrix */}
-      <div className="flex flex-col overflow-hidden rounded-xl bg-card shadow-sm">
-        <div className="flex flex-col gap-3 bg-surface-low/50 p-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
-              <h2 className="m-0 text-headline-md font-bold text-ink">Permission matrix</h2>
-              <span className={`rounded-full bg-surface-mid px-2 py-0.5 text-label-sm font-bold text-primary`}>
-                {grantedCount.granted} / {grantedCount.total} permissions granted
-              </span>
-            </div>
-            <span className="hidden text-label-sm text-outline-strong sm:inline">•</span>
-            <span className="hidden text-body-sm text-ink-variant sm:inline">
-              Scope: {activeRole.name}
-            </span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button type="button" className={buttonClass('secondary', 'h-9')} onClick={grantAllView}>
-              <span className="material-symbols-outlined text-[16px]">done_all</span>
-              Grant all View
-            </button>
-            <button type="button" className={buttonClass('secondary', 'h-9')} onClick={() => setShowDesc(v => !v)}>
-              <span className="material-symbols-outlined text-[16px]">{showDesc ? 'unfold_less' : 'unfold_more'}</span>
-              {showDesc ? 'Hide descriptions' : 'Show descriptions'}
-            </button>
-            <select
-              className="h-9 cursor-pointer appearance-none rounded-md bg-card px-3 pr-8 text-label-md text-ink shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
-              value={filter}
-              onChange={e => setFilter(e.target.value)}
-            >
-              {FILTERS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
-            </select>
           </div>
         </div>
 
-        <div className="overflow-x-auto border-t border-[#e2e8f0]">
-          <table className="w-full border-collapse text-left text-body-sm text-ink">
-            <thead>
-              <tr className="bg-surface-low text-label-md uppercase tracking-wider text-ink-variant">
-                <th className="w-2/5 px-6 py-4 text-left font-semibold">Module &amp; feature group</th>
-                {ACTIONS.map(a => (
-                  <th key={a.key} className="w-[12%] px-3 py-4 text-center font-semibold">
-                    <span className="inline-flex items-center justify-center gap-1">
-                      <span className={`material-symbols-outlined text-[16px] ${a.iconClass}`}>{a.icon}</span>
-                      {a.label}
-                    </span>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#e2e8f0]">
-              {rows.length === 0 && (
-                <tr><td colSpan={6} className="px-6 py-12 text-center text-body-sm text-ink-variant">No module matches this filter.</td></tr>
-              )}
-              {rows.map(row => {
-                const locked = Object.values(row.perms).includes('lock') && row.id !== 'jd';
+        {/* Banner RBAC */}
+        {bannerOpen && (
+          <div className="bg-surface-container-high rounded-xl p-space-md flex items-start justify-between gap-space-md shadow-sm">
+            <div className="flex items-start gap-space-md">
+              <div className="w-9 h-9 rounded-lg bg-primary text-on-primary flex items-center justify-center shrink-0 mt-0.5">
+                <span className={`${ICON} text-[20px]`}>shield</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-ds-headline-sm text-on-surface font-semibold">
+                  Chính sách bảo mật phân quyền RBAC (Role-Based Access Control)
+                </span>
+                <p className="text-ds-body-sm text-on-surface-variant mt-1 leading-relaxed">
+                  Bất kỳ nỗ lực truy cập tính năng, thực thi truy vấn hoặc gọi API trái phép ngoài cấu hình phân quyền bên dưới sẽ bị hệ
+                  thống tự động từ chối (
+                  <code className="bg-surface-container-lowest px-1.5 py-0.5 rounded text-primary font-mono text-[11px] font-bold">403 Forbidden</code>
+                  ). Ma trận này đọc trực tiếp từ cấu hình bảo mật của backend nên chỉ hiển thị, không chỉnh sửa tại đây.
+                </p>
+              </div>
+            </div>
+            <button type="button" aria-label="Đóng" onClick={() => setBannerOpen(false)} className="text-outline-strong hover:text-on-surface transition-colors p-1">
+              <span className={`${ICON} text-[20px]`}>close</span>
+            </button>
+          </div>
+        )}
+
+        {error && (
+          <div className="flex items-start justify-between gap-space-md rounded-xl bg-error-container px-4 py-3 text-ds-body-md text-on-error-container">
+            <span className="flex items-start gap-2">
+              <span className={`${ICON} text-[20px]`}>error</span>
+              <span>{error}</span>
+            </span>
+            <button type="button" onClick={() => void load()} className={adminButton('ghost', 'h-9 shrink-0')}>
+              <span className={`${ICON} text-[18px]`}>refresh</span>Thử lại
+            </button>
+          </div>
+        )}
+
+        {loading && !matrix ? (
+          <LoadingBlock label="Đang tải ma trận phân quyền..." />
+        ) : matrix ? (
+          <>
+            {/* Thẻ vai trò */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-space-lg">
+              {roles.map((r) => {
+                const card = ROLE_CARD[r.role] ?? ROLE_CARD.ROLE_USER;
+                const active = r.role === roleId;
                 return (
-                  <tr key={row.id} className={`transition-colors ${locked ? 'bg-surface-low/30' : 'hover:bg-surface-low/40'}`}>
-                    <td className="px-6 py-4 align-top">
-                      <div className="flex items-start gap-4">
-                        <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${row.iconClass}`}>
-                          <span className="material-symbols-outlined text-[20px]">{row.icon}</span>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className={`block text-headline-sm font-semibold ${locked ? 'text-ink-variant' : 'text-ink'}`}>
-                              {row.name}
-                            </span>
-                            {row.tag && (
-                              <span className={`rounded px-1.5 py-0.5 text-label-sm font-bold ${row.tag.cls}`}>{row.tag.label}</span>
-                            )}
-                          </div>
-                          {showDesc && (
-                            <p className={`mt-0.5 mb-0 text-body-sm ${locked ? 'text-outline-strong' : 'text-ink-variant'}`}>
-                              {row.desc}
-                            </p>
-                          )}
-                        </div>
+                  <div
+                    key={r.role}
+                    className={`bg-surface-container-lowest rounded-xl p-space-lg flex flex-col justify-between relative transition-shadow ${
+                      active ? 'shadow-md ring-2 ring-primary' : 'shadow-sm hover:shadow-md'
+                    }`}
+                  >
+                    {active && (
+                      <span className="absolute -top-3 left-space-lg px-space-sm py-0.5 rounded-full bg-primary text-on-primary text-ds-label-sm font-bold flex items-center gap-1 shadow-sm">
+                        <span className={`${ICON} text-[14px]`}>check_circle</span>
+                        Đang chọn cấu hình
+                      </span>
+                    )}
+                    <div>
+                      <div className="flex items-start justify-between mb-space-md">
+                        <button
+                          type="button"
+                          aria-label={`Chọn vai trò ${r.label}`}
+                          onClick={() => setRoleId(r.role)}
+                          className={`w-12 h-12 rounded-xl flex items-center justify-center ${card.iconCls} ${active ? '' : 'hover:scale-105 transition-transform'}`}
+                        >
+                          <span className={`${ICON} text-[26px]`}>{card.icon}</span>
+                        </button>
+                        <span className={`px-space-sm py-1 rounded-full text-ds-label-sm font-medium ${card.chipCls}`}>{card.chip}</span>
                       </div>
-                    </td>
-                    {ACTIONS.map(a => {
-                      const cell = selectableCell(row, a.key);
-                      if (cell === 'lock') {
-                        return (
-                          <td key={a.key} className="bg-surface-low/40 px-3 py-4 text-center align-top">
-                            <span
-                              className="inline-flex items-center justify-center gap-1 text-outline-strong"
-                              title={row.id === 'jd' ? 'Senior administrators only' : 'Admin-only capability'}
-                            >
-                              <span className="material-symbols-outlined text-[16px]">lock</span>
-                            </span>
-                          </td>
-                        );
-                      }
-                      if (cell === 'x') {
-                        return (
-                          <td key={a.key} className="bg-surface-low/30 px-3 py-4 text-center align-top">
-                            <span
-                              className="inline-flex items-center justify-center text-outline-strong"
-                              title="Not applicable to this module"
-                            >
-                              <span className="material-symbols-outlined text-[18px]">remove</span>
-                            </span>
-                          </td>
-                        );
-                      }
-                      return (
-                        <td key={a.key} className="px-3 py-4 text-center align-top">
-                          <label className="inline-flex cursor-pointer items-center justify-center">
-                            <input
-                              type="checkbox"
-                              className="h-5 w-5 cursor-pointer rounded accent-primary-container"
-                              checked={!!grants[cellKey(row.id, a.key)]}
-                              disabled={locked}
-                              onChange={() => toggle(row.id, a.key)}
-                              aria-label={`${a.label} — ${row.name}`}
-                            />
-                          </label>
-                        </td>
-                      );
-                    })}
-                  </tr>
+                      <div className="flex flex-col gap-1">
+                        <h3 className="text-ds-headline-md text-on-surface font-bold">{r.label}</h3>
+                        <div className={`flex items-center gap-space-xs text-ds-label-md ${card.countCls}`}>
+                          <span className={`w-2 h-2 rounded-full ${card.dot}`} />
+                          <span>{r.userCount.toLocaleString('vi-VN')} người dùng</span>
+                          {r.builtin && <span className="text-outline-strong">• builtin</span>}
+                        </div>
+                        <p className="text-ds-body-sm text-on-surface-variant mt-space-sm leading-relaxed">{card.desc}</p>
+                      </div>
+                    </div>
+                    <div className="pt-space-lg">
+                      <button
+                        type="button"
+                        onClick={() => setRoleId(r.role)}
+                        className={
+                          active
+                            ? 'w-full h-10 rounded-lg text-ds-label-lg text-on-primary bg-primary hover:bg-primary-container transition-colors flex items-center justify-center gap-space-xs shadow-sm'
+                            : 'w-full h-10 rounded-lg text-ds-label-lg text-on-surface bg-surface-container-low hover:bg-surface-container transition-colors flex items-center justify-center gap-space-xs'
+                        }
+                      >
+                        {active ? (
+                          <>
+                            <span className={`${ICON} text-[18px]`}>edit_note</span>
+                            Đang xem ma trận vai trò này
+                          </>
+                        ) : (
+                          <>
+                            Xem quyền hạn
+                            <span className={`${ICON} text-[16px]`}>arrow_forward</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
+            </div>
 
-        <p className="m-0 border-t border-[#e2e8f0] bg-surface-low px-6 py-2.5 text-body-sm text-ink-variant">
-          Mockup page — there is no role-permission write API yet, so changes here are local preview only.
-          <Link to="/admin/users" className="ml-1 text-primary hover:underline">Role directory</Link>
-        </p>
+            {/* Ma trận quyền hạn */}
+            <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col mb-24">
+              <div className="p-space-lg bg-surface-container-low/50 flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+                <div className="flex items-center gap-space-md flex-wrap">
+                  <div className="flex items-center gap-space-xs">
+                    <h2 className="text-ds-headline-md text-on-surface font-bold">Ma trận quyền hạn</h2>
+                    <span className="px-space-sm py-0.5 rounded-full bg-surface-container text-ds-label-sm text-primary font-bold">
+                      {grantedCount.granted} / {grantedCount.total} quyền được cấp
+                    </span>
+                  </div>
+                  <span className="text-outline-strong text-ds-label-sm hidden sm:inline">•</span>
+                  <span className="text-ds-body-sm text-on-surface-variant hidden sm:inline">
+                    Phạm vi tác động: {activeRole ? activeRole.label : '—'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-space-sm flex-wrap">
+                  <button type="button" onClick={() => setShowDesc((v) => !v)} className={`${adminButton('soft')} h-9`}>
+                    <span className={`${ICON} text-[16px]`}>{showDesc ? 'unfold_less' : 'unfold_more'}</span>
+                    {showDesc ? 'Thu gọn mô tả' : 'Hiện mô tả'}
+                  </button>
+                  <div className="relative">
+                    <select
+                      value={filter}
+                      onChange={(e) => setFilter(e.target.value as typeof filter)}
+                      className="h-9 pl-space-md pr-8 rounded-lg text-ds-label-md bg-surface-container-lowest text-on-surface shadow-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary-container cursor-pointer border-0"
+                    >
+                      <option value="all">Lọc module: Tất cả ({matrix.modules.length} modules)</option>
+                      <option value="granted">Chỉ hiển thị module có quyền</option>
+                      <option value="restricted">Module giới hạn cho Admin</option>
+                    </select>
+                    <span className={`${ICON} text-outline-strong absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-[16px]`}>
+                      expand_more
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-surface-container-low text-ds-label-md text-on-surface-variant uppercase tracking-wider">
+                      <th className="py-space-md px-space-lg w-2/5">Module & Nhóm tính năng</th>
+                      {ACTIONS.map((a) => (
+                        <th key={a.key} className="py-space-md px-space-md text-center w-[12%]">
+                          <span className="flex items-center justify-center gap-1">
+                            <span className={`${ICON} text-[16px] ${a.iconClass}`}>{a.icon}</span>
+                            {a.label}
+                          </span>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-surface-container text-ds-body-sm text-on-surface">
+                    {modules.length === 0 && (
+                      <tr>
+                        <td colSpan={ACTIONS.length + 1} className="py-space-2xl px-space-lg text-center text-on-surface-variant">
+                          Không có module nào khớp bộ lọc.
+                        </td>
+                      </tr>
+                    )}
+                    {modules.map((m) => {
+                      const meta = MODULE_ICON[m.key] ?? { icon: 'apps', cls: 'bg-surface-container text-primary' };
+                      const tag = m.adminOnly
+                        ? { label: 'Admin Only', cls: 'bg-error-container text-on-error-container' }
+                        : MODULE_TAG[m.key] ?? null;
+                      const locked = m.adminOnly && roleId !== 'ROLE_ADMIN';
+                      return (
+                        <tr key={m.key} className={`transition-colors ${locked ? 'bg-surface-container-low/20' : 'hover:bg-surface-container-low/40'}`}>
+                          <td className="py-space-md px-space-lg">
+                            <div className="flex items-start gap-space-md">
+                              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${locked ? 'bg-surface-container-high text-outline-strong' : meta.cls}`}>
+                                <span className={`${ICON} text-[20px]`}>{meta.icon}</span>
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-space-xs">
+                                  <span className={`text-ds-headline-sm font-semibold ${locked ? 'text-on-surface-variant' : 'text-on-surface'}`}>
+                                    {m.label}
+                                  </span>
+                                  {tag && (
+                                    <span className={`px-1.5 py-0.5 rounded text-ds-label-sm font-bold ${tag.cls}`}>{tag.label}</span>
+                                  )}
+                                </div>
+                                {showDesc && MODULE_DESC[m.key] && (
+                                  <p className={`text-ds-body-sm mt-0.5 ${locked ? 'text-outline-strong' : 'text-on-surface-variant'}`}>
+                                    {MODULE_DESC[m.key]}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          {ACTIONS.map((a) => {
+                            const act = actionOf(m, a.key);
+                            const kind = cellKindOf(m.adminOnly, roleId, act ? act.granted : null);
+                            if (kind === 'na') {
+                              return (
+                                <td key={a.key} className="py-space-md px-space-md text-center bg-surface-container-low/30">
+                                  <span className="inline-flex items-center justify-center text-outline-variant" title="Hành động không áp dụng cho module này">
+                                    <span className={`${ICON} text-[18px]`}>remove</span>
+                                  </span>
+                                </td>
+                              );
+                            }
+                            if (kind === 'lock') {
+                              return (
+                                <td key={a.key} className="py-space-md px-space-md text-center bg-surface-container-low/40">
+                                  <span className="inline-flex items-center justify-center gap-1 text-outline-strong text-ds-label-sm" title="Chỉ quản trị viên">
+                                    <span className={`${ICON} text-[16px]`}>lock</span>
+                                    <span className="hidden xl:inline">Chỉ Admin</span>
+                                  </span>
+                                </td>
+                              );
+                            }
+                            const on = !!act?.granted[roleId];
+                            return (
+                              <td key={a.key} className="py-space-md px-space-md text-center">
+                                <label className="inline-flex items-center justify-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={on}
+                                    disabled
+                                    readOnly
+                                    aria-label={`${a.label} — ${m.label} — ${activeRole ? activeRole.label : roleId}`}
+                                    className={`h-5 w-5 ${on ? 'accent-primary' : 'accent-outline-variant'}`}
+                                  />
+                                </label>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <p className="border-t border-surface-container bg-surface-container-low px-space-lg py-2.5 text-ds-body-sm text-on-surface-variant">
+                Ma trận sinh ra từ chú thích bảo mật trong mã nguồn backend
+                <code className="mx-1.5 px-1.5 py-0.5 rounded bg-surface-container-lowest text-primary font-mono text-[11px] font-bold">@PreAuthorize</code>
+                nên không có API ghi. Đổi vai trò tài khoản thực hiện ở{' '}
+                <Link to="/admin/users" className="text-primary hover:underline">Người dùng & Tài khoản</Link>.
+              </p>
+            </div>
+          </>
+        ) : null}
       </div>
 
-      {/* Sticky save bar */}
-      <div className="fixed bottom-0 left-72 right-0 z-30 border-t border-[#e2e8f0] bg-card/95 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.06)] backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
-          <div className="flex items-center gap-4">
-            <span className="relative flex h-3.5 w-3.5 items-center justify-center">
-              <span className={`h-3.5 w-3.5 rounded-full ${changedKeys.length ? 'bg-[#4fdbc8]' : 'bg-surface-highest'}`} />
-              {changedKeys.length > 0 && (
-                <span className="absolute h-3.5 w-3.5 animate-ping rounded-full bg-[#10b981]" />
-              )}
+      {/* Thanh trạng thái sticky */}
+      <div className="fixed bottom-0 left-72 right-0 z-30 bg-surface-container-lowest/95 backdrop-blur-md p-space-md shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-space-md">
+          <div className="flex items-center gap-space-md">
+            <span className="relative flex items-center justify-center">
+              <span className="w-3.5 h-3.5 rounded-full bg-secondary-fixed-dim" />
             </span>
             <div className="flex flex-col">
-              <div className="flex flex-wrap items-center gap-2 text-label-md text-ink">
+              <div className="flex items-center gap-space-xs text-ds-label-lg text-on-surface">
                 <span className="font-bold">
-                  {changedKeys.length > 0
-                    ? `${changedKeys.length} permission change(s) pending`
-                    : 'No unsaved changes'}
+                  {matrix ? `${grantedCount.granted} / ${grantedCount.total} quyền được cấp` : 'Chưa tải được ma trận'}
                 </span>
                 <span className="text-outline-strong">•</span>
-                <span className="font-normal text-ink-variant">
-                  Role: <span className="font-semibold text-primary">{activeRole.name}</span>
+                <span className="font-normal text-on-surface-variant">
+                  Vai trò: <span className="font-semibold text-primary">{activeRole ? activeRole.label : '—'}</span>
                 </span>
               </div>
-              <span className="text-body-sm text-outline-strong">{LAST_SAVED}</span>
+              <span className="text-ds-body-sm text-outline-strong">
+                Nguồn: GET /admin/permissions/matrix • Ma trận chỉ đọc, thay đổi quyền do kỹ sư backend cấu hình trong mã nguồn.
+              </span>
             </div>
           </div>
-          <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
-            <button type="button" className={buttonClass('ghost', 'bg-transparent')} onClick={resetDefaults}>
-              Restore defaults
+          <div className="flex items-center gap-space-sm w-full sm:w-auto justify-end">
+            <button type="button" onClick={() => void load()} className="px-space-md py-2 rounded-lg text-ds-label-md text-outline-strong hover:text-on-surface transition-colors">
+              Tải lại ma trận
             </button>
-            <button type="button" className={buttonClass('secondary')} disabled={!changedKeys.length}>
-              Discard changes
-            </button>
-            <button type="button" className={buttonClass('primary', 'h-10 rounded-lg px-5')} disabled={!changedKeys.length}>
-              <span className="material-symbols-outlined text-[20px]">save</span>
-              Save permission configuration
+            <button
+              type="button"
+              disabled
+              title="Backend chưa có API ghi phân quyền"
+              className={`${adminButton('primary', 'disabled:opacity-50 disabled:cursor-not-allowed')} px-space-lg`}
+            >
+              <span className={`${ICON} text-[20px]`}>save</span>
+              Lưu cấu hình phân quyền
             </button>
           </div>
         </div>
       </div>
-
-      {changedKeys.length > 0 && (
-        <div className="sr-only" role="status">
-          <Badge tone="warning">{changedKeys.length} unsaved</Badge>
-        </div>
-      )}
     </div>
   );
 };
