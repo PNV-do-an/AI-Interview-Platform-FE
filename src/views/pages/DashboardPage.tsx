@@ -466,9 +466,11 @@ const ROLE_LINKS: Record<string, { to: string; label: string; description: strin
     { to: '/my-orders', label: 'Orders', description: 'Billing history of your packages', icon: 'receipt_long' },
   ],
   admin: [
-    { to: '/admin/users', label: 'User Directory', description: 'Search, lock or change roles', icon: 'group' },
-    { to: '/admin/packages', label: 'Service Packages', description: 'Package catalogue', icon: 'inventory_2' },
-    { to: '/admin/feedback', label: 'Reviews & Reports', description: 'Moderate user submissions', icon: 'star' },
+    // Admin chỉ còn 1 cửa vào: shell AdminLayout (mockup Stitch) tự lo phần điều hướng.
+    { to: '/admin/dashboard', label: 'Admin Console', description: 'Open the admin workspace', icon: 'dashboard' },
+  ],
+  staff: [
+    { to: '/admin/job-approvals', label: 'Admin Console', description: 'Open the admin workspace', icon: 'dashboard' },
   ],
 };
 
@@ -476,7 +478,11 @@ const WorkspaceDashboard: React.FC = () => {
   const { user } = useAuth();
   const role = user?.role ?? '';
   const links = [
-    ...(role === 'ROLE_ADMIN' || role === 'ROLE_STAFF' ? [...ROLE_LINKS.admin, ...ROLE_LINKS.employer] : ROLE_LINKS.employer),
+    ...(role === 'ROLE_ADMIN'
+      ? [...ROLE_LINKS.admin, ...ROLE_LINKS.employer]
+      : role === 'ROLE_STAFF'
+        ? [...ROLE_LINKS.staff, ...ROLE_LINKS.employer]
+        : ROLE_LINKS.employer),
   ].filter((item) => role !== 'ROLE_INTERVIEWER' || !item.to.startsWith('/admin'));
 
   return (

@@ -35,19 +35,13 @@ const WORKSPACES: { title: string; items: NavItem[] }[] = [
     ],
   },
   {
-    title: 'Admin Workspace',
+    title: 'Admin',
     items: [
-      // Thứ tự + icon theo mockup screen 16; role gắn sidebar phải khớp guard trong App.tsx
-      // để không dẫn tới 403. "Danh mục & Ngành nghề" và "Nhật ký kiểm toán" để trống vì
-      // chưa có trang/endpoint (audit hiển thị ngay trong User Directory).
-      { to: '/admin/dashboard', label: 'Overview', icon: 'dashboard', roles: ['ROLE_ADMIN'] },
-      { to: '/admin/users', label: 'User Directory', icon: 'group', roles: ['ROLE_ADMIN'] },
-      { to: '/admin/job-approvals', label: 'JD Moderation', icon: 'fact_check', roles: ['ROLE_ADMIN', 'ROLE_STAFF'] },
-      { to: '/admin/roles', label: 'Roles & Permissions', icon: 'verified_user', roles: ['ROLE_ADMIN'] },
-      { to: '/admin/settings', label: 'System Settings', icon: 'tune', roles: ['ROLE_ADMIN'] },
-      { to: '/admin/account', label: 'Account Settings', icon: 'manage_accounts', roles: ['ROLE_ADMIN'] },
-      { to: '/admin/packages', label: 'Service Packages', icon: 'inventory_2', roles: ['ROLE_ADMIN', 'ROLE_STAFF'] },
-      { to: '/admin/feedback', label: 'Reviews & Reports', icon: 'star', roles: ['ROLE_ADMIN', 'ROLE_STAFF'] },
+      // Giao diện admin cũ đã xoá: mọi màn /admin/* sống trong shell AdminLayout
+      // (tiếng Việt, theo mockup Stitch). Shell này chỉ còn 1 cửa vào, destinations
+      // khớp guard role trong App.tsx để không dẫn tới 403.
+      { to: '/admin/dashboard', label: 'Admin Console', icon: 'dashboard', roles: ['ROLE_ADMIN'] },
+      { to: '/admin/job-approvals', label: 'Admin Console', icon: 'dashboard', roles: ['ROLE_STAFF'] },
     ],
   },
 ];
