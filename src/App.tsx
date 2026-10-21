@@ -3,10 +3,13 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './views/components/ProtectedRoute';
 import AppLayout from './views/layout/AppLayout';
+import AdminLayout from './views/layout/AdminLayout';
 import LoginPage from './views/pages/LoginPage';
 import RegisterPage from './views/pages/RegisterPage';
 import DashboardPage from './views/pages/DashboardPage';
 import AdminUserManagementPage from './views/pages/AdminUserManagementPage';
+import AdminAuditLogPage from './views/pages/AdminAuditLogPage';
+import AdminCategoryPage from './views/pages/AdminCategoryPage';
 import UnauthorizedPage from './views/pages/UnauthorizedPage';
 import ForgotPasswordPage from './views/pages/ForgotPasswordPage';
 import ResetPasswordPage from './views/pages/ResetPasswordPage';
@@ -108,30 +111,35 @@ const App: React.FC = () => {
                 <Route path="/candidates/:id/evaluation" element={<CandidateEvaluationPage />} />
               </Route>
               <Route element={<ProtectedRoute allowedRoles={['ROLE_ADMIN', 'ROLE_STAFF']} />}>
-                <Route path="/admin/job-approvals" element={<JobApprovalPage />} />
-                {/* 2 màn screen 18.1/18.2: STATIC (chưa có endpoint kiểm duyệt JD) */}
-                <Route path="/admin/job-approvals/history" element={<JobModerationHistoryPage />} />
-                <Route path="/admin/job-approvals/:id" element={<JobReviewDetailPage />} />
+                {/* Rubric Studio + Hiring Analytics không có trong bộ mockup admin 2026-10-21:
+                    giữ route, mở bằng link trong màn Cấu hình AI / Tổng quan chứ không có item sidebar. */}
                 <Route path="/admin/rubrics" element={<RubricStudioPage />} />
                 <Route path="/admin/analytics" element={<HiringAnalyticsPage />} />
               </Route>
+            </Route>
+          </Route>
 
-              {/* Admin-only routes */}
-              <Route element={<ProtectedRoute allowedRoles={['ROLE_ADMIN']} />}>
-                <Route path="/admin/users" element={<AdminUserManagementPage />} />
-                <Route path="/admin/users/:id" element={<AdminUserDetailPage />} />
-                {/* 3 màn screen 22 còn lại + dashboard screen 16: STATIC (chưa có API) nhưng vẫn gắn
-                    sidebar theo đúng navigation của mockup; số liệu hiển thị trên đó là demo. */}
-                <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-                <Route path="/admin/roles" element={<AdminRolePermissionPage />} />
-                <Route path="/admin/settings" element={<AdminSystemSettingsPage />} />
-                <Route path="/admin/account" element={<AdminAccountSettingsPage />} />
-              </Route>
-
-              {/* Admin & staff routes */}
+          {/* Admin Console: shell riêng theo mockup Stitch (aside w-72 + header) cho mọi route /admin/*.
+              Guard role khớp từng route với sidebar trong AdminLayout để không dẫn tới 403. */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<AdminLayout />}>
               <Route element={<ProtectedRoute allowedRoles={['ROLE_ADMIN', 'ROLE_STAFF']} />}>
+                <Route path="/admin/job-approvals" element={<JobApprovalPage />} />
+                <Route path="/admin/job-approvals/history" element={<JobModerationHistoryPage />} />
+                <Route path="/admin/job-approvals/:id" element={<JobReviewDetailPage />} />
                 <Route path="/admin/packages" element={<PackageManagementPage />} />
                 <Route path="/admin/feedback" element={<AdminFeedbackPage />} />
+              </Route>
+
+              <Route element={<ProtectedRoute allowedRoles={['ROLE_ADMIN']} />}>
+                <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+                <Route path="/admin/users" element={<AdminUserManagementPage />} />
+                <Route path="/admin/users/:id" element={<AdminUserDetailPage />} />
+                <Route path="/admin/roles" element={<AdminRolePermissionPage />} />
+                <Route path="/admin/categories" element={<AdminCategoryPage />} />
+                <Route path="/admin/audit" element={<AdminAuditLogPage />} />
+                <Route path="/admin/settings" element={<AdminSystemSettingsPage />} />
+                <Route path="/admin/account" element={<AdminAccountSettingsPage />} />
               </Route>
             </Route>
           </Route>

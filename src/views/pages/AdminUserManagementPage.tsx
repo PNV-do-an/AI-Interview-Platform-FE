@@ -1,559 +1,734 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import AdminService from '../../services/admin.service';
 import { useAdminUserController } from '../../controllers/useAdminUserController';
-import {
-  ACCOUNT_STATUS_LABELS, AuditLog, AUDIT_ACTIONS, PagedResponse, Role, ROLE_LABELS,
-  UserDetail, UserStats, UserSummary,
-} from '../../models/User.model';
-import ConfirmDialog from '../components/ConfirmDialog';
+import { Role, UserDetail, UserSummary } from '../../models/User.model';
+import { DashboardResponse } from '../../models/AdminConsole.model';
 import { parseServerTimestamp } from '../../utils/date';
+import ConfirmDialog from '../components/ConfirmDialog';
 import EditProfileModal from '../components/EditProfileModal';
 import InviteMemberModal from '../components/InviteMemberModal';
 import {
-  Badge, ErrorBanner, LoadingState, statusTone, buttonClass, tableClass, tdClass,
-} from '../components/ui';
-
-const AUDIT_ACTION_LABELS: Record<string, string> = {
-  VIEW_USER: 'Viewed account', LOCK_USER: 'Locked account', UNLOCK_USER: 'Unlocked account',
-  ENABLE_USER: 'Enabled account', DISABLE_USER: 'Disabled account', DELETE_USER: 'Deleted account',
-  RESTORE_USER: 'Restored account', RESET_PASSWORD: 'Sent password reset', CHANGE_ROLE: 'Changed role',
-  INVITE_USER: 'Invited member', RESEND_INVITATION: 'Resent invitation', REVOKE_INVITATION: 'Revoked invitation',
-  UPDATE_PROFILE: 'Updated profile', EXPORT_USERS: 'Exported CSV',
-};
-
-const ROLE_ICONS: Record<Role, string> = {
-  ROLE_USER: 'school', ROLE_STAFF: 'business', ROLE_ADMIN: 'admin_panel_settings', ROLE_INTERVIEWER: 'support_agent',
-};
-
-const MONO = 'font-mono text-label-sm';
-
-// Bản local của `thClass` để cột checkbox/actions đổi padding mà không xung đột `px-3` gốc.
-const thBase =
-  'h-8 border-y border-[#e2e8f0] bg-surface-low text-label-sm font-semibold uppercase tracking-[0.04em] text-ink-variant';
-
-// Vai tro cua `primary-fixed` / `secondary-fixed` trong mockup -> token `info` (#e2dfff).
-const ROLE_PILL: Record<Role, string> = {
-  ROLE_USER: 'bg-primary/10 text-primary',
-  ROLE_STAFF: 'bg-info text-secondary',
-  ROLE_INTERVIEWER: 'bg-surface-mid text-ink',
-  ROLE_ADMIN: 'bg-info text-primary font-semibold',
-};
-
-const AVATAR_TONE: Record<Role, string> = {
-  ROLE_USER: 'bg-info text-info-text',
-  ROLE_STAFF: 'bg-info text-info-text',
-  ROLE_INTERVIEWER: 'bg-surface-mid text-ink-variant',
-  ROLE_ADMIN: 'bg-primary-container text-on-primary',
-};
-
-// Dot mau theo tone that cua status (khong phai online-realtime; BE khong co last_seen).
-// Cac hex duoi day la mau mockup khong co token: #10b981 emerald-500, #f59e0b amber-500,
-// #f43f5e rose-500, #94a3b8 slate-400. Tuong tu: #fffbeb/#92400e va #fef3c7/#78350f (amber bg/text),
-// #047857 emerald-700, #fff1f2 rose-50 (dong tam giu), #e2e8f0 duong vi hairline.
-const DOT_CLASS: Record<string, string> = {
-  success: 'bg-[#10b981]',
-  warning: 'bg-[#f59e0b]',
-  danger: 'bg-[#f43f5e]',
-  info: 'bg-[#10b981]',
-  neutral: 'bg-[#94a3b8]',
-};
-
-const initialsOf = (name: string): string | null => {
-  const parts = name.trim().split(/\s+/);
-  if (!parts[0]) return null;
-  return parts.slice(0, 2).map(p => p[0].toUpperCase()).join('');
-};
-
-// Ding dang mockup: "Jan 10, 2025". BE tra `LocalDateTime` khong kem offset nen phai qua
-// parseServerTimestamp (coi la UTC) quy ve gio may tinh, neu khong lech 7h o VN.
-const fmtDate = (iso: string) =>
-  (parseServerTimestamp(iso) ?? new Date(NaN)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-const fmtDateTime = (iso: string) =>
-  (parseServerTimestamp(iso) ?? new Date(NaN)).toLocaleString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit',
-  });
+  AdminPageHeader, EmptyBlock, ErrorBlock, ICON, LoadingBlock, ModalBackdrop, ROLE_CHIP,
+  ROLE_DESCRIPTION, ROLE_ICON, ROLE_OPTIONS, ROLE_VN, StatusChip, fmtServer, initialsOf,
+  modalCancelClass as MODAL_CANCEL, modalDangerClass as MODAL_DANGER, modalPrimaryClass as MODAL_PRIMARY,
+} from '../components/adminKit';
 
 /**
- * Cột "Last Active" theo mockup: "10 mins ago" / "3 days ago"; chưa từng login -> "Never".
- * `recent` = mới hơn 1 giờ -> hàng màu xanh kèm chấm dot (đúng hình thái mockup), nguồn là
- * `lastLoginAt` thật, không phải cờ realtime.
+ * Màn "Quản lý người dùng" (screen_17 trong bộ Stitch 2026-10-21) — DATA page.
+ * Số thật: GET /admin/users + /users/stats (cùng bộ lọc với danh sách) + /admin/dashboard?days=30
+ * cho phân bổ vai trò; mọi thao tác ghi đi qua PATCH/POST/DELETE /admin/users/*.
+ *
+ * Hai điểm lệch thiết kế bắt buộc (chép vào spec/INDEX.md):
+ *  - Bỏ select "Ngày tạo: 30 ngày qua" vì GET /admin/users không nhận tham số mốc thời gian.
+ *  - Icon sắp xếp chỉ sắp các dòng đang tải; BE không nhận tham số sort nên không sắp toàn bộ.
  */
-const relativeOf = (iso: string | null): { text: string; recent: boolean } => {
-  if (!iso) return { text: 'Never', recent: false };
-  const stamp = parseServerTimestamp(iso);
-  if (!stamp) return { text: 'Never', recent: false };
-  const diffMs = Date.now() - stamp.getTime();
-  const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return { text: 'Just now', recent: true };
-  if (mins < 60) return { text: `${mins} min${mins > 1 ? 's' : ''} ago`, recent: true };
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return { text: `${hours} hour${hours > 1 ? 's' : ''} ago`, recent: false };
-  const days = Math.floor(hours / 24);
-  if (days < 30) return { text: `${days} day${days > 1 ? 's' : ''} ago`, recent: false };
-  return { text: fmtDate(iso), recent: false };
-};
 
-type TabType = 'users' | 'pending' | 'deleted' | 'permissions' | 'auditLogs';
+const PAGE_SIZES = [10, 25, 50];
 
-// inputClass ép `w-full` + `bg-card` nên ô tìm kiếm và select của ribbon lọc dùng bản riêng.
-const searchInputClass =
-  'h-9 w-full box-border rounded-md bg-surface-low pl-10 pr-4 text-body-md text-ink shadow-inner ' +
-  'transition-colors placeholder:text-outline-strong focus:bg-card focus:outline-none focus:ring-1 focus:ring-primary';
+const STATUS_OPTIONS = [
+  { value: 'ACTIVE', label: 'Hoạt động' },
+  { value: 'LOCKED', label: 'Bị khóa' },
+  { value: 'PENDING', label: 'Chờ xác thực' },
+  { value: 'INACTIVE', label: 'Vô hiệu hóa' },
+  // DELETED bị BE chặn ở /users (400) -> chọn giá trị này là chuyển sang /users/deleted.
+  { value: 'DELETED', label: 'Đã xóa' },
+];
 
-const filterSelectClass =
-  'h-9 cursor-pointer rounded-md bg-surface-low px-2.5 text-label-md text-ink ' +
-  'transition-colors focus:outline-none focus:ring-1 focus:ring-primary';
+const TR_CLASS = 'py-space-md px-space-md text-left text-ds-label-md font-semibold text-on-surface-variant whitespace-nowrap';
+const TD_CLASS = 'py-space-md px-space-md text-ds-body-md text-on-surface align-middle';
+const FILTER_SELECT =
+  'h-10 pl-3 pr-9 bg-surface-container-low border border-surface-container-high text-on-surface ' +
+  'text-ds-body-sm rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-primary-container transition-all cursor-pointer';
+interface MenuItem {
+  label: string;
+  icon: string;
+  onClick: () => void;
+  danger?: boolean;
+}
 
-// Nút hành động dạng chữ trong bảng (mockup: Edit / Lock / Resend / Reactivate).
-const rowBtnClass = (tone: 'neutral' | 'primary' | 'success' | 'warning' | 'danger' = 'neutral') =>
-  'inline-flex h-7 items-center gap-1 rounded px-2 text-label-sm font-medium transition-colors ' +
-  'disabled:cursor-not-allowed disabled:opacity-60 ' +
-  ({
-    neutral: 'bg-surface-mid text-ink hover:bg-surface-high',
-    primary: 'bg-primary/10 text-primary hover:bg-primary/20',
-    success: 'bg-success-bg text-success-text hover:brightness-95',
-    warning: 'bg-[#fef3c7] text-[#78350f] hover:brightness-95',
-    danger: 'bg-danger-bg text-danger-text hover:brightness-95',
-  }[tone]);
+type SortKey = 'id' | 'name' | 'createdAt';
 
 const AdminUserManagementPage: React.FC = () => {
   const ctrl = useAdminUserController();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<TabType>('users');
-  const [searchInput, setSearchInput] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [params] = useSearchParams();
+  const urlSearch = params.get('search') ?? '';
+
+  const [searchInput, setSearchInput] = useState(urlSearch);
   const [roleFilter, setRoleFilter] = useState('');
-  const [deletedSearchInput, setDeletedSearchInput] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'createdAt', dir: 'desc' });
+  const [dash, setDash] = useState<DashboardResponse | null>(null);
+
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editUser, setEditUser] = useState<UserDetail | null>(null);
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
-  const [confirmDialog, setConfirmDialog] = useState<{
-    open: boolean; title: string; message: string;
-    confirmLabel: string; danger: boolean;
-    onConfirm: () => void;
-  }>({ open: false, title: '', message: '', confirmLabel: 'Confirm', danger: false, onConfirm: () => {} });
+  const [lockIds, setLockIds] = useState<number[] | null>(null);
+  const [lockReason, setLockReason] = useState('');
+  const [roleIds, setRoleIds] = useState<number[] | null>(null);
+  const [pendingRole, setPendingRole] = useState<Role>('ROLE_USER');
+  const [menu, setMenu] = useState<{ top: number; right: number; items: MenuItem[] } | null>(null);
+  const [confirm, setConfirm] = useState<{
+    open: boolean; title: string; message: string; confirmLabel: string; danger: boolean; onConfirm: () => void;
+  }>({ open: false, title: '', message: '', confirmLabel: 'Xác nhận', danger: false, onConfirm: () => {} });
 
-  useEffect(() => { ctrl.fetchUsers(0); }, []); // eslint-disable-line
+  const isDeletedView = statusFilter === 'DELETED';
 
-  const handleSearch = useCallback(() => {
-    ctrl.applyFilters({ search: searchInput, status: statusFilter, role: roleFilter });
-  }, [searchInput, statusFilter, roleFilter, ctrl]);
+  // Ô tìm kiếm trên header sidebar điều hướng bằng ?search= -> đổi tham số là phải nạp lại danh sách.
+  useEffect(() => {
+    setSearchInput(urlSearch);
+    void ctrl.fetchUsers(0, { search: urlSearch.trim(), status: '', role: '' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlSearch]);
 
-  const handleFilterChange = useCallback((
-    key: 'status' | 'role', value: string,
-  ) => {
-    const newFilters = {
-      search: searchInput,
-      status: key === 'status' ? value : statusFilter,
-      role:   key === 'role'   ? value : roleFilter,
-    };
-    if (key === 'status') {
-      setStatusFilter(value);
-      // Bo tay status khong con la "pending" thi quay ve tab All Members de khong lech nhan.
-      if (tab === 'pending' && value !== 'PENDING') setTab('users');
-      if (value === 'PENDING') setTab('pending');
-    } else {
-      setRoleFilter(value);
-    }
-    ctrl.applyFilters(newFilters);
-  }, [searchInput, statusFilter, roleFilter, tab, ctrl]);
+  // byRole cho thẻ "Ứng viên" / "Nhà tuyển dụng": endpoint dashboard là ADMIN-only (route này cũng vậy).
+  useEffect(() => {
+    let alive = true;
+    AdminService.getDashboard(30)
+      .then((res) => { if (alive) setDash(res.data.data ?? null); })
+      .catch(() => { if (alive) setDash(null); });
+    return () => { alive = false; };
+  }, []);
 
-  const askConfirm = (
-    title: string, message: string, onConfirm: () => void,
-    opts: { confirmLabel: string; danger: boolean },
-  ) => setConfirmDialog({ open: true, title, message, ...opts, onConfirm });
-
-  const closeConfirm = () =>
-    setConfirmDialog(d => ({ ...d, open: false }));
-
-  const handleDelete = (id: number, email: string) => {
-    askConfirm(
-      'Delete account',
-      `Are you sure you want to delete the account "${email}"? The account can be restored later from the Deleted tab.`,
-      async () => { closeConfirm(); setSelectedIds([]); await ctrl.deleteUser(id); },
-      { confirmLabel: 'Delete', danger: true },
-    );
-  };
-
-  const handleRestore = (id: number, email: string) => {
-    askConfirm(
-      'Restore account',
-      `Restore the deleted account "${email}"? Role and enabled state return exactly as before deletion.`,
-      async () => { closeConfirm(); await ctrl.restoreUser(id); },
-      { confirmLabel: 'Restore', danger: false },
-    );
-  };
-
-  const runBulk = (action: 'lock' | 'unlock' | 'delete') => {
-    const labels = {
-      lock: ['Lock selected accounts', `Lock ${selectedIds.length} selected account(s)? Each of them loses sign-in access.`, 'Lock'],
-      unlock: ['Unlock selected accounts', `Unlock ${selectedIds.length} selected account(s)?`, 'Unlock'],
-      delete: ['Delete selected accounts', `Soft-delete ${selectedIds.length} selected account(s)? They return from the Deleted tab.`, 'Delete'],
-    }[action];
-    askConfirm(
-      labels[0], labels[1],
-      async () => { closeConfirm(); await ctrl.runBulkAction(action, selectedIds); setSelectedIds([]); },
-      { confirmLabel: labels[2], danger: action === 'delete' || action === 'lock' },
-    );
-  };
-
-  const switchTab = (t: TabType) => {
-    setTab(t);
+  const load = useCallback((page: number, over: { search?: string; status?: string; role?: string; size?: number } = {}) => {
+    const search = (over.search ?? searchInput).trim();
+    const status = over.status ?? statusFilter;
+    const role = over.role ?? roleFilter;
     setSelectedIds([]);
-    if (t === 'auditLogs' && !ctrl.auditLogs) ctrl.fetchAuditLogs(0);
-    if (t === 'deleted' && !ctrl.deletedUsers) ctrl.fetchDeletedUsers(0);
-    // Tab "Pending Invites" = danh sách thật với bộ lọc status=PENDING (BE UserStatusFilter.PENDING),
-    // nen dong bo chon vao select trang thai de user thay dung phan dang xem.
-    if (t === 'pending') {
-      setStatusFilter('PENDING');
-      ctrl.applyFilters({ search: searchInput, status: 'PENDING', role: roleFilter });
+    if (status === 'DELETED') {
+      void ctrl.fetchDeletedUsers(page, search);
+      return;
     }
-    // nguoc lai quay ve All Members phai xoa bo loc PENDING va goi lai list, neu khong
-    // bang van giu 7 dong pending trong khi tab bao "All Members".
-    if (t === 'users') {
-      setStatusFilter('');
-      ctrl.applyFilters({ search: searchInput, status: '', role: roleFilter });
+    void ctrl.fetchUsers(page, { search, status, role }, over.size ?? ctrl.pageSize);
+  }, [ctrl, searchInput, statusFilter, roleFilter]);
+
+  const askConfirm = (title: string, message: string, confirmLabel: string, danger: boolean, onConfirm: () => void) =>
+    setConfirm({ open: true, title, message, confirmLabel, danger, onConfirm });
+
+  const closeConfirm = () => setConfirm((d) => ({ ...d, open: false }));
+
+  const submitLock = async () => {
+    if (!lockIds || !lockReason.trim()) return;
+    const ids = lockIds;
+    const reason = lockReason.trim();
+    setLockIds(null);
+    setLockReason('');
+    setSelectedIds([]);
+    if (ids.length === 1) {
+      // BE vẫn ghi audit cả attempt thất bại -> luôn refresh để bảng đúng trạng thái thật.
+      try {
+        await AdminService.lockUserWithReason(ids[0], { reason });
+      } finally {
+        await ctrl.fetchUsers(ctrl.currentPage);
+      }
+      return;
     }
+    await ctrl.runBulkAction('lock', ids, { reason });
   };
 
-  const handleViewHistory = (id: number) => {
-    setTab('auditLogs');
-    ctrl.applyAuditFilters({ action: '', from: '', to: '', targetUserId: id });
+  const submitRole = async () => {
+    if (!roleIds) return;
+    const ids = roleIds;
+    setRoleIds(null);
+    setSelectedIds([]);
+    if (ids.length === 1) {
+      await ctrl.changeRole(ids[0], pendingRole);
+      return;
+    }
+    await ctrl.runBulkAction('role', ids, { role: pendingRole });
   };
 
-  const handleExport = () => { void ctrl.exportUsersCsv(); };
+  const baseRows: UserSummary[] = isDeletedView
+    ? (ctrl.deletedUsers?.content ?? [])
+    : (ctrl.users?.content ?? []);
 
-  const openEdit = (id: number) => {
-    void ctrl.loadProfileForEdit(id).then(p => p && setEditUser(p));
-  };
+  const rows = useMemo(() => {
+    const dir = sort.dir === 'asc' ? 1 : -1;
+    return [...baseRows].sort((a, b) => {
+      if (sort.key === 'id') return (a.id - b.id) * dir;
+      if (sort.key === 'name') return a.fullName.localeCompare(b.fullName, 'vi') * dir;
+      return ((parseServerTimestamp(a.createdAt)?.getTime() ?? 0) - (parseServerTimestamp(b.createdAt)?.getTime() ?? 0)) * dir;
+    });
+  }, [baseRows, sort]);
 
-  const rows = ctrl.users?.content ?? [];
-  const pageIds = rows.map(u => u.id);
-  const allChecked = pageIds.length > 0 && pageIds.every(id => selectedIds.includes(id));
+  const paged = isDeletedView ? ctrl.deletedUsers : ctrl.users;
+  const pageIds = baseRows.map((u) => u.id);
+  const allChecked = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
 
   const toggleRow = (id: number) =>
-    setSelectedIds(cur => cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id]);
+    setSelectedIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
+
+  const clearFilters = () => {
+    setSearchInput('');
+    setRoleFilter('');
+    setStatusFilter('');
+    setSelectedIds([]);
+    void ctrl.fetchUsers(0, { search: '', status: '', role: '' });
+  };
+
+  const openEdit = (id: number) => {
+    void ctrl.loadProfileForEdit(id).then((p) => p && setEditUser(p));
+  };
+
+  const total = ctrl.stats?.total ?? 0;
+  const pct = (n: number) => (total > 0 ? `${((n / total) * 100).toFixed(1)}%` : '—');
+  const partners = dash ? dash.users.byRole.ROLE_INTERVIEWER + dash.users.byRole.ROLE_STAFF : 0;
+
+  const rowMenu = (u: UserSummary): MenuItem[] => {
+    const base: MenuItem[] = [
+      { label: 'Xem chi tiết', icon: 'visibility', onClick: () => navigate(`/admin/users/${u.id}`) },
+      { label: 'Cập nhật hồ sơ', icon: 'edit_note', onClick: () => openEdit(u.id) },
+    ];
+    if (u.pendingVerification) {
+      return [
+        ...base,
+        { label: 'Gửi lại lời mời', icon: 'forward_to_inbox', onClick: () => ctrl.resendInvitation(u.id) },
+        {
+          label: 'Thu hồi lời mời',
+          icon: 'inbox',
+          onClick: () => askConfirm(
+            'Thu hồi lời mời',
+            `Thu hồi link mời đang chờ xác thực của "${u.email}"? Tài khoản giữ nguyên vai trò và có thể được mời lại.`,
+            'Thu hồi link', false,
+            () => { closeConfirm(); void ctrl.revokeInvitation(u.id); },
+          ),
+        },
+      ];
+    }
+    return [
+      ...base,
+      { label: 'Đổi vai trò', icon: 'manage_accounts', onClick: () => setRoleIds([u.id]) },
+      u.status === 'LOCKED'
+        ? { label: 'Mở khóa tài khoản', icon: 'lock_open', onClick: () => ctrl.unlockUser(u.id) }
+        : { label: 'Khóa tài khoản', icon: 'lock', onClick: () => { setLockReason(''); setLockIds([u.id]); }, danger: true },
+      { label: 'Gửi mail đặt lại mật khẩu', icon: 'key', onClick: () => ctrl.resetPassword(u.id) },
+      u.status === 'INACTIVE'
+        ? { label: 'Kích hoạt tài khoản', icon: 'how_to_reg', onClick: () => ctrl.setUserStatus(u.id, true) }
+        : { label: 'Vô hiệu hóa tài khoản', icon: 'person_off', onClick: () => ctrl.setUserStatus(u.id, false) },
+      {
+        label: 'Xóa tài khoản',
+        icon: 'delete',
+        danger: true,
+        onClick: () => askConfirm(
+          'Xóa tài khoản',
+          `Xóa mềm tài khoản "${u.email}"? Tài khoản chuyển vào danh sách "Đã xóa" và khôi phục được.`,
+          'Xóa', true,
+          () => { closeConfirm(); setSelectedIds([]); void ctrl.deleteUser(u.id); },
+        ),
+      },
+    ];
+  };
+
+  const showMenu = (e: React.MouseEvent<HTMLButtonElement>, items: MenuItem[]) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setMenu({ top: r.bottom + 4, right: window.innerWidth - r.right, items });
+  };
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Breadcrumb + hành động cấp trang (mockup: Administration / User Directory) */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-body-sm">
-          <span className="text-ink-variant">Administration</span>
-          <span className="text-[11px] text-outline-strong">/</span>
-          <span className="font-semibold text-ink">User Directory</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button type="button" className={buttonClass('secondary')} onClick={handleExport} disabled={ctrl.exporting}>
-            <span className="material-symbols-outlined text-[18px]">download</span>
-            {ctrl.exporting ? 'Exporting...' : 'Export CSV'}
-          </button>
-          <button type="button" className={buttonClass('primary')} onClick={() => setInviteOpen(true)}>
-            <span className="material-symbols-outlined text-[18px]">mail</span>
-            Invite Members
-          </button>
-        </div>
-      </div>
-
-      <div className="-mt-2 flex flex-col gap-1">
-        <h1 className="m-0 text-display-mobile text-ink sm:text-display">User Management &amp; Access Control</h1>
-        <p className="m-0 text-body-md text-ink-variant">
-          Manage member accounts, permissions, roles, and security policies across your organization.
-        </p>
-      </div>
-
-      {/* KPI cards - GET /users/stats đếm thật trong DB, cùng bộ lọc search/role với danh sách. */}
-      {ctrl.stats && <KpiRow stats={ctrl.stats} />}
-
-      {/* Tabs */}
-      <div className="-mt-2 flex flex-wrap items-center justify-between gap-2 border-b border-[#e2e8f0]">
-        <div className="flex flex-wrap items-center gap-2">
-          {([
-            { key: 'users' as TabType, label: 'All Members', icon: 'group', count: ctrl.stats?.total },
-            { key: 'pending' as TabType, label: 'Pending Invites', icon: 'pending_actions', count: ctrl.stats?.pendingVerification },
-            { key: 'permissions' as TabType, label: 'Role Permissions', icon: 'admin_panel_settings', count: undefined },
-            { key: 'deleted' as TabType, label: 'Deleted', icon: 'person_off', count: ctrl.deletedUsers?.totalElements },
-            { key: 'auditLogs' as TabType, label: 'Audit Log', icon: 'security', count: ctrl.auditLogs?.totalElements },
-          ]).map(t => (
+    <div className="px-space-lg py-space-lg bg-background min-h-screen">
+      <AdminPageHeader
+        crumbs={[{ label: 'Trang chủ', to: '/admin/dashboard' }, { label: 'Quản lý người dùng' }]}
+        title="Quản lý người dùng"
+        subtitle="Xem, tìm kiếm, phân quyền và giám sát tài khoản hệ sinh thái phỏng vấn AI"
+        actions={(
+          <>
             <button
-              key={t.key}
               type="button"
-              className={`-mb-px flex h-10 items-center gap-2 border-b-2 px-3 text-label-md transition-colors ${
-                tab === t.key
-                  ? 'border-primary font-semibold text-primary'
-                  : 'border-transparent text-ink-variant hover:text-ink'
-              }`}
-              onClick={() => switchTab(t.key)}
+              onClick={() => { void ctrl.exportUsersCsv(); }}
+              disabled={ctrl.exporting}
+              className="h-10 px-space-md bg-surface-container-lowest border border-outline-variant/40 text-on-surface text-ds-label-lg font-semibold rounded-xl shadow-sm hover:bg-surface-container-low transition-all flex items-center gap-space-xs cursor-pointer disabled:opacity-60"
             >
-              <span className="material-symbols-outlined text-[18px]">{t.icon}</span>
-              {t.label}
-              {t.count != null && (
-                <span className={`rounded-full px-1.5 py-0.5 font-mono text-[11px] font-semibold tabular-nums ${
-                  tab === t.key ? 'bg-primary/10 text-primary' : 'bg-surface-mid text-ink-variant'
-                }`}
-                >
-                  {t.count.toLocaleString('en-US')}
-                </span>
-              )}
+              <span className={`${ICON} text-[18px] text-on-surface-variant`}>download</span>
+              <span>{ctrl.exporting ? 'Đang xuất...' : 'Xuất file CSV / Excel'}</span>
             </button>
-          ))}
-        </div>
+            <button
+              type="button"
+              onClick={() => setInviteOpen(true)}
+              className="h-10 px-space-md bg-primary-container text-on-primary text-ds-label-lg font-semibold rounded-xl shadow-sm hover:shadow-md hover:bg-primary transition-all flex items-center gap-space-xs border-0 cursor-pointer"
+            >
+              <span className={`${ICON} text-[18px]`}>add</span>
+              <span>Thêm người dùng mới</span>
+            </button>
+          </>
+        )}
+      />
+
+      {/* 4 thẻ chỉ số: total/locked từ /users/stats, phân bổ vai trò từ /dashboard?days=30. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-lg mb-space-xl">
+        <MetricCard
+          label="Tổng người dùng"
+          value={ctrl.stats ? total.toLocaleString('vi-VN') : '—'}
+          icon="group"
+          iconClass="bg-primary-fixed text-primary"
+          pill={dash ? `+${dash.users.newInPeriod}` : undefined}
+          pillClass="bg-secondary-container text-on-secondary-container"
+          pillIcon="trending_up"
+          note="tài khoản mới 30 ngày qua"
+        />
+        <MetricCard
+          label="Ứng viên"
+          value={dash ? dash.users.byRole.ROLE_USER.toLocaleString('vi-VN') : '—'}
+          icon="school"
+          iconClass="bg-tertiary-fixed text-tertiary"
+          pill={dash ? pct(dash.users.byRole.ROLE_USER) : undefined}
+          pillClass="bg-tertiary-fixed text-on-tertiary-fixed-variant"
+          note="trên tổng tài khoản"
+        />
+        <MetricCard
+          label="Nhà tuyển dụng / Cố vấn"
+          value={dash ? partners.toLocaleString('vi-VN') : '—'}
+          icon="work"
+          iconClass="bg-secondary-fixed text-secondary-teal"
+          pill={dash ? pct(partners) : undefined}
+          pillClass="bg-secondary-container text-on-secondary-container"
+          note="hoạt động đánh giá"
+        />
+        <MetricCard
+          label="Tài khoản bị khóa"
+          value={ctrl.stats ? ctrl.stats.locked.toLocaleString('vi-VN') : '—'}
+          valueClass="text-error"
+          icon="lock_person"
+          iconClass="bg-error-container text-error"
+          pill={ctrl.stats && ctrl.stats.locked > 0 ? 'Cần xử lý' : undefined}
+          pillClass="bg-error-container text-on-error-container"
+          note={ctrl.stats ? `${ctrl.stats.pendingVerification} chờ xác thực · ${ctrl.stats.deleted} đã xóa` : 'vi phạm tiêu chuẩn'}
+        />
       </div>
 
-      {/* Messages */}
-      <ErrorBanner message={ctrl.error} />
+      {ctrl.error && (
+        <div className="mb-space-md">
+          <ErrorBlock message={ctrl.error} onRetry={() => load(ctrl.currentPage)} />
+        </div>
+      )}
       {ctrl.successMsg && (
-        <div className="-mt-3 flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text" role="status">
-          <span className="material-symbols-outlined shrink-0 text-[18px]">check_circle</span>
+        <div className="mb-space-md flex items-center gap-2 rounded-xl bg-secondary-container px-4 py-3 text-ds-body-md text-on-secondary-container" role="status">
+          <span className={`${ICON} text-[20px]`}>check_circle</span>
           <span>{ctrl.successMsg}</span>
         </div>
       )}
 
-      {(tab === 'users' || tab === 'pending') && (
-        <>
-          {/* Filter ribbon */}
-          <div className="flex flex-col items-center justify-between gap-3 rounded-xl border border-[#e2e8f0] bg-card p-3 lg:flex-row">
-            <div className="relative flex w-full items-center lg:w-96">
-              <span className="material-symbols-outlined pointer-events-none absolute left-3 text-[18px] text-outline-strong">search</span>
-              <input
-                className={searchInputClass}
-                placeholder="Search by name, email, or user ID..."
-                value={searchInput}
-                onChange={e => setSearchInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSearch()}
-              />
-            </div>
-            <div className="flex w-full flex-wrap items-center justify-end gap-3 lg:w-auto">
-              <label className="flex items-center gap-2">
-                <span className="text-label-sm uppercase tracking-wider text-ink-variant">Role:</span>
-                <select className={filterSelectClass} value={roleFilter}
-                  onChange={e => handleFilterChange('role', e.target.value)}>
-                  <option value="">All Roles</option>
-                  {Object.entries(ROLE_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex items-center gap-2">
-                <span className="text-label-sm uppercase tracking-wider text-ink-variant">Status:</span>
-                <select className={filterSelectClass} value={statusFilter}
-                  onChange={e => handleFilterChange('status', e.target.value)}>
-                  <option value="">All Statuses</option>
-                  <option value="ACTIVE">Active</option>
-                  <option value="INACTIVE">Inactive</option>
-                  <option value="LOCKED">Locked</option>
-                  <option value="PENDING">Pending Invite</option>
-                  {/* DELETED bị BE chặn ở list này (400) - xem tab "Deleted" */}
-                </select>
-              </label>
-            </div>
+      {/* #bulk-action-bar: chi hien khi co dong duoc chon */}
+      {selectedIds.length > 0 && (
+        <div className="mb-space-md flex flex-wrap items-center justify-between gap-space-md bg-surface-container-high px-space-lg py-3 rounded-xl shadow-sm transition-all duration-300">
+          <div className="flex items-center gap-space-md">
+            <span className="flex items-center gap-space-xs px-3 py-1.5 rounded-full bg-primary-container text-on-primary text-ds-label-md font-semibold shadow-sm">
+              <span className={`${ICON} text-[16px]`}>check_circle</span>
+              Đã chọn {selectedIds.length} tài khoản
+            </span>
+            <span className="hidden md:inline text-ds-body-sm text-on-surface-variant">
+              Áp dụng thao tác đồng loạt trên các bản ghi đang chọn
+            </span>
           </div>
-
-          {/* Bulk bar — BE chưa có /users/bulk nên mỗi tick gọi endpoint đơn của từng tài khoản. */}
-          {selectedIds.length > 0 && (
-            <div className="-mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-[#e2e8f0] bg-surface-low px-3 py-2">
-              <span className="text-label-md font-medium text-ink tabular-nums">
-                {selectedIds.length} selected
-              </span>
-              <button type="button" className={rowBtnClass('warning')} disabled={ctrl.actionLoading}
-                onClick={() => runBulk('lock')}>
-                <span className="material-symbols-outlined text-[16px]">lock</span>Lock
-              </button>
-              <button type="button" className={rowBtnClass('success')} disabled={ctrl.actionLoading}
-                onClick={() => runBulk('unlock')}>
-                <span className="material-symbols-outlined text-[16px]">lock_open</span>Unlock
-              </button>
-              <button type="button" className={rowBtnClass('danger')} disabled={ctrl.actionLoading}
-                onClick={() => runBulk('delete')}>
-                <span className="material-symbols-outlined text-[16px]">delete</span>Delete
-              </button>
-              <button type="button" className={buttonClass('ghost', 'ml-auto h-7')}
-                onClick={() => setSelectedIds([])}>
-                <span className="material-symbols-outlined text-[16px]">close</span>Clear
-              </button>
-            </div>
-          )}
-
-          {/* Table */}
-          {ctrl.loading ? (
-            <LoadingState />
-          ) : (
-            <div className="overflow-hidden rounded-xl border border-[#e2e8f0] bg-card">
-              <div className="overflow-x-auto">
-                <table className={tableClass}>
-                  <thead>
-                    <tr>
-                      <th className={`${thBase} w-12 px-4 text-center`}>
-                        <input
-                          type="checkbox"
-                          aria-label="Select all accounts on this page"
-                          className="h-4 w-4 cursor-pointer rounded accent-primary"
-                          checked={allChecked}
-                          disabled={rows.length === 0}
-                          onChange={() => setSelectedIds(allChecked ? [] : pageIds)}
-                        />
-                      </th>
-                      {['User / Member', 'Assigned Role', 'Status', 'Joined Date', 'Last Active'].map(h => (
-                        <th key={h} className={`${thBase} px-3 text-left`}>{h}</th>
-                      ))}
-                      <th className={`${thBase} px-4 text-right`}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#e2e8f0]">
-                    {rows.length === 0 && (
-                      <tr><td colSpan={7} className="px-3 py-12 text-center text-body-sm text-ink-variant">No data</td></tr>
-                    )}
-                    {rows.map((u: UserSummary) => (
-                      <MemberRow
-                        key={u.id}
-                        user={u}
-                        loading={ctrl.actionLoading}
-                        checked={selectedIds.includes(u.id)}
-                        onToggle={() => toggleRow(u.id)}
-                        onOpen={() => navigate(`/admin/users/${u.id}`)}
-                        onLock={() => ctrl.lockUser(u.id)}
-                        onUnlock={() => ctrl.unlockUser(u.id)}
-                        onEdit={() => openEdit(u.id)}
-                        onDelete={() => handleDelete(u.id, u.email)}
-                        onReset={() => ctrl.resetPassword(u.id)}
-                        onResendInvite={() => ctrl.resendInvitation(u.id)}
-                        onRevokeInvite={() => askConfirm(
-                          'Revoke invitation',
-                          `Revoke the pending invitation link for "${u.email}"? The account keeps its role and can be invited again later.`,
-                          async () => { closeConfirm(); await ctrl.revokeInvitation(u.id); },
-                          { confirmLabel: 'Revoke link', danger: false },
-                        )}
-                        onHistory={() => handleViewHistory(u.id)}
-                      />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {ctrl.users && (
-                <TableFooter
-                  paged={ctrl.users}
-                  currentPage={ctrl.currentPage}
-                  exporting={ctrl.exporting}
-                  onExport={handleExport}
-                  onPageChange={p => ctrl.fetchUsers(p)}
-                />
-              )}
-            </div>
-          )}
-        </>
+          <div className="flex items-center gap-space-sm">
+            <button
+              type="button"
+              disabled={ctrl.actionLoading}
+              onClick={() => { setLockReason(''); setLockIds(selectedIds); }}
+              className="h-9 px-space-md bg-surface-container-lowest text-error text-ds-label-md font-semibold rounded-lg shadow-sm hover:bg-error-container hover:text-on-error-container transition-all flex items-center gap-space-xs border border-surface-container-high cursor-pointer disabled:opacity-60"
+            >
+              <span className={`${ICON} text-[16px]`}>lock</span>Khóa tài khoản
+            </button>
+            <button
+              type="button"
+              disabled={ctrl.actionLoading}
+              onClick={() => { void ctrl.runBulkAction('unlock', selectedIds); setSelectedIds([]); }}
+              className="h-9 px-space-md bg-surface-container-lowest text-secondary-teal text-ds-label-md font-semibold rounded-lg shadow-sm hover:bg-secondary-container hover:text-on-secondary-container transition-all flex items-center gap-space-xs border border-surface-container-high cursor-pointer disabled:opacity-60"
+            >
+              <span className={`${ICON} text-[16px]`}>lock_open</span>Mở khóa
+            </button>
+            <button
+              type="button"
+              disabled={ctrl.actionLoading}
+              onClick={() => setRoleIds(selectedIds)}
+              className="h-9 px-space-md bg-surface-container-lowest text-primary text-ds-label-md font-semibold rounded-lg shadow-sm hover:bg-primary-fixed hover:text-on-primary-fixed transition-all flex items-center gap-space-xs border border-surface-container-high cursor-pointer disabled:opacity-60"
+            >
+              <span className={`${ICON} text-[16px]`}>manage_accounts</span>Đổi vai trò
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedIds([])}
+              className="h-9 px-space-sm text-on-surface-variant hover:text-on-surface text-ds-label-md font-semibold rounded-lg transition-colors flex items-center gap-1 ml-1 bg-transparent border-0 cursor-pointer"
+            >
+              <span className={`${ICON} text-[16px]`}>close</span>Bỏ chọn
+            </button>
+          </div>
+        </div>
       )}
 
-      {tab === 'deleted' && (
-        <>
-          <div className="flex flex-col items-center justify-between gap-3 rounded-xl border border-[#e2e8f0] bg-card p-3 lg:flex-row">
-            <div className="relative flex w-full items-center lg:w-96">
-              <span className="material-symbols-outlined pointer-events-none absolute left-3 text-[18px] text-outline-strong">search</span>
-              <input
-                className={searchInputClass}
-                placeholder="Search deleted accounts by name or email..."
-                value={deletedSearchInput}
-                onChange={e => setDeletedSearchInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && ctrl.fetchDeletedUsers(0, deletedSearchInput)}
-              />
+      <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+        <div className="p-space-lg flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-space-md">
+          <form
+            className="relative flex-1 min-w-[280px]"
+            onSubmit={(e) => { e.preventDefault(); load(0); }}
+          >
+            <span className={`${ICON} absolute left-3 top-1/2 -translate-y-1/2 text-outline-strong text-[20px] pointer-events-none`}>search</span>
+            <input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Tìm theo họ tên, email hoặc mã người dùng..."
+              className="w-full h-10 pl-10 pr-3 rounded-lg bg-surface-container-lowest border border-outline-variant/60 text-on-surface text-ds-body-sm placeholder:text-on-surface-variant focus:border-primary focus:ring-2 focus:ring-primary focus:outline-none transition-all"
+            />
+          </form>
+          <div className="flex flex-wrap items-center gap-space-sm">
+            <div className="relative">
+              <select
+                aria-label="Lọc theo vai trò"
+                className={FILTER_SELECT}
+                value={roleFilter}
+                onChange={(e) => { setRoleFilter(e.target.value); load(0, { role: e.target.value }); }}
+              >
+                <option value="">Vai trò: Tất cả</option>
+                {ROLE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+              </select>
+              <span className={`${ICON} absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant text-[16px]`}>expand_more</span>
+            </div>
+            <div className="relative">
+              <select
+                aria-label="Lọc theo trạng thái"
+                className={FILTER_SELECT}
+                value={statusFilter}
+                onChange={(e) => { setStatusFilter(e.target.value); load(0, { status: e.target.value }); }}
+              >
+                <option value="">Trạng thái: Tất cả</option>
+                {STATUS_OPTIONS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+              <span className={`${ICON} absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant text-[16px]`}>expand_more</span>
             </div>
             <button
               type="button"
-              className={buttonClass('secondary', 'w-full shrink-0 lg:w-auto')}
-              onClick={() => ctrl.fetchDeletedUsers(0, deletedSearchInput)}
+              onClick={clearFilters}
+              className="h-10 px-3 text-on-surface-variant hover:text-error hover:bg-surface-container-low rounded-lg transition-colors flex items-center gap-1 text-ds-label-md font-semibold bg-transparent border-0 cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[18px]">search</span>
-              Search
+              <span className={`${ICON} text-[16px]`}>restart_alt</span>
+              <span className="hidden sm:inline">Xóa bộ lọc</span>
             </button>
           </div>
+        </div>
 
-          {ctrl.loadingDeleted ? (
-            <LoadingState />
-          ) : (
-            <div className="overflow-hidden rounded-xl border border-[#e2e8f0] bg-card">
-              <div className="overflow-x-auto">
-                <table className={tableClass}>
-                  <thead>
-                    <tr>
-                      {['User / Member', 'Assigned Role', 'Joined Date', 'Deleted Date'].map(h => (
-                        <th key={h} className={`${thBase} px-3 text-left`}>{h}</th>
-                      ))}
-                      <th className={`${thBase} px-4 text-right`}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#e2e8f0]">
-                    {ctrl.deletedUsers?.content.length === 0 && (
-                      <tr><td colSpan={5} className="px-3 py-12 text-center text-body-sm text-ink-variant">No deleted accounts</td></tr>
-                    )}
-                    {ctrl.deletedUsers?.content.map((u: UserSummary) => {
-                      const ini = initialsOf(u.fullName);
-                      return (
-                        <tr key={u.id} className="transition-colors hover:bg-surface-low/60">
-                          <td className={tdClass}>
-                            <div className="flex min-w-0 items-center gap-3">
-                              {ini && (
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-mid text-label-sm font-bold text-ink-variant">
-                                  {ini}
-                                </div>
+        {ctrl.loading || ctrl.loadingDeleted ? (
+          <LoadingBlock label="Đang tải danh sách người dùng..." />
+        ) : rows.length === 0 ? (
+          <EmptyBlock
+            icon="group_off"
+            title="Không có tài khoản nào khớp bộ lọc"
+            description={isDeletedView
+              ? 'Chưa có tài khoản nào bị xóa mềm trong hệ thống.'
+              : 'Thử xóa bớt bộ lọc hoặc đổi từ khóa tìm kiếm.'}
+          />
+        ) : (
+          <div className="w-full overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-surface-container-low">
+                  <th className={`${TR_CLASS} w-12 text-center`}>
+                    <input
+                      type="checkbox"
+                      aria-label="Chọn tất cả tài khoản trong trang"
+                      className="h-4 w-4 cursor-pointer accent-primary-container"
+                      checked={allChecked}
+                      onChange={() => setSelectedIds(allChecked ? [] : pageIds)}
+                    />
+                  </th>
+                  <SortableTh
+                    label="Mã ID"
+                    dir={sort.key === 'id' ? sort.dir : null}
+                    onClick={() => setSort((s) => ({ key: 'id', dir: s.key === 'id' && s.dir === 'desc' ? 'asc' : 'desc' }))}
+                    className="w-24"
+                  />
+                  <SortableTh
+                    label="Người dùng"
+                    dir={sort.key === 'name' ? sort.dir : null}
+                    onClick={() => setSort((s) => ({ key: 'name', dir: s.key === 'name' && s.dir === 'desc' ? 'asc' : 'desc' }))}
+                    className="min-w-[240px]"
+                  />
+                  <th className={`${TR_CLASS} min-w-[190px]`}>Vai trò</th>
+                  <th className={`${TR_CLASS} min-w-[130px]`}>Trạng thái</th>
+                  <SortableTh
+                    label="Ngày tạo"
+                    dir={sort.key === 'createdAt' ? sort.dir : null}
+                    onClick={() => setSort((s) => ({ key: 'createdAt', dir: s.key === 'createdAt' && s.dir === 'desc' ? 'asc' : 'desc' }))}
+                    className="min-w-[120px]"
+                  />
+                  <th className={`${TR_CLASS} text-right min-w-[100px]`}>Hành động</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-container-low">
+                {rows.map((u) => {
+                  const locked = u.status === 'LOCKED';
+                  return (
+                    <tr key={u.id} className="bg-surface-container-lowest/80 hover:bg-surface-container-low/60 transition-colors">
+                      <td className={`${TD_CLASS} w-12 text-center`}>
+                        <input
+                          type="checkbox"
+                          aria-label={`Chọn ${u.email}`}
+                          className="h-4 w-4 cursor-pointer accent-primary-container"
+                          checked={selectedIds.includes(u.id)}
+                          disabled={ctrl.actionLoading}
+                          onChange={() => toggleRow(u.id)}
+                        />
+                      </td>
+                      <td className={`${TD_CLASS} font-mono font-semibold text-primary whitespace-nowrap`}>
+                        {`#U${String(u.id).padStart(4, '0')}`}
+                      </td>
+                      <td className={TD_CLASS}>
+                        <div className="flex items-center gap-space-sm">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-[14px] shadow-sm shrink-0 ${
+                            locked ? 'bg-error-container text-error' : 'bg-primary-fixed text-primary'
+                          }`}
+                          >
+                            {initialsOf(u.fullName)}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-semibold text-on-surface truncate">{u.fullName}</span>
+                            <span className="text-ds-body-sm text-on-surface-variant truncate">{u.email}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className={TD_CLASS}>
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-ds-label-sm font-bold whitespace-nowrap ${ROLE_CHIP[u.role] ?? ROLE_CHIP.ROLE_USER}`}>
+                          <span className={`${ICON} text-[14px]`}>{ROLE_ICON[u.role] ?? 'shield'}</span>
+                          {ROLE_VN[u.role] ?? u.role}
+                        </span>
+                      </td>
+                      <td className={TD_CLASS}>
+                        <StatusChip status={u.pendingVerification && u.status === 'INACTIVE' ? 'PENDING' : u.status} />
+                      </td>
+                      <td className={`${TD_CLASS} text-ds-body-sm text-on-surface-variant whitespace-nowrap`}>
+                        {fmtServer(u.createdAt, 'date')}
+                      </td>
+                      <td className={`${TD_CLASS} text-right`}>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            aria-label="Xem chi tiết"
+                            onClick={() => navigate(`/admin/users/${u.id}`)}
+                            className="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-colors bg-transparent border-0 cursor-pointer"
+                          >
+                            <span className={`${ICON} text-[18px]`}>visibility</span>
+                          </button>
+                          {isDeletedView ? (
+                            <button
+                              type="button"
+                              aria-label="Khôi phục tài khoản"
+                              disabled={ctrl.actionLoading}
+                              onClick={() => askConfirm(
+                                'Khôi phục tài khoản',
+                                `Khôi phục "${u.email}"? Vai trò và trạng thái trở lại đúng như trước khi xóa.`,
+                                'Khôi phục', false,
+                                () => { closeConfirm(); void ctrl.restoreUser(u.id); },
                               )}
-                              <div className="flex min-w-0 flex-col">
-                                <span className="truncate text-headline-sm text-ink">{u.fullName}</span>
-                                <span className="truncate text-body-sm text-ink-variant">{u.email}</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className={tdClass}>
-                            <RolePill role={u.role} />
-                          </td>
-                          <td className={`${tdClass} whitespace-nowrap ${MONO} text-ink-variant`}>
-                            {fmtDate(u.createdAt)}
-                          </td>
-                          <td className={`${tdClass} whitespace-nowrap ${MONO} text-ink-variant`}>
-                            {u.deletedAt ? fmtDate(u.deletedAt) : '—'}
-                          </td>
-                          <td className={`${tdClass} whitespace-nowrap text-right`}>
-                            <button type="button" className={rowBtnClass('success')} disabled={ctrl.actionLoading}
-                              onClick={() => handleRestore(u.id, u.email)}>
-                              <span className="material-symbols-outlined text-[16px]">restore</span>Reactivate
+                              className="p-1.5 text-secondary-teal hover:bg-secondary-container rounded-lg transition-colors bg-transparent border-0 cursor-pointer disabled:opacity-60"
+                            >
+                              <span className={`${ICON} text-[18px]`}>restore</span>
                             </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              {ctrl.deletedUsers && (
-                <TableFooter
-                  paged={ctrl.deletedUsers}
-                  currentPage={ctrl.deletedPage}
-                  onPageChange={p => ctrl.fetchDeletedUsers(p)}
-                />
+                          ) : (
+                            <>
+                              {locked && (
+                                <button
+                                  type="button"
+                                  aria-label="Mở khóa tài khoản"
+                                  disabled={ctrl.actionLoading}
+                                  onClick={() => ctrl.unlockUser(u.id)}
+                                  className="p-1.5 text-secondary-teal hover:bg-secondary-container rounded-lg transition-colors bg-transparent border-0 cursor-pointer disabled:opacity-60"
+                                >
+                                  <span className={`${ICON} text-[18px]`}>lock_open</span>
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                aria-label="Thao tác khác"
+                                disabled={ctrl.actionLoading}
+                                onClick={(e) => showMenu(e, rowMenu(u))}
+                                className="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors bg-transparent border-0 cursor-pointer disabled:opacity-60"
+                              >
+                                <span className={`${ICON} text-[18px]`}>more_vert</span>
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {paged && (
+          <div className="p-space-lg flex flex-col md:flex-row items-center justify-between gap-space-md">
+            <div className="flex items-center gap-space-md">
+              <span className="text-ds-body-sm text-on-surface-variant">
+                Hiển thị <strong className="text-on-surface">{paged.content.length === 0 ? 0 : paged.number * paged.size + 1} - {paged.number * paged.size + paged.content.length}</strong>{' '}
+                trong tổng số <strong className="text-on-surface">{paged.totalElements.toLocaleString('vi-VN')}</strong> người dùng
+              </span>
+              {!isDeletedView && (
+                <div className="relative">
+                  <select
+                    aria-label="Số bản ghi mỗi trang"
+                    className="h-8 pl-2 pr-6 bg-surface-container-low text-on-surface text-ds-label-sm font-semibold rounded-lg appearance-none cursor-pointer focus:outline-none border-0"
+                    value={ctrl.pageSize}
+                    onChange={(e) => load(0, { size: Number(e.target.value) })}
+                  >
+                    {PAGE_SIZES.map((s) => <option key={s} value={s}>{s} bản ghi / trang</option>)}
+                  </select>
+                  <span className={`${ICON} absolute right-1.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[14px] pointer-events-none`}>expand_more</span>
+                </div>
               )}
             </div>
-          )}
+            <PageNumbers page={paged.number} totalPages={paged.totalPages} onPage={(p) => load(p)} />
+          </div>
+        )}
+      </div>
+
+      {/* Menu hành động của dòng định vị theo rect của nút vì thẻ bảng có `overflow-hidden`. */}
+      {menu && (
+        <>
+          <span className="fixed inset-0 z-[940]" onClick={() => setMenu(null)} />
+          <div
+            className="fixed z-[950] w-48 bg-surface-container-lowest rounded-xl shadow-xl py-1 text-left flex flex-col"
+            style={{ top: menu.top, right: menu.right }}
+          >
+            {menu.items.map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => { setMenu(null); item.onClick(); }}
+                className={`px-space-md py-2 text-left text-ds-body-sm hover:bg-surface-container-low flex items-center gap-space-xs cursor-pointer bg-transparent border-0 ${
+                  item.danger ? 'text-error' : 'text-on-surface'
+                }`}
+              >
+                <span className={`${ICON} text-[16px]`}>{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
         </>
       )}
 
-      {tab === 'permissions' && <RolePermissionsTab />}
-
-      {tab === 'auditLogs' && (
-        <AuditLogTab
-          logs={ctrl.auditLogs}
-          filters={ctrl.auditFilters}
-          page={ctrl.auditPage}
-          onPageChange={p => ctrl.fetchAuditLogs(p)}
-          onApplyFilters={ctrl.applyAuditFilters}
-        />
+      {/* #modal-lock-user: BE yêu cầu lý do, nút xác nhận chặn tới khi có lý do. */}
+      {lockIds && (
+        <ModalBackdrop onClose={() => setLockIds(null)}>
+          <div className="bg-surface-container-lowest rounded-xl shadow-2xl w-full max-w-md overflow-hidden p-space-xl flex flex-col gap-space-lg">
+            <div className="flex items-start gap-space-md">
+              <div className="w-12 h-12 rounded-full bg-error-container text-error flex items-center justify-center shrink-0">
+                <span className={`${ICON} text-[24px]`}>warning</span>
+              </div>
+              <div className="flex flex-col">
+                <h3 className="m-0 text-ds-headline-sm font-bold text-on-surface">
+                  Khóa {lockIds.length > 1 ? `${lockIds.length} tài khoản` : 'tài khoản người dùng'}?
+                </h3>
+                <p className="mt-1 mb-0 text-ds-body-md text-on-surface-variant">
+                  Người dùng sẽ không thể đăng nhập, thực hiện bài kiểm tra phỏng vấn hoặc kết nối tuyển dụng cho đến khi được mở khóa.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-ds-label-md font-semibold text-on-surface" htmlFor="lock-reason">
+                Lý do khóa tài khoản <span className="text-error">*</span>
+              </label>
+              <textarea
+                id="lock-reason"
+                value={lockReason}
+                onChange={(e) => setLockReason(e.target.value)}
+                rows={3}
+                maxLength={500}
+                placeholder="VD: Nhiều lần đoán mật khẩu bất thường, nghi vấn gian lận bài thi..."
+                className="w-full p-3 bg-surface-container-low rounded-lg text-on-surface text-ds-body-sm placeholder:text-outline-strong focus:outline-none focus:ring-2 focus:ring-error transition-all resize-none border-0"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-space-sm pt-2">
+              <button type="button" className={MODAL_CANCEL} onClick={() => setLockIds(null)}>Hủy bỏ</button>
+              <button
+                type="button"
+                className={MODAL_DANGER}
+                disabled={!lockReason.trim()}
+                onClick={() => { void submitLock(); }}
+              >
+                Xác nhận khóa
+              </button>
+            </div>
+          </div>
+        </ModalBackdrop>
       )}
 
-      {/* Confirm dialog */}
+      {/* #modal-change-role */}
+      {roleIds && (
+        <ModalBackdrop onClose={() => setRoleIds(null)}>
+          <div className="bg-surface-container-lowest rounded-xl shadow-2xl w-full max-w-lg overflow-hidden p-space-xl flex flex-col gap-space-lg">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-space-md">
+                <div className="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center text-primary shrink-0">
+                  <span className={`${ICON} text-[24px]`}>manage_accounts</span>
+                </div>
+                <div className="flex flex-col">
+                  <h3 className="m-0 text-ds-headline-sm font-bold text-on-surface">Thay đổi vai trò người dùng</h3>
+                  <span className="text-ds-body-sm text-on-surface-variant">
+                    Áp dụng cho {roleIds.length > 1 ? `${roleIds.length} người dùng đã chọn` : 'người dùng đã chọn'}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                aria-label="Đóng"
+                onClick={() => setRoleIds(null)}
+                className="text-on-surface-variant hover:text-on-surface bg-transparent border-0 cursor-pointer"
+              >
+                <span className={`${ICON} text-[20px]`}>close</span>
+              </button>
+            </div>
+            <div className="flex flex-col gap-space-sm">
+              {ROLE_OPTIONS.map((opt) => (
+                <label
+                  key={opt.value}
+                  className={`flex items-center justify-between p-space-md rounded-xl cursor-pointer transition-all border ${
+                    pendingRole === opt.value ? 'bg-surface-container-high border-primary' : 'bg-surface-container-low border-transparent hover:bg-surface-container-high/60'
+                  }`}
+                >
+                  <span className="flex items-center gap-space-md">
+                    <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                      opt.value === 'ROLE_ADMIN'
+                        ? 'bg-primary-fixed-dim text-primary'
+                        : opt.value === 'ROLE_INTERVIEWER'
+                          ? 'bg-secondary-fixed text-secondary-teal'
+                          : opt.value === 'ROLE_STAFF'
+                            ? 'bg-surface-container-highest text-on-surface-variant'
+                            : 'bg-tertiary-fixed text-tertiary'
+                    }`}
+                    >
+                      <span className={`${ICON} text-[18px]`}>{ROLE_ICON[opt.value]}</span>
+                    </span>
+                    <span className="flex flex-col">
+                      <span className="text-ds-label-lg text-on-surface">{opt.label}</span>
+                      <span className="text-ds-body-sm text-on-surface-variant">{ROLE_DESCRIPTION[opt.value]}</span>
+                    </span>
+                  </span>
+                  <input
+                    type="radio"
+                    name="pending-role"
+                    className="accent-primary-container"
+                    checked={pendingRole === opt.value}
+                    onChange={() => setPendingRole(opt.value)}
+                  />
+                </label>
+              ))}
+            </div>
+            <div className="flex items-center justify-end gap-space-sm pt-2">
+              <button type="button" className={MODAL_CANCEL} onClick={() => setRoleIds(null)}>Hủy</button>
+              <button type="button" className={MODAL_PRIMARY} onClick={() => { void submitRole(); }}>Lưu thay đổi</button>
+            </div>
+          </div>
+        </ModalBackdrop>
+      )}
+
       <ConfirmDialog
-        open={confirmDialog.open}
-        title={confirmDialog.title}
-        message={confirmDialog.message}
-        confirmLabel={confirmDialog.confirmLabel}
-        danger={confirmDialog.danger}
-        onConfirm={confirmDialog.onConfirm}
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        confirmLabel={confirm.confirmLabel}
+        danger={confirm.danger}
+        onConfirm={confirm.onConfirm}
         onCancel={closeConfirm}
       />
 
@@ -574,492 +749,97 @@ const AdminUserManagementPage: React.FC = () => {
   );
 };
 
-// ── Sub-components ──────────────────────────────────────────────────────────
+const SortableTh: React.FC<{
+  label: string;
+  dir: 'asc' | 'desc' | null;
+  onClick: () => void;
+  className?: string;
+}> = ({ label, dir, onClick, className = '' }) => (
+  <th className={`${TR_CLASS} p-0 ${className}`}>
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-1 py-space-md px-space-md text-ds-label-md font-semibold uppercase tracking-wider hover:text-on-surface cursor-pointer bg-transparent border-0 text-inherit"
+    >
+      <span>{label}</span>
+      <span className={`${ICON} text-[12px]`}>{dir ? (dir === 'asc' ? 'arrow_upwards' : 'arrow_downward') : 'unfold_more'}</span>
+    </button>
+  </th>
+);
 
-/** 4 thẻ KPI theo đúng hình thái mockup: nhãn uppercase + icon màu, số lớn + chip, caption. */
-const KpiRow: React.FC<{ stats: UserStats }> = ({ stats }) => {
-  const activePct = stats.total > 0
-    ? `${Math.round((stats.activeLast30Days / stats.total) * 100)}% active`
-    : 'No accounts yet';
-
-  return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-      <KpiCard
-        label="Total Users" icon="group" iconClass="text-primary"
-        value={stats.total} caption="All registered profiles"
-      />
-      <KpiCard
-        label="Active Members" icon="verified_user" iconClass="text-success-text"
-        value={stats.activeLast30Days} chip={stats.total > 0 ? activePct : undefined}
-        chipClass="bg-success-bg text-success-text"
-        caption="Signed in within the last 30 days"
-      />
-      <KpiCard
-        label="Pending Invitations" icon="mail" iconClass="text-secondary"
-        value={stats.pendingVerification}
-        chip={stats.pendingVerification > 0 ? 'Awaiting' : undefined}
-        chipClass="bg-[#fffbeb] text-[#92400e]"
-        caption="Awaiting email verification"
-      />
-      <KpiCard
-        label="Suspended / Locked" icon="gpp_bad" iconClass="text-danger-text"
-        value={stats.locked}
-        chip={stats.locked > 0 ? 'Flagged' : undefined}
-        chipClass="bg-danger-bg text-danger-text"
-        danger={stats.locked > 0}
-        caption={`${stats.disabled.toLocaleString('en-US')} disabled · ${stats.deleted.toLocaleString('en-US')} deleted`}
-      />
+const MetricCard: React.FC<{
+  label: string; value: string; icon: string; iconClass: string;
+  pill?: string; pillClass?: string; pillIcon?: string; note: string; valueClass?: string;
+}> = ({ label, value, icon, iconClass, pill, pillClass = '', pillIcon, note, valueClass = 'text-on-surface' }) => (
+  <div className="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm border border-surface-container-low flex flex-col justify-between gap-space-md relative overflow-hidden hover:shadow-md transition-shadow">
+    <div className="flex items-start justify-between">
+      <div className="flex flex-col">
+        <span className="text-ds-label-md text-on-surface-variant">{label}</span>
+        <span className={`text-ds-display-sm font-bold mt-space-xs ${valueClass}`}>{value}</span>
+      </div>
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${iconClass}`}>
+        <span className={`${ICON} text-[24px]`}>{icon}</span>
+      </div>
     </div>
-  );
-};
-
-const KpiCard: React.FC<{
-  label: string; icon: string; iconClass: string; value: number; caption: string;
-  chip?: string; chipClass?: string; danger?: boolean;
-}> = ({ label, icon, iconClass, value, caption, chip, chipClass, danger }) => (
-  <div className="flex flex-col justify-between rounded-xl border border-[#e2e8f0] bg-card p-3 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)]">
-    <div className="flex items-center justify-between gap-2 text-ink-variant">
-      <span className="text-label-sm uppercase tracking-wider">{label}</span>
-      <span className={`material-symbols-outlined text-[18px] ${iconClass}`}>{icon}</span>
-    </div>
-    <div className="mt-2 flex items-baseline justify-between gap-2">
-      <span className={`text-metric-stat tabular-nums ${danger ? 'text-danger-text' : 'text-ink'}`}>
-        {value.toLocaleString('en-US')}
-      </span>
-      {chip && (
-        <span className={`shrink-0 rounded px-1.5 py-0.5 ${MONO} font-medium ${chipClass}`}>{chip}</span>
+    <div className="flex items-center gap-space-xs">
+      {pill && (
+        <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-ds-label-sm font-semibold ${pillClass}`}>
+          {pillIcon && <span className={`${ICON} text-[12px]`}>{pillIcon}</span>}
+          {pill}
+        </span>
       )}
+      <span className="text-ds-body-sm text-on-surface-variant">{note}</span>
     </div>
-    <p className="mt-1 mb-0 text-body-sm text-ink-variant">{caption}</p>
   </div>
 );
 
-const RolePill: React.FC<{ role: Role }> = ({ role }) => (
-  <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-label-sm font-medium ${ROLE_PILL[role]}`}>
-    <span className="material-symbols-outlined text-[14px]">{ROLE_ICONS[role] ?? 'shield'}</span>
-    {ROLE_LABELS[role] ?? role}
-  </span>
-);
-
-const MemberRow: React.FC<{
-  user: UserSummary;
-  loading: boolean;
-  checked: boolean;
-  onToggle: () => void;
-  onOpen: () => void;
-  onLock: () => void;
-  onUnlock: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  onReset: () => void;
-  onResendInvite: () => void;
-  onRevokeInvite: () => void;
-  onHistory: () => void;
-}> = ({
-  user, loading, checked, onToggle, onOpen, onLock, onUnlock, onEdit, onDelete,
-  onReset, onResendInvite, onRevokeInvite, onHistory,
+const PageNumbers: React.FC<{ page: number; totalPages: number; onPage: (p: number) => void }> = ({
+  page, totalPages, onPage,
 }) => {
-  const ini = initialsOf(user.fullName);
-  const last = relativeOf(user.lastLoginAt);
-  // Pending invite = INACTIVE-chua-verify: chấm amber nhưng KHÔNG là dòng bị khóa.
-  const tone = user.pendingVerification ? 'warning' : statusTone(user.status);
-  const suspended = user.status === 'LOCKED';
-  const pillLabel = user.pendingVerification
-    ? ACCOUNT_STATUS_LABELS.PENDING
-    : ACCOUNT_STATUS_LABELS[user.status] ?? user.status;
+  const cells = useMemo(() => {
+    const seen = new Set<number>([0, 1, 2, page - 1, page, page + 1, totalPages - 1]);
+    const list = Array.from(seen).filter((p) => p >= 0 && p < totalPages).sort((a, b) => a - b);
+    const out: (number | 'gap')[] = [];
+    list.forEach((p, i) => {
+      if (i > 0 && p - list[i - 1] > 1) out.push('gap');
+      out.push(p);
+    });
+    return out;
+  }, [page, totalPages]);
+
+  const btn = (active: boolean) => `w-9 h-9 rounded-lg flex items-center justify-center transition-colors border-0 cursor-pointer ${
+    active
+      ? 'bg-primary-container text-on-primary font-bold shadow-sm'
+      : 'bg-surface-container-lowest text-on-surface hover:bg-surface-container-low'
+  }`;
 
   return (
-    <tr
-      className={`cursor-pointer transition-colors ${
-        suspended ? 'bg-[#fff1f2]/50 hover:bg-[#fff1f2]' : 'hover:bg-surface-low/60'
-      }`}
-      onClick={onOpen}
-    >
-      <td className={`${tdClass} w-12 px-4 text-center`} onClick={e => e.stopPropagation()}>
-        <input
-          type="checkbox"
-          aria-label={`Select ${user.email}`}
-          className="h-4 w-4 cursor-pointer rounded accent-primary"
-          checked={checked}
-          disabled={loading}
-          onChange={onToggle}
-        />
-      </td>
-      <td className={tdClass}>
-        <div className="flex min-w-0 items-center gap-3">
-          {ini && (
-            <div className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-label-sm font-bold ${
-              user.status === 'LOCKED' ? 'bg-danger-bg text-danger-text' : AVATAR_TONE[user.role]
-            }`}
-            >
-              {ini}
-              <span className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-2 ring-card ${DOT_CLASS[tone]}`} />
-            </div>
-          )}
-          <div className="flex min-w-0 flex-col">
-            <span className="truncate text-headline-sm text-ink">{user.fullName}</span>
-            <span className={`truncate text-body-sm ${suspended ? 'text-danger-text' : 'text-ink-variant'}`}>
-              {user.email}
-            </span>
-          </div>
-        </div>
-      </td>
-      <td className={tdClass}>
-        <RolePill role={user.role} />
-      </td>
-      <td className={tdClass}>
-        <Badge tone={tone} pill dot icon={suspended ? 'block' : undefined}>{pillLabel}</Badge>
-      </td>
-      <td className={`${tdClass} whitespace-nowrap ${MONO} text-ink-variant`}>{fmtDate(user.createdAt)}</td>
-      <td className={`${tdClass} whitespace-nowrap`}>
-        {last.text === 'Never' ? (
-          <span className="text-body-sm italic text-ink-variant">Never</span>
-        ) : last.recent ? (
-          <span className="inline-flex items-center gap-1 text-label-sm font-medium text-[#047857]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#10b981]" />
-            {last.text}
-          </span>
-        ) : (
-          <span className="text-body-sm tabular-nums text-ink-variant">{last.text}</span>
-        )}
-      </td>
-      <td className={`${tdClass} whitespace-nowrap px-4 text-right`} onClick={e => e.stopPropagation()}>
-        {user.pendingVerification ? (
-          <div className="inline-flex items-center justify-end gap-1.5">
-            <button type="button" className={rowBtnClass('primary')} disabled={loading} onClick={onResendInvite}>Resend</button>
-            <button type="button" className={rowBtnClass()} disabled={loading} onClick={onRevokeInvite}>Revoke</button>
-            <RowMenu
-              disabled={loading}
-              items={[
-                { label: 'View details', icon: 'visibility', onClick: onOpen },
-                { label: 'Edit profile', icon: 'edit_note', onClick: onEdit },
-                { label: 'View history', icon: 'history', onClick: onHistory },
-              ]}
-            />
-          </div>
-        ) : (
-          <div className="inline-flex items-center justify-end gap-1.5">
-            <button type="button" className={rowBtnClass()} disabled={loading} onClick={onEdit}>Edit</button>
-            {user.status === 'LOCKED'
-              ? <button type="button" className={rowBtnClass('warning')} disabled={loading} onClick={onUnlock}>Reactivate</button>
-              : <button type="button" className={rowBtnClass()} disabled={loading} onClick={onLock}>Lock</button>
-            }
-            <RowMenu
-              disabled={loading}
-              items={[
-                { label: 'View details', icon: 'visibility', onClick: onOpen },
-                { label: 'Send password reset', icon: 'key', onClick: onReset },
-                { label: 'View history', icon: 'history', onClick: onHistory },
-                { label: 'Delete account', icon: 'delete', onClick: onDelete, danger: true },
-              ]}
-            />
-          </div>
-        )}
-      </td>
-    </tr>
-  );
-};
-
-/**
- * Menu kebab của dòng. Dropdown đặt `fixed` theo rect của nút (giá trị động duy nhất được phép
- * dùng `style`) vì thẻ bảng có `overflow-hidden` + `overflow-x-auto` -> menu absolute sẽ bị
- * cắt mất vài item ở những dòng cuối trang.
- */
-const RowMenu: React.FC<{
-  disabled?: boolean;
-  items: { label: string; icon: string; onClick: () => void; danger?: boolean }[];
-}> = ({ disabled, items }) => {
-  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
-
-  const toggle = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (pos) { setPos(null); return; }
-    const r = e.currentTarget.getBoundingClientRect();
-    setPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
-  };
-
-  return (
-    <span className="relative inline-flex">
+    <div className="flex items-center gap-1 text-ds-label-md">
       <button
         type="button"
-        aria-label="More actions"
-        aria-expanded={pos !== null}
-        title="More actions"
-        disabled={disabled}
-        className="inline-flex h-7 w-7 items-center justify-center rounded text-outline-strong transition-colors hover:bg-surface-mid hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
-        onClick={toggle}
+        aria-label="Trang trước"
+        disabled={page <= 0}
+        onClick={() => onPage(page - 1)}
+        className={`${btn(false)} disabled:opacity-40`}
       >
-        <span className="material-symbols-outlined text-[18px]">more_vert</span>
-      </button>
-      {pos && (
-        <>
-          <span className="fixed inset-0 z-[940]" onClick={() => setPos(null)} />
-          <span
-            className="fixed z-[950] flex w-56 flex-col rounded-lg border border-[#e2e8f0] bg-card py-1 shadow-[0_4px_12px_-2px_rgba(15,23,42,0.08)]"
-            style={{ top: pos.top, right: pos.right }}
-          >
-            {items.map(it => (
-              <button
-                key={it.label}
-                type="button"
-                className={`flex items-center gap-2 px-3 py-1.5 text-left text-label-md transition-colors hover:bg-surface-low ${
-                  it.danger ? 'text-danger-text' : 'text-ink'
-                }`}
-                onClick={() => { setPos(null); it.onClick(); }}
-              >
-                <span className="material-symbols-outlined text-[16px]">{it.icon}</span>
-                {it.label}
-              </button>
-            ))}
-          </span>
-        </>
-      )}
-    </span>
-  );
-};
-
-/** Chân bảng trong mockup: "Showing 1-10 of 3,420 registered members" + link CSV + pager số trang. */
-const TableFooter: React.FC<{
-  paged: PagedResponse<unknown>;
-  currentPage: number;
-  exporting?: boolean;
-  onExport?: () => void;
-  onPageChange: (p: number) => void;
-}> = ({ paged, currentPage, exporting, onExport, onPageChange }) => {
-  const from = paged.content.length === 0 ? 0 : currentPage * paged.size + 1;
-  const to = currentPage * paged.size + paged.content.length;
-
-  return (
-    <div className="flex flex-col items-center justify-between gap-2 border-t border-[#e2e8f0] bg-surface-low p-3 sm:flex-row">
-      <div className="flex flex-wrap items-center gap-2 text-body-sm text-ink-variant">
-        <span className="tabular-nums">
-          Showing {from.toLocaleString('en-US')}-{to.toLocaleString('en-US')} of{' '}
-          {paged.totalElements.toLocaleString('en-US')} registered members
-        </span>
-        {onExport && (
-          <>
-            <span className="text-outline-strong">•</span>
-            <button type="button" className="text-label-sm font-medium text-primary hover:underline"
-              onClick={onExport} disabled={exporting}>
-              {exporting ? 'Exporting...' : 'Download CSV Export'}
-            </button>
-          </>
-        )}
-      </div>
-      <Pager currentPage={currentPage} totalPages={paged.totalPages} onPageChange={onPageChange} />
-    </div>
-  );
-};
-
-const Pager: React.FC<{
-  currentPage: number; totalPages: number; onPageChange: (p: number) => void;
-}> = ({ currentPage, totalPages, onPageChange }) => {
-  // Cửa sổ trang lân cận + trang đầu/cuối, chỗ nào nhảy cóc thì thắn "…".
-  const pages = Array.from(new Set([
-    0, 1, currentPage - 1, currentPage, currentPage + 1, totalPages - 2, totalPages - 1,
-  ])).filter(p => p >= 0 && p < totalPages).sort((a, b) => a - b);
-
-  const cells: (number | 'gap')[] = [];
-  pages.forEach((p, i) => {
-    if (i > 0 && p - pages[i - 1] > 1) cells.push('gap');
-    cells.push(p);
-  });
-
-  return (
-    <div className="flex items-center gap-1">
-      <button type="button" className={pageBtnClass(false)} disabled={currentPage === 0}
-        aria-label="Previous page" onClick={() => onPageChange(currentPage - 1)}>
-        <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+        <span className={`${ICON} text-[16px]`}>chevron_left</span>
       </button>
       {cells.map((c, i) => c === 'gap'
-        ? <span key={`gap-${i}`} className="px-1 text-outline-strong">…</span>
+        ? <span key={`gap-${i}`} className="px-1 text-on-surface-variant font-bold">...</span>
         : (
-          <button
-            key={c}
-            type="button"
-            className={pageBtnClass(c === currentPage)}
-            onClick={() => onPageChange(c)}
-          >
-            <span className={MONO}>{c + 1}</span>
+          <button key={c} type="button" className={btn(c === page)} onClick={() => onPage(c)}>
+            {c + 1}
           </button>
         ))}
-      <button type="button" className={pageBtnClass(false)} disabled={currentPage >= totalPages - 1}
-        aria-label="Next page" onClick={() => onPageChange(currentPage + 1)}>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+      <button
+        type="button"
+        aria-label="Trang sau"
+        disabled={page + 1 >= totalPages}
+        onClick={() => onPage(page + 1)}
+        className={`${btn(false)} disabled:opacity-40`}
+      >
+        <span className={`${ICON} text-[16px]`}>chevron_right</span>
       </button>
-    </div>
-  );
-};
-
-const pageBtnClass = (active: boolean) =>
-  'inline-flex h-7 min-w-[30px] items-center justify-center rounded px-2.5 py-1 transition-colors ' +
-  'disabled:cursor-not-allowed disabled:opacity-40 ' +
-  (active ? 'bg-primary font-bold text-on-primary' : 'bg-card text-ink hover:bg-surface-mid');
-
-/**
- * Ma tran quyen: dong = kha nang That cua BE, lay tu chu thich `@PreAuthorize`
- * trong cac controller (doc source BE ngay 2026-10-19). Khong co endpoint "role permissions"
- * tren BE nen bang nay la tinh static - them dong moi phai tra loi source BE, khong tu nghi.
- */
-const PERMISSION_MATRIX: { capability: string; roles: Role[] }[] = [
-  { capability: 'Sign in and browse available interview slots', roles: ['ROLE_USER', 'ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
-  { capability: 'Own profile, CV, cover letter, mock interviews', roles: ['ROLE_USER'] },
-  { capability: 'Apply to job postings and track own applications', roles: ['ROLE_USER'] },
-  { capability: 'Create and manage job postings', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
-  { capability: 'Review and evaluate applications on jobs', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
-  { capability: 'Cross-job application overview', roles: ['ROLE_STAFF', 'ROLE_ADMIN'] },
-  { capability: 'Manage own availability (interview slot calendar)', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
-  { capability: 'Create, pay and cancel service-package orders', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
-  { capability: 'View all orders across the platform', roles: ['ROLE_STAFF', 'ROLE_ADMIN'] },
-  { capability: 'Configure service packages and pricing', roles: ['ROLE_STAFF', 'ROLE_ADMIN'] },
-  { capability: 'Moderate reviews and handle bug reports', roles: ['ROLE_STAFF', 'ROLE_ADMIN'] },
-  { capability: 'User directory: lock, enable, change role, invite, delete, audit log', roles: ['ROLE_ADMIN'] },
-];
-
-const ALL_ROLES: Role[] = ['ROLE_USER', 'ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'];
-
-const RolePermissionsTab: React.FC = () => (
-  <div className="overflow-hidden rounded-xl border border-[#e2e8f0] bg-card">
-    <div className="overflow-x-auto">
-      <table className={tableClass}>
-        <thead>
-          <tr>
-            <th className={`${thBase} px-3 text-left`}>Capability</th>
-            {ALL_ROLES.map(r => (
-              <th key={r} className={`${thBase} px-3 text-center`}>{ROLE_LABELS[r]}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-[#e2e8f0]">
-          {PERMISSION_MATRIX.map(row => (
-            <tr key={row.capability} className="transition-colors hover:bg-surface-low/60">
-              <td className={tdClass}>{row.capability}</td>
-              {ALL_ROLES.map(r => (
-                <td key={r} className={`${tdClass} text-center`}>
-                  {row.roles.includes(r)
-                    ? <span className="material-symbols-outlined text-[18px] text-success-text">check_circle</span>
-                    : <span className="material-symbols-outlined text-[18px] text-outline">remove</span>}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-    <p className="m-0 border-t border-[#e2e8f0] bg-surface-low px-3 py-2 text-body-sm text-ink-variant">
-      Source: Spring `@PreAuthorize` rules in the backend controllers. There is no role-permission API yet.
-    </p>
-  </div>
-);
-
-// Icon + nền cho từng nhóm audit action (mockup: "Recent Security & Access Log" dạng tile).
-const AUDIT_TILE = (action: string, succeeded: boolean): { cls: string; icon: string } => {
-  if (!succeeded) return { cls: 'bg-danger-bg text-danger-text', icon: 'error' };
-  if (['LOCK_USER', 'DISABLE_USER', 'DELETE_USER', 'REVOKE_INVITATION'].includes(action)) {
-    return { cls: 'bg-danger-bg text-danger-text', icon: 'lock' };
-  }
-  if (['UNLOCK_USER', 'ENABLE_USER', 'RESTORE_USER', 'INVITE_USER', 'RESEND_INVITATION'].includes(action)) {
-    return { cls: 'bg-success-bg text-success-text', icon: action.startsWith('INVITE') || action === 'RESEND_INVITATION' ? 'person_add' : 'lock_open' };
-  }
-  if (['CHANGE_ROLE', 'UPDATE_PROFILE', 'RESET_PASSWORD'].includes(action)) {
-    return { cls: 'bg-info text-info-text', icon: action === 'RESET_PASSWORD' ? 'key' : 'shield' };
-  }
-  return { cls: 'bg-surface-mid text-ink-variant', icon: 'history' };
-};
-
-const AuditLogTab: React.FC<{
-  logs: PagedResponse<AuditLog> | null;
-  filters: { action: string; from: string; to: string; targetUserId?: number };
-  page: number;
-  onPageChange: (p: number) => void;
-  onApplyFilters: (f: { action: string; from: string; to: string; targetUserId?: number }) => void;
-}> = ({ logs, filters, page, onPageChange, onApplyFilters }) => {
-  const [action, setAction] = useState(filters.action);
-  const [from, setFrom] = useState(filters.from);
-  const [to, setTo] = useState(filters.to);
-
-  if (!logs) return <LoadingState />;
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <h2 className="m-0 text-headline-md text-ink">Recent Security &amp; Access Log</h2>
-        <p className="m-0 text-body-sm text-ink-variant">
-          Audit trail of administrative role changes, invitation actions, and account state changes.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[#e2e8f0] bg-card p-3">
-        <span className="material-symbols-outlined text-[18px] text-ink-variant">filter_list</span>
-        <select className={filterSelectClass} value={action} onChange={e => setAction(e.target.value)}>
-          <option value="">All actions</option>
-          {AUDIT_ACTIONS.map(a => <option key={a} value={a}>{AUDIT_ACTION_LABELS[a] ?? a}</option>)}
-        </select>
-        <label className="flex items-center gap-1.5 text-label-md text-ink-variant">
-          From
-          <input type="date" className={`${filterSelectClass} tabular-nums`} value={from} onChange={e => setFrom(e.target.value)} />
-        </label>
-        <label className="flex items-center gap-1.5 text-label-md text-ink-variant">
-          To
-          <input type="date" className={`${filterSelectClass} tabular-nums`} value={to} onChange={e => setTo(e.target.value)} />
-        </label>
-        <button type="button" className={buttonClass('secondary')}
-          onClick={() => onApplyFilters({ action, from, to, targetUserId: filters.targetUserId })}>
-          Apply
-        </button>
-        {filters.targetUserId && (
-          <button type="button" className={buttonClass('ghost')}
-            onClick={() => { setAction(''); setFrom(''); setTo(''); onApplyFilters({ action: '', from: '', to: '' }); }}>
-            <span className="material-symbols-outlined text-[16px]">close</span>
-            Clear user filter (#{filters.targetUserId})
-          </button>
-        )}
-      </div>
-
-      <div className="divide-y divide-[#e2e8f0] overflow-hidden rounded-xl border border-[#e2e8f0] bg-card">
-        {logs.content.length === 0 && (
-          <p className="px-3 py-12 text-center text-body-sm text-ink-variant">No logs yet</p>
-        )}
-        {logs.content.map(l => {
-          const tile = AUDIT_TILE(l.action, l.succeeded);
-          const target = l.targetUserId == null
-            ? null
-            : (l.targetEmail ? `${l.targetFullName ?? ''} — ${l.targetEmail}` : `#${l.targetUserId}`);
-          return (
-            <div key={l.id} className="flex items-center justify-between gap-3 p-3 transition-colors hover:bg-surface-low/60">
-              <div className="flex min-w-0 items-center gap-3">
-                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${tile.cls}`}>
-                  <span className="material-symbols-outlined text-[18px]">{tile.icon}</span>
-                </div>
-                <div className="flex min-w-0 flex-col">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-label-md font-semibold text-ink">
-                      {AUDIT_ACTION_LABELS[l.action] ?? l.action}
-                    </span>
-                    {target && <span className="truncate text-body-sm text-ink-variant">{target}</span>}
-                    {!l.succeeded && (
-                      <span className="text-body-sm text-danger-text">{l.reason ?? 'Rejected'}</span>
-                    )}
-                  </div>
-                  <span className="text-body-sm text-ink-variant">
-                    by {l.adminEmail}
-                    {l.detail ? ` · ${l.detail}` : ''}
-                  </span>
-                </div>
-              </div>
-              <span
-                className="shrink-0 text-body-sm tabular-nums text-ink-variant"
-                title={fmtDateTime(l.createdAt)}
-              >
-                {relativeOf(l.createdAt).text}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-      {logs.totalPages > 1 && (
-        <div className="flex justify-center rounded-xl border border-[#e2e8f0] bg-card p-2">
-          <Pager currentPage={page} totalPages={logs.totalPages} onPageChange={onPageChange} />
-        </div>
-      )}
     </div>
   );
 };

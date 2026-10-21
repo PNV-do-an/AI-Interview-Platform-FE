@@ -78,11 +78,12 @@ export const ACCOUNT_STATUS_LABELS: Record<string, string> = {
   PENDING: 'Pending invite',
 };
 
-/** Enum AuditAction kín phía BE - nguồn: model/enums/AuditAction.java. */
+/** Enum AuditAction phía BE - nguồn: model/enums/AuditAction.java. */
 export const AUDIT_ACTIONS = [
   'VIEW_USER', 'LOCK_USER', 'UNLOCK_USER', 'ENABLE_USER', 'DISABLE_USER',
   'DELETE_USER', 'RESTORE_USER', 'RESET_PASSWORD', 'CHANGE_ROLE',
   'INVITE_USER', 'RESEND_INVITATION', 'REVOKE_INVITATION', 'UPDATE_PROFILE', 'EXPORT_USERS',
+  'APPROVE_JOB', 'REJECT_JOB', 'UPDATE_SETTINGS',
 ] as const;
 
 /** GET /users/stats - đếm theo cùng bộ lọc search/role với danh sách. */

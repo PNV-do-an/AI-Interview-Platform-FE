@@ -45,6 +45,8 @@ export const useAdminUserController = () => {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [auditFilters, setAuditFilters] = useState<AuditFilters>(EMPTY_AUDIT_FILTERS);
   const [currentPage, setCurrentPage] = useState(0);
+  /** BE cho size 1..100; mockup có selector 10/25/50. */
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [deletedPage, setDeletedPage] = useState(0);
   const [deletedSearch, setDeletedSearch] = useState('');
   const [auditPage, setAuditPage] = useState(0);
@@ -71,13 +73,13 @@ export const useAdminUserController = () => {
     }
   }, []);
 
-  const fetchUsers = useCallback(async (page = 0, f: Filters = filters) => {
+  const fetchUsers = useCallback(async (page = 0, f: Filters = filters, size = pageSize) => {
     setLoading(true);
     clearMessages();
     try {
       const params = {
         page,
-        size: PAGE_SIZE,
+        size,
         ...(f.search ? { search: f.search } : {}),
         ...(f.status ? { status: f.status } : {}),
         ...(f.role ? { role: f.role } : {}),
@@ -86,13 +88,14 @@ export const useAdminUserController = () => {
       setUsers(res.data.data!);
       setCurrentPage(page);
       setFilters(f);
+      setPageSize(size);
       void fetchStats(f);
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to load user list'));
+      setError(readApiErrorMessage(e, 'Không tải được danh sách người dùng'));
     } finally {
       setLoading(false);
     }
-  }, [filters, fetchStats]);
+  }, [filters, fetchStats, pageSize]);
 
   const fetchDeletedUsers = useCallback(async (page = 0, search = deletedSearch) => {
     setLoadingDeleted(true);
@@ -105,7 +108,7 @@ export const useAdminUserController = () => {
       setDeletedPage(page);
       setDeletedSearch(search);
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to load deleted accounts'));
+      setError(readApiErrorMessage(e, 'Không tải được tài khoản đã xóa'));
     } finally {
       setLoadingDeleted(false);
     }
@@ -116,7 +119,7 @@ export const useAdminUserController = () => {
       const res = await AdminService.getUserDetail(id);
       setSelectedUser(res.data.data!);
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to load user details'));
+      setError(readApiErrorMessage(e, 'Không tải được hồ sơ người dùng'));
     }
   }, []);
 
@@ -126,7 +129,7 @@ export const useAdminUserController = () => {
       const res = await AdminService.getUserDetail(id);
       return res.data.data!;
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to load user details'));
+      setError(readApiErrorMessage(e, 'Không tải được hồ sơ người dùng'));
       return null;
     }
   }, []);
@@ -141,10 +144,10 @@ export const useAdminUserController = () => {
     setActionLoading(true); clearMessages();
     try {
       await AdminService.lockUser(id);
-      setSuccessMsg('Account locked');
+      setSuccessMsg('Đã khóa tài khoản');
       await refreshAfterAction(id);
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to lock account'));
+      setError(readApiErrorMessage(e, 'Không khóa được tài khoản'));
       if (selectedUser?.id === id) await fetchUserDetail(id); // BE van ghi audit ca attempt that bai
     } finally { setActionLoading(false); }
   }, [fetchUserDetail, refreshAfterAction, selectedUser]);
@@ -153,10 +156,10 @@ export const useAdminUserController = () => {
     setActionLoading(true); clearMessages();
     try {
       await AdminService.unlockUser(id);
-      setSuccessMsg('Account unlocked');
+      setSuccessMsg('Đã mở khóa tài khoản');
       await refreshAfterAction(id);
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to unlock account'));
+      setError(readApiErrorMessage(e, 'Không mở khóa được tài khoản'));
       if (selectedUser?.id === id) await fetchUserDetail(id);
     } finally { setActionLoading(false); }
   }, [fetchUserDetail, refreshAfterAction, selectedUser]);
@@ -165,10 +168,10 @@ export const useAdminUserController = () => {
     setActionLoading(true); clearMessages();
     try {
       await AdminService.setUserStatus(id, enabled);
-      setSuccessMsg(enabled ? 'Account enabled' : 'Account disabled');
+      setSuccessMsg(enabled ? 'Đã kích hoạt tài khoản' : 'Đã vô hiệu hóa tài khoản');
       await refreshAfterAction(id);
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to change account status'));
+      setError(readApiErrorMessage(e, 'Không đổi được trạng thái tài khoản'));
       if (selectedUser?.id === id) await fetchUserDetail(id);
     } finally { setActionLoading(false); }
   }, [fetchUserDetail, refreshAfterAction, selectedUser]);
@@ -177,11 +180,11 @@ export const useAdminUserController = () => {
     setActionLoading(true); clearMessages();
     try {
       await AdminService.deleteUser(id);
-      setSuccessMsg('Account deleted');
+      setSuccessMsg('Đã xóa tài khoản');
       if (selectedUser?.id === id) setSelectedUser(null);
       await fetchUsers(currentPage);
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to delete account'));
+      setError(readApiErrorMessage(e, 'Không xóa được tài khoản'));
     } finally { setActionLoading(false); }
   }, [currentPage, fetchUsers, selectedUser]);
 
@@ -189,12 +192,12 @@ export const useAdminUserController = () => {
     setActionLoading(true); clearMessages();
     try {
       await AdminService.restoreUser(id);
-      setSuccessMsg('Account restored');
+      setSuccessMsg('Đã khôi phục tài khoản');
       await fetchDeletedUsers(deletedPage);
       if (selectedUser?.id === id) setSelectedUser(null);
       void fetchStats(filters);
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to restore account'));
+      setError(readApiErrorMessage(e, 'Không khôi phục được tài khoản'));
     } finally { setActionLoading(false); }
   }, [deletedPage, fetchDeletedUsers, fetchStats, filters, selectedUser]);
 
@@ -202,9 +205,9 @@ export const useAdminUserController = () => {
     setActionLoading(true); clearMessages();
     try {
       await AdminService.resetPassword(id);
-      setSuccessMsg('Password reset email sent');
+      setSuccessMsg('Đã gửi email đặt lại mật khẩu');
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to send password reset email'));
+      setError(readApiErrorMessage(e, 'Không gửi được email đặt lại mật khẩu'));
     } finally { setActionLoading(false); }
   }, []);
 
@@ -212,11 +215,11 @@ export const useAdminUserController = () => {
     setActionLoading(true); clearMessages();
     try {
       await AdminService.changeRole(id, role);
-      setSuccessMsg('Role updated');
+      setSuccessMsg('Đã cập nhật vai trò');
       await refreshAfterAction(id);
     } catch (e: any) {
       // 400 "Validation failed" (role ngoai enum) se duoc mo qua detail trong readApiErrorMessage.
-      setError(readApiErrorMessage(e, 'Failed to change role'));
+      setError(readApiErrorMessage(e, 'Không đổi được vai trò'));
       if (selectedUser?.id === id) await fetchUserDetail(id);
     } finally { setActionLoading(false); }
   }, [fetchUserDetail, refreshAfterAction, selectedUser]);
@@ -226,34 +229,49 @@ export const useAdminUserController = () => {
    * Mỗi item vẫn qua rule nghiệp vụ riêng của BE nên phải đi hết danh sách rồi đếm
    * thành công/thất bại, không dừng ở lỗi đầu tiên.
    */
+  /**
+   * Thao tác hàng loạt. BE có endpoint bulk thật (tối đa 100 id/lần) cho lock/unlock/role;
+   * delete không có bulk nên gọi tuần tự. Kết quả `failed[]` của BE được đưa thẳng vào banner.
+   */
   const runBulkAction = useCallback(async (
-    action: 'lock' | 'unlock' | 'delete', ids: number[],
-  ): Promise<void> => {
-    if (!ids.length) return;
+    action: 'lock' | 'unlock' | 'delete' | 'role', ids: number[],
+    opts: { reason?: string; role?: Role } = {},
+  ): Promise<boolean> => {
+    if (!ids.length) return false;
     setActionLoading(true);
     clearMessages();
-    const call = {
-      lock: AdminService.lockUser, unlock: AdminService.unlockUser, delete: AdminService.deleteUser,
-    }[action];
-    let done = 0;
-    let firstError = '';
-    for (const id of ids) {
-      try {
-        await call(id);
-        done += 1;
-      } catch (e: any) {
-        if (!firstError) firstError = readApiErrorMessage(e, 'Rejected by validation');
+    const chunk = ids.slice(0, 100);
+    try {
+      let failed: { id: number; message: string }[] = [];
+      if (action === 'lock') {
+        const res = await AdminService.bulkLockUsers({ ids: chunk, reason: opts.reason });
+        failed = res.data.data!.failed;
+      } else if (action === 'unlock') {
+        const res = await AdminService.bulkUnlockUsers({ ids: chunk });
+        failed = res.data.data!.failed;
+      } else if (action === 'role') {
+        if (!opts.role) throw new Error('Chưa chọn vai trò');
+        const res = await AdminService.bulkChangeRole({ ids: chunk, role: opts.role });
+        failed = res.data.data!.failed;
+      } else {
+        for (const id of chunk) {
+          try { await AdminService.deleteUser(id); }
+          catch (e: any) { failed = [...failed, { id, message: readApiErrorMessage(e, 'Bị rule nghiệp vụ từ chối') }]; }
+        }
       }
+      const done = chunk.length - failed.length;
+      const label = { lock: 'Đã khóa', unlock: 'Đã mở khóa', delete: 'Đã xóa', role: 'Đã đổi vai trò' }[action];
+      setSuccessMsg(`${label} ${done}/${chunk.length} tài khoản`);
+      if (failed.length) setError(`${failed.length} tài khoản bị chặn: ${failed[0].message}`);
+      await fetchUsers(currentPage, filters, pageSize);
+      return failed.length === 0;
+    } catch (e: any) {
+      setError(readApiErrorMessage(e, 'Thao tác hàng loạt thất bại'));
+      return false;
+    } finally {
+      setActionLoading(false);
     }
-    const past = { lock: 'Locked', unlock: 'Unlocked', delete: 'Deleted' }[action];
-    if (done > 0) setSuccessMsg(`${past} ${done} of ${ids.length} account(s)`);
-    if (done < ids.length) {
-      setError(`${ids.length - done} of ${ids.length} account(s) were rejected — ${firstError}`);
-    }
-    await fetchUsers(currentPage);
-    if (selectedUser && ids.includes(selectedUser.id)) await fetchUserDetail(selectedUser.id);
-    setActionLoading(false);
-  }, [currentPage, fetchUserDetail, fetchUsers, selectedUser]);
+  }, [currentPage, fetchUsers, filters, pageSize]);
 
   const fetchAuditLogs = useCallback(async (page = 0, f: AuditFilters = auditFilters) => {
     try {
@@ -268,7 +286,7 @@ export const useAdminUserController = () => {
       setAuditPage(page);
       setAuditFilters(f);
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to load audit logs'));
+      setError(readApiErrorMessage(e, 'Không tải được nhật ký kiểm toán'));
     }
   }, [auditFilters]);
 
@@ -300,7 +318,7 @@ export const useAdminUserController = () => {
       a.download = `users-${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      setSuccessMsg('CSV downloaded');
+      setSuccessMsg('Đã tải file CSV');
       return true;
     } catch (e: any) {
       // responseType 'text' nen payload loi la JSON-string - parse truoc khi doc message.
@@ -320,11 +338,11 @@ export const useAdminUserController = () => {
     setActionLoading(true); clearMessages();
     try {
       const res = await AdminService.inviteUser(input);
-      setSuccessMsg(res.data.message || 'Invitation email sent');
+      setSuccessMsg(res.data.message || 'Đã gửi email mời');
       await fetchUsers(0, filters);
       return true;
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to invite member'));
+      setError(readApiErrorMessage(e, 'Không gửi được lời mời'));
       return false;
     } finally { setActionLoading(false); }
   }, [fetchUsers, filters]);
@@ -333,10 +351,10 @@ export const useAdminUserController = () => {
     setActionLoading(true); clearMessages();
     try {
       await AdminService.resendInvitation(id);
-      setSuccessMsg('Invitation email resent');
+      setSuccessMsg('Đã gửi lại email mời');
       await refreshAfterAction(id);
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to resend invitation'));
+      setError(readApiErrorMessage(e, 'Không gửi lại được lời mời'));
       if (selectedUser?.id === id) await fetchUserDetail(id);
     } finally { setActionLoading(false); }
   }, [fetchUserDetail, refreshAfterAction, selectedUser]);
@@ -345,10 +363,10 @@ export const useAdminUserController = () => {
     setActionLoading(true); clearMessages();
     try {
       await AdminService.revokeInvitation(id);
-      setSuccessMsg('Invitation link revoked');
+      setSuccessMsg('Đã thu hồi link mời');
       await refreshAfterAction(id);
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to revoke invitation'));
+      setError(readApiErrorMessage(e, 'Không thu hồi được link mời'));
       if (selectedUser?.id === id) await fetchUserDetail(id);
     } finally { setActionLoading(false); }
   }, [fetchUserDetail, refreshAfterAction, selectedUser]);
@@ -358,18 +376,18 @@ export const useAdminUserController = () => {
     try {
       const res = await AdminService.updateProfile(id, input);
       // BE ty message dung he qua (doi email = quay ve cho moi, thu hoi phien cu).
-      setSuccessMsg(res.data.message || 'Profile updated');
+      setSuccessMsg(res.data.message || 'Đã cập nhật hồ sơ');
       await fetchUsers(currentPage);
       if (selectedUser?.id === id) await fetchUserDetail(id);
       return true;
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to update profile'));
+      setError(readApiErrorMessage(e, 'Không cập nhật được hồ sơ'));
       return false;
     } finally { setActionLoading(false); }
   }, [currentPage, fetchUserDetail, fetchUsers, selectedUser]);
 
   return {
-    users, deletedUsers, selectedUser, auditLogs, stats,
+    users, deletedUsers, selectedUser, auditLogs, stats, pageSize,
     filters, auditFilters,
     currentPage, deletedPage, deletedSearch, auditPage,
     loading, loadingDeleted, actionLoading, exporting, error, successMsg,

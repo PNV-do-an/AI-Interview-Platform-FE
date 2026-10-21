@@ -3,6 +3,11 @@ import { ApiResponse } from '../models/Api.model';
 import {
   AuditLog, PagedResponse, ProfileUpdateResult, Role, UserDetail, UserStats, UserSummary,
 } from '../models/User.model';
+import {
+  AdminSettings, BulkRoleChangeRequest, BulkUserActionResult, DashboardRange, DashboardResponse,
+  JobReviewRequest, JobStatusCode, LockAccountRequest, ModerationAction, ModerationHistoryRow,
+  ModerationHistoryStats, ModerationJob, ModerationJobDetail, PermissionMatrix,
+} from '../models/AdminConsole.model';
 
 const BASE = '/api/v1/admin';
 
@@ -75,6 +80,67 @@ const AdminService = {
     to?: string;
   }) =>
     httpService.get<ApiResponse<PagedResponse<AuditLog>>>(`${BASE}/audit-logs`, { params }),
+
+  /** Body tùy chọn; `notifyUser` null => BE gửi email cho user. */
+  lockUserWithReason: (id: number, body: LockAccountRequest) =>
+    httpService.patch<ApiResponse<UserDetail>>(`${BASE}/users/${id}/lock`, body),
+
+  bulkLockUsers: (body: { ids: number[]; reason?: string; notifyUser?: boolean }) =>
+    httpService.post<ApiResponse<BulkUserActionResult>>(`${BASE}/users/bulk-lock`, body),
+
+  bulkUnlockUsers: (body: { ids: number[] }) =>
+    httpService.post<ApiResponse<BulkUserActionResult>>(`${BASE}/users/bulk-unlock`, body),
+
+  bulkChangeRole: (body: BulkRoleChangeRequest) =>
+    httpService.patch<ApiResponse<BulkUserActionResult>>(`${BASE}/users/bulk-role`, body),
+
+  // --- Admin console 004-008: dashboard ---
+  getDashboard: (days: DashboardRange) =>
+    httpService.get<ApiResponse<DashboardResponse>>(`${BASE}/dashboard`, { params: { days } }),
+
+  // --- Kiểm duyệt JD (chỉ đọc; quyết định duyệt nằm ở PATCH /jobs/{id}/review) ---
+  getModerationQueue: (params: {
+    page?: number;
+    size?: number;
+    /** BE chặn giá trị khác 4 nhãn JobStatus. */
+    status?: JobStatusCode;
+    search?: string;
+  }) =>
+    httpService.get<ApiResponse<PagedResponse<ModerationJob>>>(`${BASE}/jobs/moderation`, { params }),
+
+  getModerationDetail: (id: number) =>
+    httpService.get<ApiResponse<ModerationJobDetail>>(`${BASE}/jobs/moderation/${id}`),
+
+  /** Param lọc quyết định tên là `decision` (không phải `action`). */
+  getModerationHistory: (params: {
+    page?: number;
+    size?: number;
+    decision?: ModerationAction;
+    /** yyyy-MM-dd. */
+    from?: string;
+    to?: string;
+    moderatorId?: number;
+    search?: string;
+  }) =>
+    httpService.get<ApiResponse<PagedResponse<ModerationHistoryRow>>>(`${BASE}/jobs/moderation/history`, { params }),
+
+  getModerationHistoryStats: () =>
+    httpService.get<ApiResponse<ModerationHistoryStats>>(`${BASE}/jobs/moderation/history/stats`),
+
+  /** ADMIN + STAFF; job phải đang PENDING_APPROVAL; `reason` bắt buộc khi từ chối. */
+  reviewJob: (id: number, body: JobReviewRequest) =>
+    httpService.patch<ApiResponse<ModerationJobDetail['job']>>(`/api/v1/jobs/${id}/review`, body),
+
+  // --- RBAC + System settings ---
+  getPermissionMatrix: () =>
+    httpService.get<ApiResponse<PermissionMatrix>>(`${BASE}/permissions/matrix`),
+
+  getSettings: () =>
+    httpService.get<ApiResponse<AdminSettings>>(`${BASE}/settings`),
+
+  /** PUT theo nhóm.key phẳng trong object lồng nhau; chỉ gửi key đã đổi. Lỗi -> 422 `{detail: {key: msg}}`, không ghi một phần. */
+  updateSettings: (body: Record<string, Record<string, string | number | boolean>>) =>
+    httpService.put<ApiResponse<AdminSettings>>(`${BASE}/settings`, body),
 };
 
 export default AdminService;

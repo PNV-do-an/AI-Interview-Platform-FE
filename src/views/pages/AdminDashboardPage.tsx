@@ -1,551 +1,754 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import AdminService from '../../services/admin.service';
+import {
+  AuditLog, PagedResponse, Role,
+} from '../../models/User.model';
+import {
+  DashboardResponse, DashboardRange, ModerationJob, ModerationJobDetail,
+} from '../../models/AdminConsole.model';
+import ConfirmDialog from '../components/ConfirmDialog';
+import {
+  AdminPageHeader, EmptyBlock, ErrorBlock, ICON, LoadingBlock, Pill, adminButton,
+  errorText, fmtServer, timeAgo,
+} from '../components/adminKit';
 
 /**
- * STATIC mockup page — Admin dashboard (Stitch screen_16 "bảng điều khiển quản trị viên").
- * BE chưa có endpoint dashboard tổng hợp nên trang dựng tĩnh: giữ nguyên số liệu demo tiếng
- * Việt từ mockup, chrome tiếng Anh, không gọi API, không gắn sidebar.
- * Màu mockup không có token dự án (giữ dạng hex): #e2e8f0 hairline, #004598 tertiary,
- * #005cc6 tertiary-container (nhóm Mentor), #4f46e5 đường ứng viên, #006b5f đường phỏng vấn,
- * #dae2fd lưới biểu đồ, #eaedff nền donut, #777587 phân đoạn quản trị, #283044/#eef0ff/#c3c0ff tooltip tối.
+ * Tổng quan Quản trị Hệ thống — screen `dash_board_admin` (mockup Stitch 2026-10-21).
+ *
+ * DATA (số thật): GET /admin/dashboard?days=, GET /admin/audit-logs,
+ * GET /admin/jobs/moderation?status=PENDING_APPROVAL (+ detail cho 3 thẻ hàng chờ),
+ * PATCH /jobs/{id}/review cho "Duyệt nhanh".
+ * DEMO giữ nguyên văn mockup (BE chưa có endpoint, đã ghi nhận ở spec/INDEX.md):
+ *   - card "Tài nguyên AI & Hệ thống" (uptime 99.98%, độ trễ 320ms, token 1.240/2.500, 14 phòng live);
+ *   - biểu đồ area "Tần suất & Xu hướng Lượt phỏng vấn AI" (12 tháng, không có time-series API);
+ *   - ô "Thời lượng 24m 18s" trong card phỏng vấn AI;
+ *   - block "Cảnh báo kiểm duyệt JD vi phạm chính sách" (cột aiSafetyScore phía BE luôn null).
+ * Phân đoạn mốc thời gian chỉ có 7/30/90 vì BE trả 400 với giá trị khác.
  */
 
-const TIME_PILLS = ['Today', '7 days', 'Past 30 days', 'This year', 'Custom'];
+const RANGE_LABEL: Record<DashboardRange, string> = { 7: '7 ngày', 30: '30 ngày qua', 90: '90 ngày' };
 
-const ACTIVITY_FILTERS = ['All', 'New users', 'Job postings', 'Interview sessions', 'Security alerts'];
-
-const ACTIVITY_LOGS = [
-  {
-    icon: 'post_add', tile: 'bg-surface-mid text-primary',
-    title: <>Công ty CP VNG vừa đăng tin: <span className="text-primary">Senior Backend Engineer (Go/Kubernetes)</span></>,
-    desc: 'Vị trí tuyển dụng 03 chỉ tiêu, mức lương thỏa thuận $2,500 - $3,500 tại TP. Hồ Chí Minh.',
-    time: '4 phút trước', badge: { text: 'Chờ duyệt', cls: 'bg-success-bg text-success-text' },
-  },
-  {
-    icon: 'psychology_alt', tile: 'bg-secondary-fixed text-ink',
-    title: <>Ứng viên <span>Trần Minh Khang</span> hoàn thành phiên phỏng vấn AI</>,
-    desc: 'Vị trí React Frontend Developer • Kết quả đánh giá: 9.2/10 (Thuộc top 5% xuất sắc).',
-    time: '12 phút trước', badge: { text: 'Hoàn thành', cls: 'bg-surface-high text-success-text' },
-  },
-  {
-    icon: 'verified_user', tile: 'bg-info text-primary',
-    title: <>Doanh nghiệp <span>TechCorp APAC</span> nâng cấp gói Enterprise Tier</>,
-    desc: 'Kích hoạt 500 token phỏng vấn tự động kèm phòng phỏng vấn thương hiệu riêng.',
-    time: '25 phút trước', badge: { text: 'Thanh toán thành công', cls: 'bg-surface-mid text-primary' },
-  },
-  {
-    icon: 'person_add', tile: 'bg-surface-mid text-ink',
-    title: <>Người dùng mới <span>Lê Hoàng Nam</span> đăng ký tài khoản Ứng viên</>,
-    desc: 'Xác thực danh tính qua GitHub SSO • Đã tải lên CV định dạng PDF (Data Analyst).',
-    time: '38 phút trước', badge: { text: 'Đã xác thực', cls: 'bg-surface-low text-ink-variant' },
-  },
-  {
-    icon: 'cloud_sync', tile: 'bg-surface-highest text-[#004598]',
-    title: <>Tải trọng AI Audio Transcriber Node-03 tăng đạt ngưỡng 85%</>,
-    desc: 'Kubernetes Auto-scaler đã tự động kích hoạt thêm 02 pod phụ trợ trên cụm máy chủ Singapore.',
-    time: '1 giờ trước', badge: { text: 'Tự cân bằng tải', cls: 'bg-success-bg text-success-text' },
-  },
+const ROLE_BUCKET: { key: Role | 'STAFF_ADMIN'; label: string }[] = [
+  { key: 'ROLE_USER', label: 'Ứng viên' },
+  { key: 'ROLE_INTERVIEWER', label: 'Doanh nghiệp' },
+  { key: 'STAFF_ADMIN', label: 'Mod/Admin' },
 ];
 
-const MODERATION_QUEUE = [
-  {
-    initials: 'TK', tone: 'text-primary', title: 'Lead Product Manager',
-    meta: 'Tiki Corp • Gửi 15 phút trước', badge: { text: 'Mới', cls: 'bg-secondary-fixed text-ink' },
-    salary: '75 - 105 triệu VNĐ', location: 'TP. Hồ Chí Minh',
-    tag: { icon: 'verified', text: 'Khớp 98% AI', cls: 'bg-success-bg text-success-text' },
-  },
-  {
-    initials: 'FPT', tone: 'text-success-text', title: 'AI/ML Engineer (LLM Fine-tuning)',
-    meta: 'FPT Software • Gửi 45 phút trước', badge: { text: 'Ưu tiên', cls: 'bg-info text-info-text' },
-    salary: '45 - 65 triệu VNĐ', location: 'Hà Nội (Hybrid)',
-    tag: { icon: 'security', text: 'Đã quét an toàn', cls: 'bg-success-bg text-success-text' },
-  },
-  {
-    initials: 'SP', tone: 'text-[#005cc6]', title: 'Chuyên viên Tuyển dụng IT (Tech Recruiter)',
-    meta: 'Shopee Vietnam • Gửi 2 giờ trước', badge: { text: 'Tiêu chuẩn', cls: 'bg-surface-high text-ink-variant' },
-    salary: '20 - 32 triệu VNĐ', location: 'TP. Hồ Chí Minh',
-    tag: { icon: 'history', text: '3 vòng PV', cls: 'bg-surface-high text-ink-variant' },
-  },
+const DONUT_TONE: { color: string; text: string }[] = [
+  { color: '#4f46e5', text: 'text-primary' },
+  { color: '#006b5f', text: 'text-secondary-teal' },
+  { color: '#005cc6', text: 'text-tertiary' },
+  { color: '#c7c4d8', text: 'text-on-surface-variant' },
 ];
 
-const AdminDashboardPage: React.FC = () => (
-  <div className="flex flex-col gap-4">
-    {/* Command bar */}
-    <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-1 text-label-md text-ink-variant">
-          <span>System administration</span>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="font-semibold text-primary">Overview dashboard</span>
-        </div>
-        <h1 className="m-0 text-headline-lg font-bold tracking-tight text-ink">System Administration Overview</h1>
-        <p className="m-0 max-w-3xl text-body-md text-ink-variant">
-          Monitor operational performance, user growth metrics and AI interview activity in real time.
-        </p>
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="inline-flex items-center rounded-md bg-surface-mid p-1 shadow-inner">
-          {TIME_PILLS.map((t, i) => (
-            <button
-              key={t}
-              type="button"
-              className={
-                i === 2
-                  ? 'inline-flex items-center gap-1 rounded px-3 py-1.5 text-label-md font-bold text-primary shadow-sm transition-colors bg-card'
-                  : 'inline-flex items-center gap-1 rounded px-3 py-1.5 text-label-md text-ink-variant transition-colors hover:text-ink'
-              }
-            >
-              {t === 'Custom' && <span className="material-symbols-outlined text-[16px]">calendar_today</span>}
-              {t}
-            </button>
-          ))}
-        </div>
-        <button type="button" className="inline-flex h-10 items-center gap-1.5 rounded-md bg-card px-4 text-label-md font-medium text-ink shadow-sm transition-colors hover:bg-surface-mid">
-          <span className="material-symbols-outlined text-[18px] text-ink-variant">download</span>
-          Export report
-        </button>
-        <button type="button" className="inline-flex h-10 items-center gap-1.5 rounded-md bg-card px-4 text-label-md font-medium text-ink shadow-sm transition-colors hover:bg-surface-mid">
-          <span className="material-symbols-outlined text-[18px] text-primary">psychology</span>
-          Configure AI prompt
-        </button>
-        <Link to="/admin/job-approvals" className="relative inline-flex h-10 items-center gap-1.5 rounded-md bg-primary-container px-4 text-label-md font-medium text-on-primary shadow-md transition-opacity hover:opacity-95">
-          <span className="material-symbols-outlined text-[18px]">verified</span>
-          Moderate JD now
-          <span className="ml-1 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-bold text-white">7</span>
-        </Link>
-      </div>
-    </div>
+const ACTION_META: Record<string, { label: string; icon: string; cat: 'user' | 'job' | 'security' | 'interview' }> = {
+  INVITE_USER: { label: 'Mời thành viên mới', icon: 'person_add', cat: 'user' },
+  RESEND_INVITATION: { label: 'Gửi lại lời mời', icon: 'send', cat: 'user' },
+  REVOKE_INVITATION: { label: 'Thu hồi lời mời', icon: 'link_off', cat: 'user' },
+  UPDATE_PROFILE: { label: 'Cập nhật hồ sơ', icon: 'badge', cat: 'user' },
+  CHANGE_ROLE: { label: 'Chuyển vai trò', icon: 'admin_panel_settings', cat: 'user' },
+  ENABLE_USER: { label: 'Kích hoạt tài khoản', icon: 'how_to_reg', cat: 'user' },
+  DISABLE_USER: { label: 'Vô hiệu hóa tài khoản', icon: 'block', cat: 'user' },
+  DELETE_USER: { label: 'Xóa tài khoản', icon: 'delete', cat: 'security' },
+  RESTORE_USER: { label: 'Phục hồi tài khoản', icon: 'restore', cat: 'user' },
+  VIEW_USER: { label: 'Xem hồ sơ tài khoản', icon: 'visibility', cat: 'user' },
+  EXPORT_USERS: { label: 'Xuất CSV danh sách', icon: 'download', cat: 'user' },
+  LOCK_USER: { label: 'Khóa tài khoản', icon: 'lock', cat: 'security' },
+  UNLOCK_USER: { label: 'Mở khóa tài khoản', icon: 'lock_open', cat: 'security' },
+  RESET_PASSWORD: { label: 'Gửi mail đặt lại mật khẩu', icon: 'key', cat: 'security' },
+  APPROVE_JOB: { label: 'Duyệt tin tuyển dụng', icon: 'verified', cat: 'job' },
+  REJECT_JOB: { label: 'Từ chối tin tuyển dụng', icon: 'gavel', cat: 'job' },
+  UPDATE_SETTINGS: { label: 'Cập nhật cấu hình hệ thống', icon: 'tune', cat: 'interview' },
+};
 
-    {/* KPI row */}
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-      {/* Users */}
-      <div className="flex flex-col justify-between rounded-xl border border-[#e2e8f0] bg-card p-4 shadow-sm">
-        <div>
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-label-md uppercase tracking-wider text-ink-variant">Total users</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-info text-primary">
-              <span className="material-symbols-outlined text-[20px]">group</span>
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-metric-stat font-bold tracking-tight text-ink">12,845</span>
-            <span className="inline-flex items-center text-label-md font-bold text-success-text">
-              <span className="material-symbols-outlined text-[16px]">trending_up</span>+14.2%
-            </span>
-          </div>
-          <p className="m-0 mt-1 text-body-sm text-ink-variant">So với tháng trước</p>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-1.5 rounded-md bg-surface-low p-2 pt-2">
-          <span className="rounded bg-card px-2 py-0.5 text-label-sm text-ink-variant"><strong className="text-ink">9,230</strong> Ứng viên</span>
-          <span className="rounded bg-card px-2 py-0.5 text-label-sm text-ink-variant"><strong className="text-ink">3,150</strong> Doanh nghiệp</span>
-          <span className="rounded bg-card px-2 py-0.5 text-label-sm text-ink-variant"><strong className="text-ink">465</strong> Mod/Admin</span>
-        </div>
-      </div>
-      {/* JDs */}
-      <div className="flex flex-col justify-between rounded-xl border border-[#e2e8f0] bg-card p-4 shadow-sm">
-        <div>
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-label-md uppercase tracking-wider text-ink-variant">Total job postings (JD)</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-success-bg text-success-text">
-              <span className="material-symbols-outlined text-[20px]">assignment</span>
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-metric-stat font-bold tracking-tight text-ink">1,428</span>
-            <span className="inline-flex items-center text-label-md font-bold text-success-text">
-              <span className="material-symbols-outlined text-[16px]">trending_up</span>+8.6%
-            </span>
-          </div>
-          <p className="m-0 mt-1 text-body-sm text-ink-variant">112 tin mới trong tuần này</p>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-1.5 rounded-md bg-surface-low p-2 pt-2">
-          <span className="rounded bg-card px-2 py-0.5 text-label-sm text-ink-variant"><strong className="text-success-text">1,180</strong> Mở tuyển</span>
-          <span className="rounded bg-card px-2 py-0.5 text-label-sm text-ink-variant"><strong className="text-ink-variant">185</strong> Đã đóng</span>
-          <span className="inline-flex items-center gap-1 rounded bg-danger-bg px-2 py-0.5 text-label-sm font-bold text-danger-text">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-error" />
-            63 chờ (7 gấp)
-          </span>
-        </div>
-      </div>
-      {/* AI interviews */}
-      <div className="flex flex-col justify-between rounded-xl border border-[#e2e8f0] bg-card p-4 shadow-sm">
-        <div>
-          <div className="mb-1 flex items-center justify-between">
-            <span className="text-label-md uppercase tracking-wider text-ink-variant">AI interview sessions</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-surface-high text-primary">
-              <span className="material-symbols-outlined text-[20px]">smart_toy</span>
-            </div>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-metric-stat font-bold tracking-tight text-ink">48,920</span>
-            <span className="inline-flex items-center text-label-md font-bold text-success-text">
-              <span className="material-symbols-outlined text-[16px]">trending_up</span>+22.5%
-            </span>
-          </div>
-          <p className="m-0 mt-1 text-body-sm text-ink-variant">3,410 lượt trong 7 ngày gần nhất</p>
-        </div>
-        <div className="mt-3 flex items-center justify-between gap-2 rounded-md bg-surface-low p-2">
-          <div className="flex flex-col">
-            <span className="text-label-sm text-ink-variant">Tỷ lệ xong</span>
-            <span className="text-label-md font-bold text-primary">94.8%</span>
-          </div>
-          <div className="h-6 w-px bg-surface-highest" />
-          <div className="flex flex-col">
-            <span className="text-label-sm text-ink-variant">Điểm TB</span>
-            <span className="text-label-md font-bold text-success-text">78.4 / 100</span>
-          </div>
-          <div className="h-6 w-px bg-surface-highest" />
-          <div className="flex flex-col">
-            <span className="text-label-sm text-ink-variant">Thời lượng</span>
-            <span className="text-label-md font-bold text-ink">24m 18s</span>
-          </div>
-        </div>
-      </div>
-      {/* System resources */}
-      <div className="flex flex-col justify-between rounded-xl border border-[#e2e8f0] bg-card p-4 shadow-sm">
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <span className="text-label-md font-semibold uppercase tracking-wider text-ink-variant">AI &amp; system resources</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-surface-mid text-ink">
-              <span className="material-symbols-outlined text-[20px]">dns</span>
-            </div>
-          </div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-metric-stat font-bold tracking-tight text-success-text">99.98%</span>
-            <span className="text-label-sm font-medium text-ink-variant">Uptime SLA</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-body-sm text-ink-variant">
-            <span className="material-symbols-outlined text-[16px] text-success-text">speed</span>
-            <span>AI LLM latency: <strong className="font-semibold text-ink">320ms</strong></span>
-          </div>
-        </div>
-        <div className="mt-3 flex flex-col gap-2 rounded-md bg-surface-low p-2 pt-1.5">
-          <div className="flex items-center justify-between text-label-sm">
-            <span className="text-ink-variant">Token chi tiêu tháng</span>
-            <span className="font-bold text-ink">1,240 / 2,500</span>
-          </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-surface-mid">
-            <div className="h-full w-[49.6%] rounded-full bg-primary-container" />
-          </div>
-          <div className="flex items-center justify-between text-[11px] text-ink-variant">
-            <span className="inline-flex items-center gap-1.5 font-medium">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-secondary" />14 phòng đang live
-            </span>
-            <span className="font-semibold text-primary">49.6% ngân sách</span>
-          </div>
-        </div>
-      </div>
-    </div>
+const CHIPS: { key: 'all' | 'user' | 'job' | 'interview' | 'security'; label: string }[] = [
+  { key: 'all', label: 'Tất cả' },
+  { key: 'user', label: 'Người dùng mới' },
+  { key: 'job', label: 'Tin tuyển dụng' },
+  { key: 'interview', label: 'Phiên phỏng vấn' },
+  { key: 'security', label: 'Cảnh báo bảo mật' },
+];
 
-    {/* Middle: chart + donut */}
-    <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
-      <div className="flex flex-col gap-3 lg:col-span-8">
-        <div className="flex flex-col rounded-xl border border-[#e2e8f0] bg-card p-4 shadow-sm">
-          <div className="flex flex-col justify-between gap-3 border-b-0 pb-3 sm:flex-row sm:items-center">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-primary" />
-                <h2 className="m-0 text-headline-sm font-bold text-ink">AI interview frequency &amp; trends</h2>
-              </div>
-              <p className="m-0 pl-4 text-body-sm text-ink-variant">
-                Biểu đồ đối sánh số lượt ứng viên tự luyện tập và phỏng vấn chính thức theo ủy quyền doanh nghiệp
-              </p>
-            </div>
-            <div className="inline-flex self-start rounded-md bg-surface-low p-1 sm:self-auto">
-              {['Theo tuần', '12 tháng qua', 'Theo giờ trong ngày'].map((t, i) => (
-                <button
-                  key={t}
-                  type="button"
-                  className={
-                    i === 1
-                      ? 'rounded px-2.5 py-1 text-label-sm font-bold text-primary shadow-sm transition-colors bg-card'
-                      : 'rounded px-2.5 py-1 text-label-sm text-ink-variant transition-colors hover:text-ink'
-                  }
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-md bg-surface-low px-3 py-2">
-            <div className="flex flex-wrap items-center gap-4">
-              <span className="inline-flex items-center gap-2 text-label-sm text-ink">
-                <span className="h-3 w-3 rounded-sm bg-primary-container" />
-                Mock Interview (Ứng viên tự luyện)
-              </span>
-              <span className="inline-flex items-center gap-2 text-label-sm text-ink">
-                <span className="h-3 w-3 rounded-sm bg-secondary" />
-                Formal Interview (Doanh nghiệp giao đề)
-              </span>
-            </div>
-            <span className="inline-flex items-center gap-1 text-label-sm text-ink">
-              <span className="text-ink-variant">Tăng trưởng năm:</span>
-              <strong className="font-bold text-success-text">+34.8% YOY</strong>
-            </span>
-          </div>
-          <div className="relative h-72 w-full">
-            <svg className="h-full w-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 760 220">
-              <defs>
-                <linearGradient id="primaryAreaGrad" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.32" />
-                  <stop offset="100%" stopColor="#4f46e5" stopOpacity="0.00" />
-                </linearGradient>
-                <linearGradient id="secondaryAreaGrad" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#006b5f" stopOpacity="0.2" />
-                  <stop offset="100%" stopColor="#006b5f" stopOpacity="0.00" />
-                </linearGradient>
-              </defs>
-              {[10, 60, 110, 160].map(y => (
-                <line key={y} opacity="0.6" stroke="#dae2fd" strokeDasharray="3 3" x1="0" x2="760" y1={y} y2={y} />
-              ))}
-              <line opacity="0.9" stroke="#dae2fd" x1="0" x2="760" y1="205" y2="205" />
-              <path d="M 0,170 C 65,160 110,140 180,120 C 250,100 310,130 380,85 C 450,40 520,70 600,45 C 670,25 710,35 760,18 L 760,205 L 0,205 Z" fill="url(#primaryAreaGrad)" />
-              <path d="M 0,195 C 65,190 110,180 180,165 C 250,150 310,160 380,135 C 450,110 520,125 600,105 C 670,90 710,95 760,80 L 760,205 L 0,205 Z" fill="url(#secondaryAreaGrad)" />
-              <path d="M 0,195 C 65,190 110,180 180,165 C 250,150 310,160 380,135 C 450,110 520,125 600,105 C 670,90 710,95 760,80" fill="none" stroke="#006b5f" strokeLinecap="round" strokeWidth="2.5" />
-              <path d="M 0,170 C 65,160 110,140 180,120 C 250,100 310,130 380,85 C 450,40 520,70 600,45 C 670,25 710,35 760,18" fill="none" stroke="#4f46e5" strokeLinecap="round" strokeWidth="3" />
-              <circle cx="180" cy="120" fill="#4f46e5" r="4.5" stroke="#ffffff" strokeWidth="2" />
-              <circle cx="380" cy="85" fill="#4f46e5" r="4.5" stroke="#ffffff" strokeWidth="2" />
-              <circle cx="600" cy="45" fill="#4f46e5" r="5" stroke="#ffffff" strokeWidth="2.5" />
-              <circle cx="760" cy="18" fill="#4f46e5" r="5" stroke="#ffffff" strokeWidth="2.5" />
-              <circle cx="600" cy="105" fill="#006b5f" r="4" stroke="#ffffff" strokeWidth="2" />
-              <circle cx="760" cy="80" fill="#006b5f" r="4" stroke="#ffffff" strokeWidth="2" />
-              <line opacity="0.5" stroke="#4f46e5" strokeDasharray="4 4" strokeWidth="1.5" x1="600" x2="600" y1="20" y2="205" />
-            </svg>
-            {/* Tooltip anchored on T11 */}
-            <div className="pointer-events-none absolute left-[72%] top-4 z-10 flex w-48 -translate-x-1/2 flex-col gap-1 rounded-md bg-[#283044] p-2 text-[#eef0ff] shadow-xl">
-              <div className="flex items-center justify-between border-b border-white/10 pb-1">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#c3c0ff]">Tháng 11 / 2026</span>
-                <span className="rounded bg-secondary px-1.5 py-0.5 text-[9px] font-bold text-white">+28%</span>
-              </div>
-              <div className="flex items-center justify-between text-[12px]">
-                <span className="inline-flex items-center gap-1.5 text-slate-300">
-                  <span className="h-2 w-2 rounded-full bg-primary-container" />Lượt phỏng vấn:
-                </span>
-                <span className="font-bold text-white">8,960 lượt</span>
-              </div>
-              <div className="flex items-center justify-between pt-0.5 text-[11px] text-slate-300">
-                <span>Tự luyện: 6,850</span>
-                <span>Giao đề: 2,110</span>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center justify-between pt-2 text-label-sm text-ink-variant">
-            {['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9'].map(t => <span key={t}>{t}</span>)}
-            <span className="font-semibold text-ink">T10</span>
-            <span className="font-bold text-primary">T11 (Đỉnh)</span>
-            <span className="font-semibold text-ink">T12</span>
-          </div>
-        </div>
+/** Series demo nguyên văn từ path SVG trong mockup (viewBox 0 0 760 220). */
+const DEMO_AREA_PRIMARY = 'M 0,170 C 65,160 110,140 180,120 C 250,100 310,130 380,85 C 450,40 520,70 600,45 C 670,25 710,35 760,18 L 760,205 L 0,205 Z';
+const DEMO_AREA_SECONDARY = 'M 0,195 C 65,190 110,180 180,165 C 250,150 310,160 380,135 C 450,110 520,125 600,105 C 670,90 710,95 760,80 L 760,205 L 0,205 Z';
+const DEMO_LINE_PRIMARY = DEMO_AREA_PRIMARY.split(' L 760,205')[0];
+const DEMO_LINE_SECONDARY = DEMO_AREA_SECONDARY.split(' L 760,205')[0];
 
-        {/* Violation warning banner */}
-        <div className="flex items-start justify-between gap-3 rounded-xl bg-surface-high p-3">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-danger-bg text-danger-text">
-              <span className="material-symbols-outlined text-[22px]">warning</span>
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="m-0 text-headline-sm font-bold text-ink">JD policy violation moderation alert</h3>
-                <span className="rounded-full bg-error px-2 py-0.5 text-[10px] font-bold tracking-wide text-white">2 tin bị cắm cờ</span>
-              </div>
-              <p className="m-0 text-body-sm text-ink-variant">
-                Hệ thống AI tự động phát hiện 2 tin tuyển dụng chứa từ khóa phân biệt tuổi tác và yêu cầu ký quỹ trái quy định tuyển dụng.
-              </p>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-2 self-center">
-            <button type="button" className="rounded-md bg-card px-3.5 py-2 text-label-md font-medium text-ink shadow-sm transition-colors hover:bg-surface-mid">
-              Bỏ qua
-            </button>
-            <button type="button" className="inline-flex items-center gap-1.5 rounded-md bg-error px-3.5 py-2 text-label-md font-semibold text-white shadow-sm transition-opacity hover:opacity-90">
-              <span className="material-symbols-outlined text-[16px]">gavel</span>
-              Xử lý vi phạm
-            </button>
-          </div>
-        </div>
-      </div>
+const initials = (name: string): string => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts[0]) return 'JD';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+};
 
-      {/* Donut */}
-      <div className="flex flex-col justify-between rounded-xl border border-[#e2e8f0] bg-card p-4 shadow-sm lg:col-span-4">
-        <div>
-          <div className="flex items-center justify-between pb-1">
-            <h2 className="m-0 text-headline-sm font-bold text-ink">User distribution</h2>
-            <span className="material-symbols-outlined text-[20px] text-ink-variant">pie_chart</span>
-          </div>
-          <p className="m-0 text-body-sm text-ink-variant">Tỷ trọng tài khoản kích hoạt theo vai trò</p>
-          <div className="relative mx-auto my-4 flex h-56 w-56 items-center justify-center">
-            <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" fill="transparent" r="38" stroke="#eaedff" strokeWidth="12" />
-              <circle cx="50" cy="50" fill="transparent" r="38" stroke="#4f46e5" strokeDasharray="171.9 238.76" strokeDashoffset="0" strokeLinecap="round" strokeWidth="12" />
-              <circle cx="50" cy="50" fill="transparent" r="38" stroke="#006b5f" strokeDasharray="47.75 238.76" strokeDashoffset="-173" strokeLinecap="round" strokeWidth="12" />
-              <circle cx="50" cy="50" fill="transparent" r="38" stroke="#005cc6" strokeDasharray="14.32 238.76" strokeDashoffset="-222" strokeLinecap="round" strokeWidth="12" />
-              <circle cx="50" cy="50" fill="transparent" r="38" stroke="#777587" strokeDasharray="4.77 238.76" strokeDashoffset="-237" strokeLinecap="round" strokeWidth="12" />
-            </svg>
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-label-sm font-semibold uppercase tracking-wider text-ink-variant">Tổng cộng</span>
-              <span className="text-headline-lg font-bold tracking-tight text-ink">12,845</span>
-              <span className="text-[11px] font-bold text-success-text">Người dùng</span>
-            </div>
-          </div>
-          <div className="flex flex-col gap-2 pt-1">
-            {[
-              { dot: 'bg-primary-container', label: 'Ứng viên (Candidates)', count: '9,230 tài khoản', pct: '72%', pctCls: 'text-primary' },
-              { dot: 'bg-secondary', label: 'Nhà tuyển dụng (HR/Recruiter)', count: '2,560 doanh nghiệp', pct: '20%', pctCls: 'text-success-text' },
-              { dot: 'bg-[#005cc6]', label: 'Mentor & Cố vấn chuyên môn', count: '770 chuyên gia', pct: '6%', pctCls: 'text-[#005cc6]' },
-              { dot: 'bg-outline-strong', label: 'Quản trị viên & Điều phối', count: '285 nhân sự nội bộ', pct: '2%', pctCls: 'text-ink-variant' },
-            ].map(l => (
-              <div key={l.label} className="flex items-center justify-between rounded-md bg-surface-low p-2 transition-colors hover:bg-surface-mid">
-                <div className="flex items-center gap-2">
-                  <span className={`h-3 w-3 rounded-full ${l.dot}`} />
-                  <div className="flex flex-col">
-                    <span className="text-label-md font-semibold text-ink">{l.label}</span>
-                    <span className="text-[11px] text-ink-variant">{l.count}</span>
-                  </div>
-                </div>
-                <span className={`text-label-md font-bold ${l.pctCls}`}>{l.pct}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="mt-2 border-t border-surface-low pt-2">
-          <Link to="/admin/users" className="inline-flex w-full items-center justify-center gap-1 rounded-md py-2 text-label-md font-semibold text-primary transition-colors hover:bg-surface-mid">
-            Xem phân tích danh sách chi tiết
-            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-          </Link>
-        </div>
-      </div>
-    </div>
+const AdminDashboardPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [days, setDays] = useState<DashboardRange>(30);
+  const [dash, setDash] = useState<DashboardResponse | null>(null);
+  const [logs, setLogs] = useState<PagedResponse<AuditLog> | null>(null);
+  const [queue, setQueue] = useState<ModerationJob[]>([]);
+  const [queueDetails, setQueueDetails] = useState<Record<number, ModerationJobDetail['job']>>({});
+  const [chip, setChip] = useState<'all' | 'user' | 'job' | 'interview' | 'security'>('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [approveTarget, setApproveTarget] = useState<ModerationJob | null>(null);
+  const [busyId, setBusyId] = useState<number | null>(null);
+  const [toast, setToast] = useState('');
+  const [alertDismissed, setAlertDismissed] = useState(false);
+  const reqId = useRef(0);
 
-    {/* Bottom: activity log + moderation queue */}
-    <div className="grid grid-cols-1 gap-3 lg:grid-cols-12">
-      <div className="flex flex-col justify-between rounded-xl border border-[#e2e8f0] bg-card p-4 shadow-sm lg:col-span-7">
-        <div>
-          <div className="flex flex-col justify-between gap-2 pb-2 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[22px] text-primary">history</span>
-              <h2 className="m-0 text-headline-sm font-bold text-ink">System activity log</h2>
-            </div>
-            <span className="rounded-full bg-surface-high px-2 py-0.5 text-label-sm font-semibold text-ink-variant">
-              Thời gian thực (Live WebSocket)
-            </span>
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5 py-2">
-            {ACTIVITY_FILTERS.map((f, i) => (
-              <button
-                key={f}
-                type="button"
-                className={
-                  i === 0
-                    ? 'rounded-full bg-primary-container px-3 py-1 text-label-sm font-bold text-on-primary shadow-sm'
-                    : 'rounded-full bg-surface-mid px-3 py-1 text-label-sm text-ink-variant transition-colors hover:text-ink'
-                }
-              >
-                {f}
+  const load = useCallback(() => {
+    const id = ++reqId.current;
+    setLoading(true);
+    setError('');
+    Promise.all([
+      AdminService.getDashboard(days),
+      AdminService.getAuditLogs({ page: 0, size: 12 }),
+      AdminService.getModerationQueue({ page: 0, size: 3, status: 'PENDING_APPROVAL' }),
+    ])
+      .then(([d, a, q]) => {
+        if (reqId.current !== id) return;
+        setDash(d.data.data!);
+        setLogs(a.data.data!);
+        const items = q.data.data!.content;
+        setQueue(items);
+        items.forEach((job) => {
+          AdminService.getModerationDetail(job.id)
+            .then((res) => {
+              if (reqId.current === id) setQueueDetails((prev) => ({ ...prev, [job.id]: res.data.data!.job }));
+            })
+            .catch(() => {});
+        });
+      })
+      .catch((err) => { if (reqId.current === id) setError(errorText(err, 'Không tải được bảng điều khiển.')); })
+      .finally(() => { if (reqId.current === id) setLoading(false); });
+  }, [days]);
+
+  useEffect(() => {
+    const t = setTimeout(load, 200);
+    return () => clearTimeout(t);
+  }, [load]);
+
+  const roleBucketValue = (key: Role | 'STAFF_ADMIN'): number => {
+    if (!dash) return 0;
+    if (key === 'STAFF_ADMIN') return dash.users.byRole.ROLE_STAFF + dash.users.byRole.ROLE_ADMIN;
+    return dash.users.byRole[key];
+  };
+
+  const donut = useMemo(() => {
+    const total = dash?.users.total ?? 0;
+    const order: { role: Role; label: string; unit: string }[] = [
+      { role: 'ROLE_USER', label: 'Ứng viên (Candidates)', unit: 'tài khoản' },
+      { role: 'ROLE_INTERVIEWER', label: 'Nhà tuyển dụng (HR/Recruiter)', unit: 'doanh nghiệp' },
+      { role: 'ROLE_STAFF', label: 'Nhân viên vận hành', unit: 'nhân sự nội bộ' },
+      { role: 'ROLE_ADMIN', label: 'Quản trị viên & Điều phối', unit: 'nhân sự nội bộ' },
+    ];
+    return order.map((entry, i) => {
+      const count = dash?.users.byRole[entry.role] ?? 0;
+      const pct = total ? Math.round((count / total) * 1000) / 10 : 0;
+      return { ...entry, count, pct, tone: DONUT_TONE[i] };
+    });
+  }, [dash]);
+
+  const feed = useMemo(() => {
+    const list = logs?.content ?? [];
+    if (chip === 'all') return list;
+    return list.filter((row) => (ACTION_META[row.action]?.cat ?? 'user') === chip);
+  }, [logs, chip]);
+
+  const approve = async () => {
+    if (!approveTarget) return;
+    const id = approveTarget.id;
+    setBusyId(id);
+    try {
+      await AdminService.reviewJob(id, { approved: true });
+      setToast(`Đã duyệt “${approveTarget.title}”`);
+      setApproveTarget(null);
+      load();
+    } catch (err) {
+      setToast(errorText(err, 'Không duyệt được tin tuyển dụng.'));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  if (loading && !dash) {
+    return <div className="px-space-xl py-space-xl"><LoadingBlock label="Đang tải bảng điều khiển..." /></div>;
+  }
+
+  const completionRate = dash && dash.interviews.inPeriod
+    ? `${Math.round((dash.interviews.completedInPeriod / dash.interviews.inPeriod) * 1000) / 10}%`
+    : '—';
+
+  return (
+    <div className="px-space-xl py-space-xl bg-background w-full min-h-screen">
+      <div className="flex flex-col w-full">
+        <AdminPageHeader
+          crumbs={[{ label: 'Hệ thống Quản trị' }, { label: 'Bảng điều khiển Tổng quan' }]}
+          title="Tổng quan Quản trị Hệ thống"
+          subtitle="Giám sát hiệu suất vận hành, chỉ số tăng trưởng người dùng và hoạt động phỏng vấn AI theo thời gian thực."
+          actions={(
+            <div className="flex flex-wrap items-center gap-space-sm">
+              <div className="inline-flex items-center p-1 bg-surface-container rounded-xl shadow-inner">
+                {([7, 30, 90] as DashboardRange[]).map((range) => (
+                  <button
+                    key={range}
+                    type="button"
+                    onClick={() => setDays(range)}
+                    className={`px-3 py-1.5 rounded-lg text-ds-label-md transition-colors border-0 cursor-pointer ${
+                      days === range
+                        ? 'bg-surface-container-lowest text-primary font-bold shadow-sm'
+                        : 'bg-transparent text-on-surface-variant hover:text-on-surface'
+                    }`}
+                  >
+                    {RANGE_LABEL[range]}
+                  </button>
+                ))}
+              </div>
+              <button type="button" className={adminButton('ghost')} onClick={load}>
+                <span className={`${ICON} text-[18px] text-on-surface-variant`}>refresh</span>Tải lại số liệu
               </button>
-            ))}
+              <Link to="/admin/settings" className={`${adminButton('ghost')} no-underline`}>
+                <span className={`${ICON} text-[18px] text-primary`}>psychology</span>Cấu hình AI Prompt
+              </Link>
+              <Link to="/admin/job-approvals" className={`${adminButton('primary', 'shadow-md')} no-underline`}>
+                <span className={`${ICON} text-[18px]`}>verified</span>Kiểm duyệt JD ngay
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-secondary-teal text-on-secondary-teal text-[10px] font-bold">
+                  {dash?.jobs.pendingModeration ?? 0}
+                </span>
+              </Link>
+            </div>
+          )}
+        />
+
+        {error && <div className="mb-space-lg"><ErrorBlock message={error} onRetry={load} /></div>}
+        {toast && (
+          <div className="mb-space-lg rounded-xl bg-secondary-container px-4 py-3 text-ds-body-md text-on-secondary-container">
+            {toast}
           </div>
-          <div className="mt-2 flex flex-col gap-3">
-            {ACTIVITY_LOGS.map(l => (
-              <div key={l.time} className="flex items-start gap-3 rounded-md p-2 transition-colors hover:bg-surface-low">
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md ${l.tile}`}>
-                  <span className="material-symbols-outlined text-[20px]">{l.icon}</span>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="m-0 truncate text-label-md font-semibold text-ink">{l.title}</p>
-                    <span className="shrink-0 text-[11px] text-ink-variant">{l.time}</span>
-                  </div>
-                  <p className="m-0 mt-0.5 line-clamp-1 text-body-sm text-ink-variant">{l.desc}</p>
-                </div>
-                <span className={`shrink-0 self-center rounded-full px-2 py-0.5 text-[11px] font-bold ${l.badge.cls}`}>{l.badge.text}</span>
+        )}
+
+        {/* Hàng card chỉ số */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-lg mb-space-xl">
+          <div className="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-space-xs">
+                <span className="text-ds-label-md uppercase tracking-wider text-on-surface-variant">Tổng người dùng</span>
+                <span className="w-8 h-8 rounded-lg bg-primary-fixed flex items-center justify-center text-primary">
+                  <span className={`${ICON} text-[20px]`}>group</span>
+                </span>
               </div>
-            ))}
+              <div className="flex items-baseline gap-space-sm">
+                <span className="text-ds-display-sm text-on-surface font-extrabold tracking-tight">
+                  {(dash?.users.total ?? 0).toLocaleString('vi-VN')}
+                </span>
+                <span className="inline-flex items-center text-ds-label-md font-bold text-secondary-teal">
+                  <span className={`${ICON} text-[16px]`}>trending_up</span>+{(dash?.users.newInPeriod ?? 0).toLocaleString('vi-VN')}
+                </span>
+              </div>
+              <p className="text-ds-body-sm text-on-surface-variant mt-1">Tài khoản mới trong {days} ngày qua</p>
+            </div>
+            <div className="mt-space-md pt-space-sm flex flex-wrap gap-1.5 bg-surface-container-low p-2 rounded-lg">
+              {ROLE_BUCKET.map((bucket) => (
+                <span key={bucket.key} className="px-2 py-0.5 rounded-md bg-surface-container-lowest text-on-surface-variant text-ds-label-sm">
+                  <strong className="text-on-surface">{roleBucketValue(bucket.key).toLocaleString('vi-VN')}</strong> {bucket.label}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-space-xs">
+                <span className="text-ds-label-md uppercase tracking-wider text-on-surface-variant">Tổng tin tuyển dụng (JD)</span>
+                <span className="w-8 h-8 rounded-lg bg-secondary-container flex items-center justify-center text-on-secondary-container">
+                  <span className={`${ICON} text-[20px]`}>assignment</span>
+                </span>
+              </div>
+              <div className="flex items-baseline gap-space-sm">
+                <span className="text-ds-display-sm text-on-surface font-extrabold tracking-tight">
+                  {(dash?.jobs.total ?? 0).toLocaleString('vi-VN')}
+                </span>
+                <span className="inline-flex items-center text-ds-label-md font-bold text-secondary-teal">
+                  <span className={`${ICON} text-[16px]`}>trending_up</span>+{(dash?.jobs.newInPeriod ?? 0).toLocaleString('vi-VN')}
+                </span>
+              </div>
+              <p className="text-ds-body-sm text-on-surface-variant mt-1">{dash?.jobs.newInPeriod ?? 0} tin mới trong mốc đang xem</p>
+            </div>
+            <div className="mt-space-md pt-space-sm flex flex-wrap gap-1.5 bg-surface-container-low p-2 rounded-lg">
+              <span className="px-2 py-0.5 rounded-md bg-surface-container-lowest text-on-surface-variant text-ds-label-sm">
+                <strong className="text-secondary-teal">{dash?.jobs.byStatus.OPEN ?? 0}</strong> Mở tuyển
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-surface-container-lowest text-on-surface-variant text-ds-label-sm">
+                <strong className="text-on-surface-variant">{dash?.jobs.byStatus.CLOSED ?? 0}</strong> Đã đóng
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-error-container text-on-error-container text-ds-label-sm font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-error animate-pulse" />
+                {dash?.jobs.pendingModeration ?? 0} chờ duyệt
+              </span>
+            </div>
+          </div>
+
+          <div className="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-space-xs">
+                <span className="text-ds-label-md uppercase tracking-wider text-on-surface-variant">Lượt phỏng vấn AI</span>
+                <span className="w-8 h-8 rounded-lg bg-tertiary-fixed flex items-center justify-center text-tertiary">
+                  <span className={`${ICON} text-[20px]`}>smart_toy</span>
+                </span>
+              </div>
+              <div className="flex items-baseline gap-space-sm">
+                <span className="text-ds-display-sm text-on-surface font-extrabold tracking-tight">
+                  {(dash?.interviews.total ?? 0).toLocaleString('vi-VN')}
+                </span>
+                <span className="inline-flex items-center text-ds-label-md font-bold text-secondary-teal">
+                  <span className={`${ICON} text-[16px]`}>trending_up</span>+{(dash?.interviews.inPeriod ?? 0).toLocaleString('vi-VN')}
+                </span>
+              </div>
+              <p className="text-ds-body-sm text-on-surface-variant mt-1">{dash?.interviews.inPeriod ?? 0} lượt trong {days} ngày gần nhất</p>
+            </div>
+            <div className="mt-space-md pt-space-sm flex items-center justify-between bg-surface-container-low p-2 rounded-lg">
+              <div className="flex flex-col">
+                <span className="text-ds-label-sm text-on-surface-variant">Tỷ lệ xong</span>
+                <span className="text-ds-label-md font-bold text-primary">{completionRate}</span>
+              </div>
+              <div className="w-px h-6 bg-surface-container-highest" />
+              <div className="flex flex-col">
+                <span className="text-ds-label-sm text-on-surface-variant">Điểm TB</span>
+                <span className="text-ds-label-md font-bold text-secondary-teal">
+                  {dash?.interviews.avgOverallScore === null || dash?.interviews.avgOverallScore === undefined ? '—' : `${dash.interviews.avgOverallScore} / 100`}
+                </span>
+              </div>
+              <div className="w-px h-6 bg-surface-container-highest" />
+              <div className="flex flex-col">
+                <span className="text-ds-label-sm text-on-surface-variant">Thời lượng</span>
+                <span className="text-ds-label-md font-bold text-on-surface">24m 18s</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+            <div className="flex flex-col gap-space-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-ds-label-md uppercase tracking-wider text-on-surface-variant font-semibold">
+                  Tài nguyên AI & Hệ thống
+                </span>
+                <span className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface">
+                  <span className={`${ICON} text-[20px]`}>dns</span>
+                </span>
+              </div>
+              <div className="flex items-baseline gap-space-sm mt-1">
+                <span className="text-ds-display-sm text-secondary-teal font-extrabold tracking-tight">99.98%</span>
+                <span className="text-ds-label-sm text-on-surface-variant font-medium">Uptime SLA</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-ds-body-sm text-on-surface-variant">
+                <span className={`${ICON} text-[16px] text-secondary-teal`}>speed</span>
+                <span>Độ trễ AI LLM: <strong className="text-on-surface font-semibold">320ms</strong></span>
+              </div>
+            </div>
+            <div className="mt-space-md pt-space-xs flex flex-col gap-2 bg-surface-container-low p-space-sm rounded-lg">
+              <div className="flex items-center justify-between text-ds-label-sm">
+                <span className="text-on-surface-variant">Token chi tiêu tháng</span>
+                <span className="font-bold text-on-surface">1,240 / 2,500</span>
+              </div>
+              <div className="w-full h-2 bg-surface-container rounded-full overflow-hidden">
+                <div className="h-full bg-primary-container rounded-full" style={{ width: '49.6%' }} />
+              </div>
+              <div className="flex items-center justify-between text-[11px] text-on-surface-variant">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <span className="w-2 h-2 rounded-full bg-secondary-teal animate-pulse" />14 phòng đang live
+                </span>
+                <span className="font-semibold text-primary">49.6% ngân sách</span>
+              </div>
+            </div>
           </div>
         </div>
-        <div className="mt-3 border-t border-surface-low pt-2">
-          <Link to="/admin/users" className="flex w-full items-center justify-center gap-1 rounded-md bg-surface-mid py-2.5 text-label-md font-semibold text-ink transition-colors hover:bg-surface-high">
-            <span className="material-symbols-outlined text-[18px]">receipt_long</span>
-            Xem toàn bộ nhật ký kiểm toán (System Audit Log)
-          </Link>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg mb-space-xl">
+          <div className="lg:col-span-8 flex flex-col gap-space-lg">
+            <div className="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md pb-space-md">
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-space-sm">
+                    <span className="w-2.5 h-2.5 rounded-full bg-primary" />
+                    <h2 className="text-ds-headline-sm text-on-surface font-bold">Tần suất & Xu hướng Lượt phỏng vấn AI</h2>
+                  </div>
+                  <p className="text-ds-body-sm text-on-surface-variant pl-space-md">
+                    Biểu đồ đối sánh số lượt ứng viên tự luyện tập và phỏng vấn chính thức theo ủy quyền doanh nghiệp
+                  </p>
+                </div>
+                <div className="inline-flex p-1 bg-surface-container-low rounded-lg self-start sm:self-auto">
+                  <button type="button" className="px-2.5 py-1 text-on-surface-variant hover:text-on-surface text-ds-label-sm rounded-md transition-colors border-0 bg-transparent cursor-pointer">Theo tuần</button>
+                  <button type="button" className="px-2.5 py-1 bg-surface-container-lowest text-primary font-bold shadow-sm text-ds-label-sm rounded-md transition-all border-0 cursor-pointer">12 tháng qua</button>
+                  <button type="button" className="px-2.5 py-1 text-on-surface-variant hover:text-on-surface text-ds-label-sm rounded-md transition-colors border-0 bg-transparent cursor-pointer">Theo giờ trong ngày</button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-space-md py-space-sm px-space-md rounded-lg bg-surface-container-low mb-space-md">
+                <div className="flex items-center gap-space-lg">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-sm bg-primary-container" />
+                    <span className="text-ds-label-sm text-on-surface">Mock Interview (Ứng viên tự luyện)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-sm bg-secondary-teal" />
+                    <span className="text-ds-label-sm text-on-surface">Formal Interview (Doanh nghiệp giao đề)</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-space-xs text-ds-label-sm text-on-surface">
+                  <span className="text-on-surface-variant">Tổng phiên {days} ngày:</span>
+                  <strong className="text-secondary-teal font-bold">{(dash?.interviews.inPeriod ?? 0).toLocaleString('vi-VN')}</strong>
+                </div>
+              </div>
+
+              <div className="relative w-full h-72">
+                <svg className="inline-defs-container" aria-hidden="true" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
+                  <defs>
+                    <linearGradient id="primaryAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.35" />
+                      <stop offset="100%" stopColor="#4f46e5" stopOpacity="0" />
+                    </linearGradient>
+                    <linearGradient id="secondaryAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#006b5f" stopOpacity="0.3" />
+                      <stop offset="100%" stopColor="#006b5f" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 760 220">
+                  <path d={DEMO_AREA_SECONDARY} fill="url(#secondaryAreaGrad)" />
+                  <path d={DEMO_AREA_PRIMARY} fill="url(#primaryAreaGrad)" />
+                  <path d={DEMO_LINE_SECONDARY} fill="none" stroke="#006b5f" strokeWidth="2.5" strokeLinecap="round" />
+                  <path d={DEMO_LINE_PRIMARY} fill="none" stroke="#4f46e5" strokeWidth="3" strokeLinecap="round" />
+                  <circle cx="600" cy="45" r="5" fill="#4f46e5" stroke="#ffffff" strokeWidth="2.5" />
+                  <circle cx="760" cy="18" r="5" fill="#4f46e5" stroke="#ffffff" strokeWidth="2.5" />
+                  <circle cx="600" cy="105" r="4" fill="#006b5f" stroke="#ffffff" strokeWidth="2" />
+                </svg>
+                <div className="absolute top-4 left-[72%] -translate-x-1/2 p-space-sm bg-inverse-surface text-inverse-on-surface rounded-xl shadow-xl flex flex-col gap-1 pointer-events-none z-10 w-48">
+                  <div className="flex items-center justify-between pb-1">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-inverse-primary">Tháng 11 / 2026</span>
+                    <span className="px-1.5 py-0.5 rounded bg-secondary-teal text-on-secondary-teal text-[9px] font-bold">+28%</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[12px]">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-primary-container" />Lượt phỏng vấn:
+                    </span>
+                    <span className="font-bold">8,960 lượt</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] pt-0.5 opacity-80">
+                    <span>Tự luyện: 6,850</span>
+                    <span>Giao đề: 2,110</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-between items-center pt-space-sm text-on-surface-variant text-ds-label-sm">
+                {Array.from({ length: 12 }, (_, i) => `T${i + 1}`).map((label, i) => (
+                  <span key={label} className={i === 10 ? 'text-primary font-bold' : i === 11 ? 'text-on-surface font-semibold' : undefined}>
+                    {i === 10 ? 'T11 (Đỉnh)' : label}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {!alertDismissed && (
+              <div className="p-space-md rounded-xl bg-surface-container-high flex items-start justify-between gap-space-md">
+                <div className="flex items-start gap-space-md">
+                  <div className="w-10 h-10 rounded-xl bg-error-container text-on-error-container flex items-center justify-center shrink-0">
+                    <span className={`${ICON} text-[22px]`}>warning</span>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center flex-wrap gap-2">
+                      <h3 className="text-ds-headline-sm text-on-surface font-bold">Cảnh báo kiểm duyệt JD vi phạm chính sách</h3>
+                      <span className="px-2 py-0.5 rounded-full bg-error text-on-error text-[10px] font-bold tracking-wide">2 tin bị cắm cờ</span>
+                    </div>
+                    <p className="text-ds-body-sm text-on-surface-variant">
+                      Hệ thống AI tự động phát hiện 2 tin tuyển dụng chứa từ khóa phân biệt tuổi tác và yêu cầu ký quỹ trái quy định tuyển dụng.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 self-center">
+                  <button type="button" onClick={() => setAlertDismissed(true)} className="px-3.5 py-2 rounded-lg bg-surface-container-lowest text-on-surface hover:bg-surface-container text-ds-label-md font-medium transition-colors shadow-sm border-0 cursor-pointer">
+                    Bỏ qua
+                  </button>
+                  <button type="button" onClick={() => navigate('/admin/job-approvals')} className="px-3.5 py-2 rounded-lg bg-error text-on-error hover:opacity-90 text-ds-label-md font-semibold transition-opacity shadow-sm flex items-center gap-1.5 border-0 cursor-pointer">
+                    <span className={`${ICON} text-[16px]`}>gavel</span>Xử lý vi phạm
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="lg:col-span-4 flex flex-col p-space-lg rounded-xl bg-surface-container-lowest shadow-sm justify-between">
+            <div>
+              <div className="flex items-center justify-between pb-space-xs">
+                <h2 className="text-ds-headline-sm text-on-surface font-bold">Phân bố Người dùng</h2>
+                <span className={`${ICON} text-on-surface-variant text-[20px]`}>pie_chart</span>
+              </div>
+              <p className="text-ds-body-sm text-on-surface-variant">Tỷ trọng tài khoản theo vai trò</p>
+
+              <div className="relative w-56 h-56 mx-auto my-space-lg flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="38" fill="transparent" stroke="#eaedff" strokeWidth="12" />
+                  {(() => {
+                    const circumference = 2 * Math.PI * 38;
+                    let offset = 0;
+                    return donut.filter((slice) => slice.count > 0).map((slice) => {
+                      const length = (slice.pct / 100) * circumference;
+                      const dash = `${length} ${circumference}`;
+                      const el = (
+                        <circle
+                          key={slice.role}
+                          cx="50" cy="50" r="38" fill="transparent"
+                          stroke={slice.tone.color}
+                          strokeDasharray={dash}
+                          strokeDashoffset={-offset}
+                          strokeWidth="12"
+                        />
+                      );
+                      offset += length;
+                      return el;
+                    });
+                  })()}
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+                  <span className="text-ds-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">Tổng cộng</span>
+                  <span className="text-ds-headline-lg text-on-surface font-extrabold tracking-tight">
+                    {(dash?.users.total ?? 0).toLocaleString('vi-VN')}
+                  </span>
+                  <span className="text-[11px] text-secondary-teal font-bold">Người dùng</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-space-sm pt-space-xs">
+                {donut.map((slice) => (
+                  <div key={slice.role} className="flex items-center justify-between p-2 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors">
+                    <div className="flex items-center gap-space-sm">
+                      <span className="w-3 h-3 rounded-full" style={{ backgroundColor: slice.tone.color }} />
+                      <div className="flex flex-col">
+                        <span className="text-ds-label-md text-on-surface font-semibold">{slice.label}</span>
+                        <span className="text-[11px] text-on-surface-variant">{slice.count.toLocaleString('vi-VN')} {slice.unit}</span>
+                      </div>
+                    </div>
+                    <span className={`text-ds-label-lg font-bold ${slice.tone.text}`}>{slice.pct}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="pt-space-md mt-space-sm">
+              <Link to="/admin/analytics" className="w-full inline-flex items-center justify-center gap-space-xs py-2 rounded-lg text-primary hover:bg-surface-container text-ds-label-md font-semibold transition-colors no-underline">
+                <span>Xem phân tích danh sách chi tiết</span>
+                <span className={`${ICON} text-[16px]`}>arrow_forward</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+          <div className="lg:col-span-7 p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm pb-space-sm">
+                <div className="flex items-center gap-space-sm">
+                  <span className={`${ICON} text-primary text-[22px]`}>history</span>
+                  <h2 className="text-ds-headline-sm text-on-surface font-bold">Nhật ký Hoạt động Hệ thống</h2>
+                </div>
+                <span className="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-ds-label-sm font-semibold">
+                  {logs?.totalElements.toLocaleString('vi-VN') ?? 0} sự kiện
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5 py-space-sm">
+                {CHIPS.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setChip(item.key)}
+                    className={`px-3 py-1 rounded-full text-ds-label-sm transition-colors border-0 cursor-pointer ${
+                      chip === item.key
+                        ? 'bg-primary-container text-on-primary font-bold shadow-sm'
+                        : 'bg-surface-container text-on-surface-variant hover:text-on-surface'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+              {loading ? (
+                <LoadingBlock label="Đang tải nhật ký hoạt động..." />
+              ) : feed.length === 0 ? (
+                <EmptyBlock
+                  icon="receipt_long"
+                  title="Chưa có sự kiện trong nhóm này"
+                  description="BE chỉ ghi nhật ký cho hành động quản trị; phiên phỏng vấn không phát sinh sự kiện kiểm toán."
+                />
+              ) : (
+                <div className="flex flex-col gap-space-md mt-space-sm">
+                  {feed.map((row) => {
+                    const meta = ACTION_META[row.action] ?? { label: row.action, icon: 'bolt', cat: 'user' as const };
+                    return (
+                      <div key={row.id} className="flex items-start gap-space-md p-space-sm rounded-xl hover:bg-surface-container-low transition-colors">
+                        <div className="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-primary shrink-0">
+                          <span className={`${ICON} text-[20px]`}>{meta.icon}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-ds-label-lg text-on-surface font-semibold truncate">
+                              {meta.label}
+                              {row.targetEmail && <span className="text-primary"> · {row.targetFullName ?? row.targetEmail}</span>}
+                            </p>
+                            <span className="text-[11px] text-on-surface-variant shrink-0" title={fmtServer(row.createdAt)}>
+                              {timeAgo(row.createdAt)}
+                            </span>
+                          </div>
+                          <p className="text-ds-body-sm text-on-surface-variant mt-0.5 truncate">
+                            {row.detail ?? row.reason ?? `${row.adminEmail} · ID ${row.adminId}`}
+                          </p>
+                        </div>
+                        <span className="self-center shrink-0">
+                          {row.succeeded
+                            ? <Pill tone="success">Thành công</Pill>
+                            : <Pill tone="danger">Bị chặn</Pill>}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="pt-space-md mt-space-sm">
+              <Link to="/admin/audit" className={`w-full py-2.5 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high text-ds-label-md font-semibold transition-colors flex items-center justify-center gap-space-xs no-underline`}>
+                <span className={`${ICON} text-[18px]`}>receipt_long</span>
+                Xem toàn bộ nhật ký kiểm toán (System Audit Log)
+              </Link>
+            </div>
+          </div>
+
+          <div className="lg:col-span-5 p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+            <div className="flex flex-col flex-1">
+              <div className="flex items-start justify-between gap-space-sm pb-space-xs">
+                <div className="flex items-center gap-space-sm">
+                  <div className="w-9 h-9 rounded-xl bg-primary-fixed flex items-center justify-center text-primary shadow-sm">
+                    <span className={`${ICON} text-[20px]`}>fact_check</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <h2 className="text-ds-headline-sm text-on-surface font-bold leading-tight">Hàng chờ Kiểm duyệt JD</h2>
+                    <span className="text-[11px] text-on-surface-variant font-medium">Cần phê duyệt trước khi công khai</span>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container text-ds-label-sm font-bold flex items-center gap-1 shadow-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-secondary-teal animate-pulse" />
+                  {dash?.jobs.pendingModeration ?? 0} tin chờ
+                </span>
+              </div>
+              <p className="text-ds-body-sm text-on-surface-variant mt-1.5 mb-space-md">
+                Tin tuyển dụng được AI tiền kiểm tự động, cần quản trị viên đối soát lần cuối.
+              </p>
+
+              {queue.length === 0 && !loading ? (
+                <EmptyBlock icon="task_alt" title="Không còn tin chờ duyệt" description="Hàng chờ kiểm duyệt đang trống." />
+              ) : (
+                <div className="flex flex-col gap-space-sm">
+                  {queue.map((job) => {
+                    const detail = queueDetails[job.id];
+                    return (
+                      <div key={job.id} className="p-space-md rounded-xl bg-surface-container-low border border-outline-variant/40 hover:border-outline-variant transition-all flex flex-col gap-2.5 shadow-sm">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-space-sm min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-surface-container-lowest border border-outline-variant/40 shadow-sm flex items-center justify-center font-bold text-primary text-[14px] shrink-0">
+                              {initials(job.companyName || job.title)}
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <h4 className="text-ds-label-lg text-on-surface font-bold truncate leading-snug">{job.title}</h4>
+                              <span className="text-[11px] text-on-surface-variant truncate">
+                                {job.companyName} • Gửi {timeAgo(job.submittedAt ?? job.createdAt)}
+                              </span>
+                            </div>
+                          </div>
+                          <span className="px-2 py-0.5 rounded-md bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold tracking-wide uppercase shrink-0">
+                            Chờ duyệt
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-on-surface-variant text-[12px] pt-0.5">
+                          {detail?.salaryRange && (
+                            <span className="inline-flex items-center gap-1 font-medium text-on-surface">
+                              <span className={`${ICON} text-[15px] text-primary`}>payments</span>{detail.salaryRange}
+                            </span>
+                          )}
+                          {detail?.location && (
+                            <>
+                              <span className="text-outline-variant">•</span>
+                              <span className="inline-flex items-center gap-1">
+                                <span className={`${ICON} text-[15px] text-on-surface-variant`}>location_on</span>{detail.location}
+                              </span>
+                            </>
+                          )}
+                          {detail && (
+                            <>
+                              <span className="text-outline-variant">•</span>
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-secondary-container/40 text-secondary-teal font-semibold text-[11px]">
+                                <span className={`${ICON} text-[13px]`}>{detail.aiScreeningEnabled ? 'verified' : 'layers_clear'}</span>
+                                {detail.aiScreeningEnabled ? 'AI screening bật' : 'Không AI screening'}
+                              </span>
+                            </>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-outline-variant/40 mt-0.5">
+                          <Link to={`/admin/job-approvals/${job.id}`} className="text-primary hover:text-primary-container text-ds-label-sm font-semibold flex items-center gap-1 transition-colors px-1 py-1 rounded no-underline">
+                            <span>Xem chi tiết</span>
+                            <span className={`${ICON} text-[15px]`}>open_in_new</span>
+                          </Link>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/admin/job-approvals/${job.id}`)}
+                              className="px-3 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-error hover:bg-error-container hover:text-on-error-container text-ds-label-sm font-semibold transition-colors cursor-pointer"
+                            >
+                              Từ chối
+                            </button>
+                            <button
+                              type="button"
+                              disabled={busyId === job.id}
+                              onClick={() => setApproveTarget(job)}
+                              className="px-3.5 py-1.5 rounded-lg bg-primary-container text-on-primary hover:opacity-95 text-ds-label-sm font-semibold transition-opacity shadow-sm flex items-center gap-1 border-0 cursor-pointer disabled:opacity-60"
+                            >
+                              <span className={`${ICON} text-[15px]`}>check</span>
+                              {busyId === job.id ? 'Đang xử lý' : 'Duyệt nhanh'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="pt-space-md mt-space-sm">
+              <Link
+                to="/admin/job-approvals"
+                className="w-full py-2.5 px-4 rounded-xl border border-secondary-teal/30 bg-surface-container-low hover:bg-secondary-container/30 text-on-secondary-container text-ds-label-md font-bold transition-all flex items-center justify-center gap-space-xs no-underline"
+              >
+                <span>Mở toàn bộ trang Kiểm duyệt JD (Còn {dash?.jobs.pendingModeration ?? 0} tin)</span>
+                <span className={`${ICON} text-[18px] text-secondary-teal`}>arrow_forward</span>
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col justify-between rounded-xl border border-[#e2e8f0] bg-card p-4 shadow-sm lg:col-span-5">
-        <div className="flex flex-1 flex-col">
-          <div className="flex items-start justify-between gap-2 pb-1">
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-info text-primary shadow-sm">
-                <span className="material-symbols-outlined text-[20px]">fact_check</span>
-              </div>
-              <div className="flex flex-col">
-                <h2 className="m-0 text-headline-sm font-bold leading-tight text-ink">JD moderation queue</h2>
-                <span className="text-[11px] font-medium text-ink-variant">Cần phê duyệt trước khi công khai</span>
-              </div>
-            </div>
-            <span className="inline-flex items-center gap-1 rounded-full bg-success-bg px-2.5 py-1 text-label-sm font-bold text-success-text shadow-sm">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-secondary" />
-              7 tin chờ
-            </span>
-          </div>
-          <p className="m-0 mb-3 mt-1.5 text-body-sm text-ink-variant">
-            Tin tuyển dụng được AI tiền kiểm tự động, cần quản trị viên đối soát lần cuối.
-          </p>
-          <div className="flex flex-col gap-2">
-            {MODERATION_QUEUE.map(q => (
-              <div key={q.title} className="flex flex-col gap-2.5 rounded-xl border border-outline/40 bg-surface-low p-3 shadow-sm transition-colors hover:border-outline-strong">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-outline/40 bg-card text-[14px] font-bold shadow-sm ${q.tone}`}>
-                      {q.initials}
-                    </div>
-                    <div className="flex min-w-0 flex-col">
-                      <h4 className="m-0 truncate text-label-md font-bold leading-snug text-ink">{q.title}</h4>
-                      <span className="truncate text-[11px] text-ink-variant">{q.meta}</span>
-                    </div>
-                  </div>
-                  <span className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${q.badge.cls}`}>{q.badge.text}</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 pt-0.5 text-[12px] text-ink-variant">
-                  <span className="inline-flex items-center gap-1 font-medium text-ink">
-                    <span className="material-symbols-outlined text-[15px] text-primary">payments</span> {q.salary}
-                  </span>
-                  <span className="text-outline">•</span>
-                  <span className="inline-flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[15px] text-ink-variant">location_on</span> {q.location}
-                  </span>
-                  <span className="text-outline">•</span>
-                  <span className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-semibold ${q.tag.cls}`}>
-                    <span className="material-symbols-outlined text-[13px]">{q.tag.icon}</span> {q.tag.text}
-                  </span>
-                </div>
-                <div className="mt-0.5 flex items-center justify-between border-t border-outline/40 pt-2">
-                  <Link to="/admin/job-approvals" className="inline-flex items-center gap-1 rounded px-1 py-1 text-label-sm font-semibold text-primary transition-colors hover:text-primary-container">
-                    Xem chi tiết
-                    <span className="material-symbols-outlined text-[15px]">open_in_new</span>
-                  </Link>
-                  <div className="flex items-center gap-2">
-                    <button type="button" className="rounded-md border border-outline bg-card px-3 py-1.5 text-label-sm font-semibold text-error transition-colors hover:bg-danger-bg hover:text-danger-text">
-                      Từ chối
-                    </button>
-                    <button type="button" className="inline-flex items-center gap-1 rounded-md bg-primary-container px-3.5 py-1.5 text-label-sm font-semibold text-on-primary shadow-sm transition-opacity hover:opacity-95">
-                      <span className="material-symbols-outlined text-[15px]">check</span>
-                      Duyệt nhanh
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="mt-3 border-t border-surface-low pt-2">
-          <Link to="/admin/job-approvals" className="flex w-full items-center justify-center gap-1 rounded-md border border-success-text/30 bg-surface-low py-2.5 text-label-md font-bold text-success-text shadow-sm transition-colors hover:bg-success-bg">
-            Mở toàn bộ trang Kiểm duyệt JD (Còn 7 tin)
-            <span className="material-symbols-outlined text-[18px] text-secondary">arrow_forward</span>
-          </Link>
-        </div>
-      </div>
+      <ConfirmDialog
+        open={!!approveTarget}
+        title="Duyệt tin tuyển dụng"
+        message={approveTarget ? `Xác nhận công khai “${approveTarget.title}” của ${approveTarget.companyName} trên Job Board?` : ''}
+        confirmLabel="Duyệt tin"
+        cancelLabel="Giữ lại"
+        onConfirm={approve}
+        onCancel={() => setApproveTarget(null)}
+      />
     </div>
-  </div>
-);
+  );
+};
 
 export default AdminDashboardPage;
