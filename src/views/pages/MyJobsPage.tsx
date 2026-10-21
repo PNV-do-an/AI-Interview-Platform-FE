@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useEmployerJobController } from '../../controllers/useEmployerJobController';
 import { APPLICATION_STATUS_LABELS, Application, JOB_STATUS_LABELS, JobSummary } from '../../models/Program.model';
+import ConfirmDialog from '../components/ConfirmDialog';
 import {
   EmptyState,
   ErrorBanner,
@@ -27,6 +28,7 @@ const MyJobsPage: React.FC = () => {
   const [evalApp, setEvalApp] = useState<Application | null>(null);
   const [score, setScore] = useState<string>('');
   const [feedback, setFeedback] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<JobSummary | null>(null);
 
   useEffect(() => { fetchMyJobs(page); }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -46,6 +48,14 @@ const MyJobsPage: React.FC = () => {
   const toggleStatus = async (job: JobSummary) => {
     const ok = await changeStatus(job.id, job.status === 'OPEN' ? 'CLOSED' : 'OPEN');
     if (ok) await fetchMyJobs(page);
+  };
+
+  const runDelete = async () => {
+    if (!pendingDelete) return;
+    const id = pendingDelete.id;
+    setPendingDelete(null);
+    await deleteJob(id);
+    await fetchMyJobs(page);
   };
 
   const openApplications = async (job: JobSummary) => {
@@ -146,7 +156,7 @@ const MyJobsPage: React.FC = () => {
                 {job.status !== 'PENDING_APPROVAL' && (
                   <button
                     className={buttonClass('danger')}
-                    onClick={() => { if (window.confirm('Delete this job posting?')) deleteJob(job.id).then(() => fetchMyJobs(page)); }}
+                    onClick={() => setPendingDelete(job)}
                   >
                     <span className="material-symbols-outlined text-[18px]">delete</span>
                     Delete
@@ -269,6 +279,17 @@ const MyJobsPage: React.FC = () => {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete this job posting?"
+        message={pendingDelete ? `"${pendingDelete.title}" will be removed from your listings. This can't be undone.` : ''}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        danger
+        onConfirm={() => void runDelete()}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 };

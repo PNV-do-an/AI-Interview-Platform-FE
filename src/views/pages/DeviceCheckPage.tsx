@@ -1,360 +1,560 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import OrderService from '../../services/order.service';
+import { Card, PageHeader, buttonClass } from '../components/ui';
 
-// Static candidate-side device check screen (mockup: ai_interview_prep_device_check).
-// Rendered inside AppLayout, so the mockup's fixed sidebar/top header are not duplicated here.
+// Candidate device + connection check (SRS SCR-14 / FR-INT-01).
+// Rebuilt 2026-10-21 to run REAL browser APIs instead of the mockup's fabricated telemetry:
+//   camera  -> getUserMedia({video}) live into a <video> element
+//   mic     -> getUserMedia({audio}) -> AnalyserNode live level meter
+//   speaker -> AudioContext test tone + explicit user confirmation
+//   network -> measured round-trip to GET /api/v1/packages (public endpoint)
+//   browser -> feature detection (mediaDevices, secure context, WebRTC, Web Audio)
+// Nothing here invents a device label, resolution, or pass/fail the browser didn't report.
 
-const META_CHIPS = [
-  { icon: 'schedule', iconClass: 'text-primary', label: 'Duration', value: '45 Minutes' },
-  { icon: 'assignment', iconClass: 'text-secondary', label: 'Format', value: '3 Scenarios + 1 Code Task' },
-  // tertiary #313ba4 has no project token
-  { icon: 'record_voice_over', iconClass: 'text-[#313ba4]', label: 'Host', value: 'AI Interviewer: Aria' },
-];
+type CheckState = 'idle' | 'checking' | 'ok' | 'denied' | 'unsupported' | 'error';
 
-const WAVE_BARS = [
-  'h-4 bg-primary/40', 'h-4 bg-primary/60', 'h-7 bg-primary/80', 'h-8 bg-primary',
-  'h-3 bg-secondary', 'h-9 bg-secondary', 'h-9 bg-primary', 'h-5 bg-secondary',
-  'h-4 bg-primary', 'h-8 bg-primary/80', 'h-6 bg-secondary', 'h-9 bg-primary/60',
-  'h-2 bg-primary/40', 'h-4 bg-secondary', 'h-4 bg-primary', 'h-8 bg-secondary',
-  'h-6 bg-primary/80', 'h-5 bg-primary/50', 'h-6 bg-primary/30', 'h-4 bg-primary/40',
-  'h-3 bg-primary/70', 'h-4 bg-secondary', 'h-5 bg-primary', 'h-3 bg-primary/40',
-];
+interface LabeledDevice {
+  deviceId: string;
+  label: string;
+}
 
-const AGENDA = [
-  {
-    n: '1',
-    box: 'bg-[#e2dfff] text-[#0f0069]', // primary-fixed / on-primary-fixed (no project token)
-    title: 'Core Java & Concurrency',
-    body: 'JVM memory model, Virtual Threads, concurrent collections & lock-free algorithms.',
-  },
-  {
-    n: '2',
-    box: 'bg-[#e1e0ff] text-[#07006c]', // secondary-fixed / on-secondary-fixed (no project token)
-    title: 'System Architecture & Spring Boot',
-    body: 'High-throughput REST API modeling, idempotency, event streams & transactional boundaries.',
-  },
-  {
-    n: '3',
-    box: 'bg-[#e0e0ff] text-[#000767]', // tertiary-fixed / on-tertiary-fixed (no project token)
-    title: 'Live Coding & Algorithmic Task',
-    body: 'Interactive Monaco browser IDE with live compilation and JUnit test execution.',
-  },
-];
+const STATE_META: Record<CheckState, { chip: string; dot: string }> = {
+  idle: { chip: 'bg-surface-high text-ink-variant', dot: 'bg-outline' },
+  checking: { chip: 'bg-surface-high text-ink-variant', dot: 'bg-secondary animate-pulse' },
+  ok: { chip: 'bg-success-bg text-success-text', dot: 'bg-success' },
+  denied: { chip: 'bg-danger-bg text-danger-text', dot: 'bg-danger' },
+  unsupported: { chip: 'bg-danger-bg text-danger-text', dot: 'bg-danger' },
+  error: { chip: 'bg-danger-bg text-danger-text', dot: 'bg-danger' },
+};
 
-const INSTRUCTIONS = [
-  {
-    icon: 'forum',
-    iconClass: 'text-primary',
-    strong: 'Conversational AI Interaction:',
-    body: ' Aria speaks dynamically. Interrupt at any moment to elaborate or request clarification.',
-  },
-  {
-    icon: 'terminal',
-    iconClass: 'text-secondary',
-    strong: 'Integrated Sandbox:',
-    body: ' No local IDE configuration needed. You can run code, inspect stack traces, and write edge tests.',
-  },
-  {
-    icon: 'headset_mic',
-    iconClass: 'text-[#313ba4]', // tertiary (no project token)
-    strong: 'Acoustic Clarity:',
-    body: ' Use headphones to isolate audio echoes and ensure maximum conversational accuracy.',
-  },
-];
+const STATE_LABEL: Record<CheckState, string> = {
+  idle: 'Not tested',
+  checking: 'Checking...',
+  ok: 'Working',
+  denied: 'Permission blocked',
+  unsupported: 'Not supported',
+  error: 'No device found',
+};
+
+const STATE_ICON: Record<CheckState, string> = {
+  idle: 'help',
+  checking: 'progress_activity',
+  ok: 'check_circle',
+  denied: 'block',
+  unsupported: 'report',
+  error: 'video_camera_back',
+};
+
+const StatePill: React.FC<{ state: CheckState }> = ({ state }) => (
+  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-label-sm ${STATE_META[state].chip}`}>
+    <span className={`h-2 w-2 rounded-full ${STATE_META[state].dot}`} />
+    <span className="material-symbols-outlined text-[15px]">{STATE_ICON[state]}</span>
+    {STATE_LABEL[state]}
+  </span>
+);
 
 const selectClass =
-  'h-9 w-full cursor-pointer appearance-none rounded-lg bg-surface-low pl-3 pr-8 text-body-sm text-ink focus:outline-none focus:ring-1 focus:ring-secondary';
+  'h-9 w-full cursor-pointer appearance-none rounded-md border border-[#e2e8f0] bg-surface-low pl-3 pr-8 text-body-sm text-ink focus:outline-none focus:ring-1 focus:ring-primary';
 
-const DeviceCheckPage: React.FC = () => (
-  <div className="flex w-full flex-col pb-4">
-    {/* Top progress & meta header */}
-    <div className="flex flex-col justify-between gap-3 pb-4 md:flex-row md:items-end">
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <span className="rounded-full bg-[#e1e0ff] px-2 py-0.5 text-label-sm font-medium tracking-wide text-[#2f2ebe]">
-            {/* secondary-fixed / on-secondary-fixed-variant (no project token) */}
-            Interview Preparation
-          </span>
-        </div>
-        <h1 className="m-0 text-display tracking-tight text-ink">AI Technical Interview Preparation</h1>
-        <p className="m-0 text-body-md text-ink-variant">
-          Role Evaluation: <span className="font-semibold text-ink">Java Backend Engineering Track</span>
-        </p>
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        {META_CHIPS.map((c) => (
-          <div key={c.label} className="flex items-center gap-2 rounded-xl bg-card px-3 py-2 shadow-sm">
-            <span className={`material-symbols-outlined text-[18px] ${c.iconClass}`}>{c.icon}</span>
-            <div className="flex flex-col">
-              <span className="text-label-sm uppercase tracking-wider text-outline-strong">{c.label}</span>
-              <span className="text-headline-sm font-semibold text-ink">{c.value}</span>
-            </div>
+// Map a getUserMedia / enumerateDevices failure to an honest check state.
+const errorToState = (err: unknown): CheckState => {
+  const name = (err as { name?: string })?.name || '';
+  if (name === 'NotAllowedError' || name === 'SecurityError') return 'denied';
+  if (name === 'NotFoundError' || name === 'DevicesNotFoundError' || name === 'OverconstrainedError') return 'error';
+  return 'error';
+};
+
+const DeviceCheckPage: React.FC = () => {
+  // Browser capability detection (section 5) — measured on mount.
+  const [capability, setCapability] = useState({ media: false, secure: false, webrtc: false, audio: false });
+
+  // Camera
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const camStreamRef = useRef<MediaStream | null>(null);
+  const [camState, setCamState] = useState<CheckState>('idle');
+  const [camDevices, setCamDevices] = useState<LabeledDevice[]>([]);
+  const [camId, setCamId] = useState('');
+
+  // Microphone
+  const micStreamRef = useRef<MediaStream | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const [micState, setMicState] = useState<CheckState>('idle');
+  const [micDevices, setMicDevices] = useState<LabeledDevice[]>([]);
+  const [micId, setMicId] = useState('');
+  const [bars, setBars] = useState<number[]>(() => Array.from({ length: 18 }, () => 4));
+
+  // Speaker
+  const [speakerDevices, setSpeakerDevices] = useState<LabeledDevice[]>([]);
+  const [speakerId, setSpeakerId] = useState('');
+  const [spokeHeard, setSpokeHeard] = useState(false);
+  const speakerCtxRef = useRef<AudioContext | null>(null);
+
+  // Network
+  const [connState, setConnState] = useState<CheckState>('idle');
+  const [latency, setLatency] = useState<number | null>(null);
+  const [online, setOnline] = useState<boolean>(navigator.onLine);
+
+  const refreshDevices = useCallback(async () => {
+    if (!navigator.mediaDevices?.enumerateDevices) return;
+    try {
+      const all = await navigator.mediaDevices.enumerateDevices();
+      setCamDevices(all.filter((d) => d.kind === 'videoinput').map((d) => ({ deviceId: d.deviceId, label: d.label || 'Camera' })));
+      setMicDevices(all.filter((d) => d.kind === 'audioinput').map((d) => ({ deviceId: d.deviceId, label: d.label || 'Microphone' })));
+      setSpeakerDevices(all.filter((d) => d.kind === 'audiooutput').map((d) => ({ deviceId: d.deviceId, label: d.label || 'Speakers' })));
+    } catch {
+      /* enumeration is best-effort; labels only appear after permission */
+    }
+  }, []);
+
+  // On mount: feature detection, device list (unlabeled until permission), one network probe.
+  useEffect(() => {
+    setCapability({
+      media: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+      secure: !!window.isSecureContext,
+      webrtc: typeof window.RTCPeerConnection !== 'undefined',
+      audio: typeof window.AudioContext !== 'undefined' || typeof (window as any).webkitAudioContext !== 'undefined',
+    });
+    refreshDevices();
+
+    const t0 = performance.now();
+    let cancelled = false;
+    OrderService.getPackages()
+      .then(() => {
+        if (cancelled) return;
+        setLatency(Math.round(performance.now() - t0));
+        setConnState('ok');
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setLatency(null);
+        setConnState(navigator.onLine ? 'error' : 'unsupported');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshDevices]);
+
+  // Cleanup all live streams / audio contexts on unmount.
+  useEffect(
+    () => () => {
+      camStreamRef.current?.getTracks().forEach((t) => t.stop());
+      micStreamRef.current?.getTracks().forEach((t) => t.stop());
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      audioCtxRef.current?.close().catch(() => {});
+      speakerCtxRef.current?.close().catch(() => {});
+    },
+    [],
+  );
+
+  const stopMicLoop = () => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+  };
+
+  const startCamera = useCallback(async (deviceId?: string) => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCamState('unsupported');
+      return;
+    }
+    setCamState('checking');
+    camStreamRef.current?.getTracks().forEach((t) => t.stop());
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: deviceId ? { deviceId: { exact: deviceId } } : true,
+      });
+      camStreamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(() => {});
+      }
+      setCamState('ok');
+      await refreshDevices(); // labels now available
+    } catch (err) {
+      setCamState(errorToState(err));
+    }
+  }, [refreshDevices]);
+
+  const startMic = useCallback(async (deviceId?: string) => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setMicState('unsupported');
+      return;
+    }
+    setMicState('checking');
+    micStreamRef.current?.getTracks().forEach((t) => t.stop());
+    stopMicLoop();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: deviceId ? { deviceId: { exact: deviceId } } : true,
+      });
+      micStreamRef.current = stream;
+      const Ctor = window.AudioContext || (window as any).webkitAudioContext;
+      const ctx: AudioContext = audioCtxRef.current && audioCtxRef.current.state !== 'closed'
+        ? audioCtxRef.current
+        : new Ctor();
+      audioCtxRef.current = ctx;
+      if (ctx.state === 'suspended') await ctx.resume();
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const tick = () => {
+        analyser.getByteFrequencyData(data);
+        // downsample frequency bins into 18 bars, scaled to px height
+        const next: number[] = [];
+        const binsPer = Math.max(1, Math.floor(data.length / 18));
+        for (let i = 0; i < 18; i += 1) {
+          let sum = 0;
+          for (let j = 0; j < binsPer; j += 1) sum += data[i * binsPer + j] || 0;
+          const avg = sum / binsPer;
+          next.push(4 + Math.round((avg / 255) * 36));
+        }
+        setBars(next);
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      tick();
+      setMicState('ok');
+      await refreshDevices();
+    } catch (err) {
+      setMicState(errorToState(err));
+    }
+  }, [refreshDevices]);
+
+  const playTone = useCallback(async () => {
+    const Ctor = window.AudioContext || (window as any).webkitAudioContext;
+    if (!Ctor) return;
+    let ctx = speakerCtxRef.current;
+    if (!ctx || ctx.state === 'closed') {
+      ctx = new Ctor();
+      speakerCtxRef.current = ctx;
+    }
+    if (ctx.state === 'suspended') await ctx.resume().catch(() => {});
+    // Two short notes so the candidate can clearly hear output is working.
+    const notes = [660, 880];
+    notes.forEach((freq, idx) => {
+      const osc = ctx!.createOscillator();
+      const gain = ctx!.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const startAt = ctx!.currentTime + idx * 0.28;
+      gain.gain.setValueAtTime(0.0001, startAt);
+      gain.gain.exponentialRampToValueAtTime(0.25, startAt + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.24);
+      osc.connect(gain).connect(ctx!.destination);
+      osc.start(startAt);
+      osc.stop(startAt + 0.26);
+    });
+  }, []);
+
+  const retestNetwork = useCallback(() => {
+    setConnState('checking');
+    const t0 = performance.now();
+    OrderService.getPackages()
+      .then(() => {
+        setLatency(Math.round(performance.now() - t0));
+        setConnState('ok');
+      })
+      .catch(() => {
+        setLatency(null);
+        setConnState(navigator.onLine ? 'error' : 'unsupported');
+      });
+  }, []);
+
+  const connMeta: CheckState = connState;
+  const cameraOk = camState === 'ok';
+  const micOk = micState === 'ok';
+  const speakerOk = spokeHeard;
+  const networkOk = connState === 'ok';
+  const browserOk = capability.media && capability.secure && capability.audio;
+  const passedCount = [cameraOk, micOk, speakerOk, networkOk, browserOk].filter(Boolean).length;
+  const allReady = passedCount === 5;
+
+  return (
+    <div className="flex w-full flex-col gap-6 pb-6">
+      <PageHeader
+        title="Device & Connection Check"
+        description="Test your camera, microphone, speakers, and connection before joining a live AI interview. Every reading below comes from your browser in real time."
+      />
+
+      {/* Readiness summary */}
+      <Card className={`flex items-center justify-between gap-3 ${allReady ? '' : 'opacity-100'}`}>
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-container text-on-primary">
+            <span className="material-symbols-outlined text-[22px]">{allReady ? 'task_alt' : 'build'}</span>
           </div>
-        ))}
-      </div>
-    </div>
-
-    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-      {/* LEFT: hardware & telemetry diagnostics */}
-      <section className="flex flex-col gap-4 lg:col-span-7">
-        {/* 1. Camera calibration */}
-        <div className="flex flex-col overflow-hidden rounded-xl bg-card p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[20px] text-primary">videocam</span>
-              <span className="text-headline-sm text-ink">1. Optical &amp; Camera Calibration</span>
-            </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-high px-2.5 py-1 text-label-sm text-primary">
-              <span className="h-2 w-2 rounded-full bg-secondary" />
-              ✓ Camera Ready (1080p)
+          <div className="flex flex-col">
+            <span className="text-headline-sm font-semibold text-ink">
+              {allReady ? 'Ready for your live session' : 'Finish the checks below'}
             </span>
+            <span className="text-body-sm text-ink-variant">{passedCount}/5 checks passed</span>
           </div>
-          <div className="mt-3 flex flex-col gap-3">
-            {/* Video frame sandbox */}
-            <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl bg-[#283044] shadow-inner">
-              {/* inverse-surface (no project token) */}
-              <img
-                className="h-full w-full object-cover brightness-95 contrast-105"
-                alt="Candidate framed within the AI interview video stream preview"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7_2adluTHk7PVJZ6cuyHmr7QjwPsGIIrl1xyPjtnGAOxk-iJU8iitIJ0bYou74BQQbxfC69jopf-x3c9vQB-5qdcpCiv8KhQb6VWwflPrYtEp7soDJE_EUaAHWrlkRl7wfwsp-qcPft_ItQD8loMD5nnu3LPslTW3JfBsNknGx9Apjy72ThpsJFrrytNWziREAv_vaTCyl-BB4-6Qzp0SU1UZfLnnYAO_iWtDP5aXbI-MR8t6JQ_J"
-              />
-              {/* Facial alignment HUD overlay */}
-              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center p-4">
-                <div className="relative flex h-56 w-44 items-center justify-center rounded-full border border-dashed border-[#c3c0ff]/70">
-                  {/* primary-fixed-dim (no project token) */}
-                  <div className="absolute left-0 top-2 h-3 w-3 border-l-2 border-t-2 border-[#e2dfff]" />
-                  <div className="absolute right-0 top-2 h-3 w-3 border-r-2 border-t-2 border-[#e2dfff]" />
-                  <div className="absolute bottom-2 left-0 h-3 w-3 border-b-2 border-l-2 border-[#e2dfff]" />
-                  <div className="absolute bottom-2 right-0 h-3 w-3 border-b-2 border-r-2 border-[#e2dfff]" />
-                  {/* primary-fixed corners + label (no project token) */}
-                  <span className="-mt-32 rounded-full bg-[#283044]/80 px-2 py-0.5 font-mono text-[12px] text-[#e2dfff] backdrop-blur-md">
-                    Face Aligned
-                  </span>
-                </div>
-              </div>
-              {/* On-screen telemetry bar */}
-              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-[#283044]/90 via-[#283044]/50 to-transparent p-3 text-on-primary">
-                <div className="flex items-center gap-2">
-                  <span className="rounded bg-primary px-2 py-0.5 font-mono text-[12px] font-medium">LIVE PREVIEW</span>
-                  <span className="flex items-center gap-1 text-body-sm text-[#dae2fd]">
-                    {/* surface-variant (no project token) */}
-                    <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
-                    Camera Connected
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 text-[#e1e0ff]">
-                  {/* secondary-fixed (no project token) */}
-                  <span className="material-symbols-outlined text-[16px]">visibility</span>
-                  <span className="text-label-sm">Lighting: Optimal</span>
-                </div>
-              </div>
+        </div>
+        <div className="flex items-center gap-1.5" aria-hidden>
+          {[cameraOk, micOk, speakerOk, networkOk, browserOk].map((ok, i) => (
+            <span key={i} className={`h-2.5 w-2.5 rounded-full ${ok ? 'bg-success' : 'bg-outline'}`} />
+          ))}
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+        {/* LEFT: camera + microphone */}
+        <section className="flex flex-col gap-4 lg:col-span-7">
+          {/* 1. Camera */}
+          <Card className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-headline-sm text-ink">
+                <span className="material-symbols-outlined text-[20px] text-primary">videocam</span>
+                Camera
+              </span>
+              <StatePill state={camState} />
             </div>
-            {/* Camera select control */}
-            <div className="flex flex-col items-center gap-2 sm:flex-row">
+
+            <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl bg-[#1b2334]">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className={`h-full w-full -scale-x-100 object-cover ${cameraOk ? '' : 'hidden'}`}
+              />
+              {!cameraOk && (
+                <div className="flex flex-col items-center gap-2 px-6 text-center text-[#c3c0ff]">
+                  <span className="material-symbols-outlined text-[36px]">switch_camera</span>
+                  <p className="m-0 text-body-sm">
+                    {camState === 'denied'
+                      ? 'Camera access was blocked. Allow it in your browser address bar, then test again.'
+                      : camState === 'error'
+                        ? 'No camera was found. Connect one and test again.'
+                        : 'Press "Start camera" to preview your video.'}
+                  </p>
+                </div>
+              )}
+              {cameraOk && (
+                <span className="absolute bottom-2 left-2 rounded bg-primary px-2 py-0.5 font-mono text-[12px] font-medium text-on-primary">
+                  LIVE PREVIEW
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row">
               <div className="relative w-full">
-                <select className={selectClass} defaultValue="FaceTime HD Camera (Built-in 1080p)">
-                  <option>FaceTime HD Camera (Built-in 1080p)</option>
-                  <option>Logitech Brio 4K Stream Edition</option>
-                  <option>Elgato Cam Link 4K (External)</option>
+                <select
+                  className={selectClass}
+                  value={camId}
+                  onChange={(e) => {
+                    setCamId(e.target.value);
+                    void startCamera(e.target.value);
+                  }}
+                  disabled={!cameraOk && camDevices.length === 0}
+                  aria-label="Select camera"
+                >
+                  {camDevices.length === 0 ? (
+                    <option value="">Grant camera access to list devices</option>
+                  ) : (
+                    camDevices.map((d) => (
+                      <option key={d.deviceId} value={d.deviceId}>{d.label}</option>
+                    ))
+                  )}
                 </select>
                 <span className="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[18px] text-outline-strong">
                   expand_more
                 </span>
               </div>
-              <button
-                type="button"
-                className="flex h-9 w-full shrink-0 items-center justify-center gap-2 rounded-lg bg-surface-mid px-3 text-label-md text-ink transition-colors hover:bg-surface-high sm:w-auto"
-              >
-                <span className="material-symbols-outlined text-[16px]">refresh</span>
-                <span>Re-center</span>
+              <button type="button" className={`${buttonClass(cameraOk ? 'secondary' : 'primary')} shrink-0`} onClick={() => void startCamera(camId || undefined)}>
+                <span className="material-symbols-outlined text-[18px]">{cameraOk ? 'refresh' : 'videocam'}</span>
+                {cameraOk ? 'Re-test' : 'Start camera'}
               </button>
             </div>
-          </div>
-        </div>
+          </Card>
 
-        {/* 2. Microphone level */}
-        <div className="flex flex-col gap-3 rounded-xl bg-card p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[20px] text-secondary">mic</span>
-              <span className="text-headline-sm text-ink">2. Acoustic &amp; Microphone Level</span>
-            </div>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-high px-2.5 py-1 text-label-sm text-secondary">
-              ✓ Mic Level Optimal
-            </span>
-          </div>
-          <div className="relative w-full">
-            <select className={selectClass} defaultValue="MacBook Pro Microphone (Built-in Audio Studio)">
-              <option>MacBook Pro Microphone (Built-in Audio Studio)</option>
-              <option>Shure MV7 USB Dynamic Microphone</option>
-              <option>Default System Audio Input</option>
-            </select>
-            <span className="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[18px] text-outline-strong">
-              expand_more
-            </span>
-          </div>
-          {/* Audio waveform visualizer (static snapshot of the mockup bars) */}
-          <div className="flex flex-col gap-2 rounded-xl bg-surface-low p-4">
-            <div className="flex items-center justify-between text-label-sm text-ink-variant">
-              <span className="flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-secondary" />
-                Speak now to test decibel response:
+          {/* 2. Microphone */}
+          <Card className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2 text-headline-sm text-ink">
+                <span className="material-symbols-outlined text-[20px] text-secondary">mic</span>
+                Microphone
               </span>
-              <span className="font-mono text-[12px] font-semibold text-primary">Microphone Level: Good</span>
+              <StatePill state={micState} />
             </div>
-            <div className="flex h-10 items-center justify-between gap-1 overflow-hidden rounded-lg bg-card px-2">
-              {WAVE_BARS.map((bar, i) => (
-                <div key={i} className={`w-1.5 rounded-full ${bar}`} />
-              ))}
-            </div>
-          </div>
-        </div>
 
-        {/* 3 & 4: speaker + latency grid */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="flex flex-col justify-between gap-3 rounded-xl bg-card p-4 shadow-sm">
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-headline-sm text-ink">
-                  <span className="material-symbols-outlined text-[18px] text-[#313ba4]">volume_up</span>
-                  3. Speaker Test
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative w-full">
+                <select
+                  className={selectClass}
+                  value={micId}
+                  onChange={(e) => {
+                    setMicId(e.target.value);
+                    void startMic(e.target.value);
+                  }}
+                  disabled={!micOk && micDevices.length === 0}
+                  aria-label="Select microphone"
+                >
+                  {micDevices.length === 0 ? (
+                    <option value="">Grant microphone access to list devices</option>
+                  ) : (
+                    micDevices.map((d) => (
+                      <option key={d.deviceId} value={d.deviceId}>{d.label}</option>
+                    ))
+                  )}
+                </select>
+                <span className="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[18px] text-outline-strong">
+                  expand_more
                 </span>
-                <span className="text-label-sm font-medium text-secondary">✓ Verified</span>
               </div>
-              <p className="m-0 text-body-sm text-ink-variant">Confirm you can clearly hear AI prompts through your headphones.</p>
+              <button type="button" className={`${buttonClass(micOk ? 'secondary' : 'primary')} shrink-0`} onClick={() => void startMic(micId || undefined)}>
+                <span className="material-symbols-outlined text-[18px]">{micOk ? 'refresh' : 'mic'}</span>
+                {micOk ? 'Re-test' : 'Test mic'}
+              </button>
             </div>
+
+            {/* Live level meter (AnalyserNode frequency data) */}
+            <div className="flex flex-col gap-2 rounded-lg bg-surface-low p-4">
+              <div className="flex items-center justify-between text-label-sm text-ink-variant">
+                <span className="flex items-center gap-1">
+                  <span className={`h-1.5 w-1.5 rounded-full ${micState === 'ok' ? 'bg-secondary' : 'bg-outline'}`} />
+                  Speak to see your live input level
+                </span>
+              </div>
+              <div className="flex h-10 items-end justify-between gap-1 rounded-lg bg-card px-2 py-2">
+                {bars.map((h, i) => (
+                  <div
+                    key={i}
+                    className="w-1.5 rounded-full bg-primary transition-[height] duration-75"
+                    style={{ height: `${h}px`, opacity: micState === 'ok' ? 1 : 0.25 }}
+                  />
+                ))}
+              </div>
+            </div>
+          </Card>
+        </section>
+
+        {/* RIGHT: speaker, network, browser */}
+        <section className="flex flex-col gap-4 lg:col-span-5">
+          {/* 3. Speaker */}
+          <Card className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-headline-sm text-ink">
+                <span className="material-symbols-outlined text-[18px] text-primary">volume_up</span>
+                Speakers
+              </span>
+              <StatePill state={speakerOk ? 'ok' : capability.audio ? 'idle' : 'unsupported'} />
+            </div>
+            <div className="relative">
+              <select
+                className={selectClass}
+                value={speakerId}
+                onChange={(e) => setSpeakerId(e.target.value)}
+                disabled={speakerDevices.length === 0}
+                aria-label="Select speaker output"
+              >
+                {speakerDevices.length === 0 ? (
+                  <option value="">System default output</option>
+                ) : (
+                  <>
+                    <option value="">System default output</option>
+                    {speakerDevices.map((d) => (
+                      <option key={d.deviceId} value={d.deviceId}>{d.label}</option>
+                    ))}
+                  </>
+                )}
+              </select>
+              <span className="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[18px] text-outline-strong">
+                expand_more
+              </span>
+            </div>
+            <button type="button" className={buttonClass('secondary', 'w-full')} onClick={() => void playTone()} disabled={!capability.audio}>
+              <span className="material-symbols-outlined text-[18px]">play_arrow</span>
+              Play test sound
+            </button>
             <button
               type="button"
-              className="flex h-9 items-center justify-center gap-2 rounded-lg bg-surface-mid text-label-md text-ink transition-all hover:bg-surface-high active:scale-95"
+              className={`${buttonClass(speakerOk ? 'primary' : 'ghost', 'w-full')} ${speakerOk ? '' : 'border border-[#e2e8f0]'}`}
+              onClick={() => setSpokeHeard((v) => !v)}
+              disabled={!capability.audio}
             >
-              <span className="material-symbols-outlined text-[18px] text-primary">play_arrow</span>
-              <span>Test Audio Chime</span>
+              <span className="material-symbols-outlined text-[18px]">{speakerOk ? 'check_circle' : 'help'}</span>
+              {speakerOk ? "Yes, I heard it" : "I heard the test sound"}
             </button>
-          </div>
-          <div className="flex flex-col justify-between gap-3 rounded-xl bg-card p-4 shadow-sm">
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-headline-sm text-ink">
-                  <span className="material-symbols-outlined text-[18px] text-primary">speed</span>
-                  4. Network Latency
-                </span>
-                <span className="text-label-sm font-medium text-secondary">✓ Low Latency</span>
-              </div>
-              <p className="m-0 text-body-sm text-ink-variant">Connection Quality: Excellent • Latency: Low</p>
+          </Card>
+
+          {/* 4. Network */}
+          <Card className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-headline-sm text-ink">
+                <span className="material-symbols-outlined text-[18px] text-primary">speed</span>
+                Connection
+              </span>
+              <StatePill state={connMeta} />
             </div>
-            <div className="flex items-center justify-between rounded-lg bg-surface-low px-3 py-1.5">
+            <div className="flex items-center justify-between rounded-lg bg-surface-low px-3 py-2">
               <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-secondary" />
-                <span className="text-label-md font-medium text-ink">Fast &amp; Stable Connection</span>
+                <span className={`h-2 w-2 rounded-full ${online ? 'bg-success' : 'bg-danger'}`} />
+                <span className="text-label-md font-medium text-ink">{online ? 'Online' : 'Offline'}</span>
               </div>
-              <span className="text-label-sm font-semibold text-ink">Ready</span>
+              <span className="font-mono text-body-sm text-ink-variant">
+                {connState === 'ok' && latency !== null ? `${latency} ms` : connState === 'checking' ? 'measuring...' : '—'}
+              </span>
             </div>
-          </div>
-        </div>
-
-        {/* 5. Browser runtime strip */}
-        <div className="flex flex-col items-center justify-between gap-2 rounded-xl bg-card p-4 shadow-sm sm:flex-row">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-mid text-primary">
-              <span className="material-symbols-outlined text-[18px]">verified_user</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-label-md font-semibold text-ink">5. Browser Runtime &amp; WebRTC</span>
-              <span className="text-body-sm text-ink-variant">Browser &amp; Audio Compatible</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 text-label-sm text-secondary">
-            <span className="material-symbols-outlined text-[16px]">check_circle</span>
-            <span>Full Compliance</span>
-          </div>
-        </div>
-      </section>
-
-      {/* RIGHT: readiness, agenda, instructions & launch */}
-      <section className="flex flex-col gap-4 lg:col-span-5">
-        <div className="flex items-center justify-between rounded-xl bg-primary-container p-4 text-on-primary shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-on-primary/20">
-              <span className="material-symbols-outlined text-[24px]">task_alt</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-headline-sm font-semibold">Ready for Live Session</span>
-              <span className="text-body-sm text-on-primary-container">All System Checks Passed (5/5)</span>
-            </div>
-          </div>
-          <span className="rounded bg-on-primary/10 px-2 py-1 font-mono text-[12px]">STAGE 1/1</span>
-        </div>
-
-        <div className="flex flex-col gap-3 rounded-xl bg-card p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-headline-sm text-ink">Curriculum &amp; Agenda</span>
-            <span className="text-label-sm text-outline-strong">Total: 45m</span>
-          </div>
-          <div className="flex flex-col gap-2">
-            {AGENDA.map((item) => (
-              <div key={item.n} className="flex items-start gap-2 rounded-lg bg-surface-low p-3 transition-colors hover:bg-surface-mid">
-                <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded font-mono text-[12px] font-bold ${item.box}`}>
-                  {item.n}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="truncate text-label-md font-semibold text-ink">{item.title}</span>
-                    <span className="shrink-0 font-mono text-[12px] text-outline-strong">15 mins</span>
-                  </div>
-                  <p className="mt-0.5 text-body-sm text-ink-variant">{item.body}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3 rounded-xl bg-card p-4 shadow-sm">
-          <span className="text-headline-sm text-ink">Candidate Instructions</span>
-          <ul className="m-0 flex list-none flex-col gap-2 p-0">
-            {INSTRUCTIONS.map((ins) => (
-              <li key={ins.strong} className="flex items-start gap-2 text-body-sm text-ink-variant">
-                <span className={`material-symbols-outlined mt-0.5 shrink-0 text-[18px] ${ins.iconClass}`}>{ins.icon}</span>
-                <span>
-                  <strong className="text-ink">{ins.strong}</strong>
-                  {ins.body}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="flex flex-col gap-2 rounded-xl bg-card p-4 shadow-sm">
-          <button
-            type="button"
-            className="group flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary text-headline-sm text-on-primary shadow-md transition-all hover:bg-[#313ba4]"
-            /* hover:bg-tertiary in mockup (#313ba4, no project token) */
-          >
-            <span>Start Interview Now</span>
-            <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
-          </button>
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            <button
-              type="button"
-              className="flex h-9 items-center justify-center gap-1 rounded-lg bg-surface-low text-label-md text-ink-variant transition-colors hover:bg-surface-mid hover:text-ink"
-            >
-              <span className="material-symbols-outlined text-[16px]">school</span>
-              <span>Practice Mode</span>
+            <p className="m-0 text-body-sm text-ink-variant">
+              Round-trip time to the platform API, measured live.
+            </p>
+            <button type="button" className={`${buttonClass('secondary', 'w-full')} self-start`} onClick={retestNetwork}>
+              <span className="material-symbols-outlined text-[16px]">refresh</span>
+              Re-test
             </button>
-            <button
-              type="button"
-              className="flex h-9 items-center justify-center gap-1 rounded-lg bg-surface-low text-label-md text-ink-variant transition-colors hover:bg-surface-mid hover:text-ink"
-            >
-              <span className="material-symbols-outlined text-[16px]">calendar_month</span>
-              <span>Reschedule</span>
-            </button>
-          </div>
-          <div className="flex items-center justify-center gap-1.5 pt-1 text-label-sm text-outline-strong">
-            <span className="material-symbols-outlined text-[14px]">lock</span>
-            <span>End-to-end encrypted session • Recorded for evaluation review</span>
-          </div>
-        </div>
-      </section>
+          </Card>
+
+          {/* 5. Browser runtime */}
+          <Card className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-headline-sm text-ink">
+                <span className="material-symbols-outlined text-[18px] text-primary">verified_user</span>
+                Browser
+              </span>
+              <StatePill state={browserOk ? 'ok' : 'unsupported'} />
+            </div>
+            <ul className="m-0 flex list-none flex-col gap-1.5 p-0 text-body-sm">
+              {[
+                { label: 'Camera / mic access (mediaDevices)', ok: capability.media },
+                { label: 'Secure context (HTTPS/localhost)', ok: capability.secure },
+                { label: 'Web Audio for live levels', ok: capability.audio },
+                { label: 'WebRTC (for live meeting)', ok: capability.webrtc },
+              ].map((row) => (
+                <li key={row.label} className="flex items-center gap-2 text-ink-variant">
+                  <span className={`material-symbols-outlined text-[16px] ${row.ok ? 'text-success' : 'text-danger'}`}>
+                    {row.ok ? 'check_circle' : 'cancel'}
+                  </span>
+                  {row.label}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </section>
+      </div>
+
+      {/* Launch */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Link
+          to="/mock-interviews"
+          className={`${buttonClass('primary', 'sm:w-auto')} no-underline ${allReady ? '' : 'opacity-80'}`}
+        >
+          <span>Continue to mock interviews</span>
+          <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+        </Link>
+        <Link to="/my-applications" className={`${buttonClass('secondary', 'sm:w-auto')} no-underline`}>
+          <span className="material-symbols-outlined text-[18px]">calendar_month</span>
+          Manage scheduled interviews
+        </Link>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default DeviceCheckPage;

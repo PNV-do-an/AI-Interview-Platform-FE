@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useOrderController } from '../../controllers/useOrderController';
 import { formatVnd, ORDER_STATUS_LABELS, PAYMENT_METHOD_LABELS } from '../../models/Order.model';
+import ConfirmDialog from '../components/ConfirmDialog';
 import {
   ErrorBanner,
   LoadingState,
@@ -21,14 +22,18 @@ const MyOrdersPage: React.FC = () => {
 
   useEffect(() => { fetchMyOrders(); }, [fetchMyOrders]);
 
+  const [cancelId, setCancelId] = useState<number | null>(null);
+
   const handlePay = async (id: number) => {
     clearMessages();
     const ok = await payOrder(id);
     if (ok) fetchMyOrders();
   };
 
-  const handleCancel = async (id: number) => {
-    if (!window.confirm('Cancel this order?')) return;
+  const runCancel = async () => {
+    if (cancelId === null) return;
+    const id = cancelId;
+    setCancelId(null);
     clearMessages();
     const ok = await cancelOrder(id);
     if (ok) fetchMyOrders();
@@ -94,7 +99,7 @@ const MyOrdersPage: React.FC = () => {
                         <button onClick={() => handlePay(order.id)} className={buttonClass('primary')}>
                           Pay
                         </button>
-                        <button onClick={() => handleCancel(order.id)} className={buttonClass('secondary')}>
+                        <button onClick={() => setCancelId(order.id)} className={buttonClass('secondary')}>
                           Cancel
                         </button>
                       </div>
@@ -112,6 +117,17 @@ const MyOrdersPage: React.FC = () => {
           ← View Packages
         </Link>
       </p>
+
+      <ConfirmDialog
+        open={cancelId !== null}
+        title="Cancel this order?"
+        message="The order is closed and can no longer be paid. This can't be undone."
+        confirmLabel="Cancel order"
+        cancelLabel="Keep order"
+        danger
+        onConfirm={() => void runCancel()}
+        onCancel={() => setCancelId(null)}
+      />
     </div>
   );
 };

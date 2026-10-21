@@ -21,6 +21,7 @@ const WORKSPACES: { title: string; items: NavItem[] }[] = [
       { to: '/my-profile', label: 'Profile & CV', icon: 'person', roles: ['ROLE_USER'] },
       { to: '/cv-analyzer', label: 'CV Analysis', icon: 'fact_check', roles: ['ROLE_USER'] },
       { to: '/cover-letters', label: 'Cover Letters', icon: 'mail', roles: ['ROLE_USER'] },
+      { to: '/device-check', label: 'Device Check', icon: 'videocam', roles: ['ROLE_USER'] },
     ],
   },
   {
@@ -184,10 +185,13 @@ const AppLayout: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          <span className="relative flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface-high">
+          <Link
+            to="/notifications"
+            aria-label="Notifications"
+            className="relative flex h-8 w-8 items-center justify-center rounded-lg no-underline hover:bg-surface-high"
+          >
             <span className="material-symbols-outlined text-[20px] text-ink-variant">notifications</span>
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-error" />
-          </span>
+          </Link>
           <div className="flex items-center gap-2 pl-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-label-sm font-semibold text-on-primary">
               {initials || '?'}

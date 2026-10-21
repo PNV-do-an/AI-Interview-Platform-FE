@@ -4,7 +4,7 @@ import {
   AuditLog, PagedResponse, ProfileUpdateResult, Role, UserDetail, UserStats, UserSummary,
 } from '../models/User.model';
 import {
-  AdminSettings, BulkRoleChangeRequest, BulkUserActionResult, DashboardRange, DashboardResponse,
+  AdminSettings, BulkRoleChangeRequest, BulkUserActionResult, CategoryGroupsResponse, DashboardRange, DashboardResponse,
   JobReviewRequest, JobStatusCode, LockAccountRequest, ModerationAction, ModerationHistoryRow,
   ModerationHistoryStats, ModerationJob, ModerationJobDetail, PermissionMatrix,
 } from '../models/AdminConsole.model';
@@ -141,6 +141,10 @@ const AdminService = {
   /** PUT theo nhóm.key phẳng trong object lồng nhau; chỉ gửi key đã đổi. Lỗi -> 422 `{detail: {key: msg}}`, không ghi một phần. */
   updateSettings: (body: Record<string, Record<string, string | number | boolean>>) =>
     httpService.put<ApiResponse<AdminSettings>>(`${BASE}/settings`, body),
+
+  /** Read-only (guard ADMIN): 4 nhóm phân loại employers thực nhập trên tin chưa xóa, giá trịBusyest first. */
+  getCategories: () =>
+    httpService.get<ApiResponse<CategoryGroupsResponse>>(`${BASE}/categories`),
 };
 
 export default AdminService;

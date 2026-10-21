@@ -29,7 +29,7 @@ Phạm vi đã chốt và áp dụng: chỉ màn có mockup sang tiếng Anh; `C
 | Rubric Studio | `/admin/rubrics` | bảng rubric/prompt + API đọc/ghi |
 | Hiring Analytics | `/admin/analytics` | API aggregate (funnel, calibration, bias) |
 | Candidate scorecard | `/candidates/:id/evaluation` | API điểm theo tiêu chí (hiện chỉ có `score` từng câu) |
-| 2FA / magic link / device check | `/two-factor`, `/magic-link`, `/device-check` | API 2FA + magic link; MediaDevices cho device check |
+| 2FA / magic link | `/two-factor`, `/magic-link` | API 2FA + magic link |
 
 Gắn vào sidebar **sau** khi nối thật, không gắn lúc còn số liệu bịa.
 

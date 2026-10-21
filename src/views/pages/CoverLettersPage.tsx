@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useCvController } from '../../controllers/useCvController';
 import { useJobController } from '../../controllers/useJobController';
 import { useAuth } from '../../context/AuthContext';
+import ConfirmDialog from '../components/ConfirmDialog';
 import {
   Card,
   ErrorBanner,
@@ -26,6 +27,15 @@ const CoverLettersPage = () => {
   const [jobId, setJobId] = useState<number | ''>('');
   const [cvId, setCvId] = useState<number | ''>('');
   const [content, setContent] = useState('');
+  const [pendingDelId, setPendingDelId] = useState<number | null>(null);
+
+  const runDelete = async () => {
+    if (pendingDelId === null) return;
+    const id = pendingDelId;
+    setPendingDelId(null);
+    const ok = await deleteLetter(id);
+    if (ok) fetchMyLetters();
+  };
 
   useEffect(() => {
     if (user?.role === 'ROLE_USER') {
@@ -165,11 +175,7 @@ const CoverLettersPage = () => {
                     </button>
                     <button
                       className={buttonClass('ghost', 'h-auto px-2 py-1 text-label-sm text-danger-text hover:bg-danger-bg')}
-                      onClick={async () => {
-                        if (!window.confirm('Xóa thư này?')) return;
-                        const ok = await deleteLetter(l.id);
-                        if (ok) fetchMyLetters();
-                      }}
+                      onClick={() => setPendingDelId(l.id)}
                     >
                       Xóa
                     </button>
@@ -199,6 +205,17 @@ const CoverLettersPage = () => {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={pendingDelId !== null}
+        title="Xóa thư này?"
+        message="Thư đã xóa sẽ không còn trong danh sách. Hành động này không thể hoàn tác."
+        confirmLabel="Xóa"
+        cancelLabel="Hủy"
+        danger
+        onConfirm={() => void runDelete()}
+        onCancel={() => setPendingDelId(null)}
+      />
     </div>
   );
 };

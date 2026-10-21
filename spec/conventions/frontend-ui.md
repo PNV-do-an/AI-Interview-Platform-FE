@@ -55,7 +55,7 @@ Wave admin 2026-10-21 chép markup từ mockup Stitch nên dùng **đúng tên t
 ## 4. Layout dùng chung
 
 - Mọi route đăng nhập nằm trong `AppLayout` (sidebar `w-72` + header `h-16`, `main` `px-4 pt-16 lg:px-6`). Trang **không** tự vẽ lại sidebar/header, kể cả khi mockup có `<aside>`.
-- Route `/admin/*` nằm trong **`AdminLayout`** (shell riêng, dựng lại theo mockup admin 2026-10-21): aside `w-72`, header `fixed left-72`, vùng nội dung `pl-72`. Hệ quả: thanh action sticky của màn admin phải là `fixed bottom-0 left-72 right-0`, không dùng `left-0`. Thân màn admin vẫn **không** tự vẽ `<aside>`.
+- Route `/admin/*` nằm trong **`AdminLayout`** (shell riêng, dựng lại theo mockup admin 2026-10-21): từ 21/10 shell responsive — aside `w-72` chỉ render từ `lg` (`hidden lg:flex`), dưới `lg` là drawer phủ màn có overlay + nút hamburger ở header; header `fixed left-0 lg:left-72`, nội dung `lg:pl-72`, drawer tự đóng khi đổi route. Hệ quả: thanh action sticky của màn admin phải là `fixed bottom-0 left-0 right-0 lg:left-72`. Thân màn admin vẫn **không** tự vẽ `<aside>`. `AppLayout` dùng đúng cơ chế drawer/hamburger này.
 - Sidebar lọc theo role: candidate / employer (sidebar `AppLayout`) và 7 mục "Quản trị hệ thống" (sidebar `AdminLayout`). Thêm route mới thì chọn vai trò nav khớp với guard route để không dẫn tới 403; mockup đã vẽ item nav thì phải gắn item đó — xem §3.
 - Trang đăng nhập/đăng ký/khôi phục mật khẩu là trang standalone 2 cột với panel gradient `from-primary to-secondary`, có header/footer riêng.
 - Bảng mật độ cao: header `thClass` (cao 32px, uppercase, tracking 0.04em), row `tdClass` (cao 40px), hover `bg-surface-low/60`, border dưới `#e2e8f0`.

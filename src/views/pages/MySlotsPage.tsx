@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSlotController } from '../../controllers/useSlotController';
+import ConfirmDialog from '../components/ConfirmDialog';
 import {
   Badge,
   EmptyState,
@@ -22,8 +23,15 @@ const MySlotsPage: React.FC = () => {
   const [start, setStart] = useState(toLocalInput(new Date()));
   const [end, setEnd] = useState(toLocalInput(new Date(Date.now() + 3600_000)));
   const [note, setNote] = useState('');
+  const [pendingCancel, setPendingCancel] = useState<number | null>(null);
 
   useEffect(() => { fetchMySlots(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const doCancel = async (id: number) => {
+    setPendingCancel(null);
+    await cancelSlot(id);
+    await fetchMySlots();
+  };
 
   const onCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +99,7 @@ const MySlotsPage: React.FC = () => {
             {!slot.booked && (
               <button
                 className={buttonClass('ghost', 'h-7 shrink-0 px-2 text-label-sm')}
-                onClick={() => cancelSlot(slot.id).then(() => fetchMySlots())}
+                onClick={() => setPendingCancel(slot.id)}
               >
                 Cancel Slot
               </button>
@@ -109,6 +117,17 @@ const MySlotsPage: React.FC = () => {
           ← My Job Postings
         </Link>
       </p>
+
+      <ConfirmDialog
+        open={pendingCancel !== null}
+        title="Cancel this availability slot?"
+        message="The slot is removed from the booking calendar. This can't be undone."
+        confirmLabel="Cancel Slot"
+        cancelLabel="Keep slot"
+        danger
+        onConfirm={() => { if (pendingCancel !== null) void doCancel(pendingCancel); }}
+        onCancel={() => setPendingCancel(null)}
+      />
     </div>
   );
 };

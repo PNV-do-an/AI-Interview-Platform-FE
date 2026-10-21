@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMockInterviewController } from '../../controllers/useMockInterviewController';
 import { useAuth } from '../../context/AuthContext';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { Card, buttonClass, inputClass } from '../components/ui';
 
 // Textarea: kế thừa inputClass, bỏ h-9, thay bằng py-2 (theo luật design system).
@@ -18,6 +19,7 @@ const MockInterviewSessionPage = () => {
 
   const [answerText, setAnswerText] = useState('');
   const [elapsed, setElapsed] = useState(0);
+  const [confirmFinish, setConfirmFinish] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -68,8 +70,8 @@ const MockInterviewSessionPage = () => {
     }
   };
 
-  const handleFinish = async () => {
-    if (!window.confirm('End this interview session now?')) return;
+  const runFinish = async () => {
+    setConfirmFinish(false);
     const res = await finishSession(session.id);
     if (res) navigate(`/mock-interviews/${session.id}/result`);
   };
@@ -122,7 +124,7 @@ const MockInterviewSessionPage = () => {
                 <span className="font-medium text-ink tabular-nums">{formatTime(elapsed)}</span>
               </div>
             </div>
-            <button onClick={handleFinish} className={buttonClass('danger', 'gap-1')}>
+            <button onClick={() => setConfirmFinish(true)} className={buttonClass('danger', 'gap-1')}>
               <span className="material-symbols-outlined text-[18px]">call_end</span>
               <span>End Interview</span>
             </button>
@@ -181,7 +183,7 @@ const MockInterviewSessionPage = () => {
           ) : (
             <Card className="flex flex-col items-center gap-3 px-6 py-10 text-center">
               <p className="m-0 text-body-lg text-ink">You have answered all {total} questions.</p>
-              <button onClick={handleFinish} className={buttonClass('primary')}>
+              <button onClick={() => void runFinish()} className={buttonClass('primary')}>
                 View Detailed Feedback
               </button>
             </Card>
@@ -226,6 +228,17 @@ const MockInterviewSessionPage = () => {
           )}
         </aside>
       </div>
+
+      <ConfirmDialog
+        open={confirmFinish}
+        title="End this interview session now?"
+        message="Remaining questions are skipped and your answers are scored. This can't be undone."
+        confirmLabel="End Interview"
+        cancelLabel="Keep going"
+        danger
+        onConfirm={() => void runFinish()}
+        onCancel={() => setConfirmFinish(false)}
+      />
     </div>
   );
 };

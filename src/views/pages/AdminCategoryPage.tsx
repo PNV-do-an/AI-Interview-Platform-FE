@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AdminService from '../../services/admin.service';
-import { DashboardResponse, JobStatusCode, PermissionMatrix } from '../../models/AdminConsole.model';
+import { CategoryGroupsResponse, DashboardResponse, JobStatusCode, PermissionMatrix } from '../../models/AdminConsole.model';
 import { ROLE_LABELS, Role } from '../../models/User.model';
 import {
   AdminCard, AdminPageHeader, EmptyBlock, ErrorBlock, ICON, LoadingBlock, Pill,
@@ -10,11 +10,10 @@ import {
 
 /**
  * Danh mục & Ngành nghề — màn "Danh mục & Ngành nghề" trong sidebar mockup.
- * BE KHÔNG có endpoint taxonomy (specs/004 §76 ghi rõ ngành nghề ngoài phạm vi; department /
- * experienceLevel / employmentType là String tự do trên job_descriptions). Vì vậy:
  *   - Khối "Danh mục module hệ thống" = số THẬT từ GET /admin/permissions/matrix.
  *   - Khối "Phân bổ theo nhóm dữ liệu" = số THẬT từ GET /admin/dashboard.
- *   - Khối ngành nghề/kỹ năng để empty state + link tới nơi quản lý thật, không bịa số.
+ *   - Khối "Giá trị phân loại đang dùng" = số THẬT từ GET /admin/categories (read-only): 4 nhóm
+ *     department / kinh nghiệm / kiểu làm việc / hình thức, employer tự nhập nên không có CRUD.
  */
 
 const STATUS_LABEL: Record<JobStatusCode, string> = {
@@ -24,6 +23,7 @@ const STATUS_LABEL: Record<JobStatusCode, string> = {
 const AdminCategoryPage: React.FC = () => {
   const [matrix, setMatrix] = useState<PermissionMatrix | null>(null);
   const [dash, setDash] = useState<DashboardResponse | null>(null);
+  const [categories, setCategories] = useState<CategoryGroupsResponse | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const loaded = useRef(false);
@@ -31,8 +31,12 @@ const AdminCategoryPage: React.FC = () => {
   useEffect(() => {
     if (loaded.current) return;
     loaded.current = true;
-    Promise.all([AdminService.getPermissionMatrix(), AdminService.getDashboard(30)])
-      .then(([m, d]) => { setMatrix(m.data.data!); setDash(d.data.data!); })
+    Promise.all([AdminService.getPermissionMatrix(), AdminService.getDashboard(30), AdminService.getCategories()])
+      .then(([m, d, c]) => {
+        setMatrix(m.data.data!);
+        setDash(d.data.data!);
+        setCategories(c.data.data!);
+      })
       .catch((err) => setError(errorText(err, 'Không tải được danh mục hệ thống.')))
       .finally(() => setLoading(false));
   }, []);
@@ -48,6 +52,11 @@ const AdminCategoryPage: React.FC = () => {
     [matrix],
   );
 
+  const categoryGroups = useMemo(
+    () => (categories?.groups ?? []).filter((g) => g.values.length > 0),
+    [categories],
+  );
+
   if (loading) {
     return (
       <div className="px-space-xl py-space-xl"><LoadingBlock label="Đang tải danh mục hệ thống..." /></div>
@@ -59,7 +68,7 @@ const AdminCategoryPage: React.FC = () => {
       <AdminPageHeader
         crumbs={[{ label: 'Hệ thống Quản trị', icon: 'shield' }, { label: 'Danh mục & Ngành nghề' }]}
         title="Danh mục & Ngành nghề"
-        subtitle="Danh mục module hệ thống và phân bổ dữ liệu theo nhóm. Ngành nghề / kỹ năng do nhà tuyển dụng tự nhập nên không có bảng danh mục tập trung."
+        subtitle="Danh mục module hệ thống, phân bổ dữ liệu theo nhóm, và các giá trị phân loại nhà tuyển dụng đang dùng thật trên tin tuyển dụng (bốn khóa là chuỗi tự do, chưa có bảng danh mục tập trung)."
         actions={(
           <Link to="/admin/roles" className={adminButton('primary', 'no-underline')}>
             <span className={`${ICON} text-[18px]`}>verified_user</span>Quản lý phân quyền
@@ -157,12 +166,55 @@ const AdminCategoryPage: React.FC = () => {
             </AdminCard>
           )}
 
-          <AdminCard title="Ngành nghề & Kỹ năng" icon="interests">
-            <EmptyBlock
-              icon="label_off"
-              title="Chưa có danh mục tập trung"
-              description="Backend lưu department / kinh nghiệm / hình thức làm việc dạng chuỗi tự do trên từng tin tuyển dụng và không có API taxonomy (spec 004 đưa ngoài phạm vi). Giá trị sẽ xuất hiện tại đây khi có endpoint danh mục."
-            />
+          <AdminCard
+            title="Giá trị phân loại đang dùng"
+            description="GET /admin/categories — bốn khóa employer tự nhập trên tin đang hoạt động, đọc được nhưng chưa có CRUD tập trung"
+            icon="interests"
+          >
+            {categoryGroups.length === 0 ? (
+              <EmptyBlock
+                icon="label_off"
+                title="Chưa có giá trị nào"
+                description="Nhà tuyển dụng chưa nhập giá trị cho bốn khóa phân loại, hoặc chưa có tin tuyển dụng đang hoạt động."
+              />
+            ) : (
+              <div className="flex flex-col gap-space-lg">
+                {categoryGroups.map((group) => {
+                  const max = group.values.reduce((m, v) => Math.max(m, v.jobCount), 0);
+                  return (
+                    <div key={group.key}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-ds-label-md text-on-surface-variant uppercase tracking-wider font-semibold">
+                          {group.label}
+                        </span>
+                        <span className="text-ds-body-sm text-on-surface-variant">{group.values.length} giá trị</span>
+                      </div>
+                      <ul className="flex flex-col gap-2">
+                        {group.values.slice(0, 6).map((v) => {
+                          const pct = max ? Math.round((v.jobCount / max) * 100) : 0;
+                          return (
+                            <li key={v.value}>
+                              <div className="flex items-center justify-between text-ds-body-sm">
+                                <span className="text-on-surface truncate" title={v.value}>{v.value}</span>
+                                <span className="text-on-surface-variant ml-2 shrink-0">{v.jobCount} tin</span>
+                              </div>
+                              <div className="mt-1 h-1.5 rounded-full bg-surface-container-high overflow-hidden">
+                                <div className="h-full rounded-full bg-secondary-teal" style={{ width: `${pct}%` }} />
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      {group.values.length > 6 && (
+                        <span className="block mt-2 text-ds-body-sm text-on-surface-variant">
+                          +{group.values.length - 6} giá trị ít dùng hơn
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </AdminCard>
         </div>
       </div>

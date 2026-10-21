@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useOrderController } from '../../controllers/useOrderController';
 import { formatVnd, ServicePackage, ServicePackageRequest } from '../../models/Order.model';
+import ConfirmDialog from '../components/ConfirmDialog';
 import {
-  Badge, ErrorBanner, PageHeader, buttonClass, inputClass, labelClass,
+  Badge, EmptyState, ErrorBanner, LoadingState, PageHeader, buttonClass, inputClass, labelClass,
 } from '../components/ui';
 
 const emptyForm: ServicePackageRequest = {
@@ -21,7 +22,7 @@ const textareaClass =
 
 const PackageManagementPage: React.FC = () => {
   const {
-    allPackages, error, successMsg,
+    allPackages, loading, error, successMsg,
     fetchAllPackages, createPackage, updatePackage,
     togglePackageActive, deletePackage, clearMessages,
   } = useOrderController();
@@ -29,6 +30,7 @@ const PackageManagementPage: React.FC = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<ServicePackageRequest>(emptyForm);
   const [featuresText, setFeaturesText] = useState('');
+  const [pendingDel, setPendingDel] = useState<ServicePackage | null>(null);
 
   useEffect(() => { fetchAllPackages(); }, [fetchAllPackages]);
 
@@ -75,8 +77,10 @@ const PackageManagementPage: React.FC = () => {
     if (await togglePackageActive(id)) fetchAllPackages();
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Delete this package? Packages with existing orders cannot be deleted.')) return;
+  const runDelete = async () => {
+    if (!pendingDel) return;
+    const id = pendingDel.id;
+    setPendingDel(null);
     clearMessages();
     if (await deletePackage(id)) fetchAllPackages();
   };
@@ -165,6 +169,10 @@ const PackageManagementPage: React.FC = () => {
         </form>
       </div>
 
+      {loading && <LoadingState />}
+      {!loading && allPackages.length === 0 && (
+        <EmptyState icon="inventory_2" title="No packages yet." />
+      )}
       <div className="flex flex-col gap-3">
         {allPackages.map((pkg) => (
           <div
@@ -189,7 +197,7 @@ const PackageManagementPage: React.FC = () => {
               <button type="button" onClick={() => handleToggle(pkg.id)} className={buttonClass('secondary')}>
                 {pkg.active ? 'Disable' : 'Enable'}
               </button>
-              <button type="button" onClick={() => handleDelete(pkg.id)} className={buttonClass('danger')}>
+              <button type="button" onClick={() => setPendingDel(pkg)} className={buttonClass('danger')}>
                 <span className="material-symbols-outlined text-[16px]">delete</span>
                 Delete
               </button>
@@ -197,6 +205,17 @@ const PackageManagementPage: React.FC = () => {
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={pendingDel !== null}
+        title="Delete this package?"
+        message={pendingDel ? `"${pendingDel.name}" will be removed. Packages with existing orders cannot be deleted.` : ''}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        danger
+        onConfirm={() => void runDelete()}
+        onCancel={() => setPendingDel(null)}
+      />
     </div>
   );
 };

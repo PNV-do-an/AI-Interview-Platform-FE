@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSlotController } from '../../controllers/useSlotController';
 import { Slot } from '../../models/Program.model';
+import ConfirmDialog from '../components/ConfirmDialog';
 import {
   Badge,
   Card,
@@ -64,6 +65,7 @@ const InterviewCalendarPage: React.FC = () => {
   const [formNote, setFormNote] = useState<string>('');
   const [formError, setFormError] = useState<string>('');
   const [saving, setSaving] = useState<boolean>(false);
+  const [pendingCancel, setPendingCancel] = useState<Slot | null>(null);
 
   useEffect(() => {
     fetchMySlots();
@@ -124,7 +126,10 @@ const InterviewCalendarPage: React.FC = () => {
     }
   };
 
-  const onCancel = async (id: number) => {
+  const runCancel = async () => {
+    if (!pendingCancel) return;
+    const id = pendingCancel.id;
+    setPendingCancel(null);
     await cancelSlot(id);
     await fetchMySlots();
   };
@@ -292,7 +297,7 @@ const InterviewCalendarPage: React.FC = () => {
                                     <button
                                       type="button"
                                       className="mt-0.5 text-label-sm font-medium underline underline-offset-2 hover:text-ink"
-                                      onClick={() => onCancel(s.id)}
+                                      onClick={() => setPendingCancel(s)}
                                     >
                                       Cancel slot
                                     </button>
@@ -394,6 +399,17 @@ const InterviewCalendarPage: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={pendingCancel !== null}
+        title="Cancel this slot?"
+        message="The slot disappears from the calendar and candidates can no longer book it. This can't be undone."
+        confirmLabel="Cancel slot"
+        cancelLabel="Keep slot"
+        danger
+        onConfirm={() => void runCancel()}
+        onCancel={() => setPendingCancel(null)}
+      />
     </div>
   );
 };

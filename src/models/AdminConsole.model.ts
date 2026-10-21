@@ -217,6 +217,25 @@ export interface BulkRoleChangeRequest {
   role: Role;
 }
 
+/**
+ * GET /admin/categories (guard hasRole('ADMIN')) — 4 nhóm phân loại employers thực nhập
+ * trên các tin chưa xóa. Read-only: chưa có bảng danh mục chuẩn, giá trị là chuỗi tự do.
+ */
+export interface CategoryValue {
+  value: string;
+  jobCount: number;
+}
+
+export interface CategoryGroup {
+  key: 'department' | 'experienceLevel' | 'employmentType' | 'workplaceModel' | string;
+  label: string;
+  values: CategoryValue[];
+}
+
+export interface CategoryGroupsResponse {
+  groups: CategoryGroup[];
+}
+
 export const MODERATION_ACTION_LABELS: Record<ModerationAction, string> = {
   SUBMITTED: 'Gửi duyệt',
   RESUBMITTED: 'Gửi lại',

@@ -104,6 +104,7 @@ const AdminLayout: React.FC = () => {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [pendingJd, setPendingJd] = useState<number | null>(null);
   const [query, setQuery] = useState('');
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const role = user?.role ?? '';
   const isAdmin = role === 'ROLE_ADMIN';
@@ -151,130 +152,159 @@ const AdminLayout: React.FC = () => {
 
   const initials = initialsOf(user?.fullName || user?.email || '');
 
+  // Close the mobile drawer on navigation (desktop aside is unaffected).
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [location.pathname]);
+
+  const sidebar = (
+    <>
+      <div className="flex flex-col flex-1 overflow-y-auto">
+        <div className="h-16 px-space-lg flex items-center gap-space-sm border-b border-surface-container">
+          <div className="flex flex-col min-w-0">
+            <span className="text-ds-headline-sm text-on-surface leading-tight tracking-tight font-bold truncate">
+              AI Interview Platform
+            </span>
+            <span className="text-[11px] text-primary font-semibold uppercase tracking-wider">
+              Admin Portal
+            </span>
+          </div>
+        </div>
+
+        <div className="px-space-md py-space-md">
+          {sections.map((section) => (
+            <div key={section.title} className="mb-space-sm">
+              <div className="px-space-sm pb-2 text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
+                {section.title}
+              </div>
+              <nav className="flex flex-col gap-1">
+                {section.items.map((item) => {
+                  const badge = badgeValue(item.badge, item.badgeSuffix);
+                  const children = item.children ?? [];
+                  return (
+                    <React.Fragment key={item.to}>
+                      <NavLink
+                        to={item.to}
+                        end={children.length === 0 ? item.end : false}
+                        className={({ isActive }) => {
+                          const active = children.length
+                            ? children.some((c) => location.pathname === c.to)
+                            : isActive;
+                          return `${NAV_ITEM_BASE} ${active ? NAV_ITEM_ACTIVE : NAV_ITEM_IDLE}`;
+                        }}
+                      >
+                        <span className="flex items-center gap-space-md min-w-0">
+                          <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                          <span className="truncate">{item.label}</span>
+                        </span>
+                        {badge && (
+                          <span className={`${BADGE_CLASS} ml-2 shrink-0 ${item.badge === 'pending'
+                            ? 'bg-secondary-container text-on-secondary-container font-bold'
+                            : 'bg-surface-container-high text-on-surface-variant'}`}>
+                            {badge}
+                          </span>
+                        )}
+                      </NavLink>
+
+                      {children.length > 0 && (
+                        <div className="mt-1 ml-space-md pl-space-sm space-y-1">
+                          {children.map((child) => {
+                            const childBadge = badgeValue(child.badge);
+                            return (
+                              <NavLink
+                                key={child.to}
+                                to={child.to}
+                                end
+                                className={({ isActive }) =>
+                                  `${SUBITEM_BASE} ${isActive ? SUBITEM_ACTIVE : SUBITEM_IDLE}`
+                                }
+                              >
+                                <span>{child.label}</span>
+                                {childBadge && (
+                                  <span className={`${BADGE_CLASS} bg-primary-fixed text-on-primary-fixed-variant font-bold`}>
+                                    {childBadge}
+                                  </span>
+                                )}
+                              </NavLink>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </nav>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="p-space-md border-t border-surface-container bg-surface-container-low flex flex-col gap-space-sm">
+        <div className="flex items-center gap-space-sm p-2 rounded-xl bg-surface-container-lowest shadow-sm">
+          <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold text-sm shrink-0">
+            {initials}
+          </div>
+          <div className="flex flex-col min-w-0 flex-1">
+            <span className="text-ds-label-md text-on-surface font-semibold truncate leading-tight">
+              {user?.fullName || 'Quản trị viên'}
+            </span>
+            <span className="text-[11px] text-primary truncate leading-tight">
+              {ROLE_LABEL[role] ?? 'Quản trị viên'}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center justify-between pt-1 px-1">
+          <Link
+            to="/bug-reports"
+            className="flex items-center gap-1 text-ds-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
+          >
+            <span className="material-symbols-outlined text-[18px]">help</span>
+            <span>Hỗ trợ kỹ thuật</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => {
+              logout();
+              navigate('/login');
+            }}
+            className="flex items-center gap-1 text-ds-label-sm text-error hover:opacity-80 transition-opacity font-semibold border-0 bg-transparent cursor-pointer p-0"
+          >
+            <span className="material-symbols-outlined text-[18px]">logout</span>
+            <span>Đăng xuất</span>
+          </button>
+        </div>
+        <div className="text-[11px] text-on-surface-variant text-center font-bold">v2.5.4</div>
+      </div>
+    </>
+  );
+
   return (
     <div className="min-h-screen bg-background text-ds-body-md text-on-surface">
-      <aside className="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 flex flex-col justify-between shadow-header">
-        <div className="flex flex-col flex-1 overflow-y-auto">
-          <div className="h-16 px-space-lg flex items-center gap-space-sm border-b border-surface-container">
-            <div className="flex flex-col min-w-0">
-              <span className="text-ds-headline-sm text-on-surface leading-tight tracking-tight font-bold truncate">
-                AI Interview Platform
-              </span>
-              <span className="text-[11px] text-primary font-semibold uppercase tracking-wider">
-                Admin Portal
-              </span>
-            </div>
-          </div>
-
-          <div className="px-space-md py-space-md">
-            {sections.map((section) => (
-              <div key={section.title} className="mb-space-sm">
-                <div className="px-space-sm pb-2 text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
-                  {section.title}
-                </div>
-                <nav className="flex flex-col gap-1">
-                  {section.items.map((item) => {
-                    const badge = badgeValue(item.badge, item.badgeSuffix);
-                    const children = item.children ?? [];
-                    return (
-                      <React.Fragment key={item.to}>
-                        <NavLink
-                          to={item.to}
-                          end={children.length === 0 ? item.end : false}
-                          className={({ isActive }) => {
-                            const active = children.length
-                              ? children.some((c) => location.pathname === c.to)
-                              : isActive;
-                            return `${NAV_ITEM_BASE} ${active ? NAV_ITEM_ACTIVE : NAV_ITEM_IDLE}`;
-                          }}
-                        >
-                          <span className="flex items-center gap-space-md min-w-0">
-                            <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
-                            <span className="truncate">{item.label}</span>
-                          </span>
-                          {badge && (
-                            <span className={`${BADGE_CLASS} ml-2 shrink-0 ${item.badge === 'pending'
-                              ? 'bg-secondary-container text-on-secondary-container font-bold'
-                              : 'bg-surface-container-high text-on-surface-variant'}`}>
-                              {badge}
-                            </span>
-                          )}
-                        </NavLink>
-
-                        {children.length > 0 && (
-                          <div className="mt-1 ml-space-md pl-space-sm space-y-1">
-                            {children.map((child) => {
-                              const childBadge = badgeValue(child.badge);
-                              return (
-                                <NavLink
-                                  key={child.to}
-                                  to={child.to}
-                                  end
-                                  className={({ isActive }) =>
-                                    `${SUBITEM_BASE} ${isActive ? SUBITEM_ACTIVE : SUBITEM_IDLE}`
-                                  }
-                                >
-                                  <span>{child.label}</span>
-                                  {childBadge && (
-                                    <span className={`${BADGE_CLASS} bg-primary-fixed text-on-primary-fixed-variant font-bold`}>
-                                      {childBadge}
-                                    </span>
-                                  )}
-                                </NavLink>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                </nav>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="p-space-md border-t border-surface-container bg-surface-container-low flex flex-col gap-space-sm">
-          <div className="flex items-center gap-space-sm p-2 rounded-xl bg-surface-container-lowest shadow-sm">
-            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold text-sm shrink-0">
-              {initials}
-            </div>
-            <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-ds-label-md text-on-surface font-semibold truncate leading-tight">
-                {user?.fullName || 'Quản trị viên'}
-              </span>
-              <span className="text-[11px] text-primary truncate leading-tight">
-                {ROLE_LABEL[role] ?? 'Quản trị viên'}
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center justify-between pt-1 px-1">
-            <Link
-              to="/bug-reports"
-              className="flex items-center gap-1 text-ds-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
-            >
-              <span className="material-symbols-outlined text-[18px]">help</span>
-              <span>Hỗ trợ kỹ thuật</span>
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                logout();
-                navigate('/login');
-              }}
-              className="flex items-center gap-1 text-ds-label-sm text-error hover:opacity-80 transition-opacity font-semibold border-0 bg-transparent cursor-pointer p-0"
-            >
-              <span className="material-symbols-outlined text-[18px]">logout</span>
-              <span>Đăng xuất</span>
-            </button>
-          </div>
-          <div className="text-[11px] text-on-surface-variant text-center font-bold">v2.5.4</div>
-        </div>
+      <aside className="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 hidden lg:flex flex-col justify-between shadow-header">
+        {sidebar}
       </aside>
 
-      <div className="pl-72 flex flex-col min-h-screen">
-        <header className="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl z-40 shadow-header flex items-center justify-between px-space-lg">
-          <div className="flex items-center gap-space-lg flex-1">
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setDrawerOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 flex w-72 flex-col justify-between bg-surface-container-lowest shadow-header">
+            {sidebar}
+          </aside>
+        </div>
+      )}
+
+      <div className="lg:pl-72 flex flex-col min-h-screen">
+        <header className="fixed top-0 left-0 right-0 lg:left-72 h-16 bg-surface-container-lowest/90 backdrop-blur-xl z-40 shadow-header flex items-center justify-between px-space-md lg:px-space-lg gap-2">
+          <button
+            type="button"
+            aria-label="Mở menu"
+            onClick={() => setDrawerOpen(true)}
+            className="w-10 h-10 shrink-0 rounded-xl border border-outline-variant/40 bg-transparent flex items-center justify-center text-on-surface-variant hover:text-on-surface lg:hidden"
+          >
+            <span className="material-symbols-outlined text-[20px]">menu</span>
+          </button>
+
+          <div className="flex items-center gap-space-lg flex-1 min-w-0">
             <form className="relative w-full max-w-md" onSubmit={onSearch}>
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline-strong text-[18px]">
                 search
@@ -289,20 +319,14 @@ const AdminLayout: React.FC = () => {
             </form>
           </div>
 
-          <div className="flex items-center gap-space-md">
-            <div className="relative">
-              <button
-                type="button"
-                aria-label="Thông báo"
-                onClick={() => navigate('/admin/audit')}
-                className="w-10 h-10 rounded-xl hover:bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors border border-outline-variant/40 bg-transparent cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[20px]">notifications</span>
-                <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-error text-on-error text-[10px] flex items-center justify-center font-bold shadow-sm">
-                  5
-                </span>
-              </button>
-            </div>
+          <div className="flex items-center gap-space-md shrink-0">
+            <Link
+              to="/admin/audit"
+              aria-label="Nhật ký hoạt động"
+              className="w-10 h-10 rounded-xl hover:bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors border border-outline-variant/40 no-underline"
+            >
+              <span className="material-symbols-outlined text-[20px]">receipt_long</span>
+            </Link>
             <Link
               to="/admin/account"
               className="flex items-center gap-space-sm pl-space-xs cursor-pointer hover:opacity-90 transition-opacity no-underline"

@@ -515,7 +515,7 @@ const AdminRolePermissionPage: React.FC = () => {
       </div>
 
       {/* Thanh trạng thái sticky */}
-      <div className="fixed bottom-0 left-72 right-0 z-30 bg-surface-container-lowest/95 backdrop-blur-md p-space-md shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+      <div className="fixed bottom-0 left-0 right-0 z-30 bg-surface-container-lowest/95 backdrop-blur-md p-space-md shadow-[0_-4px_20px_rgba(0,0,0,0.06)] lg:left-72">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-space-md">
           <div className="flex items-center gap-space-md">
             <span className="relative flex items-center justify-center">

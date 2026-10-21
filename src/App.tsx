@@ -50,6 +50,8 @@ import AdminAccountSettingsPage from './views/pages/AdminAccountSettingsPage';
 import CandidateEvaluationPage from './views/pages/CandidateEvaluationPage';
 import RubricStudioPage from './views/pages/RubricStudioPage';
 import HiringAnalyticsPage from './views/pages/HiringAnalyticsPage';
+import NotificationsPage from './views/pages/NotificationsPage';
+import NotFoundPage from './views/pages/NotFoundPage';
 
 /** Trang chủ: tiếp thị cho người chưa đăng nhập, vào thẳng workspace cho người đã đăng nhập. */
 const HomeRoute: React.FC = () => {
@@ -80,6 +82,7 @@ const App: React.FC = () => {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/jobs" element={<JobsPage />} />
               <Route path="/jobs/:id" element={<JobDetailPage />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/employers/:id/reviews" element={<EmployerReviewsPage />} />
               <Route path="/bug-reports" element={<BugReportsPage />} />
 
@@ -147,8 +150,8 @@ const App: React.FC = () => {
           {/* Unauthorized */}
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-          {/* Default redirect */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          {/* Default: URL không khớp route nào -> trang 404 (SCR-31), không âm thầm đổi hướng */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

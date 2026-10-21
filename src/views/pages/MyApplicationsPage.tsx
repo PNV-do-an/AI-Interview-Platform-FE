@@ -4,6 +4,7 @@ import { useCandidateController } from '../../controllers/useCandidateController
 import { useSlotController } from '../../controllers/useSlotController';
 import { useAuth } from '../../context/AuthContext';
 import { Application, ApplicationStatus } from '../../models/Program.model';
+import ConfirmDialog from '../components/ConfirmDialog';
 import {
   Card,
   EmptyState,
@@ -77,6 +78,7 @@ const MyApplicationsPage = () => {
   const [tab, setTab] = useState('all');
   const [query, setQuery] = useState('');
   const [view, setView] = useState<'cards' | 'table'>('cards');
+  const [pendingWithdraw, setPendingWithdraw] = useState<Application | null>(null);
 
   useEffect(() => {
     if (user?.role === 'ROLE_USER') {
@@ -101,9 +103,13 @@ const MyApplicationsPage = () => {
     }
   };
 
-  const withdraw = async (app: Application) => {
-    if (!window.confirm('Withdraw this application?')) return;
-    const ok = await cancelApplication(app.id);
+  const withdraw = (app: Application) => setPendingWithdraw(app);
+
+  const runWithdraw = async () => {
+    if (!pendingWithdraw) return;
+    const id = pendingWithdraw.id;
+    setPendingWithdraw(null);
+    const ok = await cancelApplication(id);
     if (ok) fetchMyApplications(page);
   };
 
@@ -507,6 +513,17 @@ const MyApplicationsPage = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingWithdraw !== null}
+        title="Withdraw this application?"
+        message={pendingWithdraw ? `Your application for "${pendingWithdraw.jobTitle}" will be cancelled. This can't be undone.` : ''}
+        confirmLabel="Withdraw"
+        cancelLabel="Keep"
+        danger
+        onConfirm={() => void runWithdraw()}
+        onCancel={() => setPendingWithdraw(null)}
+      />
     </div>
   );
 };
