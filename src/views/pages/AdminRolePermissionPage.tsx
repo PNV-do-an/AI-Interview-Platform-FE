@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import AdminService from '../../services/admin.service';
 import { PermissionMatrix } from '../../models/AdminConsole.model';
 import {
+  DemoTag,
   ICON,
   LoadingBlock,
   adminButton,
@@ -335,6 +336,7 @@ const AdminRolePermissionPage: React.FC = () => {
                           {r.builtin && <span className="text-outline-strong">• builtin</span>}
                         </div>
                         <p className="text-ds-body-sm text-on-surface-variant mt-space-sm leading-relaxed">{card.desc}</p>
+                        <div className="pt-space-sm"><DemoTag>Mô tả copy mockup — payload không có</DemoTag></div>
                       </div>
                     </div>
                     <div className="pt-space-lg">
@@ -374,6 +376,7 @@ const AdminRolePermissionPage: React.FC = () => {
                     <span className="px-space-sm py-0.5 rounded-full bg-surface-container text-ds-label-sm text-primary font-bold">
                       {grantedCount.granted} / {grantedCount.total} quyền được cấp
                     </span>
+                    {showDesc && <DemoTag>Ô quyền là số thật; phần mô tả là copy mockup</DemoTag>}
                   </div>
                   <span className="text-outline-strong text-ds-label-sm hidden sm:inline">•</span>
                   <span className="text-ds-body-sm text-on-surface-variant hidden sm:inline">

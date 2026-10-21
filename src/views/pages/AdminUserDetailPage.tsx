@@ -19,7 +19,7 @@ import { useAdminUserController } from '../../controllers/useAdminUserController
 import { Role, UserDetail } from '../../models/User.model';
 import { parseServerTimestamp } from '../../utils/date';
 import {
-  AUDIT_ACTION_ICON, AUDIT_ACTION_VN, EmptyBlock, ErrorBlock, ICON, LoadingBlock, ModalBackdrop,
+  AUDIT_ACTION_ICON, AUDIT_ACTION_VN, DemoTag, EmptyBlock, ErrorBlock, ICON, LoadingBlock, ModalBackdrop,
   ROLE_AVATAR, ROLE_DESCRIPTION, ROLE_ICON, ROLE_OPTIONS, StatusChip, RoleChip, adminTdClass,
   adminThClass, adminTableClass, errorText, fmtServer, initialsOf, modalCancelClass,
   modalDangerClass, modalPrimaryClass, timeAgo,
@@ -330,7 +330,12 @@ const AdminUserDetailPage: React.FC = () => {
                 <MetaRow
                   icon="lan"
                   label="Địa chỉ IP gần nhất"
-                  value={<span className="font-mono text-ds-label-sm text-on-surface-variant">118.69.182.42</span>}
+                  value={(
+                    <span className="flex items-center gap-1.5">
+                      <span className="font-mono text-ds-label-sm text-on-surface-variant">118.69.182.42</span>
+                      <DemoTag>Khối demo</DemoTag>
+                    </span>
+                  )}
                 />
                 {user.blockedUntil && (
                   <MetaRow
@@ -385,6 +390,7 @@ const AdminUserDetailPage: React.FC = () => {
                   <div>
                     <div className="text-ds-headline-sm text-[13px] text-on-surface font-semibold">Chỉ số sẵn sàng AI</div>
                     <div className="text-ds-body-sm text-[12px] text-on-surface-variant">Độ hoàn thiện &amp; xác thực hồ sơ</div>
+                    <div className="pt-0.5"><DemoTag>Khối demo — chưa có API</DemoTag></div>
                   </div>
                 </div>
                 <span className="text-ds-headline-sm text-primary font-bold text-[16px] whitespace-nowrap">94%</span>
@@ -431,7 +437,12 @@ const AdminUserDetailPage: React.FC = () => {
             </div>
 
             {tab === 'info' && <InfoTab user={user} />}
-            {tab === 'activity' && <ActivityTab onSeeAll={() => setTab('history')} />}
+            {tab === 'activity' && (
+              <div className="flex flex-col gap-space-md">
+                <DemoTag>Khối demo — chưa có API hoạt động theo user</DemoTag>
+                <ActivityTab onSeeAll={() => setTab('history')} />
+              </div>
+            )}
             {tab === 'history' && (
               <div className={`${CARD} overflow-hidden`}>
                 <div className="p-space-lg pb-space-sm flex items-center justify-between gap-space-md">
@@ -703,6 +714,7 @@ const InfoTab: React.FC<{ user: UserDetail }> = ({ user }) => (
         <span className="text-ds-label-sm text-on-surface-variant bg-surface-container-high px-2.5 py-1 rounded-md whitespace-nowrap">
           Chỉ xem (Read-only)
         </span>
+        <DemoTag>Khối demo — ngày sinh, cư trú, kinh nghiệm, mục tiêu</DemoTag>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
@@ -733,6 +745,7 @@ const InfoTab: React.FC<{ user: UserDetail }> = ({ user }) => (
       <div className="flex flex-col gap-space-xs mt-2">
         <div className="flex items-center justify-between gap-space-sm">
           <span className={FIELD_LABEL}>Kỹ năng đã thẩm định &amp; tự khai</span>
+          <DemoTag>Khối demo — chưa có API kỹ năng</DemoTag>
           <span className="text-ds-label-sm text-secondary-teal font-medium flex items-center gap-1">
             <span className={`${ICON} text-[14px]`}>auto_awesome</span>
             Đã chuẩn hóa bởi AI Engine
@@ -766,6 +779,7 @@ const InfoTab: React.FC<{ user: UserDetail }> = ({ user }) => (
         <span className="text-ds-headline-sm text-on-surface font-semibold flex items-center gap-2">
           <span className={`${ICON} text-error text-[20px]`}>description</span>
           Hồ sơ ứng tuyển đính kèm (CV)
+          <DemoTag>Khối demo — chưa có API tệp CV</DemoTag>
         </span>
         <span className="text-ds-label-sm text-secondary-teal font-medium">Bản cập nhật gần nhất</span>
       </div>

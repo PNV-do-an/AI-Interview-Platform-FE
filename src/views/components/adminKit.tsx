@@ -178,6 +178,14 @@ export const Pill: React.FC<{
   );
 };
 
+/**
+ * Nhãn cho khối giữ số liệu nguyên văn mockup vì BE chưa có endpoint
+ * (luật wave admin 2026-10-21, spec/INDEX.md + spec/conventions/frontend-ui.md §3).
+ */
+export const DemoTag: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <Pill icon="hive">{children}</Pill>
+);
+
 export const LoadingBlock: React.FC<{ label?: string }> = ({ label = 'Đang tải dữ liệu...' }) => (
   <div className="flex items-center justify-center gap-2 py-space-2xl text-on-surface-variant text-ds-body-md">
     <span className={`${ICON} animate-spin text-[20px]`}>progress_activity</span>

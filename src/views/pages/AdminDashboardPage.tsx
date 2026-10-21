@@ -9,7 +9,7 @@ import {
 } from '../../models/AdminConsole.model';
 import ConfirmDialog from '../components/ConfirmDialog';
 import {
-  AdminPageHeader, EmptyBlock, ErrorBlock, ICON, LoadingBlock, Pill, adminButton,
+  AdminPageHeader, DemoTag, EmptyBlock, ErrorBlock, ICON, LoadingBlock, Pill, adminButton,
   errorText, fmtServer, timeAgo,
 } from '../components/adminKit';
 
@@ -322,9 +322,10 @@ const AdminDashboardPage: React.FC = () => {
                 </span>
               </div>
               <div className="w-px h-6 bg-surface-container-highest" />
-              <div className="flex flex-col">
+              <div className="flex flex-col gap-1">
                 <span className="text-ds-label-sm text-on-surface-variant">Thời lượng</span>
                 <span className="text-ds-label-md font-bold text-on-surface">24m 18s</span>
+                <DemoTag>Khối demo — chưa có API</DemoTag>
               </div>
             </div>
           </div>
@@ -335,9 +336,12 @@ const AdminDashboardPage: React.FC = () => {
                 <span className="text-ds-label-md uppercase tracking-wider text-on-surface-variant font-semibold">
                   Tài nguyên AI & Hệ thống
                 </span>
-                <span className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface">
-                  <span className={`${ICON} text-[20px]`}>dns</span>
-                </span>
+                <div className="flex items-center gap-space-sm">
+                  <DemoTag>Khối demo — chưa có API uptime/token</DemoTag>
+                  <span className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface">
+                    <span className={`${ICON} text-[20px]`}>dns</span>
+                  </span>
+                </div>
               </div>
               <div className="flex items-baseline gap-space-sm mt-1">
                 <span className="text-ds-display-sm text-secondary-teal font-extrabold tracking-tight">99.98%</span>
@@ -371,9 +375,10 @@ const AdminDashboardPage: React.FC = () => {
             <div className="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md pb-space-md">
                 <div className="flex flex-col">
-                  <div className="flex items-center gap-space-sm">
+                  <div className="flex items-center gap-space-sm flex-wrap">
                     <span className="w-2.5 h-2.5 rounded-full bg-primary" />
                     <h2 className="text-ds-headline-sm text-on-surface font-bold">Tần suất & Xu hướng Lượt phỏng vấn AI</h2>
+                    <DemoTag>Khối demo — chưa có API chuỗi thời gian</DemoTag>
                   </div>
                   <p className="text-ds-body-sm text-on-surface-variant pl-space-md">
                     Biểu đồ đối sánh số lượt ứng viên tự luyện tập và phỏng vấn chính thức theo ủy quyền doanh nghiệp
@@ -460,6 +465,7 @@ const AdminDashboardPage: React.FC = () => {
                   <div className="flex flex-col gap-0.5">
                     <div className="flex items-center flex-wrap gap-2">
                       <h3 className="text-ds-headline-sm text-on-surface font-bold">Cảnh báo kiểm duyệt JD vi phạm chính sách</h3>
+                      <DemoTag>Khối demo — cột aiSafetyScore luôn trống</DemoTag>
                       <span className="px-2 py-0.5 rounded-full bg-error text-on-error text-[10px] font-bold tracking-wide">2 tin bị cắm cờ</span>
                     </div>
                     <p className="text-ds-body-sm text-on-surface-variant">

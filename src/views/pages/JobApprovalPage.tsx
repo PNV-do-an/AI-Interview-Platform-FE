@@ -9,6 +9,7 @@ import {
   ModerationJobDetail,
 } from '../../models/AdminConsole.model';
 import {
+  DemoTag,
   EmptyBlock,
   ErrorBlock,
   ICON,
@@ -361,6 +362,7 @@ const JobApprovalPage: React.FC = () => {
               </button>
             );
           })}
+          <DemoTag>Khối demo — chưa có API bộ lọc</DemoTag>
           {DEMO_CHIPS.map((chip) => (
             <span
               key={chip.label}
@@ -598,6 +600,7 @@ const JobApprovalPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-space-lg pl-space-md border-l border-surface-container-high">
+                    <DemoTag>Khối demo — chưa có API</DemoTag>
                     <div className="flex flex-col text-right">
                       <span className="text-ds-label-sm text-on-surface-variant uppercase tracking-wider text-[11px]">
                         Điểm tín nhiệm NTD
@@ -628,6 +631,7 @@ const JobApprovalPage: React.FC = () => {
                       <p className="text-ds-body-sm text-on-surface-variant">
                         Kiểm tra vi phạm chính sách, phân biệt đối xử và chuẩn hóa bộ kỹ năng
                       </p>
+                      <div className="pt-1"><DemoTag>Khối demo — 4 thẻ thẩm định nguyên văn mockup</DemoTag></div>
                     </div>
                   </div>
                   <div className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border shrink-0 ${detail.aiSafetyScore === null ? 'bg-surface-container-high text-on-surface-variant border-outline-variant' : 'bg-emerald-50 text-emerald-800 border-emerald-600/20'}`}>
