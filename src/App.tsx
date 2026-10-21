@@ -120,7 +120,8 @@ const App: React.FC = () => {
               <Route element={<ProtectedRoute allowedRoles={['ROLE_ADMIN']} />}>
                 <Route path="/admin/users" element={<AdminUserManagementPage />} />
                 <Route path="/admin/users/:id" element={<AdminUserDetailPage />} />
-                {/* 3 màn screen 22 còn lại + dashboard screen 16: STATIC, chưa có API nên không gắn sidebar */}
+                {/* 3 màn screen 22 còn lại + dashboard screen 16: STATIC (chưa có API) nhưng vẫn gắn
+                    sidebar theo đúng navigation của mockup; số liệu hiển thị trên đó là demo. */}
                 <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
                 <Route path="/admin/roles" element={<AdminRolePermissionPage />} />
                 <Route path="/admin/settings" element={<AdminSystemSettingsPage />} />
