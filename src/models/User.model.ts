@@ -5,6 +5,8 @@ export interface User {
   id: number;
   email: string;
   fullName: string;
+  /** BE `AuthResponse.UserInfo` trả kèm; chỉ đọc với candidate (self-PATCH chưa có). */
+  phone?: string | null;
   role: Role;
 }
 

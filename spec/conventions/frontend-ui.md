@@ -42,6 +42,14 @@ Wave admin 2026-10-21 chép markup từ mockup Stitch nên dùng **đúng tên t
 - Có **hai từ vựng chrome**, ranh giới là route:
   - `/admin/*` = **tiếng Việt 100%** (chốt 2026-10-21, theo đúng mockup trong `stitch_ai_interview_platform (3).zip`). Đầu trang, nhãn field, nút, menu, empty state, nhãn trạng thái admin khai trong `adminKit` (`ROLE_VN`, `STATUS_VN`, `AUDIT_ACTION_VN`).
   - Màn candidate/employer/landing = **tiếng Anh đúng theo mockup cũ**.
+- **Ngoại lệ candidate (chốt 2026-10-22, bộ mockup Stitch 4 `candidate-redesign-stitch4.md`)**: shell `AppLayout`
+  và 6 màn đã dựng lại theo mockup mới — `/my-profile`, `/my-applications`, `/interview-booking`,
+  `/interview-history`, `/mock-interviews/:id/result`, `/account-settings` — dùng **chrome tiếng Việt**
+  (đầu trang, nhãn field, nút, tab, empty state). 6 màn candidate chưa có mockup (`/dashboard`, `/jobs`,
+  `/jobs/:id`, `/mock-interviews`, `/mock-interviews/:id`, `/cv-analyzer`, `/cover-letters`, `/device-check`)
+  và màn employer/landing vẫn tiếng Anh như cũ, chỉ chịu shell Việt.
+- Nhãn trạng thái ứng viên khai trong `models/Program.model.ts` (`APPLICATION_STATUS_LABELS`) hoặc map Việt
+  nội bộ của từng màn đã dựng theo mockup 4; không dịch tay rải rác.
 - Dữ liệu động giữ **nguyên văn từ API**: tên công việc, tên người, nhãn trạng thái trong `*_LABELS` của model (`APPLICATION_STATUS_LABELS`...). Không dịch tay trong từng trang; thiếu nhãn thì sửa map trong `models/*.model.ts`.
 - Màn `DATA`/`UI` của admin: dữ liệu demo không có endpoint thì giữ nguyên văn mockup (tiếng Việt) nhưng phải có nhãn `Khối demo — ...`.
 - Nhãn trạng thái render qua `<StatusBadge status={x} label={LABELS[x]} />` (candidate/employer) hoặc `<StatusChip status={x} />` (admin). Tone màu chỉ khai ở `STATUS_TONE` trong `views/components/ui.tsx` và `STATUS_VN` trong `adminKit.tsx`, không khai lại trong trang.

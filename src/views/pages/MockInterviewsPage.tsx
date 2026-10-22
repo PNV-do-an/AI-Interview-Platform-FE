@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useMockInterviewController } from '../../controllers/useMockInterviewController';
 import { useJobController } from '../../controllers/useJobController';
 import { useAuth } from '../../context/AuthContext';
@@ -29,14 +29,21 @@ const relativeDays = (iso?: string): string => {
 const sessionTitle = (s: InterviewSession): string =>
   s.mode === 'MOCK' ? (s.jobTitle ?? 'Mock interview') : (s.topic ?? 'Knowledge practice');
 
+// Link "Luyện AI theo JD" từ màn Đơn ứng tuyển gửi ?jobId= -> prefill form.
+const toPositiveInt = (raw: string | null): number | '' => {
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : '';
+};
+
 const MockInterviewsPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { sessions, loading, error, successMsg, startSession, fetchMySessions } = useMockInterviewController();
-  const { jobs, fetchJobs } = useJobController();
+  const { jobs, fetchJobs, jobDetail, fetchJobDetail } = useJobController();
 
   const [mode, setMode] = useState<InterviewMode>('MOCK');
-  const [jobId, setJobId] = useState<number | ''>('');
+  const [jobId, setJobId] = useState<number | ''>(() => toPositiveInt(searchParams.get('jobId')));
   const [topic, setTopic] = useState('');
   const [questionCount, setQuestionCount] = useState(5);
 
@@ -45,7 +52,15 @@ const MockInterviewsPage = () => {
       fetchMySessions(0);
       fetchJobs(0, '');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  // jobId từ query có thể nằm ngoài trang 1 của danh sách -> tải riêng để hiện nhãn.
+  const jobInList = (jobs?.content ?? []).some((j) => j.id === jobId);
+  useEffect(() => {
+    if (jobId !== '' && jobs && !jobInList) fetchJobDetail(jobId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobId, jobs]);
 
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,6 +121,9 @@ const MockInterviewsPage = () => {
               <label className={labelClass}>Job Posting</label>
               <select className={inputClass} value={jobId} onChange={(e) => setJobId(e.target.value ? Number(e.target.value) : '')}>
                 <option value="">— Select a job posting —</option>
+                {jobId !== '' && !jobInList && jobDetail?.id === jobId && (
+                  <option value={jobId}>{jobDetail.title} — {jobDetail.companyName}</option>
+                )}
                 {jobs?.content.map((j) => (
                   <option key={j.id} value={j.id}>{j.title} — {j.companyName}</option>
                 ))}
@@ -137,10 +155,20 @@ const MockInterviewsPage = () => {
             />
           </div>
 
-          <button type="submit" className={buttonClass('primary', 'self-start gap-1')}>
-            <span>Launch Live Simulation</span>
-            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="submit" className={buttonClass('primary', 'gap-1')}>
+              <span>Launch Live Simulation</span>
+              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </button>
+            {/* Device check đã rời sidebar theo chốt 22/10 -> giữ đường vào thật từ đây. */}
+            <Link
+              to="/device-check"
+              className={`${buttonClass('secondary', 'gap-1 no-underline')}`}
+            >
+              <span className="material-symbols-outlined text-[16px]">videocam</span>
+              <span>Check camera &amp; mic</span>
+            </Link>
+          </div>
         </form>
         <div className="mt-3">
           <ErrorBanner message={error} />

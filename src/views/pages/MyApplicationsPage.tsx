@@ -1,109 +1,200 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCandidateController } from '../../controllers/useCandidateController';
-import { useSlotController } from '../../controllers/useSlotController';
 import { useAuth } from '../../context/AuthContext';
-import { Application, ApplicationStatus } from '../../models/Program.model';
+import ProgramService from '../../services/program.service';
+import { Application, ApplicationStatus, JobDetail } from '../../models/Program.model';
+import { parseServerTimestamp } from '../../utils/date';
 import ConfirmDialog from '../components/ConfirmDialog';
 import {
-  Card,
-  EmptyState,
-  ErrorBanner,
-  LoadingState,
-  StatusBadge,
-  buttonClass,
-  inputClass,
-  tableClass,
-  tdClass,
-  thClass,
-} from '../components/ui';
+  ICON,
+  adminSelectClass,
+  EmptyBlock,
+  LoadingBlock,
+  ErrorBlock,
+  fmtServer,
+  timeAgo,
+} from '../components/adminKit';
+import { Card, buttonClass } from '../components/ui';
 
-// Mockup English labels for the statuses that appear in the design.
-// INTERVIEWED / REJECTED / CANCELLED have no mockup label, so the raw API
-// value is rendered verbatim.
-const STATUS_TEXT: Partial<Record<ApplicationStatus, string>> = {
-  PENDING: 'Under Review',
-  SCHEDULED: 'Interview Scheduled',
-  ACCEPTED: 'Offer Received',
+/**
+ * Màn "Đơn ứng tuyển của tôi" theo mockup Stitch 4
+ * `screen_7_theo_d_i_n_ng_tuy_n_my_applications_tracker`.
+ * Stat card + stepper 5 chặng dẫn xuất từ `/applications/my` thật.
+ * Khối bỏ theo plan `candidate-redesign-stitch4.md` §5-S2: "Độ khớp AI %",
+ * Xuất PDF/Excel, "Đồng bộ 2 phút trước", HR lead, "Vào phòng họp"/"Lưu Lịch Google",
+ * lời khuyên AI Copilot bịa, claim "+42% Offer".
+ */
+
+const STATUS_VN: Record<ApplicationStatus, { label: string; icon: string; chip: string }> = {
+  PENDING: {
+    label: 'Chờ HR xét duyệt',
+    icon: 'hourglass_empty',
+    chip: 'bg-surface-container-high text-on-surface-variant',
+  },
+  SCHEDULED: {
+    label: 'Hẹn lịch phỏng vấn',
+    icon: 'calendar_today',
+    chip: 'bg-primary-fixed text-on-primary-fixed',
+  },
+  INTERVIEWED: {
+    label: 'Đã phỏng vấn',
+    icon: 'task_alt',
+    chip: 'bg-surface-variant text-primary',
+  },
+  ACCEPTED: {
+    label: 'Nhận Offer chính thức',
+    icon: 'celebration',
+    chip: 'bg-secondary-container text-on-secondary-fixed',
+  },
+  REJECTED: {
+    label: 'Chưa phù hợp đợt này',
+    icon: 'do_not_disturb_on',
+    chip: 'bg-error-container text-on-error-container',
+  },
+  CANCELLED: {
+    label: 'Đã hủy bởi bạn',
+    icon: 'remove_done',
+    chip: 'bg-surface-container-high text-outline',
+  },
 };
-const statusText = (status: ApplicationStatus) => STATUS_TEXT[status] ?? status;
+
+const CLOSED_STATUSES: ApplicationStatus[] = ['REJECTED', 'CANCELLED'];
 
 interface TabDef {
   key: string;
   label: string;
-  statuses: ApplicationStatus[] | null;
+  statuses: ApplicationStatus[];
 }
 
-// Client-side segmented tabs from the mockup filter bar (All / In Review /
-// Interviews / Offers / Archived), mapped onto real Application.status values.
 const TAB_DEFS: TabDef[] = [
-  { key: 'all', label: 'All', statuses: null },
-  { key: 'review', label: 'In Review', statuses: ['PENDING'] },
-  { key: 'interviews', label: 'Interviews', statuses: ['SCHEDULED', 'INTERVIEWED'] },
-  { key: 'offers', label: 'Offers', statuses: ['ACCEPTED'] },
-  { key: 'archived', label: 'Archived', statuses: ['REJECTED', 'CANCELLED'] },
+  { key: 'all', label: 'Tất cả', statuses: [] },
+  { key: 'pending', label: 'Chờ xét duyệt', statuses: ['PENDING'] },
+  { key: 'scheduled', label: 'Hẹn lịch phỏng vấn', statuses: ['SCHEDULED'] },
+  { key: 'interviewed', label: 'Đã phỏng vấn', statuses: ['INTERVIEWED'] },
+  { key: 'offer', label: 'Đạt yêu cầu & Offer', statuses: ['ACCEPTED'] },
+  { key: 'closed', label: 'Chưa phù hợp / Đã hủy', statuses: ['REJECTED', 'CANCELLED'] },
 ];
 
-// Left accent bar colour per status (mockup card rail), using config tokens only.
-const ACCENT: Record<ApplicationStatus, string> = {
-  PENDING: 'bg-primary-container',
-  SCHEDULED: 'bg-secondary',
-  INTERVIEWED: 'bg-secondary',
-  ACCEPTED: 'bg-secondary',
-  REJECTED: 'bg-surface-high',
-  CANCELLED: 'bg-surface-high',
+// Stepper 5 chặng: chặng chỉ "xong" khi có bằng chứng thật (status / score / slot).
+interface Stage {
+  title: string;
+  icon: string;
+  done: boolean;
+  current: boolean;
+  note: string;
+}
+const buildStages = (app: Application): Stage[] => {
+  const passedScreening = app.status !== 'PENDING' && !CLOSED_STATUSES.includes(app.status);
+  const hasScore = app.score != null;
+  const hasSlot = Boolean(app.slot);
+  const offered = app.status === 'ACCEPTED';
+  let current = 2;
+  if (offered) current = 5;
+  else if (hasSlot || app.status === 'INTERVIEWED') current = 4;
+  else if (passedScreening) current = 3;
+  return [
+    {
+      title: '1. Nộp hồ sơ',
+      icon: 'send',
+      done: true,
+      current: false,
+      note: `${fmtServer(app.createdAt, 'date')} • Thành công`,
+    },
+    {
+      title: '2. Duyệt CV & JD',
+      icon: 'badge',
+      done: passedScreening,
+      current: current === 2,
+      note: passedScreening
+        ? 'Đã qua vòng hồ sơ'
+        : app.status === 'PENDING'
+        ? 'Doanh nghiệp đang xét'
+        : 'Chưa đạt',
+    },
+    {
+      title: '3. Phỏng vấn AI',
+      icon: 'smart_toy',
+      done: hasScore,
+      current: current === 3,
+      note: hasScore ? `Đạt ${app.score}/100 điểm` : 'Chưa có điểm',
+    },
+    {
+      title: '4. Tech Lead Interview',
+      icon: 'mic',
+      done: hasSlot && app.status === 'INTERVIEWED',
+      current: current === 4,
+      note: app.slot ? fmtServer(app.slot.startTime, 'datetime') : 'Chưa lên lịch',
+    },
+    {
+      title: '5. Offer & Nhận việc',
+      icon: 'verified',
+      done: offered,
+      current: current === 5,
+      note: offered ? 'Đã nhận Offer' : 'Chưa có Offer',
+    },
+  ];
 };
 
-const TILE_CLASS =
-  'rounded-lg bg-card p-4 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)] transition-shadow hover:shadow-proof';
-const TAB_BASE =
-  'whitespace-nowrap rounded-md px-3 py-1.5 text-label-md transition-all';
-const CODE_CHIP = 'rounded bg-surface-high px-2 py-1 font-mono text-[12px] text-ink-variant';
-
-const fmtDateTime = (iso: string) => new Date(iso).toLocaleString('vi-VN');
+const CARD_CLASS = 'rounded-xl bg-surface-container-lowest shadow-sm';
+const STAT_ICON = 'w-10 h-10 rounded-xl flex items-center justify-center shrink-0';
 
 const MyApplicationsPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const {
     applications, profile, loading, error, successMsg,
-    fetchMyApplications, cancelApplication, bookSlot,
-    fetchProfile, clearMessages,
+    fetchMyApplications, cancelApplication, fetchProfile, clearMessages,
   } = useCandidateController();
-  const { availableSlots, fetchAvailableSlots } = useSlotController();
 
   const [page, setPage] = useState(0);
-  const [bookingApp, setBookingApp] = useState<Application | null>(null);
-  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [tab, setTab] = useState('all');
   const [query, setQuery] = useState('');
-  const [view, setView] = useState<'cards' | 'table'>('cards');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [recent, setRecent] = useState('');
+  const [sort, setSort] = useState('newest');
   const [pendingWithdraw, setPendingWithdraw] = useState<Application | null>(null);
+  // location/salary cho cột "Doanh nghiệp" — enrichment từ GET /jobs/{id}
+  const [jobMap, setJobMap] = useState<Record<number, JobDetail>>({});
+
+  // useMemo để `content` giữ nguyên reference giữa các render (effect tải job bên dưới lấy nó làm dep).
+  const content = useMemo(() => applications?.content ?? [], [applications]);
 
   useEffect(() => {
     if (user?.role === 'ROLE_USER') {
       fetchMyApplications(0);
       fetchProfile();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  const openBooking = async (app: Application) => {
-    clearMessages();
-    setSelectedSlot(null);
-    setBookingApp(app);
-    await fetchAvailableSlots(app.employerId);
-  };
+  useEffect(() => {
+    const ids = Array.from(new Set(content.map((a) => a.jobId))).slice(0, 10);
+    if (ids.length === 0) return;
+    let cancelled = false;
+    Promise.all(
+      ids.map((id) =>
+        ProgramService.getJobDetail(id)
+          .then((res) => ({ id, job: res.data.data }))
+          .catch(() => ({ id, job: undefined }))
+      )
+    ).then((pairs) => {
+      if (cancelled) return;
+      const next: Record<number, JobDetail> = {};
+      pairs.forEach((p) => {
+        if (p.job) next[p.id] = p.job;
+      });
+      setJobMap(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [content]);
 
-  const confirmBooking = async () => {
-    if (!bookingApp || !selectedSlot) return;
-    const ok = await bookSlot(selectedSlot, bookingApp.id);
-    if (ok) {
-      setBookingApp(null);
-      fetchMyApplications(page);
-    }
+  const gotoPage = (p: number) => {
+    setPage(p);
+    fetchMyApplications(p);
   };
-
-  const withdraw = (app: Application) => setPendingWithdraw(app);
 
   const runWithdraw = async () => {
     if (!pendingWithdraw) return;
@@ -113,13 +204,14 @@ const MyApplicationsPage = () => {
     if (ok) fetchMyApplications(page);
   };
 
-  const content = applications?.content ?? [];
-
   const tabCounts = useMemo(
     () =>
       TAB_DEFS.map((t) => ({
         ...t,
-        count: content.filter((a) => !t.statuses || t.statuses.includes(a.status)).length,
+        count:
+          t.statuses.length === 0
+            ? content.length
+            : content.filter((a) => t.statuses.includes(a.status)).length,
       })),
     [content]
   );
@@ -127,399 +219,622 @@ const MyApplicationsPage = () => {
   const visible = useMemo(() => {
     const def = TAB_DEFS.find((t) => t.key === tab) ?? TAB_DEFS[0];
     const q = query.trim().toLowerCase();
-    return content.filter((a) => {
-      const inTab = !def.statuses || def.statuses.includes(a.status);
-      const inQuery =
-        !q ||
-        a.companyName.toLowerCase().includes(q) ||
-        a.jobTitle.toLowerCase().includes(q);
-      return inTab && inQuery;
+    const statuses =
+      statusFilter && statusFilter !== 'all'
+        ? (statusFilter.split(',') as ApplicationStatus[])
+        : null;
+    const cutoff = recent === '' ? null : Date.now() - Number(recent) * 86400000;
+    const list = content.filter((a) => {
+      const inTab = def.statuses.length === 0 || def.statuses.includes(a.status);
+      const inStatus = !statuses || statuses.includes(a.status);
+      const inRecent = !cutoff || (parseServerTimestamp(a.createdAt)?.getTime() ?? 0) >= cutoff;
+      const job = jobMap[a.jobId];
+      const haystack = [a.jobTitle, a.companyName, job?.location, job?.salaryRange]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return inTab && inStatus && inRecent && (!q || haystack.includes(q));
     });
-  }, [content, tab, query]);
+    const ts = (a: Application) => parseServerTimestamp(a.createdAt)?.getTime() ?? 0;
+    if (sort === 'oldest') return [...list].sort((a, b) => ts(a) - ts(b));
+    if (sort === 'score') return [...list].sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+    return [...list].sort((a, b) => ts(b) - ts(a));
+  }, [content, tab, query, statusFilter, recent, sort, jobMap]);
 
-  // Next Interview tile: earliest upcoming booked slot among loaded applications.
-  const nextInterview = useMemo(() => {
+  // 4 stat card — đếm từ danh sách đã tải (BE không có endpoint tổng hợp).
+  const stats = useMemo(() => {
+    const total = applications?.totalElements ?? content.length;
+    const pending = content.filter((a) => a.status === 'PENDING').length;
+    const scheduled = content.filter((a) => a.status === 'SCHEDULED').length;
+    const offers = content.filter((a) => a.status === 'ACCEPTED').length;
+    const decided = content.filter((a) => a.status === 'ACCEPTED' || a.status === 'REJECTED').length;
+    const successRate = decided === 0 ? null : Math.round((offers / decided) * 100);
     const now = Date.now();
     const upcoming = content
-      .filter((a) => a.slot && new Date(a.slot.startTime).getTime() >= now)
+      .filter((a) => a.slot && (parseServerTimestamp(a.slot.startTime)?.getTime() ?? 0) >= now)
       .sort(
         (a, b) =>
-          new Date(a.slot!.startTime).getTime() - new Date(b.slot!.startTime).getTime()
+          (parseServerTimestamp(a.slot!.startTime)?.getTime() ?? 0) -
+          (parseServerTimestamp(b.slot!.startTime)?.getTime() ?? 0)
       );
-    return upcoming[0] ?? null;
+    return { total, pending, scheduled, offers, successRate, nextInterview: upcoming[0] ?? null };
+  }, [applications, content]);
+
+  // Card nổi bật: đơn đang mở (chưa REJECTED/CANCELLED) mới nhất.
+  const featured = useMemo(() => {
+    const ts = (a: Application) => parseServerTimestamp(a.createdAt)?.getTime() ?? 0;
+    return (
+      content
+        .filter((a) => !CLOSED_STATUSES.includes(a.status))
+        .sort((a, b) => ts(b) - ts(a))[0] ?? null
+    );
   }, [content]);
 
   if (!user || user.role !== 'ROLE_USER') {
     return (
-      <Card className="text-body-md text-ink-variant">
-        Please sign in with a candidate account.
+      <Card className="text-ds-body-md text-on-surface-variant">
+        Vui lòng đăng nhập bằng tài khoản ứng viên.
       </Card>
     );
   }
-  if (loading && !applications) return <LoadingState />;
 
+  const totalPages = applications?.totalPages ?? 1;
   const total = applications?.totalElements ?? 0;
   const size = applications?.size ?? 10;
-  const showingFrom = total === 0 ? 0 : page * size + 1;
-  const showingTo = Math.min((page + 1) * size, total);
+  const featuredStages = featured ? buildStages(featured) : [];
+  const featuredCurrent =
+    featuredStages.findIndex((s) => s.current) + 1 ||
+    featuredStages.filter((s) => s.done).length ||
+    1;
 
-  const renderActions = (app: Application, compact = false) => (
-    <div className="flex items-center gap-2">
+  const renderRowActions = (app: Application) => (
+    <div className="flex items-center justify-end gap-space-xs">
+      <Link
+        to={`/mock-interviews?jobId=${app.jobId}`}
+        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-container-low text-on-surface text-ds-label-sm hover:bg-surface-container-high transition-colors no-underline whitespace-nowrap"
+      >
+        <span className={`${ICON} text-[15px] text-primary`}>smart_toy</span>
+        Luyện AI
+      </Link>
       {app.status === 'PENDING' && (
-        <button
-          className={buttonClass('primary', compact ? 'h-8 px-2 text-label-sm' : '')}
-          onClick={() => openBooking(app)}
+        <Link
+          to={`/interview-booking?applicationId=${app.id}`}
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-container-low text-on-surface text-ds-label-sm hover:bg-surface-container-high transition-colors no-underline whitespace-nowrap"
         >
-          Book Interview
-        </button>
+          <span className={`${ICON} text-[15px] text-primary`}>event_available</span>
+          Đặt lịch
+        </Link>
       )}
+      <Link
+        to={`/jobs/${app.jobId}`}
+        title="Xem tin tuyển dụng"
+        className="p-1.5 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container-low transition-colors no-underline"
+      >
+        <span className={`${ICON} text-[20px]`}>visibility</span>
+      </Link>
       {(app.status === 'PENDING' || app.status === 'SCHEDULED') && (
         <button
-          className={`inline-flex items-center justify-center rounded-md font-medium text-error transition-colors hover:bg-danger-bg ${
-            compact ? 'h-8 px-2 text-label-sm' : 'h-9 px-3 text-label-md'
-          }`}
-          onClick={() => withdraw(app)}
+          type="button"
+          title="Hủy đơn ứng tuyển"
+          onClick={() => {
+            clearMessages();
+            setPendingWithdraw(app);
+          }}
+          className="p-1.5 rounded-lg text-outline hover:text-error hover:bg-error-container/40 transition-colors"
         >
-          Withdraw Application
+          <span className={`${ICON} text-[20px]`}>do_not_disturb_on</span>
         </button>
       )}
     </div>
   );
 
   return (
-    <div className="flex flex-col gap-6 pb-16">
-      {/* Section header — mockup description (Export Dossier / Track External Job
-          omitted: no handler or endpoint backs them). */}
-      <div className="flex flex-col justify-between gap-3 pt-2 md:flex-row md:items-end">
-        <p className="m-0 max-w-xl text-body-md text-ink-variant">
-          Track your job applications, interview schedules, and upcoming assessments all in one place.
-        </p>
+    <div className="flex flex-col w-full gap-space-xl pb-16">
+      {/* Header & Action Hub — "Xuất báo cáo (PDF/Excel)" bỏ: không có endpoint */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-lg pt-2">
+        <div className="flex flex-col gap-space-xs">
+          <span className="text-ds-label-sm text-primary uppercase tracking-wider flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-secondary-teal" />
+            Hệ thống quản lý ứng tuyển
+          </span>
+          <h1 className="m-0 text-ds-headline-xl text-on-surface tracking-tight">Đơn ứng tuyển của tôi</h1>
+          <p className="m-0 max-w-2xl text-ds-body-md text-on-surface-variant">
+            Theo dõi tiến độ tuyển dụng, lịch phỏng vấn và phản hồi từ các doanh nghiệp công nghệ hàng
+            đầu theo thời gian thực.
+          </p>
+        </div>
+        <div className="flex items-center gap-space-sm flex-wrap sm:flex-nowrap">
+          <button
+            type="button"
+            onClick={() => navigate('/jobs')}
+            className="inline-flex items-center gap-2 px-space-lg py-2.5 rounded-lg bg-primary text-on-primary text-ds-label-md shadow-[0_4px_12px_rgba(53,37,205,0.22)] hover:bg-primary-container transition-all"
+          >
+            <span className={`${ICON} text-[20px]`}>add_circle</span>
+            Tìm việc làm mới
+          </button>
+        </div>
       </div>
 
-      {profile && !profile.cvFileName && (
-        <div className="rounded-md border border-[#e2e8f0] bg-surface-low px-3 py-2.5 text-body-md text-ink-variant">
-          Your profile is incomplete (skills, CV). Update it on your{' '}
-          <Link to="/my-profile" className="text-primary no-underline hover:underline">profile page</Link>{' '}
-          so employers can find you.
-        </div>
-      )}
       {successMsg && (
-        <div className="flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text" role="status">
-          <span className="material-symbols-outlined shrink-0 text-[18px]">check_circle</span>
+        <div className="flex items-start gap-2 rounded-xl bg-success-bg px-4 py-3 text-ds-body-md text-success-text" role="status">
+          <span className={`${ICON} shrink-0 text-[18px]`}>check_circle</span>
           <span>{successMsg}</span>
         </div>
       )}
-      <ErrorBanner message={error} />
+      {error && <ErrorBlock message={error} />}
+      {loading && !applications && <LoadingBlock />}
 
       {!applications || content.length === 0 ? (
-        <EmptyState
-          icon="description"
-          title="No applications yet."
-          action={
-            <button className={buttonClass('primary')} onClick={() => navigate('/jobs')}>
-              Browse Job Board
-            </button>
-          }
-        />
+        !loading && (
+          <EmptyBlock
+            icon="send"
+            title="Chưa có đơn ứng tuyển nào."
+            description="Tìm một vị trí phù hợp và nộp hồ sơ để bắt đầu theo dõi tiến độ tại đây."
+            action={
+              <button className={buttonClass('primary')} onClick={() => navigate('/jobs')}>
+                Mở Bảng việc làm
+              </button>
+            }
+          />
+        )
       ) : (
         <>
-          {/* Summary metric tiles — only tiles backed by real fields are kept
-              (AI Screening Pass and Active Offers omitted: no pass-rate,
-              mean-rubric, offer-expiry or salary fields on Application). */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className={TILE_CLASS}>
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-label-sm font-semibold uppercase tracking-wider text-ink-variant">
-                  Total Submitted
-                </span>
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-mid text-secondary">
-                  <span className="material-symbols-outlined text-[18px]">send</span>
+          {/* 4 Bento stat cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+            <div className={`${CARD_CLASS} p-space-lg flex flex-col justify-between gap-space-md hover:shadow-md transition-shadow`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-ds-label-md text-outline">Tổng số đơn nộp</span>
+                <span className={`${STAT_ICON} bg-surface-container-high text-primary`}>
+                  <span className={`${ICON} text-[22px]`}>send</span>
                 </span>
               </div>
-              <span className="text-metric-stat text-ink">{total}</span>
+              <div className="flex items-baseline gap-space-xs">
+                <span className="text-ds-display-sm font-bold text-on-surface">{stats.total}</span>
+                <span className="text-ds-body-sm text-outline">đơn hồ sơ</span>
+              </div>
             </div>
-            <div className={TILE_CLASS}>
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-label-sm font-semibold uppercase tracking-wider text-ink-variant">
-                  Next Interview
+            <div className={`${CARD_CLASS} p-space-lg flex flex-col justify-between gap-space-md hover:shadow-md transition-shadow`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-ds-label-md text-outline">Đang chờ xét duyệt</span>
+                <span className={`${STAT_ICON} bg-surface-container-high text-primary-container`}>
+                  <span className={`${ICON} text-[22px]`}>pending_actions</span>
                 </span>
-                {nextInterview && (
-                  <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-secondary" />
-                )}
               </div>
-              {nextInterview && nextInterview.slot ? (
-                <div className="flex flex-col gap-1">
-                  <span className="truncate text-headline-sm text-ink">
-                    {fmtDateTime(nextInterview.slot.startTime)}
+              <div className="flex items-baseline gap-space-xs">
+                <span className="text-ds-display-sm font-bold text-on-surface">{stats.pending}</span>
+                <span className="text-ds-body-sm text-outline">vị trí</span>
+              </div>
+            </div>
+            <div className={`${CARD_CLASS} p-space-lg flex flex-col justify-between gap-space-md hover:shadow-md transition-shadow`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-ds-label-md text-outline">Đã có lịch phỏng vấn</span>
+                <span className={`${STAT_ICON} bg-tertiary-fixed text-tertiary`}>
+                  <span className={`${ICON} text-[22px]`}>event_available</span>
+                </span>
+              </div>
+              <div className="flex items-baseline gap-space-xs">
+                <span className="text-ds-display-sm font-bold text-on-surface">{stats.scheduled}</span>
+                <span className="text-ds-body-sm text-outline">vòng phỏng vấn</span>
+              </div>
+              {stats.nextInterview?.slot && (
+                <div className="flex items-center gap-1.5 pt-space-xs min-w-0">
+                  <span className="text-ds-label-sm text-primary flex items-center gap-0.5 shrink-0">
+                    <span className={`${ICON} text-[14px]`}>alarm</span>
+                    Sắp tới: {fmtServer(stats.nextInterview.slot.startTime, 'date')}
                   </span>
-                  <span className="flex items-center gap-1 text-label-sm font-semibold text-secondary">
-                    <span className="material-symbols-outlined text-[14px]">corporate_fare</span>
-                    {nextInterview.companyName} • {nextInterview.jobTitle}
+                  <span className="text-ds-body-sm text-outline truncate">• {stats.nextInterview.companyName}</span>
+                </div>
+              )}
+            </div>
+            <div className={`${CARD_CLASS} p-space-lg flex flex-col justify-between gap-space-md hover:shadow-md transition-shadow`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-ds-label-md text-outline">Đã nhận Offer</span>
+                <span className={`${STAT_ICON} bg-secondary-fixed text-on-secondary-fixed`}>
+                  <span className={`${ICON} text-[22px]`}>verified</span>
+                </span>
+              </div>
+              <div className="flex items-baseline gap-space-xs">
+                <span className="text-ds-display-sm font-bold text-secondary-teal">{stats.offers}</span>
+                <span className="text-ds-body-sm text-secondary-teal font-semibold">Offer</span>
+              </div>
+              {stats.successRate != null && (
+                <div className="flex items-center pt-space-xs">
+                  <span className="text-ds-label-sm text-secondary-teal bg-secondary-fixed/50 px-2 py-0.5 rounded-full">
+                    Tỷ lệ thành công: {stats.successRate}%
                   </span>
                 </div>
-              ) : (
-                <span className="text-headline-sm text-outline-strong">—</span>
               )}
             </div>
           </div>
 
-          {/* Filter control bar: status tabs + search + card/table toggle
-              (client-side over the loaded page only). */}
-          <div className="flex flex-col items-stretch justify-between gap-3 rounded-lg bg-card p-2 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)] lg:flex-row lg:items-center">
-            <div className="flex items-center gap-1 overflow-x-auto rounded-lg bg-surface-low p-1">
+          {/* Spotlight + stepper 5 chặng */}
+          {featured && (
+            <div className="bg-surface-container-lowest rounded-xl shadow-md p-space-lg flex flex-col gap-space-lg relative overflow-hidden">
+              <div className="absolute -right-20 -top-20 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md pb-space-md bg-surface-container-low/40 p-space-md rounded-xl">
+                <div className="flex items-start gap-space-md min-w-0">
+                  <div className="w-14 h-14 rounded-xl bg-surface-container-lowest shadow-sm flex items-center justify-center p-2 shrink-0">
+                    <span className="w-full h-full rounded-lg bg-primary-container text-on-primary text-ds-headline-md flex items-center justify-center font-bold">
+                      {featured.companyName.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-0.5 min-w-0">
+                    <div className="flex items-center gap-space-xs flex-wrap">
+                      <span className="text-ds-label-sm text-on-secondary-fixed bg-secondary-container px-2 py-0.5 rounded-full uppercase">
+                        Đang tiến hành
+                      </span>
+                      <span className="text-ds-label-sm text-outline">Mã đơn: #{featured.id}</span>
+                    </div>
+                    <h2 className="m-0 text-ds-headline-md text-on-surface">{featured.jobTitle}</h2>
+                    <div className="flex items-center gap-space-md flex-wrap text-ds-body-sm text-on-surface-variant">
+                      <span className="flex items-center gap-1">
+                        <span className={`${ICON} text-[16px] text-outline`}>apartment</span>
+                        {featured.companyName}
+                        {jobMap[featured.jobId]?.location ? ` • ${jobMap[featured.jobId]?.location}` : ''}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className={`${ICON} text-[16px] text-outline`}>calendar_today</span>
+                        Ngày nộp: {fmtServer(featured.createdAt, 'date')} ({timeAgo(featured.createdAt)})
+                      </span>
+                      {profile?.cvFileName && (
+                        <span className="flex items-center gap-1">
+                          <span className={`${ICON} text-[16px] text-outline`}>description</span>
+                          {profile.cvFileName}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-space-sm pt-space-xs">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="text-ds-label-md text-on-surface uppercase tracking-wider">
+                    Tiến trình xét duyệt 5 chặng
+                  </span>
+                  <span className="text-ds-body-sm text-primary font-semibold">Chặng {featuredCurrent}/5</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-space-md relative pt-2">
+                  {featuredStages.map((st, idx) => (
+                    <div key={st.title} className={`flex flex-col gap-2 ${st.done || st.current ? '' : 'opacity-60'}`}>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-sm shrink-0 z-10 ${
+                            st.done
+                              ? 'bg-secondary-fixed text-on-secondary-fixed'
+                              : st.current
+                              ? 'bg-primary-container text-on-primary shadow-[0_0_0_4px_rgba(79,70,229,0.2)] animate-pulse'
+                              : 'bg-surface-container-highest text-outline'
+                          }`}
+                        >
+                          <span className={`${ICON} text-[18px]`}>
+                            {st.done ? 'check' : st.current ? st.icon : 'lock'}
+                          </span>
+                        </span>
+                        {idx < 4 && (
+                          <span
+                            className={`hidden md:block h-1 flex-1 rounded-full ${
+                              st.done
+                                ? 'bg-secondary-fixed'
+                                : st.current
+                                ? 'bg-primary-container'
+                                : 'bg-surface-container-highest'
+                            }`}
+                          />
+                        )}
+                      </div>
+                      <div className="flex flex-col">
+                        <span
+                          className={`text-ds-label-md ${
+                            st.current && !st.done
+                              ? 'text-primary font-bold'
+                              : st.done
+                              ? 'text-on-surface'
+                              : 'text-outline'
+                          }`}
+                        >
+                          {st.title}
+                        </span>
+                        <span className="text-ds-body-sm text-outline">{st.note}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-space-md pt-space-xs">
+                {featured.slot && (
+                  <div className="lg:col-span-2 bg-surface-container-low rounded-xl p-space-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-md border border-outline-variant/30">
+                    <div className="flex items-center gap-space-md min-w-0">
+                      <span className="w-10 h-10 rounded-xl bg-surface-container-lowest flex items-center justify-center text-primary shrink-0 shadow-sm">
+                        <span className={`${ICON} text-[24px]`}>event_note</span>
+                      </span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-ds-label-md text-on-surface font-semibold truncate">
+                          Buổi phỏng vấn: {fmtServer(featured.slot.startTime, 'datetime')}
+                        </span>
+                        <span className="text-ds-body-sm text-on-surface-variant truncate">
+                          Cùng {featured.companyName}
+                          {featured.slot.note ? ` • Ghi chú: ${featured.slot.note}` : ''}
+                        </span>
+                      </div>
+                    </div>
+                    <Link
+                      to="/interview-booking"
+                      className="shrink-0 inline-flex items-center justify-center gap-1.5 px-space-md py-2.5 rounded-lg bg-surface-container-lowest text-primary text-ds-label-md hover:bg-surface-container-high transition-colors shadow-sm whitespace-nowrap no-underline"
+                    >
+                      <span className={`${ICON} text-[18px]`}>calendar_month</span>
+                      Xem lịch đặt
+                    </Link>
+                  </div>
+                )}
+                <div className="bg-gradient-to-br from-surface-container to-surface-variant/70 rounded-xl p-space-md flex flex-col justify-between gap-space-sm relative overflow-hidden">
+                  <div className="flex items-start gap-2">
+                    <span className={`${ICON} text-primary text-[20px] shrink-0`}>smart_toy</span>
+                    <span className="text-ds-label-md text-primary font-bold">
+                      Chuẩn bị cho vòng phỏng vấn
+                    </span>
+                  </div>
+                  <Link
+                    to={`/mock-interviews?jobId=${featured.jobId}`}
+                    className="inline-flex items-center justify-center gap-1.5 w-full py-2 px-space-md rounded-lg bg-primary-container text-on-primary text-ds-label-sm hover:bg-primary transition-colors shadow-sm no-underline"
+                  >
+                    <span className={`${ICON} text-[16px]`}>smart_toy</span>
+                    Mock interview 15 phút với JD này
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Filter & Search Controls (client-side trên trang đã tải) */}
+          <div className={`${CARD_CLASS} p-space-lg flex flex-col gap-space-md`}>
+            <div className="flex items-center gap-space-xs overflow-x-auto pb-1 max-w-full">
               {tabCounts.map((t) => (
                 <button
                   key={t.key}
                   type="button"
                   onClick={() => setTab(t.key)}
-                  className={`${TAB_BASE} ${
+                  className={`px-space-md py-2 rounded-full text-ds-label-md shadow-sm whitespace-nowrap transition-colors ${
                     tab === t.key
-                      ? 'bg-card font-semibold text-ink shadow-sm'
-                      : 'text-ink-variant hover:text-ink'
+                      ? 'bg-primary text-on-primary'
+                      : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
                   }`}
                 >
-                  {t.label}
-                  <span className="ml-1 font-mono text-[12px] text-outline-strong">{t.count}</span>
+                  {t.label} ({t.count})
                 </button>
               ))}
             </div>
-            <div className="flex items-center justify-between gap-2 lg:justify-end">
-              <div className="relative w-full lg:w-72">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-outline-strong">
-                  filter_list
-                </span>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-space-sm pt-space-xs">
+              <div className="md:col-span-5 relative flex items-center">
+                <span className={`${ICON} absolute left-3.5 text-outline text-[20px]`}>search</span>
                 <input
-                  className={`${inputClass} rounded-lg bg-surface-low pl-9`}
-                  placeholder="Filter company, role, or tech..."
+                  className="w-full h-10 pl-11 pr-space-md rounded-lg bg-surface-container-low text-ds-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="Tìm theo vị trí, tên công ty hoặc địa điểm..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  aria-label="Filter company, role, or tech"
+                  aria-label="Tìm đơn ứng tuyển"
                 />
               </div>
-              <div className="flex items-center rounded-lg bg-surface-low p-1">
-                <button
-                  type="button"
-                  title="Card View"
-                  onClick={() => setView('cards')}
-                  className={`rounded-md p-1.5 transition-all ${
-                    view === 'cards'
-                      ? 'bg-card text-ink shadow-sm'
-                      : 'text-ink-variant hover:text-ink'
-                  }`}
+              <div className="md:col-span-3 relative flex items-center">
+                <select
+                  className={`${adminSelectClass} w-full h-10 rounded-lg bg-surface-container-low`}
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  aria-label="Lọc trạng thái"
                 >
-                  <span className="material-symbols-outlined text-[18px]">view_agenda</span>
-                </button>
-                <button
-                  type="button"
-                  title="Dense Table View"
-                  onClick={() => setView('table')}
-                  className={`rounded-md p-1.5 transition-all ${
-                    view === 'table'
-                      ? 'bg-card text-ink shadow-sm'
-                      : 'text-ink-variant hover:text-ink'
-                  }`}
+                  <option value="">Trạng thái: Tất cả tiến trình</option>
+                  <option value="PENDING">Hồ sơ chờ duyệt</option>
+                  <option value="SCHEDULED">Đã lên lịch phỏng vấn</option>
+                  <option value="INTERVIEWED">Đã có đánh giá vòng phỏng vấn</option>
+                  <option value="ACCEPTED">Nhận đề nghị việc làm (Offer)</option>
+                  <option value="REJECTED,CANCELLED">Đã hoàn thành / Tạm dừng</option>
+                </select>
+                <span className={`${ICON} absolute right-3 pointer-events-none text-outline text-[18px]`}>expand_more</span>
+              </div>
+              <div className="md:col-span-2 relative flex items-center">
+                <select
+                  className={`${adminSelectClass} w-full h-10 rounded-lg bg-surface-container-low`}
+                  value={recent}
+                  onChange={(e) => setRecent(e.target.value)}
+                  aria-label="Lọc thời gian nộp"
                 >
-                  <span className="material-symbols-outlined text-[18px]">table_rows</span>
-                </button>
+                  <option value="">Toàn bộ thời gian</option>
+                  <option value="30">30 ngày gần đây</option>
+                  <option value="60">60 ngày gần đây</option>
+                  <option value="180">6 tháng qua</option>
+                </select>
+                <span className={`${ICON} absolute right-3 pointer-events-none text-outline text-[18px]`}>expand_more</span>
+              </div>
+              <div className="md:col-span-2 relative flex items-center">
+                <select
+                  className={`${adminSelectClass} w-full h-10 rounded-lg bg-surface-container-low`}
+                  value={sort}
+                  onChange={(e) => setSort(e.target.value)}
+                  aria-label="Sắp xếp"
+                >
+                  <option value="newest">Mới nhất trước</option>
+                  <option value="oldest">Cũ nhất trước</option>
+                  <option value="score">Điểm AI cao nhất</option>
+                </select>
+                <span className={`${ICON} absolute right-3 pointer-events-none text-outline text-[18px]`}>swap_vert</span>
               </div>
             </div>
           </div>
 
-          {visible.length === 0 ? (
-            <EmptyState icon="filter_list" title="No applications match the filter." />
-          ) : view === 'cards' ? (
-            /* Cards view */
-            <div className="flex flex-col gap-4">
-              {visible.map((app) => (
-                <div
-                  key={app.id}
-                  className="relative overflow-hidden rounded-lg bg-card p-4 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)] transition-shadow hover:shadow-proof"
-                >
-                  <div className={`absolute left-0 top-0 h-full w-1.5 ${ACCENT[app.status]}`} />
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div className="flex items-start gap-3">
-                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-surface-high text-headline-md font-bold text-primary">
-                        {app.companyName.charAt(0).toUpperCase()}
-                      </span>
-                      <div className="flex min-w-0 flex-col">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="m-0 text-headline-lg text-ink">{app.companyName}</h2>
-                          <span className="text-headline-sm text-outline-strong">•</span>
-                          <span className="text-headline-md font-medium text-ink-variant">
-                            {app.jobTitle}
-                          </span>
-                          <StatusBadge status={app.status} label={statusText(app.status)} />
-                        </div>
-                        <div className="mt-1 flex flex-wrap items-center gap-3 text-body-sm text-outline-strong">
-                          <span className="flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[16px]">schedule</span>
-                            Applied {fmtDateTime(app.createdAt)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 self-start md:self-auto">
-                      {app.score != null && (
-                        <span className={CODE_CHIP}>Score: {app.score}/100</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {app.slot && (
-                    <div className="mt-3 flex flex-col gap-1 rounded-lg bg-surface-low p-3">
-                      <span className="flex items-center gap-1 text-label-md font-semibold text-ink">
-                        <span className="material-symbols-outlined text-[16px] text-secondary">
-                          event_available
-                        </span>
-                        Interview
-                      </span>
-                      <span className="w-fit rounded bg-surface-high px-1.5 py-0.5 font-mono text-[12px] text-ink">
-                        {fmtDateTime(app.slot.startTime)} — {new Date(app.slot.endTime).toLocaleTimeString('vi-VN')}
-                      </span>
-                    </div>
-                  )}
-
-                  {app.feedback && (
-                    <p className="mt-3 mb-0 text-body-sm text-ink-variant">{app.feedback}</p>
-                  )}
-
-                  <div className="mt-3 flex flex-col items-stretch justify-between gap-3 pt-1 sm:flex-row sm:items-center">
-                    {profile?.cvFileName ? (
-                      <span className="text-body-sm text-outline-strong">
-                        Resume uploaded: <span className="font-mono text-[12px] text-ink">{profile.cvFileName}</span>
-                      </span>
-                    ) : (
-                      <span />
-                    )}
-                    {renderActions(app)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            /* Dense table view — header 32px / row 40px via thClass/tdClass */
-            <div className="overflow-x-auto rounded-lg border border-[#e2e8f0] bg-card">
-              <table className={tableClass}>
-                <thead>
-                  <tr>
-                    <th className={thClass}>Company &amp; Role</th>
-                    <th className={thClass}>Stage</th>
-                    <th className={thClass}>AI Screening</th>
-                    <th className={thClass}>Applied Date</th>
-                    <th className={thClass}>Next Action</th>
-                    <th className={thClass}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visible.map((app) => (
-                    <tr key={app.id} className="transition-colors hover:bg-surface-low">
-                      <td className={tdClass}>
-                        <div className="flex flex-col">
-                          <span className="text-headline-sm font-semibold text-ink">{app.companyName}</span>
-                          <span className="text-body-sm text-outline-strong">{app.jobTitle}</span>
-                        </div>
-                      </td>
-                      <td className={tdClass}>
-                        <StatusBadge status={app.status} label={statusText(app.status)} />
-                      </td>
-                      <td className={tdClass}>
-                        {app.score != null ? (
-                          <span className="rounded bg-surface-mid px-2 py-0.5 font-mono text-[12px] text-ink">
-                            {app.score} / 100
-                          </span>
-                        ) : (
-                          <span className="text-outline-strong">—</span>
-                        )}
-                      </td>
-                      <td className={`${tdClass} font-mono text-[12px] text-outline-strong`}>
-                        {fmtDateTime(app.createdAt)}
-                      </td>
-                      <td className={`${tdClass} text-body-sm font-medium text-secondary`}>
-                        {app.slot ? fmtDateTime(app.slot.startTime) : '—'}
-                      </td>
-                      <td className={tdClass}>{renderActions(app, true)}</td>
+          {/* Applications Table — cột "Độ khớp AI" bỏ: MatchResponse chỉ phía employer */}
+          <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+            {visible.length === 0 ? (
+              <div className="p-space-lg">
+                <EmptyBlock icon="filter_list" title="Không có đơn khớp bộ lọc hiện tại." />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-surface-container-low/60 text-outline text-ds-label-md uppercase tracking-wider">
+                      <th className="py-3.5 px-space-lg font-semibold">Vị trí &amp; Cấp bậc</th>
+                      <th className="py-3.5 px-space-md font-semibold">Doanh nghiệp</th>
+                      <th className="py-3.5 px-space-md font-semibold">Ngày nộp</th>
+                      <th className="py-3.5 px-space-md font-semibold">Tiến trình &amp; Trạng thái</th>
+                      <th className="py-3.5 px-space-lg text-right font-semibold">Thao tác</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Pagination & results count bar */}
-          {applications.totalPages > 1 && (
-            <div className="flex flex-col items-center justify-between gap-3 rounded-lg bg-card p-3 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)] sm:flex-row">
-              <span className="text-body-sm text-ink-variant">
-                Showing <strong className="text-ink">{showingFrom}-{showingTo}</strong> of{' '}
-                <strong className="text-ink">{total}</strong> applications
-              </span>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: applications.totalPages }, (_, i) => (
+                  </thead>
+                  <tbody className="divide-y divide-surface-container-low text-ds-body-md text-on-surface">
+                    {visible.map((app) => {
+                      const meta = STATUS_VN[app.status];
+                      const job = jobMap[app.jobId];
+                      return (
+                        <tr key={app.id} className="hover:bg-surface-container-low/50 transition-colors">
+                          <td className="py-space-md px-space-lg">
+                            <div className="flex flex-col gap-1">
+                              <Link
+                                to={`/jobs/${app.jobId}`}
+                                className="text-ds-headline-sm text-on-surface font-semibold hover:text-primary transition-colors no-underline w-fit"
+                              >
+                                {app.jobTitle}
+                              </Link>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {app.score != null && (
+                                  <span className="px-2 py-0.5 rounded bg-secondary-fixed/40 text-on-secondary-fixed text-[11px]">
+                                    AI: {app.score}/100
+                                  </span>
+                                )}
+                                {job?.salaryRange && (
+                                  <span className="text-ds-body-sm text-outline">• {job.salaryRange}</span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-space-md px-space-md">
+                            <div className="flex items-center gap-space-sm">
+                              <span className="w-9 h-9 rounded-lg bg-surface-container-high flex items-center justify-center font-bold text-primary shrink-0">
+                                {app.companyName.charAt(0).toUpperCase()}
+                              </span>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-ds-label-md text-on-surface">{app.companyName}</span>
+                                {job?.location && (
+                                  <span className="text-ds-body-sm text-outline truncate">{job.location}</span>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-space-md px-space-md whitespace-nowrap">
+                            <div className="flex flex-col">
+                              <span className="text-ds-label-md text-on-surface">
+                                {fmtServer(app.createdAt, 'date')}
+                              </span>
+                              <span className="text-ds-body-sm text-outline">{timeAgo(app.createdAt)}</span>
+                            </div>
+                          </td>
+                          <td className="py-space-md px-space-md">
+                            <div className="flex flex-col gap-1">
+                              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-ds-label-md font-semibold w-fit ${meta.chip}`}>
+                                <span className={`${ICON} text-[16px]`}>{meta.icon}</span>
+                                {app.status === 'SCHEDULED' && app.slot
+                                  ? `Hẹn lịch: ${fmtServer(app.slot.startTime, 'date')}`
+                                  : meta.label}
+                              </span>
+                              {app.feedback && (
+                                <span className="text-ds-body-sm text-on-surface-variant line-clamp-2 max-w-[420px]">
+                                  {app.feedback}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-space-md px-space-lg text-right">{renderRowActions(app)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {totalPages > 1 && (
+              <div className="p-space-md bg-surface-container-low/40 flex flex-col sm:flex-row items-center justify-between gap-space-md">
+                <div className="text-ds-body-sm text-outline">
+                  Hiển thị{' '}
+                  <span className="font-semibold text-on-surface">
+                    {page * size + 1} - {Math.min((page + 1) * size, total)}
+                  </span>{' '}
+                  trong tổng số <span className="font-semibold text-on-surface">{total}</span> đơn ứng tuyển
+                </div>
+                <div className="flex items-center gap-space-xs">
                   <button
-                    key={i}
                     type="button"
-                    onClick={() => { setPage(i); fetchMyApplications(i); }}
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg text-label-md transition-all ${
-                      i === page
-                        ? 'bg-primary font-semibold text-on-primary'
-                        : 'text-ink-variant hover:bg-surface-low hover:text-ink'
-                    }`}
+                    onClick={() => gotoPage(page - 1)}
+                    disabled={page <= 0}
+                    className="px-3 py-1.5 rounded-lg bg-surface-container-lowest text-outline hover:text-on-surface hover:bg-surface-container-high text-ds-label-md transition-colors disabled:opacity-40"
                   >
-                    {i + 1}
+                    <span className={`${ICON} text-[18px] align-middle`}>chevron_left</span>
+                    Trước
                   </button>
-                ))}
+                  {Array.from({ length: totalPages }, (_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => gotoPage(i)}
+                      className={`w-8 h-8 rounded-lg text-ds-label-md transition-colors ${
+                        i === page
+                          ? 'bg-primary text-on-primary shadow-sm'
+                          : 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-high'
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => gotoPage(page + 1)}
+                    disabled={page + 1 >= totalPages}
+                    className="px-3 py-1.5 rounded-lg bg-surface-container-lowest text-on-surface hover:bg-surface-container-high text-ds-label-md transition-colors disabled:opacity-40"
+                  >
+                    Sau
+                    <span className={`${ICON} text-[18px] align-middle`}>chevron_right</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Bottom CTA — bỏ claim "42% Offer" (số bịa), giữ lời kêu gọi luyện tập */}
+          <div className="bg-gradient-to-r from-primary to-primary-container rounded-xl p-space-lg text-on-primary shadow-lg flex flex-col md:flex-row items-center justify-between gap-space-lg">
+            <div className="flex items-center gap-space-md">
+              <div className="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center shrink-0">
+                <span className={`${ICON} text-[32px] text-secondary-fixed`}>auto_awesome</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <h3 className="m-0 text-ds-headline-md font-bold text-on-primary">
+                  Tối ưu hóa khả năng trúng tuyển cùng AI Coach
+                </h3>
+                <p className="m-0 text-ds-body-md text-on-primary-container max-w-xl">
+                  Luyện phỏng vấn thử với AI theo đúng mô tả công việc trước buổi phỏng vấn chính thức.
+                </p>
               </div>
             </div>
-          )}
+            <div className="flex items-center gap-space-sm shrink-0 w-full md:w-auto">
+              <Link
+                to="/mock-interviews"
+                className="w-full md:w-auto inline-flex items-center justify-center gap-2 px-space-lg py-3 rounded-xl bg-secondary-fixed text-on-secondary-fixed text-ds-label-lg shadow-sm hover:brightness-105 transition-all no-underline"
+              >
+                <span className={`${ICON} text-[20px]`}>play_circle</span>
+                Bắt đầu Luyện Phỏng vấn Ngay
+              </Link>
+            </div>
+          </div>
         </>
       )}
 
-      {bookingApp && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
-          <div className="flex max-h-[80vh] w-[480px] flex-col overflow-y-auto rounded-lg bg-card p-6 shadow-card">
-            <h3 className="m-0 text-headline-md text-ink">Select Interview Time — {bookingApp.jobTitle}</h3>
-            <div className="mt-4 flex flex-col gap-2">
-              {availableSlots.length === 0 ? (
-                <p className="m-0 text-body-md text-ink-variant">No available time slots yet. Please check back later.</p>
-              ) : (
-                availableSlots.map((s) => (
-                  <label
-                    key={s.id}
-                    className={`flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-body-md transition-colors ${
-                      selectedSlot === s.id ? 'border-primary bg-info text-primary' : 'border-[#e2e8f0] hover:bg-surface-low'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="slot"
-                      checked={selectedSlot === s.id}
-                      onChange={() => setSelectedSlot(s.id)}
-                      className="mr-1"
-                    />
-                    {new Date(s.startTime).toLocaleString('vi-VN')} — {new Date(s.endTime).toLocaleTimeString('vi-VN')}
-                  </label>
-                ))
-              )}
-            </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <button className={buttonClass('secondary')} onClick={() => setBookingApp(null)}>
-                Close
-              </button>
-              {availableSlots.length > 0 && (
-                <button className={buttonClass('primary')} onClick={confirmBooking} disabled={!selectedSlot}>
-                  Confirm and Schedule
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       <ConfirmDialog
-        open={pendingWithdraw !== null}
-        title="Withdraw this application?"
-        message={pendingWithdraw ? `Your application for "${pendingWithdraw.jobTitle}" will be cancelled. This can't be undone.` : ''}
-        confirmLabel="Withdraw"
-        cancelLabel="Keep"
+        open={Boolean(pendingWithdraw)}
+        title="Hủy đơn ứng tuyển"
+        message={
+          pendingWithdraw
+            ? `Hủy đơn "${pendingWithdraw.jobTitle}" tại ${pendingWithdraw.companyName}? Thao tác này không hoàn tác được.`
+            : ''
+        }
+        confirmLabel="Hủy đơn"
+        cancelLabel="Giữ lại"
         danger
         onConfirm={() => void runWithdraw()}
         onCancel={() => setPendingWithdraw(null)}

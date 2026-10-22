@@ -22,6 +22,9 @@ import MyJobsPage from './views/pages/MyJobsPage';
 import MySlotsPage from './views/pages/MySlotsPage';
 import InterviewCalendarPage from './views/pages/InterviewCalendarPage';
 import MyApplicationsPage from './views/pages/MyApplicationsPage';
+import CandidateBookingPage from './views/pages/CandidateBookingPage';
+import CandidateAccountSettingsPage from './views/pages/CandidateAccountSettingsPage';
+import InterviewHistoryPage from './views/pages/InterviewHistoryPage';
 import CandidateProfilePage from './views/pages/CandidateProfilePage';
 import MockInterviewsPage from './views/pages/MockInterviewsPage';
 import MockInterviewSessionPage from './views/pages/MockInterviewSessionPage';
@@ -100,6 +103,9 @@ const App: React.FC = () => {
               {/* Candidate routes */}
               <Route element={<ProtectedRoute allowedRoles={['ROLE_USER']} />}>
                 <Route path="/my-applications" element={<MyApplicationsPage />} />
+                <Route path="/interview-booking" element={<CandidateBookingPage />} />
+                <Route path="/interview-history" element={<InterviewHistoryPage />} />
+                <Route path="/account-settings" element={<CandidateAccountSettingsPage />} />
                 <Route path="/my-profile" element={<CandidateProfilePage />} />
                 <Route path="/mock-interviews" element={<MockInterviewsPage />} />
                 <Route path="/mock-interviews/:id" element={<MockInterviewSessionPage />} />
