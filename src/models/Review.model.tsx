@@ -40,15 +40,15 @@ export interface BugReport {
 }
 
 export const BUG_CATEGORY_LABELS: Record<BugCategory, string> = {
-  BUG: 'System Bug',
-  FEATURE: 'Feature Request',
-  OTHER: 'Other',
+  BUG: 'Lỗi hệ thống',
+  FEATURE: 'Đề xuất tính năng',
+  OTHER: 'Khác',
 };
 
 export const BUG_STATUS_LABELS: Record<BugStatus, string> = {
-  OPEN: 'Open',
-  IN_PROGRESS: 'In Progress',
-  RESOLVED: 'Resolved',
+  OPEN: 'Mới',
+  IN_PROGRESS: 'Đang xử lý',
+  RESOLVED: 'Đã xử lý',
 };
 
 export const StarDisplay: React.FC<{ rating: number }> = ({ rating }) => (

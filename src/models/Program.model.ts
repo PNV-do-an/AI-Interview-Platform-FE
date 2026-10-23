@@ -156,10 +156,10 @@ export interface CandidateProfile {
 }
 
 export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
-  PENDING: 'Under Review',
-  SCHEDULED: 'Interview Scheduled',
-  INTERVIEWED: 'Interviewed',
-  ACCEPTED: 'Accepted',
-  REJECTED: 'Not Selected',
-  CANCELLED: 'Cancelled',
+  PENDING: 'Đang xét',
+  SCHEDULED: 'Đã đặt lịch',
+  INTERVIEWED: 'Đã phỏng vấn',
+  ACCEPTED: 'Trúng tuyển',
+  REJECTED: 'Không đạt',
+  CANCELLED: 'Đã huỷ',
 };

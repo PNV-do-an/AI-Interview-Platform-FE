@@ -26,26 +26,26 @@ const JobsPage: React.FC = () => {
 
   return (
     <div>
-      <PageHeader title="Job Board" description="Open listings for candidates" />
+      <PageHeader title="Bảng tin tuyển dụng" description="Các tin đang mở cho ứng viên" />
 
       <form className="mb-4 flex gap-2" onSubmit={onSearch}>
         <input
           className={inputClass}
-          placeholder="Search by title, company, role, or location..."
+          placeholder="Tìm theo chức danh, công ty, vị trí hoặc địa điểm..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <button type="submit" className={buttonClass('primary', 'shrink-0')}>Search</button>
+        <button type="submit" className={buttonClass('primary', 'shrink-0')}>Tìm</button>
       </form>
 
       <ErrorBanner message={error} />
-      {loading && <LoadingState />}
+      {loading && <LoadingState label="Đang tải…" />}
 
       {!loading && jobs && jobs.content.length === 0 && (
         <EmptyState
           icon="work"
-          title="No job listings found"
-          description="Try a different search keyword."
+          title="Chưa có tin tuyển dụng nào"
+          description="Thử từ khoá tìm kiếm khác."
         />
       )}
 
@@ -74,11 +74,11 @@ const JobsPage: React.FC = () => {
       {jobs && jobs.totalPages > 1 && (
         <div className="mt-4 flex items-center gap-2">
           <button className={buttonClass('secondary')} disabled={page === 0} onClick={() => setPage(page - 1)}>
-            Previous
+            Trước
           </button>
-          <span className={tdClass}>Page {jobs.number + 1} / {jobs.totalPages}</span>
+          <span className={tdClass}>Trang {jobs.number + 1} / {jobs.totalPages}</span>
           <button className={buttonClass('secondary')} disabled={page >= jobs.totalPages - 1} onClick={() => setPage(page + 1)}>
-            Next
+            Sau
           </button>
         </div>
       )}

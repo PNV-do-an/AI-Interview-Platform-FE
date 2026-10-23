@@ -19,7 +19,7 @@ export const useOrderController = () => {
       const res = await OrderService.getPackages();
       setPackages(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to load packages');
+      setError(e.response?.data?.message || 'Không tải được danh sách gói dịch vụ');
     }
   }, []);
 
@@ -28,7 +28,7 @@ export const useOrderController = () => {
       const res = await OrderService.getAllPackages();
       setAllPackages(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to load packages');
+      setError(e.response?.data?.message || 'Không tải được danh sách gói dịch vụ');
     }
   }, []);
 
@@ -36,10 +36,10 @@ export const useOrderController = () => {
     clearMessages();
     try {
       await OrderService.createPackage(body);
-      setSuccessMsg('Package created');
+      setSuccessMsg('Đã tạo gói dịch vụ');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to create package');
+      setError(e.response?.data?.message || 'Không tạo được gói dịch vụ');
       return false;
     }
   }, []);
@@ -48,10 +48,10 @@ export const useOrderController = () => {
     clearMessages();
     try {
       await OrderService.updatePackage(id, body);
-      setSuccessMsg('Package updated');
+      setSuccessMsg('Đã cập nhật gói dịch vụ');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to update package');
+      setError(e.response?.data?.message || 'Không cập nhật được gói dịch vụ');
       return false;
     }
   }, []);
@@ -62,7 +62,7 @@ export const useOrderController = () => {
       await OrderService.togglePackageActive(id);
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to change package status');
+      setError(e.response?.data?.message || 'Không đổi được trạng thái gói dịch vụ');
       return false;
     }
   }, []);
@@ -71,10 +71,10 @@ export const useOrderController = () => {
     clearMessages();
     try {
       await OrderService.deletePackage(id);
-      setSuccessMsg('Package deleted');
+      setSuccessMsg('Đã xoá gói dịch vụ');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to delete package');
+      setError(e.response?.data?.message || 'Không xoá được gói dịch vụ');
       return false;
     }
   }, []);

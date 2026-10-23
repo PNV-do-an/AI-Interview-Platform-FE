@@ -60,7 +60,7 @@ const AdminFeedbackPage: React.FC = () => {
 
   return (
     <div>
-      <PageHeader title="Reviews & Reports" />
+      <PageHeader title="Đánh giá & Báo lỗi" />
       {loading && <LoadingState />}
       <ErrorBanner message={error} />
       {successMsg && (
@@ -71,28 +71,28 @@ const AdminFeedbackPage: React.FC = () => {
       )}
 
       <section className="mt-6">
-        <h2 className="mb-3 text-headline-md text-ink">Candidate Reviews ({allReviews.length})</h2>
+        <h2 className="mb-3 text-headline-md text-ink">Đánh giá của ứng viên ({allReviews.length})</h2>
         {allReviews.length === 0 && (
-          <EmptyState icon="star" title="No reviews yet." />
+          <EmptyState icon="star" title="Chưa có đánh giá nào." />
         )}
         <div className="flex flex-col gap-3">
           {allReviews.map((r) => (
             <Card key={r.id}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-body-md text-ink">
-                  <strong>{r.reviewerName}</strong> rated <strong>{r.targetName}</strong>
+                  <strong>{r.reviewerName}</strong> đã đánh giá <strong>{r.targetName}</strong>
                 </span>
                 <StarDisplay rating={r.rating} />
               </div>
-              {r.jobTitle && <p className="mt-1 text-body-sm text-ink-variant">Position: {r.jobTitle}</p>}
+              {r.jobTitle && <p className="mt-1 text-body-sm text-ink-variant">Vị trí: {r.jobTitle}</p>}
               <p className="mt-1.5 text-body-md text-ink">{r.comment}</p>
               {r.reply ? (
-                <p className="mt-1 text-body-sm text-ink-variant">Replied: {r.reply}</p>
+                <p className="mt-1 text-body-sm text-ink-variant">Đã phản hồi: {r.reply}</p>
               ) : (
                 <>
                   <textarea
                     className={`${textareaClass} mt-2`}
-                    placeholder="Write a reply..."
+                    placeholder="Viết phản hồi..."
                     value={reviewReplies[r.id] || ''}
                     onChange={(e) => setReviewReplies((prev) => ({ ...prev, [r.id]: e.target.value }))}
                   />
@@ -103,7 +103,7 @@ const AdminFeedbackPage: React.FC = () => {
                       onClick={() => onReplyReview(r.id)}
                       disabled={!(reviewReplies[r.id] || '').trim()}
                     >
-                      Reply
+                      Phản hồi
                     </button>
                   </div>
                 </>
@@ -114,9 +114,9 @@ const AdminFeedbackPage: React.FC = () => {
       </section>
 
       <section className="mt-8">
-        <h2 className="mb-3 text-headline-md text-ink">Bug Reports &amp; Feedback ({allBugs.length})</h2>
+        <h2 className="mb-3 text-headline-md text-ink">Báo lỗi &amp; Góp ý ({allBugs.length})</h2>
         {allBugs.length === 0 && (
-          <EmptyState icon="bug_report" title="No reports yet." />
+          <EmptyState icon="bug_report" title="Chưa có báo cáo nào." />
         )}
         <div className="flex flex-col gap-3">
           {allBugs.map((b) => (
@@ -130,7 +130,7 @@ const AdminFeedbackPage: React.FC = () => {
                 <span className="tabular-nums">{new Date(b.createdAt).toLocaleDateString('vi-VN')}</span>
               </p>
               <p className="mt-1.5 whitespace-pre-wrap text-body-md text-ink">{b.description}</p>
-              {b.reply && <p className="mt-1 text-body-sm text-ink-variant">Current reply: {b.reply}</p>}
+              {b.reply && <p className="mt-1 text-body-sm text-ink-variant">Phản hồi hiện tại: {b.reply}</p>}
               <div className="mt-2 flex items-center gap-2">
                 <select
                   className={selectClass}
@@ -144,13 +144,13 @@ const AdminFeedbackPage: React.FC = () => {
               </div>
               <textarea
                 className={`${textareaClass} mt-2`}
-                placeholder="Reply to the reporter..."
+                placeholder="Phản hồi người báo lỗi..."
                 value={bugReplies[b.id] || ''}
                 onChange={(e) => setBugReplies((prev) => ({ ...prev, [b.id]: e.target.value }))}
               />
               <div className="mt-2 flex items-center gap-2">
                 <button type="button" className={buttonClass('primary')} onClick={() => onUpdateBug(b.id)}>
-                  Update
+                  Cập nhật
                 </button>
               </div>
             </Card>

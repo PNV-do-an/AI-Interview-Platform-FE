@@ -17,19 +17,19 @@ const PANEL = 'rounded-xl bg-card p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04)]';
 const STAT_LABEL = 'text-label-sm font-semibold uppercase tracking-wider text-outline-strong';
 const ICON_BOX = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-mid text-primary';
 
-const fmtDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' });
-const fmtTime = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
-const fmtMonth = new Intl.DateTimeFormat('en-US', { month: 'short' });
-const fmtWeekday = new Intl.DateTimeFormat('en-US', { weekday: 'short' });
+const fmtDate = new Intl.DateTimeFormat('vi-VN', { month: 'numeric', day: 'numeric' });
+const fmtTime = new Intl.DateTimeFormat('vi-VN', { hour: 'numeric', minute: '2-digit' });
+const fmtMonth = new Intl.DateTimeFormat('vi-VN', { month: 'short' });
+const fmtWeekday = new Intl.DateTimeFormat('vi-VN', { weekday: 'short' });
 
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 const sameDay = (a: Date, b: Date) => startOfDay(a) === startOfDay(b);
 
 const dayLabel = (d: Date) => {
   const diffDays = Math.round((startOfDay(d) - startOfDay(new Date())) / 86_400_000);
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Tomorrow';
-  if (diffDays === -1) return 'Yesterday';
+  if (diffDays === 0) return 'Hôm nay';
+  if (diffDays === 1) return 'Ngày mai';
+  if (diffDays === -1) return 'Hôm qua';
   return fmtWeekday.format(d);
 };
 
@@ -95,7 +95,7 @@ const CandidateDashboard: React.FC = () => {
       day.setDate(monday.getDate() + i);
       return {
         day,
-        label: i === 0 || day.getDay() === 1 ? fmtWeekday.format(day) : fmtWeekday.format(day).slice(0, 1),
+        label: fmtWeekday.format(day),
         hasInterview: interviews.some((it) => sameDay(it.start, day)),
         isToday: sameDay(day, today),
       };
@@ -113,34 +113,34 @@ const CandidateDashboard: React.FC = () => {
         <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-info/30 blur-3xl" />
         <div className="relative z-10 flex flex-col items-start justify-between gap-4 lg:flex-row lg:items-center">
           <div className="flex max-w-2xl flex-col gap-1">
-            <h1 className="m-0 text-headline-lg tracking-tight text-ink">Welcome back, {user?.fullName}!</h1>
+            <h1 className="m-0 text-headline-lg tracking-tight text-ink">Chào mừng {user?.fullName} trở lại!</h1>
             <p className="m-0 text-body-md text-ink-variant">
-              Prepare for upcoming technical interviews and track your application progress.
+              Chuẩn bị cho các buổi phỏng vấn kỹ thuật sắp tới và theo dõi tiến trình ứng tuyển.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link to="/my-profile" className={`${buttonClass('secondary')} no-underline`}>
               <span className="material-symbols-outlined text-[18px]">description</span>
-              Profile &amp; CV
+              Hồ sơ &amp; CV
             </Link>
             <Link to="/mock-interviews" className={`${buttonClass('primary')} no-underline`}>
               <span className="material-symbols-outlined text-[18px]">smart_toy</span>
-              Start AI Practice Session
+              Luyện phỏng vấn cùng AI
             </Link>
           </div>
         </div>
       </section>
 
       {error && <ErrorBanner message={error} />}
-      {loading && !candidate.applications && <LoadingState label="Loading…" />}
+      {loading && !candidate.applications && <LoadingState label="Đang tải…" />}
 
       {/* Top metrics */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className={PANEL}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex flex-col">
-              <span className={STAT_LABEL}>Active Resume</span>
-              <span className="mt-1 text-headline-md text-ink">{cvFileName ? 'On file' : 'Not uploaded'}</span>
+              <span className={STAT_LABEL}>CV của bạn</span>
+              <span className="mt-1 text-headline-md text-ink">{cvFileName ? 'Đã có file' : 'Chưa tải lên'}</span>
             </div>
             <span className={ICON_BOX}>
               <span className="material-symbols-outlined text-[20px]">insert_drive_file</span>
@@ -150,17 +150,17 @@ const CandidateDashboard: React.FC = () => {
             <span className="material-symbols-outlined shrink-0 text-[16px] text-secondary">
               {cvFileName ? 'check_circle' : 'error'}
             </span>
-            <span className="truncate font-mono text-body-sm text-ink-variant">{cvFileName ?? 'No CV on record'}</span>
+            <span className="truncate font-mono text-body-sm text-ink-variant">{cvFileName ?? 'Chưa có CV nào'}</span>
           </div>
         </div>
 
         <div className={PANEL}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex flex-col">
-              <span className={STAT_LABEL}>Active Pipeline</span>
+              <span className={STAT_LABEL}>Đơn đang mở</span>
               <div className="mt-1 flex items-baseline gap-1">
                 <span className="text-metric-stat text-ink">{counts.inProgress}</span>
-                <span className="text-label-sm text-ink-variant">in progress</span>
+                <span className="text-label-sm text-ink-variant">đang xử lý</span>
               </div>
             </div>
             <span className={ICON_BOX}>
@@ -169,9 +169,9 @@ const CandidateDashboard: React.FC = () => {
           </div>
           <div className="mt-4 grid grid-cols-3 gap-1 text-center font-label-sm">
             {[
-              { n: counts.pending, t: 'Review' },
-              { n: counts.scheduled, t: 'Scheduled' },
-              { n: counts.interviewed, t: 'Interviewed' },
+              { n: counts.pending, t: 'Đang xét' },
+              { n: counts.scheduled, t: 'Đã đặt lịch' },
+              { n: counts.interviewed, t: 'Đã phỏng vấn' },
             ].map((cell) => (
               <div key={cell.t} className="flex flex-col rounded bg-surface-low py-1">
                 <span className="font-semibold text-ink">{cell.n}</span>
@@ -185,11 +185,11 @@ const CandidateDashboard: React.FC = () => {
           <div className="absolute left-0 right-0 top-0 h-1 bg-secondary" />
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 flex-col">
-              <span className={STAT_LABEL}>Next Interview</span>
+              <span className={STAT_LABEL}>Phỏng vấn kế tiếp</span>
               <span className="mt-1 text-headline-md text-ink">
                 {nextInterview
                   ? `${dayLabel(nextInterview.start)}, ${fmtTime.format(nextInterview.start)}`
-                  : 'None scheduled'}
+                  : 'Chưa có lịch'}
               </span>
             </div>
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-info text-secondary">
@@ -209,7 +209,7 @@ const CandidateDashboard: React.FC = () => {
         <div className={PANEL}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 flex-col">
-              <span className={STAT_LABEL}>Latest AI Score</span>
+              <span className={STAT_LABEL}>Điểm AI gần nhất</span>
               <div className="mt-1 flex items-baseline gap-1">
                 <span className="text-metric-stat text-primary">
                   {latestScore?.overallScore != null ? Math.round(latestScore.overallScore) : '—'}
@@ -222,7 +222,7 @@ const CandidateDashboard: React.FC = () => {
             </span>
           </div>
           <div className="mt-4 truncate text-body-sm text-ink-variant">
-            {latestScore ? (latestScore.jobTitle || latestScore.topic || 'Mock session') : 'No scored session yet'}
+            {latestScore ? (latestScore.jobTitle || latestScore.topic || 'Phiên luyện tập') : 'Chưa có phiên nào được chấm'}
           </div>
         </div>
       </div>
@@ -234,23 +234,23 @@ const CandidateDashboard: React.FC = () => {
             <div className="flex items-center justify-between pb-3">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[20px] text-primary">assignment_turned_in</span>
-                <h2 className="m-0 text-headline-md text-ink">Application Pipeline</h2>
+                <h2 className="m-0 text-headline-md text-ink">Quy trình ứng tuyển</h2>
                 <span className="rounded-full bg-surface-mid px-2 py-0.5 text-label-sm text-ink-variant">
-                  {apps.length} Roles
+                  {apps.length} tin
                 </span>
               </div>
               <Link to="/my-applications" className={`${buttonClass('ghost')} no-underline`}>
-                View all
+                Xem tất cả
               </Link>
             </div>
 
             {apps.length === 0 && !loading ? (
               <div className="flex flex-col items-center gap-2 border border-dashed border-[#cbd5e1] rounded-lg px-6 py-10 text-center">
                 <span className="material-symbols-outlined text-[28px] text-ink-variant">inbox</span>
-                <p className="m-0 text-headline-sm text-ink">No applications yet</p>
-                <p className="m-0 text-body-sm text-ink-variant">Browse the job board to start your first application.</p>
+                <p className="m-0 text-headline-sm text-ink">Chưa có đơn ứng tuyển</p>
+                <p className="m-0 text-body-sm text-ink-variant">Xem bảng tin tuyển dụng để gửi đơn ứng tuyển đầu tiên.</p>
                 <Link to="/jobs" className={`${buttonClass('primary')} mt-2 no-underline`}>
-                  Browse Jobs
+                  Xem tin tuyển dụng
                 </Link>
               </div>
             ) : (
@@ -258,11 +258,11 @@ const CandidateDashboard: React.FC = () => {
                 <table className="w-full border-collapse text-left text-body-md text-ink">
                   <thead>
                     <tr>
-                      <th className={thClass}>Role &amp; Company</th>
-                      <th className={thClass}>Applied</th>
-                      <th className={thClass}>Status</th>
-                      <th className={thClass}>Next Step</th>
-                      <th className={`${thClass} text-right`}>Action</th>
+                      <th className={thClass}>Vị trí &amp; Công ty</th>
+                      <th className={thClass}>Nộp ngày</th>
+                      <th className={thClass}>Trạng thái</th>
+                      <th className={thClass}>Bước tiếp theo</th>
+                      <th className={`${thClass} text-right`}>Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -294,7 +294,7 @@ const CandidateDashboard: React.FC = () => {
                               <span className="text-body-sm text-outline-strong">{app.slot.employerName}</span>
                             </div>
                           ) : app.score != null ? (
-                            <span className="text-body-sm text-ink-variant">Score {Math.round(app.score)}/100</span>
+                            <span className="text-body-sm text-ink-variant">Điểm {Math.round(app.score)}/100</span>
                           ) : (
                             <span className="text-body-sm text-outline-strong">—</span>
                           )}
@@ -304,7 +304,7 @@ const CandidateDashboard: React.FC = () => {
                             to={`/jobs/${app.jobId}`}
                             className={`${buttonClass('secondary')} no-underline`}
                           >
-                            View Role
+                            Xem tin
                           </Link>
                         </td>
                       </tr>
@@ -322,7 +322,7 @@ const CandidateDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[20px] text-secondary">calendar_clock</span>
-                <h3 className="m-0 text-headline-md text-ink">Scheduled Session</h3>
+                <h3 className="m-0 text-headline-md text-ink">Lịch phỏng vấn đã đặt</h3>
               </div>
               {nextInterview && (
                 <span className="rounded bg-info px-2 py-0.5 text-label-sm font-semibold text-secondary">
@@ -364,7 +364,7 @@ const CandidateDashboard: React.FC = () => {
                         <span className="truncate text-label-md font-semibold text-ink">
                           {nextInterview.app.slot.employerName}
                         </span>
-                        <span className="truncate text-body-sm text-ink-variant">Interviewer</span>
+                        <span className="truncate text-body-sm text-ink-variant">Người phỏng vấn</span>
                       </div>
                     </div>
                   )}
@@ -395,12 +395,12 @@ const CandidateDashboard: React.FC = () => {
               </div>
             ) : (
               <div className="mt-4 flex flex-col gap-2 rounded-xl bg-surface-low p-4">
-                <p className="m-0 text-body-md text-ink-variant">No interview booked yet.</p>
+                <p className="m-0 text-body-md text-ink-variant">Chưa đặt lịch phỏng vấn nào.</p>
                 <p className="m-0 text-body-sm text-outline-strong">
-                  Scheduled slots appear here with time, company and interviewer.
+                  Các khung giờ đã đặt sẽ hiện ở đây kèm thời gian, công ty và người phỏng vấn.
                 </p>
                 <Link to="/my-applications" className={`${buttonClass('secondary')} mt-1 self-start no-underline`}>
-                  Track Applications
+                  Theo dõi đơn ứng tuyển
                 </Link>
               </div>
             )}
@@ -411,14 +411,14 @@ const CandidateDashboard: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[20px] text-primary">insights</span>
-                <h3 className="m-0 text-headline-md text-ink">Recent AI Sessions</h3>
+                <h3 className="m-0 text-headline-md text-ink">Phiên luyện tập AI gần đây</h3>
               </div>
               <Link to="/mock-interviews" className={`${buttonClass('ghost')} no-underline`}>
-                All
+                Tất cả
               </Link>
             </div>
             {(mock.sessions?.content ?? []).length === 0 ? (
-              <p className="m-0 mt-4 text-body-md text-ink-variant">No practice session yet.</p>
+              <p className="m-0 mt-4 text-body-md text-ink-variant">Chưa có phiên luyện tập nào.</p>
             ) : (
               <ul className="mt-3 flex flex-col">
                 {(mock.sessions?.content ?? []).slice(0, 4).map((s) => {
@@ -429,20 +429,20 @@ const CandidateDashboard: React.FC = () => {
                     <li key={s.id} className="flex items-center justify-between gap-3 border-b border-[#e2e8f0] py-3">
                       <div className="flex min-w-0 flex-col">
                         <span className="truncate text-headline-sm text-ink">
-                          {s.jobTitle || s.topic || `${s.mode} session`}
+                          {s.jobTitle || s.topic || `Phiên ${s.mode}`}
                         </span>
                         <span className="font-mono text-body-sm text-outline-strong">
-                          {s.mode} · {answered} answered
+                          {s.mode} · đã trả lời {answered}
                         </span>
                       </div>
                       <div className="flex shrink-0 items-center gap-2">
                         {s.overallScore != null ? (
                           <span className="text-headline-sm text-primary">{Math.round(s.overallScore)}</span>
                         ) : (
-                          <StatusBadge status={s.status} />
+                          <StatusBadge status={s.status} label="Đang làm" />
                         )}
                         <Link to={to} className={`${buttonClass('secondary')} no-underline`}>
-                          {s.status === 'COMPLETED' ? 'Report' : 'Continue'}
+                          {s.status === 'COMPLETED' ? 'Xem báo cáo' : 'Tiếp tục'}
                         </Link>
                       </div>
                     </li>
@@ -459,18 +459,18 @@ const CandidateDashboard: React.FC = () => {
 
 const ROLE_LINKS: Record<string, { to: string; label: string; description: string; icon: string }[]> = {
   employer: [
-    { to: '/my-jobs', label: 'Job Postings', description: 'Manage your published roles', icon: 'work' },
-    { to: '/jobs/new', label: 'Post a Job', description: 'Create a new job posting', icon: 'add' },
-    { to: '/my-slots', label: 'Availability', description: 'Interview slots you open to candidates', icon: 'event' },
-    { to: '/packages', label: 'Packages', description: 'Buy job posting and interview credits', icon: 'deployed_code' },
-    { to: '/my-orders', label: 'Orders', description: 'Billing history of your packages', icon: 'receipt_long' },
+    { to: '/my-jobs', label: 'Tin đã đăng', description: 'Quản lý các tin đang tuyển', icon: 'work' },
+    { to: '/jobs/new', label: 'Đăng tin mới', description: 'Tạo tin tuyển dụng mới', icon: 'add' },
+    { to: '/my-slots', label: 'Lịch trống', description: 'Khung giờ phỏng vấn bạn mở cho ứng viên', icon: 'event' },
+    { to: '/packages', label: 'Gói dịch vụ', description: 'Mua lượt đăng tin và lượt phỏng vấn', icon: 'deployed_code' },
+    { to: '/my-orders', label: 'Đơn hàng', description: 'Lịch sử thanh toán các gói dịch vụ', icon: 'receipt_long' },
   ],
   admin: [
     // Admin chỉ còn 1 cửa vào: shell AdminLayout (mockup Stitch) tự lo phần điều hướng.
-    { to: '/admin/dashboard', label: 'Admin Console', description: 'Open the admin workspace', icon: 'dashboard' },
+    { to: '/admin/dashboard', label: 'Trang quản trị', description: 'Mở khu vực quản trị', icon: 'dashboard' },
   ],
   staff: [
-    { to: '/admin/job-approvals', label: 'Admin Console', description: 'Open the admin workspace', icon: 'dashboard' },
+    { to: '/admin/job-approvals', label: 'Trang quản trị', description: 'Mở khu vực quản trị', icon: 'dashboard' },
   ],
 };
 
@@ -490,8 +490,8 @@ const WorkspaceDashboard: React.FC = () => {
       <section className={`${PANEL} relative overflow-hidden`}>
         <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-info/30 blur-3xl" />
         <div className="relative z-10 flex flex-col gap-1">
-          <h1 className="m-0 text-headline-lg tracking-tight text-ink">Welcome back, {user?.fullName}!</h1>
-          <p className="m-0 text-body-md text-ink-variant">Workspace tools available for your role.</p>
+          <h1 className="m-0 text-headline-lg tracking-tight text-ink">Chào mừng {user?.fullName} trở lại!</h1>
+          <p className="m-0 text-body-md text-ink-variant">Các công cụ dành cho vai trò của bạn.</p>
         </div>
       </section>
 

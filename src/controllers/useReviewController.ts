@@ -40,7 +40,7 @@ export const useReviewController = () => {
       const res = await ReviewService.getMyReviews();
       setMyReviews(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to load review list');
+      setError(e.response?.data?.message || 'Không tải được danh sách đánh giá');
     }
   }, []);
 
@@ -49,7 +49,7 @@ export const useReviewController = () => {
       const res = await ReviewService.getAllReviews();
       setAllReviews(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to load review list');
+      setError(e.response?.data?.message || 'Không tải được danh sách đánh giá');
     }
   }, []);
 
@@ -57,10 +57,10 @@ export const useReviewController = () => {
     clearMessages();
     try {
       await ReviewService.replyReview(id, reply);
-      setSuccessMsg('Reply posted');
+      setSuccessMsg('Đã gửi phản hồi');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to post reply');
+      setError(e.response?.data?.message || 'Không gửi được phản hồi');
       return false;
     }
   }, []);
@@ -85,7 +85,7 @@ export const useReviewController = () => {
       const res = await ReviewService.getMyBugReports();
       setMyBugs(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to load bug reports');
+      setError(e.response?.data?.message || 'Không tải được danh sách báo lỗi');
     }
   }, []);
 
@@ -94,7 +94,7 @@ export const useReviewController = () => {
       const res = await ReviewService.getAllBugReports();
       setAllBugs(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to load bug reports');
+      setError(e.response?.data?.message || 'Không tải được danh sách báo lỗi');
     }
   }, []);
 
@@ -102,10 +102,10 @@ export const useReviewController = () => {
     clearMessages();
     try {
       await ReviewService.updateBugReport(id, body);
-      setSuccessMsg('Report updated');
+      setSuccessMsg('Đã cập nhật báo cáo');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to update report');
+      setError(e.response?.data?.message || 'Không cập nhật được báo cáo');
       return false;
     }
   }, []);

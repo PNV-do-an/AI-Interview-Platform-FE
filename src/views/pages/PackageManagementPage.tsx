@@ -87,7 +87,7 @@ const PackageManagementPage: React.FC = () => {
 
   return (
     <div>
-      <PageHeader title="Service Packages" />
+      <PageHeader title="Gói dịch vụ" />
 
       <ErrorBanner message={error} />
       {successMsg && (
@@ -99,20 +99,20 @@ const PackageManagementPage: React.FC = () => {
 
       <div className="mb-6 rounded-lg border border-[#e2e8f0] bg-surface-low p-4">
         <h2 className="m-0 mb-3 text-headline-sm text-ink">
-          {editingId ? `Edit package #${editingId}` : 'Create new package'}
+          {editingId ? `Sửa gói #${editingId}` : 'Tạo gói mới'}
         </h2>
         <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
           <div>
-            <label className={labelClass} htmlFor="pkg-name">Package name *</label>
+            <label className={labelClass} htmlFor="pkg-name">Tên gói *</label>
             <input
               id="pkg-name"
               className={inputClass} required value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="e.g. Basic"
+              placeholder="VD: Cơ bản"
             />
           </div>
           <div>
-            <label className={labelClass} htmlFor="pkg-desc">Description</label>
+            <label className={labelClass} htmlFor="pkg-desc">Mô tả</label>
             <input
               id="pkg-desc"
               className={inputClass} value={form.description || ''}
@@ -121,7 +121,7 @@ const PackageManagementPage: React.FC = () => {
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
-              <label className={labelClass} htmlFor="pkg-price">Price (VND) *</label>
+              <label className={labelClass} htmlFor="pkg-price">Giá (VND) *</label>
               <input
                 id="pkg-price"
                 className={`${inputClass} tabular-nums`} type="number" min={0} required value={form.price}
@@ -129,7 +129,7 @@ const PackageManagementPage: React.FC = () => {
               />
             </div>
             <div>
-              <label className={labelClass} htmlFor="pkg-duration">Duration (days) *</label>
+              <label className={labelClass} htmlFor="pkg-duration">Thời hạn (ngày) *</label>
               <input
                 id="pkg-duration"
                 className={`${inputClass} tabular-nums`} type="number" min={1} required value={form.durationDays}
@@ -137,7 +137,7 @@ const PackageManagementPage: React.FC = () => {
               />
             </div>
             <div>
-              <label className={labelClass} htmlFor="pkg-limit">Job post limit *</label>
+              <label className={labelClass} htmlFor="pkg-limit">Số tin tối đa *</label>
               <input
                 id="pkg-limit"
                 className={`${inputClass} tabular-nums`} type="number" min={1} required value={form.jobPostLimit}
@@ -146,23 +146,23 @@ const PackageManagementPage: React.FC = () => {
             </div>
           </div>
           <div>
-            <label className={labelClass} htmlFor="pkg-features">Features (one per line)</label>
+            <label className={labelClass} htmlFor="pkg-features">Tính năng (mỗi dòng một mục)</label>
             <textarea
               id="pkg-features"
               className={textareaClass}
               value={featuresText}
               onChange={(e) => setFeaturesText(e.target.value)}
-              placeholder={'Up to 3 job postings\nUnlimited resumes'}
+              placeholder={'Đăng tối đa 3 tin\nCV không giới hạn'}
             />
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="submit" className={buttonClass('primary')}>
               <span className="material-symbols-outlined text-[18px]">{editingId ? 'save' : 'add'}</span>
-              {editingId ? 'Save changes' : 'Create package'}
+              {editingId ? 'Lưu thay đổi' : 'Tạo gói'}
             </button>
             {editingId && (
               <button type="button" onClick={resetForm} className={buttonClass('secondary')}>
-                Cancel
+                Huỷ
               </button>
             )}
           </div>
@@ -171,7 +171,7 @@ const PackageManagementPage: React.FC = () => {
 
       {loading && <LoadingState />}
       {!loading && allPackages.length === 0 && (
-        <EmptyState icon="inventory_2" title="No packages yet." />
+        <EmptyState icon="inventory_2" title="Chưa có gói dịch vụ nào." />
       )}
       <div className="flex flex-col gap-3">
         {allPackages.map((pkg) => (
@@ -183,23 +183,23 @@ const PackageManagementPage: React.FC = () => {
               <span className="text-headline-sm text-ink">{pkg.name}</span>
               <span className="text-body-sm tabular-nums text-ink-variant"> · #{pkg.id}</span>
               <div className="text-body-sm tabular-nums text-ink-variant">
-                {formatVnd(pkg.price)} · {pkg.durationDays} days · up to {pkg.jobPostLimit} posts
+                {formatVnd(pkg.price)} · {pkg.durationDays} ngày · tối đa {pkg.jobPostLimit} tin
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {pkg.active
-                ? <Badge tone="success">Active</Badge>
-                : <Badge tone="neutral">Disabled</Badge>}
+                ? <Badge tone="success">Đang bật</Badge>
+                : <Badge tone="neutral">Đã tắt</Badge>}
               <button type="button" onClick={() => startEdit(pkg)} className={buttonClass('secondary')}>
                 <span className="material-symbols-outlined text-[16px]">edit</span>
-                Edit
+                Sửa
               </button>
               <button type="button" onClick={() => handleToggle(pkg.id)} className={buttonClass('secondary')}>
-                {pkg.active ? 'Disable' : 'Enable'}
+                {pkg.active ? 'Tắt' : 'Bật'}
               </button>
               <button type="button" onClick={() => setPendingDel(pkg)} className={buttonClass('danger')}>
                 <span className="material-symbols-outlined text-[16px]">delete</span>
-                Delete
+                Xoá
               </button>
             </div>
           </div>
@@ -208,10 +208,10 @@ const PackageManagementPage: React.FC = () => {
 
       <ConfirmDialog
         open={pendingDel !== null}
-        title="Delete this package?"
-        message={pendingDel ? `"${pendingDel.name}" will be removed. Packages with existing orders cannot be deleted.` : ''}
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        title="Xoá gói này?"
+        message={pendingDel ? `"${pendingDel.name}" sẽ bị gỡ khỏi hệ thống. Gói đã có đơn hàng thì không xoá được.` : ''}
+        confirmLabel="Xoá"
+        cancelLabel="Huỷ"
         danger
         onConfirm={() => void runDelete()}
         onCancel={() => setPendingDel(null)}
