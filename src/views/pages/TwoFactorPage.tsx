@@ -32,7 +32,7 @@ const TwoFactorPage: React.FC = () => {
         <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-6">
           <div className="flex items-center gap-6">
                         <Link to="/" className="flex items-center no-underline">
-              <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto" />
+              <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto object-contain" />
             </Link>
             <Link to="/" className="hidden text-label-md text-ink-variant no-underline transition-colors hover:text-ink sm:block">
               Back to Home

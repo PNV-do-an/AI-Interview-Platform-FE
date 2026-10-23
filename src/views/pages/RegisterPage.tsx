@@ -201,7 +201,7 @@ const RegisterPage: React.FC = () => {
 
             <div className="relative z-10 flex items-center gap-3">
               <div className="flex h-10 items-center justify-center rounded-xl bg-white px-3 shadow-lg">
-                <img alt="AI Interview Platform Logo" className="h-4 w-auto object-contain" src={logoWordmark} />
+                <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto object-contain" />
               </div>
               <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">Nền tảng phỏng vấn AI</span>
             </div>

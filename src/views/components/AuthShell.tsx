@@ -12,7 +12,7 @@ const AuthShell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
     <header className="relative z-10 mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-5">
       <Link to="/" className="inline-flex items-center no-underline">
-        <img src={logoWordmark} alt="AI Interview" className="h-8 w-auto object-contain" />
+        <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto object-contain" />
       </Link>
       <Link
         to="/"

@@ -38,7 +38,7 @@ const VerifyEmailPage: React.FC = () => {
 
       <div className="relative z-10 w-full max-w-md">
         <Link to="/" className="mb-6 inline-flex items-center no-underline">
-          <img src={logoWordmark} alt="AI Interview" className="h-8 w-auto object-contain" />
+          <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto object-contain" />
         </Link>
 
         <div className="rounded-2xl border border-outline/60 bg-card p-6 shadow-card sm:p-8">

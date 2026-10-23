@@ -20,7 +20,7 @@ const UnauthorizedPage: React.FC = () => {
     <div className="min-h-screen bg-background text-on-surface flex flex-col justify-between selection:bg-primary-container selection:text-on-primary-container">
       <header className="w-full pt-space-xl px-margin flex justify-center items-center">
         <Link to="/" className="inline-flex items-center gap-space-sm no-underline text-inherit">
-          <img src={logoWordmark} alt="AI Interview" className="h-8 w-auto object-contain" />
+          <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto object-contain" />
         </Link>
       </header>
 

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AdminService from '../../services/admin.service';
+import logoWordmark from '../../assets/logo-wordmark.png';
 import { UserStats } from '../../models/User.model';
 
 /**
@@ -161,11 +162,9 @@ const AdminLayout: React.FC = () => {
     <>
       <div className="flex flex-col flex-1 overflow-y-auto">
         <div className="h-16 px-space-lg flex items-center gap-space-sm border-b border-surface-container">
-          <div className="flex flex-col min-w-0">
-            <span className="text-ds-headline-sm text-on-surface leading-tight tracking-tight font-bold truncate">
-              AI Interview Platform
-            </span>
-            <span className="text-[11px] text-primary font-semibold uppercase tracking-wider">
+          <img src={logoWordmark} alt="AI Interview" className="h-6 w-auto object-contain" />
+          <div className="flex flex-col min-w-0 ml-2">
+            <span className="text-ds-label-sm text-on-surface leading-tight tracking-tight font-semibold uppercase">
               Admin Portal
             </span>
           </div>
