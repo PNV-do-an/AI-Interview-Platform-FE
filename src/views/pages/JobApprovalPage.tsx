@@ -117,7 +117,7 @@ const splitLines = (value: string | null | undefined): string[] =>
     .map((line) => line.replace(/^[-*•]\s*/, '').trim())
     .filter(Boolean);
 
-const SpecCell: React.FC<{ label: string; value: string; strong?: boolean }> = ({ label, value, strong }) => (
+const SpecCell: React.FC<{ label: string; value: string | null | undefined; strong?: boolean }> = ({ label, value, strong }) => (
   <div className="p-space-sm bg-surface-container-low rounded-lg border border-surface-container-high flex flex-col">
     <span className="text-ds-label-sm text-on-surface-variant text-[11px]">{label}</span>
     <span className={`text-ds-label-md mt-0.5 ${strong ? 'text-primary font-bold' : 'text-on-surface font-semibold'}`}>
@@ -288,6 +288,10 @@ const JobApprovalPage: React.FC = () => {
   const safetyChecks = detail?.aiSafety?.checks ?? [];
   const safetyScore = detail?.aiSafety?.score ?? null;
   const failedChecks = safetyChecks.filter((c) => !c.passed);
+  /** 3 cột đều nullable nên ghép phải bỏ ô trống, không để lại phân cách treo "• •". */
+  const jobMeta = job
+    ? [job.position, job.department, job.location].map((v) => (v ?? '').trim()).filter(Boolean).join(' • ')
+    : '';
 
   return (
     <div className="flex flex-col w-full">
@@ -567,9 +571,9 @@ const JobApprovalPage: React.FC = () => {
                   <h2 className="text-ds-headline-xl font-bold text-on-surface tracking-tight leading-snug break-normal">
                     {job.title}
                   </h2>
-                  <p className="text-ds-body-sm text-on-surface-variant">
-                    {job.position} • {job.department} • {job.location}
-                  </p>
+                  {jobMeta && (
+                    <p className="text-ds-body-sm text-on-surface-variant">{jobMeta}</p>
+                  )}
                 </div>
 
                 {/* Hồ sơ nhà tuyển dụng */}

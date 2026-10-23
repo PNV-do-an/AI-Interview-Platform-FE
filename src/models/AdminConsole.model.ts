@@ -98,8 +98,11 @@ export interface ModerationJobDetail {
     id: number;
     title: string;
     companyName: string;
-    position: string;
-    location: string;
+    /** `position`/`location`/`department` là cột nullable trong `JobDescription` (chỉ `title`
+     * và `companyName` có `nullable = false`) -> chuỗi rỗng/null là bình thường, không được
+     * ghép thành phân cách treo "• •". */
+    position: string | null;
+    location: string | null;
     /** BE để null khi tin không khai báo lương (4 cột đều nullable trong JobDescription). */
     salaryRange: string | null;
     description: string;
@@ -112,7 +115,7 @@ export interface ModerationJobDetail {
     employerEmail: string;
     createdAt: string;
     updatedAt: string;
-    department: string;
+    department: string | null;
     experienceLevel: string;
     employmentType: string;
     workplaceModel: WorkplaceModel;

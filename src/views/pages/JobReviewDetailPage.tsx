@@ -103,7 +103,7 @@ const Section: React.FC<{ title: string; items: string[]; dot: string }> = ({ ti
   </div>
 );
 
-const SpecCell: React.FC<{ icon: string; label: string; value: string; tone?: string }> = ({ icon, label, value, tone = 'text-primary' }) => (
+const SpecCell: React.FC<{ icon: string; label: string; value: string | null | undefined; tone?: string }> = ({ icon, label, value, tone = 'text-primary' }) => (
   <div className="space-y-0.5 p-space-xs">
     <span className="text-ds-label-sm text-on-surface-variant block">{label}</span>
     <p className="text-ds-label-md text-on-surface flex items-center gap-1.5 font-semibold mt-1">
@@ -238,6 +238,11 @@ const JobReviewDetailPage: React.FC = () => {
 
   const pending = job.status === 'PENDING_APPROVAL';
   const salary = salaryLabel(job);
+  /** `location` có thể null; `workplaceModel` vẫn là thông tin thật nên được đứng một mình. */
+  const place = job.location?.trim();
+  const placeLabel = place
+    ? `${place}${job.workplaceModel ? ` (${WORKPLACE_VN[job.workplaceModel]})` : ''}`
+    : (WORKPLACE_VN[job.workplaceModel] ?? null);
   const skills = splitCsv(job.requiredSkills);
   const focusAreas = splitCsv(job.aiQuestionFocusAreas);
   const realBenefits = [job.annualBonus, job.equityBand].map((v) => (v ?? '').trim()).filter(Boolean);
@@ -330,7 +335,7 @@ const JobReviewDetailPage: React.FC = () => {
               <SpecCell
                 icon="location_on"
                 label="Địa điểm làm việc"
-                value={`${job.location}${job.workplaceModel ? ` (${WORKPLACE_VN[job.workplaceModel]})` : ''}`}
+                value={placeLabel}
               />
               <SpecCell icon="work_history" label="Kinh nghiệm" value={job.experienceLevel} />
               <SpecCell icon="apartment" label="Bộ phận" value={job.department} />
