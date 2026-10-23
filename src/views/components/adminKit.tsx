@@ -334,6 +334,27 @@ export const timeAgo = (value: string | null | undefined): string => {
 export const splitCsv = (value: string | null | undefined): string[] =>
   (value ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 
+export interface SalaryFields {
+  salaryRange: string | null | undefined;
+  salaryMin: number | null | undefined;
+  salaryMax: number | null | undefined;
+  salaryCurrency: string | null | undefined;
+}
+
+/**
+ * Nhãn mức lương JD. `salaryRange` là chuỗi tự do NTD nhập, `salaryMin/Max` là dải cấu trúc
+ * và BE để null khi tin không nhập (cả 4 cột đều nullable trong JobDescription) -> không bao
+ * giờ render chữ "null".
+ */
+export const salaryLabel = (job: SalaryFields): string => {
+  const range = (job.salaryRange ?? '').trim();
+  if (range) return range;
+  const cur = (job.salaryCurrency ?? '').trim();
+  const nums = [job.salaryMin, job.salaryMax].filter((v): v is number => v != null);
+  if (nums.length === 0) return 'Chưa công khai';
+  return `${nums.map((v) => v.toLocaleString('vi-VN')).join(' - ')}${cur ? ` ${cur}` : ''}`;
+};
+
 export const errorText = (err: unknown, fallback = 'Không tải được dữ liệu.'): string => {
   const anyErr = err as { response?: { data?: { message?: string } }; message?: string };
   return anyErr?.response?.data?.message || anyErr?.message || fallback;

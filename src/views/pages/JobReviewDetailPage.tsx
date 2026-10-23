@@ -15,6 +15,7 @@ import {
   ModalBackdrop,
   errorText,
   fmtServer,
+  salaryLabel,
   splitCsv,
   timeAgo,
 } from '../components/adminKit';
@@ -236,7 +237,7 @@ const JobReviewDetailPage: React.FC = () => {
   }
 
   const pending = job.status === 'PENDING_APPROVAL';
-  const salary = job.salaryRange || `${job.salaryMin} - ${job.salaryMax} ${job.salaryCurrency}`;
+  const salary = salaryLabel(job);
   const skills = splitCsv(job.requiredSkills);
   const focusAreas = splitCsv(job.aiQuestionFocusAreas);
   const realBenefits = [job.annualBonus, job.equityBand].map((v) => (v ?? '').trim()).filter(Boolean);
@@ -319,7 +320,9 @@ const JobReviewDetailPage: React.FC = () => {
                   Mức thu nhập đề xuất
                 </span>
                 <span className="text-ds-headline-md text-primary font-bold">{salary}</span>
-                <span className="text-ds-body-sm text-outline-strong">{job.salaryCurrency} / tháng (Gross)</span>
+                {job.salaryCurrency && (
+                  <span className="text-ds-body-sm text-outline-strong">{job.salaryCurrency} / tháng (Gross)</span>
+                )}
               </div>
             </div>
 

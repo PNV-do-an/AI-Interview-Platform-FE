@@ -20,6 +20,7 @@ import {
   fmtServer,
   modalCancelClass,
   modalDangerClass,
+  salaryLabel,
   splitCsv,
   timeAgo,
 } from '../components/adminKit';
@@ -702,7 +703,7 @@ const JobApprovalPage: React.FC = () => {
                     Thông số tuyển dụng cốt lõi
                   </h4>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-space-xs pt-1">
-                    <SpecCell label="Mức lương" value={job.salaryRange || `${job.salaryMin} - ${job.salaryMax} ${job.salaryCurrency}`} strong />
+                    <SpecCell label="Mức lương" value={salaryLabel(job)} strong />
                     <SpecCell label="Hình thức" value={job.employmentType} />
                     <SpecCell label="Cấp bậc" value={job.experienceLevel} />
                     <SpecCell label="Làm việc" value={WORKPLACE_VN[job.workplaceModel] ?? job.workplaceModel} />

@@ -100,7 +100,8 @@ export interface ModerationJobDetail {
     companyName: string;
     position: string;
     location: string;
-    salaryRange: string;
+    /** BE để null khi tin không khai báo lương (4 cột đều nullable trong JobDescription). */
+    salaryRange: string | null;
     description: string;
     requirements: string;
     /** Chuỗi tự do phân tách bởi dấu phẩy. */
@@ -116,9 +117,9 @@ export interface ModerationJobDetail {
     employmentType: string;
     workplaceModel: WorkplaceModel;
     timezoneRequirement: string;
-    salaryCurrency: string;
-    salaryMin: number;
-    salaryMax: number;
+    salaryCurrency: string | null;
+    salaryMin: number | null;
+    salaryMax: number | null;
     equityBand: string;
     annualBonus: string;
     aiScreeningEnabled: boolean;
