@@ -459,7 +459,7 @@ const AdminSystemSettingsPage: React.FC = () => {
               <HealthBar label="API DeepSeek / OpenAI" value="24ms (Ổn định)" pct={94} barCls="bg-secondary-teal" />
               <HealthBar label="Bộ nhớ lưu trữ Audio/CV" value="38% (190GB / 500GB)" pct={38} barCls="bg-primary-container" />
               <div className="flex items-center justify-between pt-1 text-ds-body-sm text-outline-strong">
-                <span>Database Pool: 14/50 active</span>
+                <span>Pool kết nối DB: 14/50 đang hoạt động</span>
                 <Link to="/admin/audit" className="font-mono text-ds-label-sm font-semibold text-primary hover:underline">Chi tiết</Link>
               </div>
             </div>

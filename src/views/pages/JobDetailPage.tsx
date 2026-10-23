@@ -72,7 +72,7 @@ const JobDetailPage: React.FC = () => {
         </div>
       )}
 
-      {loading && <LoadingState />}
+      {loading && <LoadingState label="Đang tải…" />}
 
       {jobDetail && (
         <>
@@ -80,7 +80,7 @@ const JobDetailPage: React.FC = () => {
           <nav className="flex items-center gap-2 py-4 text-label-md text-ink-variant">
             <Link to="/jobs" className="flex items-center gap-1 text-ink-variant no-underline transition-colors hover:text-primary">
               <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-              <span>Jobs</span>
+              <span>Tin tuyển dụng</span>
             </Link>
             <span className="text-xs text-outline-strong">/</span>
             <span className="font-semibold text-ink">{jobDetail.title}</span>
@@ -108,7 +108,7 @@ const JobDetailPage: React.FC = () => {
                   {jobDetail.status === 'OPEN' ? (
                     <span className="inline-flex self-start items-center gap-1.5 rounded-full bg-[#e1e0ff] px-3 py-1 text-label-md font-medium text-[#2f2ebe]">
                       <span className="h-2 w-2 rounded-full bg-secondary" />
-                      Actively Hiring
+                      Đang tuyển dụng
                     </span>
                   ) : (
                     <span className="self-start">
@@ -120,15 +120,15 @@ const JobDetailPage: React.FC = () => {
                 {/* Meta Metrics Grid */}
                 <div className="mt-6 grid grid-cols-2 gap-4 rounded-[0.5rem] bg-surface-low p-4 sm:grid-cols-4">
                   {jobDetail.salaryRange && (
-                    <MetaCell label="Target Salary">{jobDetail.salaryRange}</MetaCell>
+                    <MetaCell label="Mức lương mục tiêu">{jobDetail.salaryRange}</MetaCell>
                   )}
                   {jobDetail.location && (
-                    <MetaCell label="Location" icon="location_on">{jobDetail.location}</MetaCell>
+                    <MetaCell label="Địa điểm" icon="location_on">{jobDetail.location}</MetaCell>
                   )}
                   {jobDetail.position && (
-                    <MetaCell label="Engagement">{jobDetail.position}</MetaCell>
+                    <MetaCell label="Vị trí">{jobDetail.position}</MetaCell>
                   )}
-                  <MetaCell label="Published">
+                  <MetaCell label="Ngày đăng">
                     {parseServerTimestamp(jobDetail.createdAt)?.toLocaleDateString('vi-VN') ?? '—'}
                   </MetaCell>
                 </div>
@@ -149,7 +149,7 @@ const JobDetailPage: React.FC = () => {
               {jobDetail.description && (
                 <Card className={cardShell}>
                   <div className="flex flex-col gap-4">
-                    <SectionHeading accentClass="bg-primary">Mission &amp; Overview</SectionHeading>
+                    <SectionHeading accentClass="bg-primary">Tổng quan công việc</SectionHeading>
                     {isRichTextHtml(jobDetail.description) ? (
                       <div
                         className={`text-body-lg leading-relaxed text-ink-variant ${richTextContentClass}`}
@@ -166,7 +166,7 @@ const JobDetailPage: React.FC = () => {
               {requirementLines.length > 0 && (
                 <Card className={cardShell}>
                   <div className="flex flex-col gap-5">
-                    <SectionHeading accentClass="bg-primary">Requirements &amp; Qualifications</SectionHeading>
+                    <SectionHeading accentClass="bg-primary">Yêu cầu và tiêu chí</SectionHeading>
                     <div className="flex flex-col gap-3 rounded-[0.5rem] bg-surface-low p-4">
                       <ul className="m-0 flex list-none flex-col gap-2 p-0 pl-0">
                         {requirementLines.map((line, i) => (
@@ -188,25 +188,25 @@ const JobDetailPage: React.FC = () => {
               {isCandidate && jobDetail.status === 'OPEN' && (
                 <Card className="rounded-[0.5rem] p-6 shadow-md">
                   <div className="flex flex-col gap-1">
-                    <h2 className="m-0 text-headline-md text-ink">Submit Fast Application</h2>
-                    <span className="text-body-sm text-ink-variant">Takes less than 60 seconds with verified profile.</span>
+                    <h2 className="m-0 text-headline-md text-ink">Ứng tuyển nhanh</h2>
+                    <span className="text-body-sm text-ink-variant">Chưa tới 60 giây với hồ sơ đã xác minh.</span>
                   </div>
 
                   {!showApply ? (
                     <button className={buttonClass('primary', 'mt-5 h-11 w-full text-headline-sm')} onClick={() => setShowApply(true)}>
-                      <span>Submit Application</span>
+                      <span>Gửi đơn ứng tuyển</span>
                       <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                     </button>
                   ) : (
                     <div className="mt-5 flex flex-col gap-4">
                       <div className="flex flex-col gap-1.5">
                         <label className={labelClass} htmlFor="cover-note">
-                          Engineering Note <span className="font-normal text-outline-strong">(Optional)</span>
+                          Ghi chú thêm <span className="font-normal text-outline-strong">(không bắt buộc)</span>
                         </label>
                         <textarea
                           id="cover-note"
                           className={`${textareaClass} min-h-[100px] resize-none bg-surface-low`}
-                          placeholder="Highlight relevant Java performance work, open-source repositories, or distributed system experience..."
+                          placeholder="Nhấn mạnh kinh nghiệm tối ưu hiệu năng Java, các repo mã nguồn mở hoặc hệ thống phân tán..."
                           rows={3}
                           value={coverLetter}
                           onChange={(e) => setCoverLetter(e.target.value)}
@@ -214,16 +214,16 @@ const JobDetailPage: React.FC = () => {
                       </div>
                       <div className="flex flex-col gap-2 pt-2">
                         <button className={buttonClass('primary', 'h-11 w-full text-headline-sm')} onClick={onApply}>
-                          <span>Submit Application</span>
+                          <span>Gửi đơn ứng tuyển</span>
                           <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                         </button>
-                        <button className={buttonClass('secondary', 'h-10 w-full')} onClick={() => setShowApply(false)}>Cancel</button>
+                        <button className={buttonClass('secondary', 'h-10 w-full')} onClick={() => setShowApply(false)}>Huỷ</button>
                       </div>
                     </div>
                   )}
 
                   <p className="mb-0 mt-4 text-center text-label-sm text-outline-strong">
-                    By applying, you agree to automatic evaluation engine processing and skill verification telemetry.
+                    Bằng việc ứng tuyển, bạn đồng ý để công cụ đánh giá tự động chấm điểm và đối chiếu kỹ năng của bạn.
                   </p>
                 </Card>
               )}
@@ -248,7 +248,7 @@ const JobDetailPage: React.FC = () => {
                     to={`/employers/${jobDetail.employerId}/reviews`}
                     className="inline-flex items-center gap-1 text-body-md text-primary no-underline hover:underline"
                   >
-                    See employer reviews
+                    Xem đánh giá về nhà tuyển dụng
                     <span className="material-symbols-outlined text-[18px]">chevron_right</span>
                   </Link>
                 </div>

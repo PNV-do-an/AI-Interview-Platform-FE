@@ -87,7 +87,7 @@ export const useOrderController = () => {
       setCurrentOrder(res.data.data!);
       return res.data.data!;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to create order');
+      setError(e.response?.data?.message || 'Không tạo được đơn hàng');
       return null;
     } finally {
       setLoading(false);
@@ -99,7 +99,7 @@ export const useOrderController = () => {
       const res = await OrderService.getMyOrders();
       setOrders(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to load order history');
+      setError(e.response?.data?.message || 'Không tải được lịch sử đơn hàng');
     }
   }, []);
 
@@ -108,7 +108,7 @@ export const useOrderController = () => {
       const res = await OrderService.getAllOrders();
       setAllOrders(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to load orders');
+      setError(e.response?.data?.message || 'Không tải được danh sách đơn hàng');
     }
   }, []);
 
@@ -117,11 +117,11 @@ export const useOrderController = () => {
     setLoading(true);
     try {
       const res = await OrderService.payOrder(id);
-      setSuccessMsg('Payment successful — confirmation email sent');
+      setSuccessMsg('Thanh toán thành công — email xác nhận đã gửi');
       setCurrentOrder(res.data.data!);
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Payment failed');
+      setError(e.response?.data?.message || 'Thanh toán thất bại');
       return false;
     } finally {
       setLoading(false);
@@ -132,10 +132,10 @@ export const useOrderController = () => {
     clearMessages();
     try {
       await OrderService.cancelOrder(id);
-      setSuccessMsg('Order cancelled');
+      setSuccessMsg('Đã huỷ đơn hàng');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to cancel order');
+      setError(e.response?.data?.message || 'Không huỷ được đơn hàng');
       return false;
     }
   }, []);

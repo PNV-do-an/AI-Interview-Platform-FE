@@ -19,7 +19,7 @@ export const useCandidateController = () => {
       const res = await ProgramService.getMyApplications({ page, size: 10 });
       setApplications(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to load applications');
+      setError(e.response?.data?.message || 'Không tải được đơn ứng tuyển');
     } finally {
       setLoading(false);
     }
@@ -29,10 +29,10 @@ export const useCandidateController = () => {
     clearMessages();
     try {
       await ProgramService.cancelApplication(id);
-      setSuccessMsg('Application withdrawn');
+      setSuccessMsg('Đã rút đơn ứng tuyển');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to withdraw application');
+      setError(e.response?.data?.message || 'Không rút được đơn ứng tuyển');
       return false;
     }
   }, []);
@@ -41,10 +41,10 @@ export const useCandidateController = () => {
     clearMessages();
     try {
       await ProgramService.bookSlot(slotId, applicationId);
-      setSuccessMsg('Interview scheduled!');
+      setSuccessMsg('Đã đặt lịch phỏng vấn');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to schedule interview');
+      setError(e.response?.data?.message || 'Không đặt được lịch phỏng vấn');
       return false;
     }
   }, []);
@@ -55,7 +55,7 @@ export const useCandidateController = () => {
       const res = await ProgramService.getMyProfile();
       setProfile(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to load profile');
+      setError(e.response?.data?.message || 'Không tải được hồ sơ');
     } finally {
       setLoading(false);
     }
@@ -66,10 +66,10 @@ export const useCandidateController = () => {
     try {
       const res = await ProgramService.updateMyProfile(body);
       setProfile(res.data.data!);
-      setSuccessMsg('Profile updated');
+      setSuccessMsg('Đã cập nhật hồ sơ');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to update profile');
+      setError(e.response?.data?.message || 'Không cập nhật được hồ sơ');
       return false;
     }
   }, []);

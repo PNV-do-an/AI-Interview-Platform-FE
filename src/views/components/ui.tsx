@@ -69,7 +69,7 @@ export const PageHeader: React.FC<{
   </div>
 );
 
-export const LoadingState: React.FC<{ label?: string }> = ({ label = 'Loading...' }) => (
+export const LoadingState: React.FC<{ label?: string }> = ({ label = 'Đang tải…' }) => (
   <div className="flex items-center gap-2 py-10 text-body-md text-ink-variant">
     <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
     {label}

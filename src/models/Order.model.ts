@@ -39,15 +39,15 @@ export interface ServicePackageRequest {
 }
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  PENDING: 'Pending',
-  PAID: 'Paid',
-  CANCELLED: 'Cancelled',
+  PENDING: 'Chờ thanh toán',
+  PAID: 'Đã thanh toán',
+  CANCELLED: 'Đã huỷ',
 };
 
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  MOMO: 'MoMo Wallet',
+  MOMO: 'Ví MoMo',
   VNPAY: 'VNPay',
-  BANK_TRANSFER: 'Bank Transfer',
+  BANK_TRANSFER: 'Chuyển khoản ngân hàng',
 };
 
 export const formatVnd = (amount: number): string =>

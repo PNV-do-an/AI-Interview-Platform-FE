@@ -414,7 +414,7 @@ const AdminDashboardPage: React.FC = () => {
               </div>
               <div className="flex items-baseline gap-space-sm mt-1">
                 <span className="text-ds-display-sm text-secondary-teal font-extrabold tracking-tight">99.98%</span>
-                <span className="text-ds-label-sm text-on-surface-variant font-medium">Uptime SLA</span>
+                <span className="text-ds-label-sm text-on-surface-variant font-medium">Độ sẵn sàng SLA</span>
               </div>
               <div className="flex items-center gap-1.5 text-ds-body-sm text-on-surface-variant">
                 <span className={`${ICON} text-[16px] text-secondary-teal`}>speed</span>

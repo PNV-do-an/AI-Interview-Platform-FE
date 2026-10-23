@@ -47,9 +47,9 @@ const MySlotsPage: React.FC = () => {
 
   return (
     <div>
-      <PageHeader title="Interviewer Availability" />
+      <PageHeader title="Lịch trống của người phỏng vấn" />
 
-      {loading && <LoadingState />}
+      {loading && <LoadingState label="Đang tải…" />}
       <ErrorBanner message={error} />
       {successMsg && (
         <div className="mb-4 flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text" role="status">
@@ -64,21 +64,21 @@ const MySlotsPage: React.FC = () => {
       >
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div>
-            <label className={labelClass}>Start</label>
+            <label className={labelClass}>Bắt đầu</label>
             <input type="datetime-local" value={start} onChange={(e) => setStart(e.target.value)} className={inputClass} />
           </div>
           <div>
-            <label className={labelClass}>End</label>
+            <label className={labelClass}>Kết thúc</label>
             <input type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} className={inputClass} />
           </div>
           <div>
-            <label className={labelClass}>Note</label>
+            <label className={labelClass}>Ghi chú</label>
             <input value={note} onChange={(e) => setNote(e.target.value)} className={inputClass} />
           </div>
         </div>
         <button type="submit" className={buttonClass('primary', 'self-start')}>
           <span className="material-symbols-outlined text-[18px]">add</span>
-          Add Slot
+          Thêm khung giờ
         </button>
       </form>
 
@@ -93,7 +93,7 @@ const MySlotsPage: React.FC = () => {
               {new Date(slot.startTime).toLocaleString('vi-VN')} — {new Date(slot.endTime).toLocaleTimeString('vi-VN')}
             </strong>
             <Badge tone={slot.booked ? 'danger' : 'success'}>
-              {slot.booked ? `Booked by ${slot.bookedByName}` : 'Available'}
+              {slot.booked ? `Đã đặt bởi ${slot.bookedByName}` : 'Còn trống'}
             </Badge>
             {slot.note && <span className="min-w-0 flex-1 truncate text-body-sm text-ink-variant">{slot.note}</span>}
             {!slot.booked && (
@@ -101,7 +101,7 @@ const MySlotsPage: React.FC = () => {
                 className={buttonClass('ghost', 'h-7 shrink-0 px-2 text-label-sm')}
                 onClick={() => setPendingCancel(slot.id)}
               >
-                Cancel Slot
+                Huỷ khung giờ
               </button>
             )}
           </div>
@@ -109,21 +109,21 @@ const MySlotsPage: React.FC = () => {
       </div>
 
       {mySlots.length === 0 && !loading && (
-        <EmptyState icon="event" title="No availability slots yet." />
+        <EmptyState icon="event" title="Chưa có khung giờ trống nào." />
       )}
 
       <p className="pt-6">
         <Link to="/my-jobs" className="text-label-md text-ink-variant no-underline transition-colors hover:text-primary">
-          ← My Job Postings
+          ← Tin đã đăng
         </Link>
       </p>
 
       <ConfirmDialog
         open={pendingCancel !== null}
-        title="Cancel this availability slot?"
-        message="The slot is removed from the booking calendar. This can't be undone."
-        confirmLabel="Cancel Slot"
-        cancelLabel="Keep slot"
+        title="Huỷ khung giờ này?"
+        message="Khung giờ sẽ bị gỡ khỏi lịch đặt hẹn. Không thể hoàn tác."
+        confirmLabel="Huỷ khung giờ"
+        cancelLabel="Giữ khung giờ"
         danger
         onConfirm={() => { if (pendingCancel !== null) void doCancel(pendingCancel); }}
         onCancel={() => setPendingCancel(null)}

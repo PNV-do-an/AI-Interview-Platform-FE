@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import BrandLogo from '../components/BrandLogo';
 
 const NEXT_STEPS = [
-  { icon: 'mail', title: '1. Check your inbox', body: 'Open the email sent from InterviewAI in your mail client.' },
-  { icon: 'touch_app', title: '2. Click link or enter code', body: 'Click the authorization link or enter the 6-digit backup code.' },
-  { icon: 'dashboard', title: "3. You'll be redirected", body: 'Once confirmed, you will be automatically redirected to your dashboard.' },
+  { icon: 'mail', title: '1. Kiểm tra hộp thư', body: 'Mở email gửi từ AI Interview trong ứng dụng mail của bạn.' },
+  { icon: 'touch_app', title: '2. Bấm liên kết hoặc nhập mã', body: 'Bấm liên kết xác thực hoặc nhập mã dự phòng 6 số.' },
+  { icon: 'dashboard', title: '3. Bạn sẽ được chuyển hướng', body: 'Sau khi xác nhận, bạn sẽ tự động được đưa tới bảng điều khiển.' },
 ];
 
 const MagicLinkPage: React.FC = () => {
@@ -28,7 +28,7 @@ const MagicLinkPage: React.FC = () => {
             <span className="hidden h-4 w-px bg-outline sm:block" />
             <Link to="/" className="hidden items-center gap-1 text-label-sm text-ink-variant no-underline transition-colors hover:text-ink sm:flex">
               <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-              Back to home
+              Về trang chủ
             </Link>
           </div>
           <nav className="flex items-center gap-4">
@@ -38,14 +38,14 @@ const MagicLinkPage: React.FC = () => {
                 <span>EN</span>
                 <span className="material-symbols-outlined text-[14px]">expand_more</span>
               </button>
-              <button type="button" aria-label="Theme indicator" className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-variant transition-colors hover:text-ink">
+              <button type="button" aria-label="Chỉ báo giao diện" className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-variant transition-colors hover:text-ink">
                 <span className="material-symbols-outlined text-[18px]">light_mode</span>
               </button>
             </div>
             <span className="h-4 w-px bg-outline" />
             <div className="flex items-center gap-3">
-              <Link to="/login" className="text-label-md text-ink-variant no-underline transition-colors hover:text-ink">Sign In</Link>
-              <Link to="/register" className="text-label-md text-ink-variant no-underline transition-colors hover:text-ink">Sign Up</Link>
+              <Link to="/login" className="text-label-md text-ink-variant no-underline transition-colors hover:text-ink">Đăng nhập</Link>
+              <Link to="/register" className="text-label-md text-ink-variant no-underline transition-colors hover:text-ink">Đăng ký</Link>
             </div>
             <Link to="/dashboard" className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-on-primary no-underline">
               <span className="material-symbols-outlined text-[18px]">person</span>
@@ -60,7 +60,7 @@ const MagicLinkPage: React.FC = () => {
           <div className="mb-4 flex items-center justify-between">
             <Link to="/login" className="group inline-flex items-center gap-1 text-label-md text-ink-variant no-underline transition-colors hover:text-primary">
               <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-              <span>Back to sign in</span>
+              <span>Quay lại đăng nhập</span>
             </Link>
           </div>
 
@@ -80,13 +80,13 @@ const MagicLinkPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h1 className="mb-1 text-headline-lg tracking-tight text-ink">Check your inbox</h1>
-                  <p className="m-0 text-body-md text-ink-variant">We sent a secure, one-click sign in link to:</p>
+                  <h1 className="mb-1 text-headline-lg tracking-tight text-ink">Kiểm tra hộp thư</h1>
+                  <p className="m-0 text-body-md text-ink-variant">Chúng tôi đã gửi liên kết đăng nhập một chạm, bảo mật tới:</p>
                   <div className="mt-2.5 inline-flex items-center gap-2 rounded-lg bg-surface-mid px-3 py-1.5 text-ink">
                     <span className="material-symbols-outlined text-[16px] text-primary">alternate_email</span>
                     <span className="text-headline-sm font-semibold tracking-tight text-ink">elena@kernel.dev</span>
                     <button type="button" className="ml-2 text-label-sm text-primary underline transition-colors focus:outline-none">
-                      Change email
+                      Đổi email
                     </button>
                   </div>
                 </div>
@@ -101,11 +101,11 @@ const MagicLinkPage: React.FC = () => {
                   </div>
                   <div className="text-left">
                     <div className="flex items-center gap-1.5 text-label-md font-medium text-ink">
-                      <span>Link expires in</span>
+                      <span>Liên kết hết hạn sau</span>
                       <span className="rounded bg-surface-high px-1.5 py-0.5 font-mono text-[12px] font-semibold text-primary">14:20</span>
                     </div>
                     <p className="mt-0.5 text-body-sm text-ink-variant">
-                      We sent a temporary login link to your email. Click the link in your email or enter the 6-digit backup code below.
+                      Chúng tôi đã gửi liên kết đăng nhập tạm thời tới email của bạn. Bấm vào liên kết trong email hoặc nhập mã dự phòng 6 số bên dưới.
                     </p>
                   </div>
                 </div>
@@ -113,7 +113,7 @@ const MagicLinkPage: React.FC = () => {
                   href="#"
                   className="inline-flex items-center justify-center gap-1 rounded-lg bg-card px-3 py-1.5 text-label-sm text-ink shadow-sm transition-colors hover:bg-surface no-underline"
                 >
-                  <span>Open Email</span>
+                  <span>Mở email</span>
                   <span className="material-symbols-outlined text-[14px]">open_in_new</span>
                 </a>
               </div>
@@ -122,7 +122,7 @@ const MagicLinkPage: React.FC = () => {
               <div className="relative mb-6">
                 <div className="mb-4 flex items-center gap-3">
                   <div className="h-px flex-1 bg-surface-high" />
-                  <span className="px-1 text-label-sm font-medium uppercase tracking-wider text-outline-strong">Or enter 6-digit backup code</span>
+                  <span className="px-1 text-label-sm font-medium uppercase tracking-wider text-outline-strong">Hoặc nhập mã dự phòng 6 số</span>
                   <div className="h-px flex-1 bg-surface-high" />
                 </div>
                 <div className="mx-auto flex w-full max-w-md items-center justify-between gap-2 sm:gap-3">
@@ -147,7 +147,7 @@ const MagicLinkPage: React.FC = () => {
                   type="button"
                   className="mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary text-headline-sm text-on-primary shadow-md transition-all hover:bg-primary-container active:scale-[0.99]"
                 >
-                  <span>Verify &amp; Continue</span>
+                  <span>Xác thực &amp; tiếp tục</span>
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>
               </div>
@@ -156,18 +156,18 @@ const MagicLinkPage: React.FC = () => {
               <div className="mt-4 flex flex-col items-center justify-between gap-3 border-t border-surface-mid pt-5 text-center sm:flex-row sm:text-left">
                 <div className="flex items-center gap-1.5 text-body-sm text-ink-variant">
                   <span className="material-symbols-outlined text-[16px] text-outline-strong">help</span>
-                  <span>Didn't get the email?</span>
-                  <button type="button" className="font-medium text-primary hover:underline">Resend email</button>
+                  <span>Không nhận được email?</span>
+                  <button type="button" className="font-medium text-primary hover:underline">Gửi lại email</button>
                 </div>
                 <Link to="/login" className="text-label-sm text-ink-variant underline no-underline-offset-2 transition-colors hover:text-ink">
-                  Return to password login
+                  Quay lại đăng nhập bằng mật khẩu
                 </Link>
               </div>
 
               {/* Trust note */}
               <div className="mt-6 flex items-center justify-center gap-2 pt-3 text-center text-body-sm text-ink-variant">
                 <span className="material-symbols-outlined text-[16px] text-primary">lock</span>
-                <span>Your information is safe and securely encrypted.</span>
+                <span>Thông tin của bạn được mã hóa và bảo mật.</span>
               </div>
             </div>
 
@@ -179,9 +179,9 @@ const MagicLinkPage: React.FC = () => {
                     <span className="material-symbols-outlined text-[22px]">shield_lock</span>
                   </div>
                   <div>
-                    <h3 className="m-0 text-headline-sm font-semibold text-ink">Quick &amp; Secure Sign-in</h3>
+                    <h3 className="m-0 text-headline-sm font-semibold text-ink">Đăng nhập nhanh &amp; an toàn</h3>
                     <p className="mt-0.5 text-body-sm text-ink-variant">
-                      Magic links let you access your account instantly without typing a password. Safe, encrypted, and simple.
+                      Liên kết đăng nhập giúp bạn vào tài khoản ngay mà không cần nhập mật khẩu. An toàn, được mã hóa và đơn giản.
                     </p>
                   </div>
                 </div>
@@ -190,7 +190,7 @@ const MagicLinkPage: React.FC = () => {
               <div className="flex flex-col gap-4 rounded-xl bg-card p-6 shadow-md">
                 <div className="flex items-center gap-2 border-b border-surface-mid pb-2">
                   <span className="material-symbols-outlined text-[20px] text-primary">checklist</span>
-                  <h4 className="m-0 text-headline-sm font-semibold text-ink">Next steps</h4>
+                  <h4 className="m-0 text-headline-sm font-semibold text-ink">Các bước tiếp theo</h4>
                 </div>
                 <div className="flex flex-col gap-3 text-body-sm text-ink-variant">
                   {NEXT_STEPS.map((s) => (
@@ -206,7 +206,7 @@ const MagicLinkPage: React.FC = () => {
                 <div className="flex items-start gap-2.5 rounded-lg bg-surface-mid p-3">
                   <span className="material-symbols-outlined mt-0.5 text-[18px] text-outline-strong">info</span>
                   <p className="m-0 text-body-sm text-ink-variant">
-                    Didn't get the email? Check your spam folder or click <strong>Resend email</strong>.
+                    Không nhận được email? Kiểm tra thư mục spam hoặc bấm <strong>Gửi lại email</strong>.
                   </p>
                 </div>
               </div>
@@ -217,12 +217,12 @@ const MagicLinkPage: React.FC = () => {
 
       <footer className="bg-card/60 shadow-footer">
         <div className="mx-auto flex max-w-[1280px] flex-col items-center justify-between gap-3 px-6 py-4 sm:flex-row">
-          <span className="text-label-sm text-ink-variant">© 2025 InterviewAI Inc. All rights reserved.</span>
+          <span className="text-label-sm text-ink-variant">© 2025 AI Interview Inc. Bảo lưu mọi quyền.</span>
           <div className="flex flex-wrap items-center justify-center gap-6 text-label-sm text-ink-variant">
-            <a href="#" className="no-underline transition-colors hover:text-ink">Privacy Policy</a>
-            <a href="#" className="no-underline transition-colors hover:text-ink">Terms of Service</a>
-            <a href="#" className="no-underline transition-colors hover:text-ink">Security</a>
-            <a href="#" className="no-underline transition-colors hover:text-ink">Support</a>
+            <a href="#" className="no-underline transition-colors hover:text-ink">Chính sách bảo mật</a>
+            <a href="#" className="no-underline transition-colors hover:text-ink">Điều khoản sử dụng</a>
+            <a href="#" className="no-underline transition-colors hover:text-ink">Bảo mật</a>
+            <a href="#" className="no-underline transition-colors hover:text-ink">Hỗ trợ</a>
           </div>
         </div>
       </footer>

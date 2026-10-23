@@ -41,11 +41,11 @@ const PackagesPage: React.FC = () => {
   return (
     <div>
       <PageHeader
-        title="Packages"
-        description="Select a package to publish job postings and use the AI tools."
+        title="Gói dịch vụ"
+        description="Chọn gói để đăng tin tuyển dụng và sử dụng các công cụ AI."
       />
 
-      {loading && <LoadingState />}
+      {loading && <LoadingState label="Đang tải…" />}
       <ErrorBanner message={error} />
       {successMsg && (
         <div className="mb-4 flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text" role="status">
@@ -64,18 +64,18 @@ const PackagesPage: React.FC = () => {
             <p className="m-0 mt-2 flex flex-wrap items-baseline gap-1 text-metric-stat text-primary">
               {formatVnd(pkg.price)}
               <span className="text-body-sm font-normal text-ink-variant">
-                {' '}/ {pkg.durationDays} days
+                {' '}/ {pkg.durationDays} ngày
               </span>
             </p>
             <ul className="m-0 mt-3 flex-1 list-disc pl-5 text-body-md text-ink">
-              <li>Up to {pkg.jobPostLimit} job postings</li>
+              <li>Tối đa {pkg.jobPostLimit} tin tuyển dụng</li>
               {pkg.features.map((f, i) => <li key={i}>{f}</li>)}
             </ul>
             <button
               onClick={() => { setSelected(pkg); clearMessages(); }}
               className={buttonClass('primary', 'w-full mt-4')}
             >
-              Buy Package
+              Mua gói
             </button>
           </div>
         ))}
@@ -84,11 +84,11 @@ const PackagesPage: React.FC = () => {
       {selected && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
           <div className="flex w-[380px] max-w-full flex-col rounded-lg border border-[#e2e8f0] bg-card p-6 shadow-card">
-            <h3 className="m-0 text-headline-md text-ink">Payment: {selected.name}</h3>
+            <h3 className="m-0 text-headline-md text-ink">Thanh toán: {selected.name}</h3>
             <p className="m-0 mt-2 text-body-md text-ink">
-              Amount: <strong className="text-metric-stat text-primary">{formatVnd(selected.price)}</strong>
+              Số tiền: <strong className="text-metric-stat text-primary">{formatVnd(selected.price)}</strong>
             </p>
-            <label className={`${labelClass} mt-3`}>Payment Method</label>
+            <label className={`${labelClass} mt-3`}>Phương thức thanh toán</label>
             <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className={selectClass}>
               {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>{label}</option>
@@ -96,15 +96,15 @@ const PackagesPage: React.FC = () => {
             </select>
             <div className="mt-4 flex gap-2">
               <button onClick={handleBuy} disabled={paying} className={buttonClass('primary', 'flex-1')}>
-                {paying ? 'Processing...' : 'Confirm Payment'}
+                {paying ? 'Đang xử lý...' : 'Xác nhận thanh toán'}
               </button>
               <button onClick={() => setSelected(null)} disabled={paying} className={buttonClass('secondary')}>
-                Close
+                Đóng
               </button>
             </div>
             <p className="m-0 mt-3 flex items-start gap-1 text-body-sm text-ink-variant">
               <span className="material-symbols-outlined shrink-0 text-[18px] text-info-text">info</span>
-              Payments are simulated in the demo environment — no real transactions are made.
+              Thanh toán chỉ được mô phỏng trong môi trường demo — không có giao dịch thật nào diễn ra.
             </p>
           </div>
         </div>

@@ -22,9 +22,9 @@ import {
 // INTERVIEWED / REJECTED / CANCELLED have no mockup label, so the raw API
 // value is rendered verbatim.
 const STATUS_TEXT: Partial<Record<ApplicationStatus, string>> = {
-  PENDING: 'Under Review',
-  SCHEDULED: 'Interview Scheduled',
-  ACCEPTED: 'Offer Received',
+  PENDING: 'Đang xét',
+  SCHEDULED: 'Đã đặt lịch phỏng vấn',
+  ACCEPTED: 'Trúng tuyển',
 };
 const statusText = (status: ApplicationStatus) => STATUS_TEXT[status] ?? status;
 
@@ -37,11 +37,11 @@ interface TabDef {
 // Client-side segmented tabs from the mockup filter bar (All / In Review /
 // Interviews / Offers / Archived), mapped onto real Application.status values.
 const TAB_DEFS: TabDef[] = [
-  { key: 'all', label: 'All', statuses: null },
-  { key: 'review', label: 'In Review', statuses: ['PENDING'] },
-  { key: 'interviews', label: 'Interviews', statuses: ['SCHEDULED', 'INTERVIEWED'] },
-  { key: 'offers', label: 'Offers', statuses: ['ACCEPTED'] },
-  { key: 'archived', label: 'Archived', statuses: ['REJECTED', 'CANCELLED'] },
+  { key: 'all', label: 'Tất cả', statuses: null },
+  { key: 'review', label: 'Đang xét', statuses: ['PENDING'] },
+  { key: 'interviews', label: 'Phỏng vấn', statuses: ['SCHEDULED', 'INTERVIEWED'] },
+  { key: 'offers', label: 'Trúng tuyển', statuses: ['ACCEPTED'] },
+  { key: 'archived', label: 'Lưu trữ', statuses: ['REJECTED', 'CANCELLED'] },
 ];
 
 // Left accent bar colour per status (mockup card rail), using config tokens only.
@@ -152,7 +152,7 @@ const MyApplicationsPage = () => {
   if (!user || user.role !== 'ROLE_USER') {
     return (
       <Card className="text-body-md text-ink-variant">
-        Please sign in with a candidate account.
+        Vui lòng đăng nhập bằng tài khoản ứng viên.
       </Card>
     );
   }
@@ -170,7 +170,7 @@ const MyApplicationsPage = () => {
           className={buttonClass('primary', compact ? 'h-8 px-2 text-label-sm' : '')}
           onClick={() => openBooking(app)}
         >
-          Book Interview
+          Đặt lịch phỏng vấn
         </button>
       )}
       {(app.status === 'PENDING' || app.status === 'SCHEDULED') && (
@@ -180,7 +180,7 @@ const MyApplicationsPage = () => {
           }`}
           onClick={() => withdraw(app)}
         >
-          Withdraw Application
+          Rút đơn ứng tuyển
         </button>
       )}
     </div>
@@ -192,15 +192,15 @@ const MyApplicationsPage = () => {
           omitted: no handler or endpoint backs them). */}
       <div className="flex flex-col justify-between gap-3 pt-2 md:flex-row md:items-end">
         <p className="m-0 max-w-xl text-body-md text-ink-variant">
-          Track your job applications, interview schedules, and upcoming assessments all in one place.
+          Theo dõi đơn ứng tuyển, lịch phỏng vấn và các bài đánh giá sắp tới của bạn tại cùng một nơi.
         </p>
       </div>
 
       {profile && !profile.cvFileName && (
         <div className="rounded-md border border-[#e2e8f0] bg-surface-low px-3 py-2.5 text-body-md text-ink-variant">
-          Your profile is incomplete (skills, CV). Update it on your{' '}
-          <Link to="/my-profile" className="text-primary no-underline hover:underline">profile page</Link>{' '}
-          so employers can find you.
+          Hồ sơ của bạn chưa đầy đủ (kỹ năng, CV). Hãy cập nhật trên{' '}
+          <Link to="/my-profile" className="text-primary no-underline hover:underline">trang hồ sơ</Link>{' '}
+          để nhà tuyển dụng có thể tìm thấy bạn.
         </div>
       )}
       {successMsg && (
@@ -214,10 +214,10 @@ const MyApplicationsPage = () => {
       {!applications || content.length === 0 ? (
         <EmptyState
           icon="description"
-          title="No applications yet."
+          title="Chưa có đơn ứng tuyển."
           action={
             <button className={buttonClass('primary')} onClick={() => navigate('/jobs')}>
-              Browse Job Board
+              Xem tin tuyển dụng
             </button>
           }
         />
@@ -230,7 +230,7 @@ const MyApplicationsPage = () => {
             <div className={TILE_CLASS}>
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-label-sm font-semibold uppercase tracking-wider text-ink-variant">
-                  Total Submitted
+                  Tổng đã nộp
                 </span>
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-mid text-secondary">
                   <span className="material-symbols-outlined text-[18px]">send</span>
@@ -241,7 +241,7 @@ const MyApplicationsPage = () => {
             <div className={TILE_CLASS}>
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-label-sm font-semibold uppercase tracking-wider text-ink-variant">
-                  Next Interview
+                  Phỏng vấn kế tiếp
                 </span>
                 {nextInterview && (
                   <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-secondary" />
@@ -290,16 +290,16 @@ const MyApplicationsPage = () => {
                 </span>
                 <input
                   className={`${inputClass} rounded-lg bg-surface-low pl-9`}
-                  placeholder="Filter company, role, or tech..."
+                  placeholder="Lọc công ty, vị trí hoặc công nghệ..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  aria-label="Filter company, role, or tech"
+                  aria-label="Lọc công ty, vị trí hoặc công nghệ"
                 />
               </div>
               <div className="flex items-center rounded-lg bg-surface-low p-1">
                 <button
                   type="button"
-                  title="Card View"
+                  title="Xem dạng thẻ"
                   onClick={() => setView('cards')}
                   className={`rounded-md p-1.5 transition-all ${
                     view === 'cards'
@@ -311,7 +311,7 @@ const MyApplicationsPage = () => {
                 </button>
                 <button
                   type="button"
-                  title="Dense Table View"
+                  title="Xem dạng bảng"
                   onClick={() => setView('table')}
                   className={`rounded-md p-1.5 transition-all ${
                     view === 'table'
@@ -326,7 +326,7 @@ const MyApplicationsPage = () => {
           </div>
 
           {visible.length === 0 ? (
-            <EmptyState icon="filter_list" title="No applications match the filter." />
+            <EmptyState icon="filter_list" title="Không có đơn ứng tuyển khớp bộ lọc." />
           ) : view === 'cards' ? (
             /* Cards view */
             <div className="flex flex-col gap-4">
@@ -353,14 +353,14 @@ const MyApplicationsPage = () => {
                         <div className="mt-1 flex flex-wrap items-center gap-3 text-body-sm text-outline-strong">
                           <span className="flex items-center gap-1">
                             <span className="material-symbols-outlined text-[16px]">schedule</span>
-                            Applied {fmtDateTime(app.createdAt)}
+                            Đã nộp {fmtDateTime(app.createdAt)}
                           </span>
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 self-start md:self-auto">
                       {app.score != null && (
-                        <span className={CODE_CHIP}>Score: {app.score}/100</span>
+                        <span className={CODE_CHIP}>Điểm: {app.score}/100</span>
                       )}
                     </div>
                   </div>
@@ -371,7 +371,7 @@ const MyApplicationsPage = () => {
                         <span className="material-symbols-outlined text-[16px] text-secondary">
                           event_available
                         </span>
-                        Interview
+                        Phỏng vấn
                       </span>
                       <span className="w-fit rounded bg-surface-high px-1.5 py-0.5 font-mono text-[12px] text-ink">
                         {fmtDateTime(app.slot.startTime)} — {new Date(app.slot.endTime).toLocaleTimeString('vi-VN')}
@@ -386,7 +386,7 @@ const MyApplicationsPage = () => {
                   <div className="mt-3 flex flex-col items-stretch justify-between gap-3 pt-1 sm:flex-row sm:items-center">
                     {profile?.cvFileName ? (
                       <span className="text-body-sm text-outline-strong">
-                        Resume uploaded: <span className="font-mono text-[12px] text-ink">{profile.cvFileName}</span>
+                        CV đã tải lên: <span className="font-mono text-[12px] text-ink">{profile.cvFileName}</span>
                       </span>
                     ) : (
                       <span />
@@ -402,12 +402,12 @@ const MyApplicationsPage = () => {
               <table className={tableClass}>
                 <thead>
                   <tr>
-                    <th className={thClass}>Company &amp; Role</th>
-                    <th className={thClass}>Stage</th>
-                    <th className={thClass}>AI Screening</th>
-                    <th className={thClass}>Applied Date</th>
-                    <th className={thClass}>Next Action</th>
-                    <th className={thClass}>Actions</th>
+                    <th className={thClass}>Công ty &amp; Vị trí</th>
+                    <th className={thClass}>Giai đoạn</th>
+                    <th className={thClass}>AI sàng lọc</th>
+                    <th className={thClass}>Ngày nộp</th>
+                    <th className={thClass}>Bước tiếp theo</th>
+                    <th className={thClass}>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -449,8 +449,8 @@ const MyApplicationsPage = () => {
           {applications.totalPages > 1 && (
             <div className="flex flex-col items-center justify-between gap-3 rounded-lg bg-card p-3 shadow-[0_1px_2px_0_rgba(15,23,42,0.04)] sm:flex-row">
               <span className="text-body-sm text-ink-variant">
-                Showing <strong className="text-ink">{showingFrom}-{showingTo}</strong> of{' '}
-                <strong className="text-ink">{total}</strong> applications
+                Hiển thị <strong className="text-ink">{showingFrom}-{showingTo}</strong> trong{' '}
+                <strong className="text-ink">{total}</strong> đơn ứng tuyển
               </span>
               <div className="flex items-center gap-1">
                 {Array.from({ length: applications.totalPages }, (_, i) => (
@@ -476,10 +476,10 @@ const MyApplicationsPage = () => {
       {bookingApp && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
           <div className="flex max-h-[80vh] w-[480px] flex-col overflow-y-auto rounded-lg bg-card p-6 shadow-card">
-            <h3 className="m-0 text-headline-md text-ink">Select Interview Time — {bookingApp.jobTitle}</h3>
+            <h3 className="m-0 text-headline-md text-ink">Chọn giờ phỏng vấn — {bookingApp.jobTitle}</h3>
             <div className="mt-4 flex flex-col gap-2">
               {availableSlots.length === 0 ? (
-                <p className="m-0 text-body-md text-ink-variant">No available time slots yet. Please check back later.</p>
+                <p className="m-0 text-body-md text-ink-variant">Chưa có khung giờ trống. Vui lòng quay lại sau.</p>
               ) : (
                 availableSlots.map((s) => (
                   <label
@@ -502,11 +502,11 @@ const MyApplicationsPage = () => {
             </div>
             <div className="mt-4 flex justify-end gap-2">
               <button className={buttonClass('secondary')} onClick={() => setBookingApp(null)}>
-                Close
+                Đóng
               </button>
               {availableSlots.length > 0 && (
                 <button className={buttonClass('primary')} onClick={confirmBooking} disabled={!selectedSlot}>
-                  Confirm and Schedule
+                  Xác nhận và đặt lịch
                 </button>
               )}
             </div>
@@ -516,10 +516,10 @@ const MyApplicationsPage = () => {
 
       <ConfirmDialog
         open={pendingWithdraw !== null}
-        title="Withdraw this application?"
-        message={pendingWithdraw ? `Your application for "${pendingWithdraw.jobTitle}" will be cancelled. This can't be undone.` : ''}
-        confirmLabel="Withdraw"
-        cancelLabel="Keep"
+        title="Rút đơn ứng tuyển này?"
+        message={pendingWithdraw ? `Đơn ứng tuyển cho "${pendingWithdraw.jobTitle}" sẽ bị huỷ. Không thể hoàn tác.` : ''}
+        confirmLabel="Rút đơn"
+        cancelLabel="Giữ lại"
         danger
         onConfirm={() => void runWithdraw()}
         onCancel={() => setPendingWithdraw(null)}

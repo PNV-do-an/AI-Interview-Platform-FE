@@ -43,14 +43,14 @@ const MockInterviewSessionPage = () => {
   if (!user || user.role !== 'ROLE_USER') {
     return (
       <div className="p-10 text-body-md text-ink-variant">
-        Please sign in with a candidate account.
+        Vui lòng đăng nhập bằng tài khoản ứng viên.
       </div>
     );
   }
   if (!session) {
     return (
       <div className="p-10 text-body-md text-ink-variant">
-        {loading ? 'Loading...' : (error || 'Interview session not found.')}
+        {loading ? 'Đang tải...' : (error || 'Không tìm thấy phiên phỏng vấn.')}
       </div>
     );
   }
@@ -88,7 +88,7 @@ const MockInterviewSessionPage = () => {
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2 rounded-full bg-surface-low px-3 py-1">
               <span className="h-2.5 w-2.5 animate-ping rounded-full bg-primary" />
-              <span className="text-label-sm font-semibold text-ink">Live Practice Session</span>
+              <span className="text-label-sm font-semibold text-ink">Phiên luyện tập trực tiếp</span>
               {contextLabel && (
                 <>
                   <span className="text-outline-strong">/</span>
@@ -98,9 +98,9 @@ const MockInterviewSessionPage = () => {
             </div>
             <div className="flex flex-col">
               <div className="flex items-center justify-between gap-6">
-                <span className="text-label-sm text-ink-variant">Question {Math.min(session.currentQuestionIndex + (isDone ? 0 : 1), total)} of {total}</span>
+                <span className="text-label-sm text-ink-variant">Câu hỏi {Math.min(session.currentQuestionIndex + (isDone ? 0 : 1), total)}/{total}</span>
                 <span className="font-mono text-[12px] font-medium text-primary tabular-nums">
-                  {total > 0 ? Math.round((session.answeredCount / total) * 100) : 0}% Completed
+                  {total > 0 ? Math.round((session.answeredCount / total) * 100) : 0}% Hoàn tất
                 </span>
               </div>
               <div className="mt-1 h-1.5 w-44 overflow-hidden rounded-full bg-surface-high">
@@ -120,13 +120,13 @@ const MockInterviewSessionPage = () => {
                 <span className="font-mono text-[12px] font-medium">REC</span>
               </div>
               <div className="flex items-baseline gap-1 font-mono text-[12px]">
-                <span className="text-ink-variant">Elapsed</span>
+                <span className="text-ink-variant">Thời gian</span>
                 <span className="font-medium text-ink tabular-nums">{formatTime(elapsed)}</span>
               </div>
             </div>
             <button onClick={() => setConfirmFinish(true)} className={buttonClass('danger', 'gap-1')}>
               <span className="material-symbols-outlined text-[18px]">call_end</span>
-              <span>End Interview</span>
+              <span>Kết thúc phỏng vấn</span>
             </button>
           </div>
         </div>
@@ -158,7 +158,7 @@ const MockInterviewSessionPage = () => {
                 className={textareaClass}
                 value={answerText}
                 onChange={(e) => setAnswerText(e.target.value)}
-                placeholder="Type your answer... (aim for detail, at least 60 words, with concrete examples)"
+                placeholder="Nhập câu trả lời của bạn... (hãy trả lời chi tiết, tối thiểu 60 từ, kèm ví dụ cụ thể)"
               />
 
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -168,23 +168,23 @@ const MockInterviewSessionPage = () => {
                   className={buttonClass('secondary', 'gap-1')}
                 >
                   <span className="material-symbols-outlined text-[18px]">refresh</span>
-                  <span>Restart Answer</span>
+                  <span>Viết lại câu trả lời</span>
                 </button>
                 <button
                   onClick={handleSubmit}
                   disabled={!answerText.trim() || loading}
                   className={buttonClass('primary', 'gap-1')}
                 >
-                  <span>Submit Answer &amp; Next</span>
+                  <span>Gửi câu trả lời &amp; tiếp tục</span>
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>
               </div>
             </>
           ) : (
             <Card className="flex flex-col items-center gap-3 px-6 py-10 text-center">
-              <p className="m-0 text-body-lg text-ink">You have answered all {total} questions.</p>
+              <p className="m-0 text-body-lg text-ink">Bạn đã trả lời đủ {total} câu hỏi.</p>
               <button onClick={() => void runFinish()} className={buttonClass('primary')}>
-                View Detailed Feedback
+                Xem góp ý chi tiết
               </button>
             </Card>
           )}
@@ -194,7 +194,7 @@ const MockInterviewSessionPage = () => {
         <aside className="flex w-full flex-col gap-4 lg:sticky lg:top-4">
           <Card className="bg-card">
             <div className="text-headline-sm text-primary tabular-nums">
-              Question {Math.min(session.currentQuestionIndex + (isDone ? 0 : 1), total)} of {total}
+              Câu hỏi {Math.min(session.currentQuestionIndex + (isDone ? 0 : 1), total)}/{total}
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-md bg-surface-high">
               <div
@@ -205,7 +205,7 @@ const MockInterviewSessionPage = () => {
             </div>
             <div className="mt-3 flex items-center gap-2 text-body-sm text-ink-variant tabular-nums">
               <span className="material-symbols-outlined text-[18px]">checklist</span>
-              <span>{pending} Questions Pending</span>
+              <span>Còn {pending} câu chưa trả lời</span>
             </div>
           </Card>
 
@@ -213,7 +213,7 @@ const MockInterviewSessionPage = () => {
             <Card className="bg-card">
               <div className="flex items-center gap-2 text-body-sm text-ink-variant">
                 <span className="material-symbols-outlined text-[18px]">timer</span>
-                <span className="tabular-nums">Elapsed: {formatTime(elapsed)}</span>
+                <span className="tabular-nums">Thời gian: {formatTime(elapsed)}</span>
               </div>
             </Card>
           )}
@@ -221,7 +221,7 @@ const MockInterviewSessionPage = () => {
           {lastAnswer && lastAnswer.score != null && (
             <Card className="bg-surface-low">
               <p className="m-0 text-headline-sm text-ink tabular-nums">
-                Previous answer score: {lastAnswer.score}/100
+                Điểm câu trả lời trước: {lastAnswer.score}/100
               </p>
               <p className="m-0 mt-1 text-body-sm text-ink-variant">{lastAnswer.feedback}</p>
             </Card>
@@ -231,10 +231,10 @@ const MockInterviewSessionPage = () => {
 
       <ConfirmDialog
         open={confirmFinish}
-        title="End this interview session now?"
-        message="Remaining questions are skipped and your answers are scored. This can't be undone."
-        confirmLabel="End Interview"
-        cancelLabel="Keep going"
+        title="Kết thúc phiên phỏng vấn ngay?"
+        message="Các câu còn lại sẽ bị bỏ qua và câu trả lời của bạn sẽ được chấm điểm. Không thể hoàn tác."
+        confirmLabel="Kết thúc phỏng vấn"
+        cancelLabel="Tiếp tục"
         danger
         onConfirm={() => void runFinish()}
         onCancel={() => setConfirmFinish(false)}

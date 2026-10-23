@@ -11,7 +11,7 @@ import BrandLogo from '../components/BrandLogo';
 const NotFoundPage: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const homeTo = isAuthenticated ? '/dashboard' : '/';
-  const homeLabel = isAuthenticated ? 'Back to overview' : 'Back to home';
+  const homeLabel = isAuthenticated ? 'Về tổng quan' : 'Về trang chủ';
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-surface px-6 text-center font-sans text-ink">
@@ -22,9 +22,9 @@ const NotFoundPage: React.FC = () => {
       <span className="font-mono text-[64px] font-bold leading-none text-primary">404</span>
 
       <div className="flex flex-col gap-2">
-        <h1 className="m-0 text-headline-md text-ink">Page not found</h1>
+        <h1 className="m-0 text-headline-md text-ink">Không tìm thấy trang</h1>
         <p className="m-0 max-w-md text-body-md text-ink-variant">
-          We couldn't find the page you're looking for. It may have been moved or no longer exists.
+          Chúng tôi không tìm thấy trang bạn đang truy cập. Trang có thể đã bị di chuyển hoặc không còn tồn tại.
         </p>
       </div>
 
@@ -42,7 +42,7 @@ const NotFoundPage: React.FC = () => {
             className="inline-flex h-9 items-center gap-1.5 rounded-md border border-[#e2e8f0] bg-card px-4 text-label-md font-medium text-ink no-underline transition-colors hover:bg-surface-low"
           >
             <span className="material-symbols-outlined text-[18px]">search</span>
-            Browse jobs
+            Tìm tin tuyển dụng
           </Link>
         )}
       </div>

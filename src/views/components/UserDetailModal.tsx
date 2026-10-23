@@ -71,11 +71,11 @@ const UserDetailModal: React.FC<Props> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3">
-          <h3 className="m-0 text-headline-md text-ink">User Details</h3>
+          <h3 className="m-0 text-headline-md text-ink">Chi tiết người dùng</h3>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label="Đóng"
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-ink-variant transition-colors hover:bg-surface-low hover:text-ink"
           >
             ✕
@@ -85,47 +85,47 @@ const UserDetailModal: React.FC<Props> = ({
         <div className="mt-4">
           <Row label="ID" value={<span className="tabular-nums">{String(user.id)}</span>} />
           <Row label="Email" value={user.email} />
-          <Row label="Full name" value={user.fullName} />
-          <Row label="Role" value={<Badge tone="neutral" icon="group">{ROLE_LABELS[user.role] || user.role}</Badge>} />
-          <Row label="Status" value={<StatusBadge status={user.status} />} />
+          <Row label="Họ tên" value={user.fullName} />
+          <Row label="Vai trò" value={<Badge tone="neutral" icon="group">{ROLE_LABELS[user.role] || user.role}</Badge>} />
+          <Row label="Trạng thái" value={<StatusBadge status={user.status} />} />
           {user.pendingVerification && (
             <Row
-              label="Invitation"
-              value={<Badge tone="warning" icon="hourglass_top">Pending invite — link not used yet</Badge>}
+              label="Lời mời"
+              value={<Badge tone="warning" icon="hourglass_top">Lời mời chờ sử dụng — liên kết chưa được bấm</Badge>}
             />
           )}
-          {user.phone && <Row label="Phone" value={user.phone} />}
+          {user.phone && <Row label="Số điện thoại" value={user.phone} />}
           {user.blockedUntil && (
             <Row
-              label="Login blocked"
+              label="Chặn đăng nhập"
               value={
                 <span className="text-body-sm text-danger-text">
-                  Until {fmtDate(user.blockedUntil)} ({user.failedLoginAttempts} failed attempts)
+                  Đến {fmtDate(user.blockedUntil)} ({user.failedLoginAttempts} lần đăng nhập thất bại)
                 </span>
               }
             />
           )}
-          {user.locked && user.lockedAt && <Row label="Locked by admin" value={<span className="tabular-nums">{fmtDate(user.lockedAt)}</span>} />}
-          <Row label="Created" value={<span className="tabular-nums">{fmtDate(user.createdAt)}</span>} />
-          <Row label="Updated" value={<span className="tabular-nums">{fmtDate(user.updatedAt)}</span>} />
-          {user.deletedAt && <Row label="Deleted" value={<span className="tabular-nums">{fmtDate(user.deletedAt)}</span>} />}
+          {user.locked && user.lockedAt && <Row label="Bị admin khóa" value={<span className="tabular-nums">{fmtDate(user.lockedAt)}</span>} />}
+          <Row label="Ngày tạo" value={<span className="tabular-nums">{fmtDate(user.createdAt)}</span>} />
+          <Row label="Ngày cập nhật" value={<span className="tabular-nums">{fmtDate(user.updatedAt)}</span>} />
+          {user.deletedAt && <Row label="Ngày xóa" value={<span className="tabular-nums">{fmtDate(user.deletedAt)}</span>} />}
         </div>
 
         {user.status !== 'DELETED' && (
           <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-[#e2e8f0] pt-4">
             {user.status === 'LOCKED'
-              ? <Btn label="Unlock" icon="lock_open" tone="success" disabled={actionLoading}
+              ? <Btn label="Mở khóa" icon="lock_open" tone="success" disabled={actionLoading}
                   onClick={() => setConfirmState({ key: 'unlock' })} />
-              : <Btn label="Lock account" icon="lock" tone="warning" disabled={actionLoading}
+              : <Btn label="Khóa tài khoản" icon="lock" tone="warning" disabled={actionLoading}
                   onClick={() => setConfirmState({ key: 'lock' })} />
             }
             {user.enabled
-              ? <Btn label="Disable" icon="power_settings_new" tone="warning" disabled={actionLoading}
+              ? <Btn label="Vô hiệu hoá" icon="power_settings_new" tone="warning" disabled={actionLoading}
                   onClick={() => setConfirmState({ key: 'disable' })} />
-              : <Btn label="Enable" icon="power_settings_new" tone="success" disabled={actionLoading}
+              : <Btn label="Kích hoạt" icon="power_settings_new" tone="success" disabled={actionLoading}
                   onClick={() => onSetStatus(user.id, true)} />
             }
-            <Btn label="Reset password" icon="key" tone="info" disabled={actionLoading}
+            <Btn label="Đặt lại mật khẩu" icon="key" tone="info" disabled={actionLoading}
               onClick={() => setConfirmState({ key: 'reset' })} />
 
             <select
@@ -141,9 +141,9 @@ const UserDetailModal: React.FC<Props> = ({
 
             {user.pendingVerification && (
               <>
-                <Btn label="Resend invite" icon="send" tone="info" disabled={actionLoading}
+                <Btn label="Gửi lại lời mời" icon="send" tone="info" disabled={actionLoading}
                   onClick={() => onResendInvitation(user.id)} />
-                <Btn label="Revoke invite" icon="link_off" tone="warning" disabled={actionLoading}
+                <Btn label="Thu hồi lời mời" icon="link_off" tone="warning" disabled={actionLoading}
                   onClick={() => setConfirmState({ key: 'revokeInvite' })} />
               </>
             )}
@@ -151,19 +151,19 @@ const UserDetailModal: React.FC<Props> = ({
             <button type="button" onClick={() => onEditProfile(user)} disabled={actionLoading}
               className={buttonClass('secondary')}>
               <span className="material-symbols-outlined text-[16px]">edit</span>
-              Edit profile
+              Sửa hồ sơ
             </button>
 
             <button type="button" onClick={() => onDelete(user.id)} disabled={actionLoading}
               className={buttonClass('danger')}>
               <span className="material-symbols-outlined text-[16px]">delete</span>
-              Delete account
+              Xóa tài khoản
             </button>
 
             <button type="button" onClick={() => onViewHistory(user.id)}
               className={buttonClass('ghost')}>
               <span className="material-symbols-outlined text-[16px]">history</span>
-              View history
+              Xem lịch sử
             </button>
           </div>
         )}
@@ -172,31 +172,31 @@ const UserDetailModal: React.FC<Props> = ({
       <ConfirmDialog
         open={confirmState !== null}
         title={
-          confirmState?.key === 'lock' ? 'Confirm account lock' :
-          confirmState?.key === 'unlock' ? 'Confirm account unlock' :
-          confirmState?.key === 'reset' ? 'Confirm password reset email' :
-          confirmState?.key === 'changeRole' ? 'Confirm role change' :
-          confirmState?.key === 'disable' ? 'Confirm account disable' :
-          confirmState?.key === 'revokeInvite' ? 'Confirm invitation revoke' : 'Confirm'
+          confirmState?.key === 'lock' ? 'Xác nhận khóa tài khoản' :
+          confirmState?.key === 'unlock' ? 'Xác nhận mở khóa tài khoản' :
+          confirmState?.key === 'reset' ? 'Xác nhận gửi email đặt lại mật khẩu' :
+          confirmState?.key === 'changeRole' ? 'Xác nhận đổi vai trò' :
+          confirmState?.key === 'disable' ? 'Xác nhận vô hiệu hoá tài khoản' :
+          confirmState?.key === 'revokeInvite' ? 'Xác nhận thu hồi lời mời' : 'Xác nhận'
         }
         message={
-          confirmState?.key === 'lock' ? 'Lock this account? The user will no longer be able to sign in.' :
-          confirmState?.key === 'unlock' ? 'Unlock this account?' :
-          confirmState?.key === 'reset' ? 'A password reset email will be sent to ' + (user?.email ?? '') + '. Continue?' :
-          confirmState?.key === 'changeRole' ? 'Change the role for this user?' :
-          confirmState?.key === 'disable' ? 'Disable this account? Active sessions will be logged out.' :
+          confirmState?.key === 'lock' ? 'Khóa tài khoản này? Người dùng sẽ không thể đăng nhập.' :
+          confirmState?.key === 'unlock' ? 'Mở khóa tài khoản này?' :
+          confirmState?.key === 'reset' ? 'Email đặt lại mật khẩu sẽ được gửi tới ' + (user?.email ?? '') + '. Tiếp tục?' :
+          confirmState?.key === 'changeRole' ? 'Đổi vai trò cho người dùng này?' :
+          confirmState?.key === 'disable' ? 'Vô hiệu hoá tài khoản này? Các phiên đang hoạt động sẽ bị đăng xuất.' :
           confirmState?.key === 'revokeInvite'
-            ? 'Revoke the invitation link? The account keeps its role and can be invited again later with "Resend invite".'
+            ? 'Thu hồi liên kết mời? Tài khoản giữ nguyên vai trò và có thể được mời lại bằng "Gửi lại lời mời".'
             : ''
         }
         danger={confirmState?.key === 'lock' || confirmState?.key === 'disable'}
         confirmLabel={
-          confirmState?.key === 'lock' ? 'Lock' :
-          confirmState?.key === 'unlock' ? 'Unlock' :
-          confirmState?.key === 'reset' ? 'Send email' :
-          confirmState?.key === 'changeRole' ? 'Change role' :
-          confirmState?.key === 'disable' ? 'Disable' :
-          confirmState?.key === 'revokeInvite' ? 'Revoke link' : 'Confirm'
+          confirmState?.key === 'lock' ? 'Khóa' :
+          confirmState?.key === 'unlock' ? 'Mở khóa' :
+          confirmState?.key === 'reset' ? 'Gửi email' :
+          confirmState?.key === 'changeRole' ? 'Đổi vai trò' :
+          confirmState?.key === 'disable' ? 'Vô hiệu hoá' :
+          confirmState?.key === 'revokeInvite' ? 'Thu hồi liên kết' : 'Xác nhận'
         }
         onCancel={closeConfirm}
         onConfirm={() => {

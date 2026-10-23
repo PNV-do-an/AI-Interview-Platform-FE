@@ -94,11 +94,11 @@ export const useAuthController = () => {
       } catch (err: any) {
         const status = err.response?.status;
         setErrorStatus(typeof status === 'number' ? status : null);
-        const msg = readApiErrorMessage(err, 'Sign in failed. Please try again.', LOGIN_FIELD_ORDER);
+        const msg = readApiErrorMessage(err, 'Đăng nhập thất bại. Vui lòng thử lại.', LOGIN_FIELD_ORDER);
         // ErrorModel của BE tên field là `detail`, không phải `extra` -> đọc sai thì mất giờ mở khoá.
         const lockedUntil = err.response?.data?.detail?.lockedUntil;
         if (status === 423 && lockedUntil) {
-          setError(msg + ` Unlocks at: ${new Date(lockedUntil).toLocaleString('vi-VN')}`);
+          setError(msg + ` Thời điểm mở khoá: ${new Date(lockedUntil).toLocaleString('vi-VN')}`);
         } else {
           setError(msg);
         }
@@ -120,7 +120,7 @@ export const useAuthController = () => {
         persistSession(accessToken, refreshToken, user as User, rememberMe);
         navigate(user?.role === 'ROLE_ADMIN' ? '/admin/users' : '/dashboard');
       } catch (err: any) {
-        setError(readApiErrorMessage(err, 'Google sign in failed. Please try again.', OAUTH_FIELD_ORDER));
+        setError(readApiErrorMessage(err, 'Đăng nhập bằng Google thất bại. Vui lòng thử lại.', OAUTH_FIELD_ORDER));
       } finally {
         setLoading(false);
       }
@@ -139,7 +139,7 @@ export const useAuthController = () => {
         persistSession(accessToken, refreshToken, user as User, rememberMe);
         navigate(user?.role === 'ROLE_ADMIN' ? '/admin/users' : '/dashboard', { replace: true });
       } catch (err: any) {
-        setError(readApiErrorMessage(err, 'GitHub sign-in failed. Please try again.', OAUTH_FIELD_ORDER));
+        setError(readApiErrorMessage(err, 'Đăng nhập bằng GitHub thất bại. Vui lòng thử lại.', OAUTH_FIELD_ORDER));
       } finally {
         setLoading(false);
       }
@@ -158,7 +158,7 @@ export const useAuthController = () => {
         persistSession(accessToken, refreshToken, user as User, rememberMe);
         navigate(user?.role === 'ROLE_ADMIN' ? '/admin/users' : '/dashboard', { replace: true });
       } catch (err: any) {
-        setError(readApiErrorMessage(err, 'Enterprise SSO sign-in failed. Please try again.', OAUTH_FIELD_ORDER));
+        setError(readApiErrorMessage(err, 'Đăng nhập SSO doanh nghiệp thất bại. Vui lòng thử lại.', OAUTH_FIELD_ORDER));
       } finally {
         setLoading(false);
       }
@@ -177,7 +177,7 @@ export const useAuthController = () => {
       } catch (err: any) {
         const status = err.response?.status;
         setErrorStatus(typeof status === 'number' ? status : null);
-        setError(readApiErrorMessage(err, 'Registration failed. Please try again.', REGISTER_FIELD_ORDER));
+        setError(readApiErrorMessage(err, 'Đăng ký thất bại. Vui lòng thử lại.', REGISTER_FIELD_ORDER));
       } finally {
         setLoading(false);
       }

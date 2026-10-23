@@ -80,23 +80,23 @@ export interface JobRequest {
 }
 
 export const JOB_STATUS_LABELS: Record<JobStatus, string> = {
-  DRAFT: 'Draft',
-  PENDING_APPROVAL: 'Pending review',
-  OPEN: 'Active',
-  CLOSED: 'Closed',
+  DRAFT: 'Bản nháp',
+  PENDING_APPROVAL: 'Chờ duyệt',
+  OPEN: 'Đang mở',
+  CLOSED: 'Đã đóng',
 };
 
 export const WORKPLACE_MODEL_LABELS: Record<WorkplaceModel, string> = {
-  ONSITE: 'On-site',
-  HYBRID: 'Hybrid',
-  REMOTE: 'Fully Remote',
+  ONSITE: 'Tại văn phòng',
+  HYBRID: 'Kết hợp',
+  REMOTE: 'Làm từ xa',
 };
 
 export const AI_SCREENING_TRACK_LABELS: Record<AiScreeningTrack, string> = {
-  LIVE_CODING: 'Live Coding (45 mins)',
-  SYSTEM_DESIGN: 'System Design Deep Dive (60 mins)',
-  ASYNC_TECHNICAL: 'Async Technical Assessment (90 mins)',
-  CULTURAL_FIT: 'Cultural Fit & Engineering Philosophy (30 mins)',
+  LIVE_CODING: 'Live Coding (45 phút)',
+  SYSTEM_DESIGN: 'System Design chuyên sâu (60 phút)',
+  ASYNC_TECHNICAL: 'Bài kiểm tra kỹ thuật async (90 phút)',
+  CULTURAL_FIT: 'Văn hoá & tư duy kỹ thuật (30 phút)',
 };
 
 export interface Slot {

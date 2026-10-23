@@ -18,10 +18,10 @@ export const useReviewController = () => {
     clearMessages();
     try {
       await ReviewService.createReview(body);
-      setSuccessMsg('Review submitted');
+      setSuccessMsg('Đã gửi đánh giá');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to submit review');
+      setError(e.response?.data?.message || 'Không gửi được đánh giá');
       return false;
     }
   }, []);
@@ -31,7 +31,7 @@ export const useReviewController = () => {
       const res = await ReviewService.getReviewsByTarget(userId);
       setReviewList(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to load review');
+      setError(e.response?.data?.message || 'Không tải được đánh giá');
     }
   }, []);
 
@@ -70,10 +70,10 @@ export const useReviewController = () => {
     setLoading(true);
     try {
       await ReviewService.createBugReport(body);
-      setSuccessMsg('Report submitted — thank you!');
+      setSuccessMsg('Đã gửi báo lỗi — cảm ơn bạn!');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to submit report');
+      setError(e.response?.data?.message || 'Không gửi được báo lỗi');
       return false;
     } finally {
       setLoading(false);

@@ -10,7 +10,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) => {
   const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
-    return <div style={{ padding: 24 }}>Loading...</div>;
+    return <div style={{ padding: 24 }}>Đang tải…</div>;
   }
 
   if (!isAuthenticated) {

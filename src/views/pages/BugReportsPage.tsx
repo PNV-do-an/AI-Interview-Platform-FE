@@ -44,8 +44,8 @@ const BugReportsPage: React.FC = () => {
   return (
     <div>
       <PageHeader
-        title="Report an Issue"
-        description="Report a problem or suggest a feature to help the team improve the platform."
+        title="Báo cáo sự cố"
+        description="Báo một vấn đề hoặc gợi ý tính năng để giúp đội ngũ cải thiện nền tảng."
       />
       <ErrorBanner message={error} />
       {successMsg && (
@@ -56,11 +56,11 @@ const BugReportsPage: React.FC = () => {
       )}
 
       <Card>
-        <h2 className="m-0 text-headline-sm text-ink">Submit a new report</h2>
+        <h2 className="m-0 text-headline-sm text-ink">Gửi báo cáo mới</h2>
         <div className="mt-3 flex flex-col gap-3">
           <input
             className={inputClass}
-            placeholder="Title"
+            placeholder="Tiêu đề"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
@@ -71,7 +71,7 @@ const BugReportsPage: React.FC = () => {
           </select>
           <textarea
             className={textareaClass}
-            placeholder="Describe the issue you encountered in detail..."
+            placeholder="Mô tả chi tiết vấn đề bạn gặp phải..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
@@ -83,15 +83,15 @@ const BugReportsPage: React.FC = () => {
               disabled={loading || !title.trim() || !description.trim()}
             >
               <span className="material-symbols-outlined text-[18px]">send</span>
-              {loading ? 'Submitting...' : 'Submit report'}
+              {loading ? 'Đang gửi...' : 'Gửi báo cáo'}
             </button>
           </div>
         </div>
       </Card>
 
-      <h2 className="mb-3 mt-8 text-headline-md text-ink">My Reports</h2>
+      <h2 className="mb-3 mt-8 text-headline-md text-ink">Báo cáo của tôi</h2>
       {myBugs.length === 0 && (
-        <p className="m-0 text-body-sm text-ink-variant">You have not submitted any reports yet.</p>
+        <p className="m-0 text-body-sm text-ink-variant">Chưa có báo cáo nào được gửi.</p>
       )}
       <div className="flex flex-col gap-3">
         {myBugs.map((b) => (
@@ -106,7 +106,7 @@ const BugReportsPage: React.FC = () => {
             <p className="mt-2 whitespace-pre-wrap text-body-md text-ink">{b.description}</p>
             {b.reply && (
               <div className="mt-2 rounded-md bg-surface-low p-3">
-                <strong className="text-label-md text-ink">Reply from {b.repliedByName || 'the support team'}:</strong>
+                <strong className="text-label-md text-ink">Phản hồi từ {b.repliedByName || 'đội ngũ hỗ trợ'}:</strong>
                 <p className="mt-1 text-body-sm text-ink-variant">{b.reply}</p>
               </div>
             )}

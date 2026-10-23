@@ -99,22 +99,22 @@ export interface AuditLog {
 }
 
 export const ROLE_LABELS: Record<Role, string> = {
-  ROLE_USER: 'Candidate',
-  ROLE_STAFF: 'Staff',
-  ROLE_ADMIN: 'Administrator',
-  ROLE_INTERVIEWER: 'Interviewer',
+  ROLE_USER: 'Ứng viên',
+  ROLE_STAFF: 'Nhân viên vận hành',
+  ROLE_ADMIN: 'Quản trị viên',
+  ROLE_INTERVIEWER: 'Nhà tuyển dụng / Cố vấn',
 };
 
 /**
- * Nhãn trạng thái tài khoản (chrome tiếng Anh theo mockup). PENDING không phải giá trị
- * `AccountStatus` mà là bộ lọc/`pendingVerification` -> vẫn cần nhãn cho pill.
+ * Nhãn trạng thái tài khoản. PENDING không phải giá trị `AccountStatus` mà là bộ lọc/
+ * `pendingVerification` -> vẫn cần nhãn cho pill.
  */
 export const ACCOUNT_STATUS_LABELS: Record<string, string> = {
-  ACTIVE: 'Active',
-  INACTIVE: 'Inactive',
-  LOCKED: 'Locked',
-  DELETED: 'Deleted',
-  PENDING: 'Pending invite',
+  ACTIVE: 'Đang hoạt động',
+  INACTIVE: 'Ngưng hoạt động',
+  LOCKED: 'Đã khoá',
+  DELETED: 'Đã xoá',
+  PENDING: 'Mời chưa chấp nhận',
 };
 
 /** Enum AuditAction phía BE - nguồn: model/enums/AuditAction.java. */

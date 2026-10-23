@@ -14,18 +14,18 @@ const Logo: React.FC<{ size?: 'header' | 'footer' }> = ({ size = 'header' }) => 
 );
 
 const NAV_ITEMS: { label: string; to?: string; active?: boolean }[] = [
-  { label: 'Platform' },
-  { label: 'For Candidates' },
-  { label: 'For Employers' },
-  { label: 'Job Board', to: '/jobs' },
-  { label: 'Pricing' },
+  { label: 'Nền tảng' },
+  { label: 'Dành cho ứng viên' },
+  { label: 'Dành cho nhà tuyển dụng' },
+  { label: 'Tin tuyển dụng', to: '/jobs' },
+  { label: 'Bảng giá' },
 ];
 
 const SiteHeader: React.FC = () => (
   <header className="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-md border-b border-outline/40">
     <div className="h-16 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between gap-4">
       <div className="flex items-center gap-6">
-        <Link to="/" aria-label="AI Interview home">
+        <Link to="/" aria-label="AI Interview trang chủ">
           <Logo />
         </Link>
         <nav className="hidden lg:flex items-center gap-6">
@@ -55,19 +55,19 @@ const SiteHeader: React.FC = () => (
           to="/login"
           className="hidden sm:inline-flex text-label-md text-ink-variant hover:text-ink px-3 py-2 transition-colors"
         >
-          Sign In
+          Đăng nhập
         </Link>
         <a
           href="#"
           className="hidden xl:inline-flex items-center text-label-md text-ink bg-card border border-outline hover:bg-surface-low px-3 py-1.5 rounded-lg transition-colors"
         >
-          Post a Job
+          Đăng tin tuyển dụng
         </a>
         <Link
           to="/register"
           className="inline-flex items-center text-label-md font-medium text-on-primary bg-primary-container hover:bg-primary px-3.5 py-1.5 rounded-lg shadow-sm transition-colors"
         >
-          Get Started Free
+          Bắt đầu miễn phí
         </Link>
         <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
           <span className="material-symbols-outlined text-on-primary text-[18px]">person</span>
@@ -79,43 +79,43 @@ const SiteHeader: React.FC = () => (
 
 const FOOTER_COLUMNS: { heading: string; links: { label: string; to?: string }[] }[] = [
   {
-    heading: 'Platform',
+    heading: 'Nền tảng',
     links: [
-      { label: 'Adaptive Engine' },
-      { label: 'Live Coding Sandbox' },
-      { label: 'Voice & Telemetry' },
-      { label: 'Deterministic Rubrics' },
-      { label: 'Security & Integrity' },
+      { label: 'Bộ máy thích ứng' },
+      { label: 'Sandbox lập trình trực tiếp' },
+      { label: 'Giọng nói & chỉ số' },
+      { label: 'Bộ tiêu chí chấm nhất quán' },
+      { label: 'Bảo mật & toàn vẹn' },
     ],
   },
   {
-    heading: 'Solutions',
+    heading: 'Giải pháp',
     links: [
-      { label: 'Engineering Leaders' },
-      { label: 'Talent Operations' },
-      { label: 'Candidate Prep' },
-      { label: 'Global Job Board', to: '/jobs' },
-      { label: 'Enterprise' },
+      { label: 'Lãnh đạo kỹ thuật' },
+      { label: 'Vận hành tuyển dụng' },
+      { label: 'Ôn luyện cho ứng viên' },
+      { label: 'Kho tin tuyển dụng', to: '/jobs' },
+      { label: 'Doanh nghiệp' },
     ],
   },
   {
-    heading: 'Resources',
+    heading: 'Tài nguyên',
     links: [
-      { label: 'Documentation' },
-      { label: 'API Reference' },
-      { label: 'Bias Methodology' },
-      { label: 'Latency Benchmarks' },
-      { label: 'Pricing Models' },
+      { label: 'Tài liệu' },
+      { label: 'Tài liệu API' },
+      { label: 'Phương pháp chống thiên kiến' },
+      { label: 'Chuẩn đo độ trễ' },
+      { label: 'Các gói giá' },
     ],
   },
   {
-    heading: 'Company',
+    heading: 'Công ty',
     links: [
-      { label: 'About Us' },
-      { label: 'Careers' },
-      { label: 'Legal & Compliance' },
-      { label: 'Privacy Policy' },
-      { label: 'Terms of Service' },
+      { label: 'Về chúng tôi' },
+      { label: 'Cơ hội nghề nghiệp' },
+      { label: 'Pháp lý & tuân thủ' },
+      { label: 'Chính sách bảo mật' },
+      { label: 'Điều khoản sử dụng' },
     ],
   },
 ];
@@ -129,17 +129,17 @@ const SiteFooter: React.FC<{ tagline: string }> = ({ tagline }) => (
             <Logo size="footer" />
           </div>
           <p className="text-body-sm text-ink-variant max-w-sm mb-6">
-            Autonomous real-time computational interviews and deterministic technical rubrics. Built for
-            engineering teams, talent leaders, and fair candidate evaluation.
+            Phỏng vấn kỹ thuật thời gian thực bằng AI với bộ tiêu chí chấm minh bạch. Xây dựng cho đội ngũ kỹ thuật,
+            người phụ trách tuyển dụng và việc đánh giá ứng viên công bằng.
           </p>
           <div className="inline-flex items-center gap-4 text-ink-variant text-[13px]">
             <span className="flex items-center gap-1">
               <span className="material-symbols-outlined text-[15px] text-primary">verified_user</span>
-              SOC 2 Certified
+              Đạt chuẩn SOC 2
             </span>
             <span className="flex items-center gap-1">
               <span className="material-symbols-outlined text-[15px] text-primary">security</span>
-              Enterprise Secure
+              Bảo mật cấp doanh nghiệp
             </span>
           </div>
         </div>
@@ -170,13 +170,13 @@ const SiteFooter: React.FC<{ tagline: string }> = ({ tagline }) => (
         <p className="text-body-sm text-ink-variant">{tagline}</p>
         <div className="flex items-center gap-4 text-body-sm text-ink-variant">
           <a href="#" className="hover:text-ink transition-colors">
-            Privacy
+            Bảo mật
           </a>
           <a href="#" className="hover:text-ink transition-colors">
-            Terms
+            Điều khoản
           </a>
           <a href="#" className="hover:text-ink transition-colors">
-            Security
+            An toàn hệ thống
           </a>
           <div className="flex items-center gap-3 pl-3">
             <span className="material-symbols-outlined text-[18px] text-ink-variant hover:text-ink cursor-pointer">
@@ -228,9 +228,9 @@ const WAVEFORM: string[] = [
 ];
 
 const SCORECARD_ROWS: { label: string; pct: number }[] = [
-  { label: 'System Architecture & Design', pct: 94 },
-  { label: 'Scalability & Fault Tolerance', pct: 86 },
-  { label: 'Clean Code & Problem Solving', pct: 84 },
+  { label: 'Kiến trúc & thiết kế hệ thống', pct: 94 },
+  { label: 'Khả năng mở rộng & chịu lỗi', pct: 86 },
+  { label: 'Code sạch & giải quyết vấn đề', pct: 84 },
 ];
 
 const HeroSimulation: React.FC = () => (
@@ -249,15 +249,15 @@ const HeroSimulation: React.FC = () => (
           <div className="h-4 w-px bg-[#dae2fd] mx-1" /> {/* surface-variant */}
           <span className="text-label-md text-ink font-medium flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[16px] text-primary">videocam</span>
-            Interactive Mock Interview • Senior Backend Architect
+            Phiên luyện tập tương tác • Kiến trúc sư Backend cấp cao
           </span>
         </div>
         <div className="flex items-center gap-3">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-mid text-primary text-label-sm font-medium">
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
-            Live Session
+            Phiên trực tiếp
           </span>
-          <span className="font-mono text-[12px] leading-4 text-ink-variant">24 mins elapsed</span>
+          <span className="font-mono text-[12px] leading-4 text-ink-variant">24 phút đã trôi qua</span>
         </div>
       </div>
       {/* Split-pane canvas */}
@@ -272,26 +272,26 @@ const HeroSimulation: React.FC = () => (
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-headline-sm text-ink font-semibold">Staff AI Architect (Elena)</span>
-                    <span className="px-2 py-0.5 rounded bg-surface-mid text-primary text-label-sm">Host</span>
+                    <span className="text-headline-sm text-ink font-semibold">Kiến trúc sư AI cấp Staff (Elena)</span>
+                    <span className="px-2 py-0.5 rounded bg-surface-mid text-primary text-label-sm">Chủ trì</span>
                   </div>
                   <p className="text-body-sm text-ink-variant">
-                    Focus: Distributed consensus, failover guarantees, locking primitives
+                    Trọng tâm: đồng thuận phân tán, cam kết failover, cơ chế khóa
                   </p>
                 </div>
               </div>
               <span className="px-2.5 py-1 rounded-full bg-surface-high text-primary text-label-sm flex items-center gap-1">
-                <span className="material-symbols-outlined text-[14px]">graphic_eq</span> Turn 4/8
+                <span className="material-symbols-outlined text-[14px]">graphic_eq</span> Lượt 4/8
               </span>
             </div>
             {/* Prompt card */}
             <div className="p-4 rounded-lg bg-surface-low mb-4 shadow-sm">
               <p className="text-label-sm text-primary uppercase tracking-wider mb-1 font-semibold flex items-center gap-1">
-                <span className="material-symbols-outlined text-[15px]">record_voice_over</span> AI Prompt Question
+                <span className="material-symbols-outlined text-[15px]">record_voice_over</span> Câu hỏi của AI
               </p>
               <p className="text-body-md text-ink leading-snug">
-                "Explain distributed locking with Redis (Redlock) vs PostgreSQL advisory locks. Under network
-                partitions and GC pauses, how do you prevent split-brain dual writes in your consensus layer?"
+                "Giải thích distributed locking giữa Redis (Redlock) và advisory lock của PostgreSQL. Khi mạng bị
+                phân vùng và có GC pause, bạn chống split-brain dual writes trong tầng consensus bằng cách nào?"
               </p>
             </div>
             {/* Audio waveform */}
@@ -300,14 +300,14 @@ const HeroSimulation: React.FC = () => (
                 <div className="w-7 h-7 rounded-full bg-primary-container text-on-primary flex items-center justify-center">
                   <span className="material-symbols-outlined text-[16px]">mic</span>
                 </div>
-                <span className="text-label-sm text-ink font-medium">Elena Speaking</span>
+                <span className="text-label-sm text-ink font-medium">Elena đang nói</span>
               </div>
               <div className="flex-1 flex items-center gap-1 h-7 px-2">
                 {WAVEFORM.map((bar, i) => (
                   <span key={i} className={`w-1 rounded-full ${bar}`} />
                 ))}
               </div>
-              <span className="font-mono text-[12px] leading-4 text-ink-variant">Real-time STT Active</span>
+              <span className="font-mono text-[12px] leading-4 text-ink-variant">Đang bật STT thời gian thực</span>
             </div>
           </div>
           {/* Candidate transcript */}
@@ -315,13 +315,13 @@ const HeroSimulation: React.FC = () => (
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-primary-container" />
               <span className="text-body-sm text-ink-variant">
-                Candidate transcript:{' '}
+                Lời ứng viên:{' '}
                 <span className="italic text-ink">
-                  "Fencing tokens paired with monotonic version keys mitigate out-of-order storage updates..."
+                  "Ghép fencing token với version key đơn điệu sẽ chặn các cập nhật lưu trữ sai thứ tự..."
                 </span>
               </span>
             </div>
-            <span className="text-label-sm text-primary font-semibold">Live Audio Transcription</span>
+            <span className="text-label-sm text-primary font-semibold">Chuyển giọng nói trực tiếp</span>
           </div>
         </div>
         {/* Right pane: benchmark scorecard */}
@@ -329,27 +329,27 @@ const HeroSimulation: React.FC = () => (
           <div>
             <div className="flex items-center justify-between mb-4">
               <span className="text-label-sm uppercase tracking-wider text-ink-variant font-semibold">
-                Performance Scorecard
+                Bảng điểm hiệu suất
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-card text-primary text-label-sm shadow-sm font-medium">
                 <span className="material-symbols-outlined text-[14px]">verified</span>
-                Certified Ready
+                Đạt chuẩn
               </span>
             </div>
             <div className="p-4 rounded-xl bg-card shadow-sm mb-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <p className="text-body-sm text-ink-variant">Overall Match Score</p>
+                  <p className="text-body-sm text-ink-variant">Tổng điểm khớp</p>
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-display font-bold text-primary">88%</span>
-                    <span className="text-headline-sm text-ink-variant">Strong Hire</span>
+                    <span className="text-headline-sm text-ink-variant">Nên tuyển</span>
                   </div>
                 </div>
                 <div className="text-right">
                   <span className="px-2.5 py-1 rounded-full bg-surface-high text-primary text-label-sm font-semibold">
-                    Top 8% Candidate
+                    Ứng viên Top 8%
                   </span>
-                  <p className="text-body-sm text-ink-variant mt-1">Staff &amp; Senior Level</p>
+                  <p className="text-body-sm text-ink-variant mt-1">Cấp Staff &amp; Senior</p>
                 </div>
               </div>
               <div className="space-y-2.5 pt-2">
@@ -369,9 +369,9 @@ const HeroSimulation: React.FC = () => (
                 <span className="material-symbols-outlined text-[18px]">verified_user</span>
               </div>
               <div className="min-w-0">
-                <p className="text-label-sm font-semibold text-ink truncate">Verified Interview Credential</p>
+                <p className="text-label-sm font-semibold text-ink truncate">Chứng nhận phỏng vấn đã xác thực</p>
                 <p className="text-body-sm text-ink-variant truncate">
-                  Eligible for fast-track screening at 18 partner companies
+                  Đủ điều kiện ứng tuyển nhanh tại 18 công ty đối tác
                 </p>
               </div>
             </div>
@@ -379,10 +379,10 @@ const HeroSimulation: React.FC = () => (
           <div className="mt-4 pt-3 flex items-center justify-between">
             <span className="text-body-sm text-ink-variant flex items-center gap-1">
               <span className="material-symbols-outlined text-[16px] text-primary">lock</span>
-              Encrypted &amp; Private
+              Mã hóa &amp; riêng tư
             </span>
             <span className="text-label-sm text-primary font-medium hover:underline cursor-pointer flex items-center gap-0.5">
-              View Full Feedback Report <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+              Xem toàn bộ báo cáo phản hồi <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
             </span>
           </div>
         </div>
@@ -414,21 +414,22 @@ const HeroSection: React.FC = () => (
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-high shadow-sm">
           <span className="inline-flex w-2 h-2 rounded-full bg-primary-container animate-pulse" />
           <span className="text-label-sm text-primary font-medium tracking-wide">
-            AI-Powered Technical Interview Platform
+            Nền tảng phỏng vấn kỹ thuật bằng AI
           </span>
         </div>
       </div>
       {/* Heading & copy */}
       <div className="text-center max-w-4xl mx-auto mb-10">
         <h1 className="text-display font-bold text-ink tracking-tight mb-5 leading-tight">
-          The AI-Powered Simulation Platform Where{' '}
+          Nền tảng luyện tập bằng AI nơi{' '}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-[#6063ee]">
-            Top Engineers Prove Their Craft.
+            kỹ sư xuất sắc chứng minh tay nghề.
           </span>
         </h1>
         <p className="text-body-lg text-ink-variant max-w-2xl mx-auto leading-relaxed">
-          Prepare with realistic, voice-interactive technical simulations trained on tier-1 engineering rubrics.
-          Get vetted once, skip repetitive screening loops, and match directly with top tech teams.
+          Luyện tập với các phiên phỏng vấn kỹ thuật giống thật, tương tác bằng giọng nói, được xây theo bộ tiêu chí
+          chấm của các đội ngũ kỹ thuật hàng đầu. Được thẩm định một lần, bỏ qua vòng sàng lọc lặp lại và kết nối thẳng
+          với các đội ngũ công nghệ tốt nhất.
         </p>
       </div>
       {/* Action buttons */}
@@ -437,7 +438,7 @@ const HeroSection: React.FC = () => (
           to="/register"
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-primary-container text-on-primary text-label-md shadow-md shadow-primary-container/20 hover:bg-primary transition-all group"
         >
-          <span>Start Free AI Mock Interview</span>
+          <span>Bắt đầu phỏng vấn thử miễn phí với AI</span>
           <span className="material-symbols-outlined text-[18px] group-hover:translate-x-0.5 transition-transform">
             arrow_forward
           </span>
@@ -447,14 +448,14 @@ const HeroSection: React.FC = () => (
           className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-card text-ink text-label-md shadow-sm hover:bg-surface-low transition-colors"
         >
           <span className="material-symbols-outlined text-[18px] text-primary">play_circle</span>
-          <span>Explore Hiring Platform / Post Job</span>
+          <span>Xem nền tảng tuyển dụng / Đăng tin</span>
         </a>
       </div>
       <HeroSimulation />
       {/* Trust & social proof logos */}
       <div className="text-center pt-2">
         <p className="text-label-sm uppercase tracking-wider text-ink-variant font-semibold mb-6">
-          Trusted by hiring teams &amp; 15,000+ engineers from high-growth tech companies
+          Được các đội ngũ tuyển dụng và 15.000+ kỹ sư từ những công ty công nghệ tăng trưởng nhanh tin dùng
         </p>
         <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14 opacity-75">
           {LOGOS.map((logo) => (
@@ -479,35 +480,35 @@ const METRICS: {
   note: string;
 }[] = [
   {
-    label: 'Evaluations Finished',
+    label: 'Phiên đã đánh giá',
     value: '14,500+',
     valueClass: 'text-ink',
     icon: 'trending_up',
     iconColor: 'text-primary',
-    note: 'Simulations conducted across 42 technical tracks',
+    note: 'Số phiên luyện đã thực hiện trên 42 nhánh kỹ thuật',
   },
   {
-    label: 'Recruiting Velocity',
+    label: 'Tốc độ tuyển dụng',
     value: '3.8x',
     valueClass: 'text-primary',
-    suffix: 'FASTER',
-    note: 'Average reduction in time-to-offer for verified engineers',
+    suffix: 'nhanh hơn',
+    note: 'Mức giảm trung bình thời gian tới offer của kỹ sư đã xác thực',
   },
   {
-    label: 'Engineering Consensus',
+    label: 'Đồng thuận kỹ thuật',
     value: '94%',
     valueClass: 'text-ink',
     icon: 'handshake',
     iconColor: 'text-primary',
-    note: 'Engineering manager agreement with AI rubric recommendations',
+    note: 'Quản lý kỹ thuật đồng ý với khuyến nghị của bộ tiêu chí chấm AI',
   },
   {
-    label: 'Screening Threshold',
+    label: 'Ngưỡng sàng lọc',
     value: '62%',
     valueClass: 'text-ink',
     icon: 'target',
     iconColor: 'text-outline-strong',
-    note: 'First-attempt candidate baseline pass threshold',
+    note: 'Ngưỡng đạt cơ bản của ứng viên ở lần thử đầu tiên',
   },
 ];
 
@@ -536,17 +537,17 @@ const MetricsRibbon: React.FC = () => (
 const FeatureVoiceWidget: React.FC = () => (
   <div className="p-4 rounded-xl bg-surface-low shadow-sm">
     <div className="flex items-center justify-between mb-2">
-      <span className="text-label-sm font-semibold text-ink">Voice Response Speed</span>
-      <span className="font-mono text-[12px] leading-4 text-primary">Real-Time Audio</span>
+      <span className="text-label-sm font-semibold text-ink">Tốc độ phản hồi giọng nói</span>
+      <span className="font-mono text-[12px] leading-4 text-primary">Âm thanh thời gian thực</span>
     </div>
     <div className="flex items-center gap-2">
       <MeterBar pct={95} />
-      <span className="text-label-sm text-ink-variant font-medium whitespace-nowrap">Natural Flow</span>
+      <span className="text-label-sm text-ink-variant font-medium whitespace-nowrap">Trôi chảy tự nhiên</span>
     </div>
     <div className="mt-3 flex items-center gap-2">
-      <span className="px-2 py-0.5 rounded bg-card text-ink text-label-sm">Staff Architect</span>
+      <span className="px-2 py-0.5 rounded bg-card text-ink text-label-sm">Kiến trúc sư cấp cao</span>
       <span className="px-2 py-0.5 rounded bg-card text-ink text-label-sm">Tech Lead</span>
-      <span className="px-2 py-0.5 rounded bg-card text-ink text-label-sm">Engineering Manager</span>
+      <span className="px-2 py-0.5 rounded bg-card text-ink text-label-sm">Quản lý kỹ thuật</span>
     </div>
   </div>
 );
@@ -554,16 +555,16 @@ const FeatureVoiceWidget: React.FC = () => (
 const FeatureRubricWidget: React.FC = () => (
   <div className="p-4 rounded-xl bg-surface-low shadow-sm space-y-2">
     <div className="flex items-center justify-between">
-      <span className="text-label-sm text-ink">Fair &amp; Impartial Evaluation</span>
+      <span className="text-label-sm text-ink">Đánh giá công bằng &amp; khách quan</span>
       <span className="material-symbols-outlined text-[16px] text-primary">check_circle</span>
     </div>
     <div className="flex items-center justify-between">
-      <span className="text-label-sm text-ink">Blind Review Mode</span>
-      <span className="text-label-sm text-primary font-medium">Active</span>
+      <span className="text-label-sm text-ink">Chế độ chấm ẩn danh</span>
+      <span className="text-label-sm text-primary font-medium">Đang bật</span>
     </div>
     <div className="flex items-center justify-between">
-      <span className="text-label-sm text-ink">Consistent Scoring Criteria</span>
-      <span className="text-label-sm text-primary font-medium">Standardized</span>
+      <span className="text-label-sm text-ink">Tiêu chí chấm nhất quán</span>
+      <span className="text-label-sm text-primary font-medium">Đã chuẩn hóa</span>
     </div>
   </div>
 );
@@ -575,12 +576,12 @@ const FeaturePipelineWidget: React.FC = () => (
         <span className="material-symbols-outlined text-[18px]">bolt</span>
       </div>
       <div>
-        <p className="text-label-sm font-semibold text-ink m-0">Fast-Track Pipeline</p>
-        <p className="text-body-sm text-ink-variant m-0">Skip generic recruiter screens</p>
+        <p className="text-label-sm font-semibold text-ink m-0">Quy trình ứng tuyển nhanh</p>
+        <p className="text-body-sm text-ink-variant m-0">Bỏ qua vòng sàng lọc recruiter chung chung</p>
       </div>
     </div>
     <div className="mt-2 text-center py-1.5 rounded bg-card text-label-sm text-primary font-medium">
-      4.2 Average Employer Interview Invites
+      Trung bình 4.2 lời mời phỏng vấn từ nhà tuyển dụng
     </div>
   </div>
 );
@@ -588,20 +589,20 @@ const FeaturePipelineWidget: React.FC = () => (
 const PILLARS: { icon: string; title: string; body: string; widget: React.ReactNode }[] = [
   {
     icon: 'mic_double',
-    title: 'Zero-Latency Voice & Code Simulations',
-    body: 'Practice with adaptive technical personas (Staff Engineers, Directors, Engineering Managers). Multi-turn follow-ups, dynamic edge-case probes, and real-time audio transcriptions that interrupt when you wander off-scope.',
+    title: 'Luyện giọng nói & code với độ trễ bằng 0',
+    body: 'Luyện tập cùng các persona kỹ thuật thích ứng (Staff Engineer, Giám đốc, Quản lý kỹ thuật). Hỏi đáp đa lượt, truy vấn edge case liên tục và chuyển giọng nói thành văn bản thời gian thực, sẽ ngắt lời khi bạn trả lời lệch chủ đề.',
     widget: <FeatureVoiceWidget />,
   },
   {
     icon: 'balance',
-    title: 'Objective, Unbiased Scoring & Rubrics',
-    body: 'Evaluated on concrete software engineering competencies—System Design, Concurrency, Algorithmic Rigor, and Clean Architecture. Eliminates human interview fatigue, brand prestige bias, and non-technical noise.',
+    title: 'Chấm điểm & bộ tiêu chí khách quan, không thiên kiến',
+    body: 'Đánh giá trên năng lực kỹ thuật phần mềm cụ thể: thiết kế hệ thống, concurrency, sự chặt chẽ về thuật toán và kiến trúc sạch. Loại bỏ mệt mỏi phỏng vấn của người chấm, thiên kiến tên tuổi và nhiễu ngoài chuyên môn.',
     widget: <FeatureRubricWidget />,
   },
   {
     icon: 'forward_media',
-    title: 'Direct Verified Hiring Pipeline',
-    body: 'Skip endless initial HR telephone screens and repetitive LeetCode filters. Top simulation scores earn cryptographic verified credential badges shared automatically with hiring employers for immediate final rounds.',
+    title: 'Quy trình tuyển dụng trực tiếp cho ứng viên đã xác thực',
+    body: 'Bỏ qua hàng loạt vòng gọi điện sàng lọc HR và các bài LeetCode lặp lại. Điểm phiên luyện cao sẽ nhận chứng chỉ xác thực mã hóa, tự động gửi tới nhà tuyển dụng để vào thẳng vòng chung.',
     widget: <FeaturePipelineWidget />,
   },
 ];
@@ -611,14 +612,14 @@ const FeatureSection: React.FC = () => (
     <div className="max-w-7xl mx-auto px-6 lg:px-12">
       <div className="max-w-3xl mb-16">
         <span className="text-label-sm uppercase tracking-wider text-primary font-semibold block mb-2">
-          Core Technological Advantage
+          Lợi thế công nghệ cốt lõi
         </span>
         <h2 className="text-headline-lg font-bold text-ink mb-4">
-          Architected for Technical Depth, Not Canned Script Reading.
+          Được thiết kế cho độ sâu kỹ thuật, không phải đọc kịch bản có sẵn.
         </h2>
         <p className="text-body-lg text-ink-variant">
-          Generic chat prompts fail in real engineering loops. InterviewAI uses conversational state machines and
-          dynamic code execution sandboxes to stress-test architecture under actual pressure.
+          Câu hỏi chat chung chung không thể mô phỏng vòng phỏng vấn kỹ thuật thật. AI Interview dùng máy trạng thái
+          hội thoại và sandbox chạy code động để thử thách kiến trúc của bạn dưới áp lực thực.
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -651,13 +652,13 @@ const STEPS: {
 }[] = [
   {
     num: '1',
-    tag: '01 / SETUP',
-    title: 'Select Your Target Stack',
-    body: 'Tailor role expectations for Java/Spring Boot backend, React/Next.js frontend, Distributed Systems, or ML Infrastructure.',
+    tag: '01 / CHUẨN BỊ',
+    title: 'Chọn stack mục tiêu',
+    body: 'Cài đặt kỳ vọng theo vị trí cho backend Java/Spring Boot, frontend React/Next.js, hệ phân tán hoặc ML Infrastructure.',
     footer: (
       <div className="space-y-1.5 pt-2">
         <span className="inline-block px-2.5 py-1 rounded bg-surface-mid text-ink text-label-sm mr-1 mb-1">
-          Distributed Systems
+          Hệ phân tán
         </span>
         <span className="inline-block px-2.5 py-1 rounded bg-surface-mid text-ink text-label-sm mr-1 mb-1">
           React/Next.js
@@ -670,38 +671,38 @@ const STEPS: {
   },
   {
     num: '2',
-    tag: '02 / SIMULATE',
-    title: 'Interactive Voice Simulation',
-    body: 'Engage directly with our Staff AI Persona in a 45-minute live audio and coding session with dynamic complexity pivots.',
+    tag: '02 / LUYỆN TẬP',
+    title: 'Luyện tập tương tác bằng giọng nói',
+    body: 'Đối thoại trực tiếp với persona AI cấp Staff trong phiên audio và lập trình 45 phút, độ phức tạp thay đổi liên tục.',
     footer: (
       <div className="p-3 rounded bg-surface-mid text-ink font-mono text-[12px] leading-4">
         <div className="flex items-center gap-1.5 text-primary mb-1">
-          <span className="material-symbols-outlined text-[14px]">graphic_eq</span> Active Voice Sandbox
+          <span className="material-symbols-outlined text-[14px]">graphic_eq</span> Sandbox giọng nói đang bật
         </div>
-        <span>Adaptive code execution</span>
+        <span>Chạy code thích ứng</span>
       </div>
     ),
   },
   {
     num: '3',
-    tag: '03 / DIAGNOSE',
-    title: 'Diagnostic Scorecard',
-    body: 'Receive deep feedback detailing edge-case blind spots, algorithmic runtime tradeoffs, and a hyper-targeted review path.',
+    tag: '03 / CHẨN ĐOÁN',
+    title: 'Bảng điểm chẩn đoán',
+    body: 'Nhận phản hồi chi tiết về các edge case bạn bỏ sót, đánh đổi về runtime thuật toán và lộ trình ôn tập đúng trọng tâm.',
     footer: (
       <div className="p-3 rounded bg-surface-mid text-ink font-mono text-[12px] leading-4 flex items-center justify-between">
-        <span>Scorecard #DIAG-82</span>
-        <span className="text-primary font-semibold">92.4 Pts</span>
+        <span>Bảng điểm #DIAG-82</span>
+        <span className="text-primary font-semibold">92.4 điểm</span>
       </div>
     ),
   },
   {
     num: '4',
-    tag: '04 / MATCH',
-    title: '1-Click Fast-Track Match',
-    body: 'Verified scores bypass round-1 recruiter gatekeepers directly into final hiring team interview rounds.',
+    tag: '04 / KẾT NỐI',
+    title: 'Kết nối ứng tuyển nhanh với 1 chạm',
+    body: 'Điểm đã xác thực giúp bạn đi thẳng vào vòng phỏng vấn cuối của đội ngũ tuyển dụng, bỏ qua vòng sàng lọc recruiter đầu tiên.',
     footer: (
       <div className="p-3 rounded bg-surface-mid text-primary text-label-sm font-semibold text-center shadow-sm">
-        Bypass Initial Phone Screens →
+        Bỏ qua vòng gọi điện sơ tuyển →
       </div>
     ),
   },
@@ -712,14 +713,14 @@ const HowItWorksSection: React.FC = () => (
     <div className="max-w-7xl mx-auto px-6 lg:px-12">
       <div className="text-center max-w-3xl mx-auto mb-16">
         <span className="text-label-sm uppercase tracking-wider text-primary font-semibold block mb-2">
-          Deterministic Hiring Pipeline
+          Quy trình tuyển dụng nhất quán
         </span>
         <h2 className="text-headline-lg font-bold text-ink mb-4">
-          How InterviewAI Gets You Hired in 4 Simple Steps
+          Cách AI Interview giúp bạn được tuyển qua 4 bước đơn giản
         </h2>
         <p className="text-body-lg text-ink-variant">
-          From target technology track selection to real-time simulation, diagnostic scoring, and verified final
-          round routing.
+          Từ chọn nhánh công nghệ mục tiêu, luyện tập thời gian thực, chấm điểm chẩn đoán cho tới đưa thẳng vào vòng
+          chung đã xác thực.
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -755,54 +756,53 @@ const AUDIENCE_CARDS: {
   cta: string;
 }[] = [
   {
-    badge: 'For Technical Candidates',
+    badge: 'Dành cho ứng viên kỹ thuật',
     badgeClass: 'bg-surface-mid text-primary',
     cardClass: 'bg-card',
     icon: 'person_celebrate',
-    title: 'Level up under authentic pressure, then prove it.',
-    body: 'Stop guessing why you were rejected with generic template emails. Get deterministic, granular machine rubrics on your architecture answers and earn certified credentials that companies take seriously.',
+    title: 'Nâng tay nghề dưới áp lực thật, rồi chứng minh điều đó.',
+    body: 'Không còn phải đoán lý do bị từ chối bằng email mẫu. Nhận bộ tiêu chí chấm máy chi tiết, tái lập được cho từng câu trả lời về kiến trúc, và lấy chứng chỉ được doanh nghiệp coi trọng.',
     bulletIcon: 'check_circle',
     bullets: [
       <>
-        <strong>Unlimited voice practice sessions</strong> tailored to L4-L7 software competencies.
+        <strong>Luyện giọng nói không giới hạn</strong> theo khung năng lực phần mềm L4-L7.
       </>,
       <>
-        <strong>Real-time code scratchpad &amp; AST analysis</strong> with syntax guidance and time-complexity
-        breakdowns.
+        <strong>Scratchpad code &amp; phân tích AST thời gian thực</strong> kèm gợi ý cú pháp và phân tích độ phức
+        tạp thời gian.
       </>,
       <>
-        <strong>Actionable architecture curriculum</strong> pointing out concurrency hazards and data drift errors.
+        <strong>Lộ trình ôn kiến trúc cụ thể</strong> chỉ ra rủi ro concurrency và lỗi trôi dữ liệu.
       </>,
       <>
-        <strong>Cryptographically verifiable certificate badge</strong> recognized by partner engineering
-        organizations.
+        <strong>Huy hiệu chứng chỉ xác thực bằng mật mã</strong> được các tổ chức kỹ thuật đối tác công nhận.
       </>,
     ],
-    cta: 'View Candidate Simulation Tracks',
+    cta: 'Xem nhánh luyện tập cho ứng viên',
   },
   {
-    badge: 'For Modern Engineering Teams',
+    badge: 'Dành cho đội ngũ kỹ thuật hiện đại',
     badgeClass: 'bg-card text-primary shadow-sm',
     cardClass: 'bg-surface-high',
     icon: 'apartment',
-    title: 'Recover 15+ weekly senior engineering hours.',
-    body: 'Eliminate repetitive first-round coding screens without compromising technical rigor. Receive full candidate code recordings, architectural tradeoffs, and EEOC-audited decision logs.',
+    title: 'Lấy lại hơn 15 giờ mỗi tuần của kỹ sư cấp cao.',
+    body: 'Bỏ vòng sàng lọc coding đầu tiên lặp lại mà vẫn giữ độ khắt khe về kỹ thuật. Nhận bản ghi code đầy đủ của ứng viên, các đánh đổi kiến trúc và nhật ký quyết định đã kiểm toán theo EEOC.',
     bulletIcon: 'verified',
     bullets: [
       <>
-        <strong>Automated 1st-round technical screening</strong> custom-calibrated to your production tech stack.
+        <strong>Sàng lọc kỹ thuật vòng 1 tự động</strong> hiệu chỉnh theo stack production của bạn.
       </>,
       <>
-        <strong>Deterministic rubric scoring</strong> benchmarked directly against Staff/Principal criteria.
+        <strong>Chấm theo bộ tiêu chí tái lập</strong> quy chiếu thẳng vào tiêu chí Staff/Principal.
       </>,
       <>
-        <strong>SOC-2 Type II compliant audit logs</strong> and EEOC adverse impact avoidance telemetry.
+        <strong>Nhật ký kiểm toán đạt chuẩn SOC-2 Type II</strong> kèm dữ liệu giảm thiểu tác động bất lợi theo EEOC.
       </>,
       <>
-        <strong>Direct ATS integration</strong> with Greenhouse, Lever, Ashby, and Workday.
+        <strong>Tích hợp ATS trực tiếp</strong> với Greenhouse, Lever, Ashby và Workday.
       </>,
     ],
-    cta: 'Schedule Engineering Platform Demo',
+    cta: 'Đặt lịch demo nền tảng kỹ thuật',
   },
 ];
 
@@ -811,14 +811,14 @@ const DualAudienceSection: React.FC = () => (
     <div className="max-w-7xl mx-auto px-6 lg:px-12">
       <div className="text-center max-w-3xl mx-auto mb-16">
         <span className="text-label-sm uppercase tracking-wider text-primary font-semibold block mb-2">
-          Symmetric Calibration
+          Chuẩn hóa cân bằng hai phía
         </span>
         <h2 className="text-headline-lg font-bold text-ink mb-4">
-          Built for High-Performing Candidates and Modern Engineering Teams Alike
+          Xây cho cả ứng viên năng lực cao và đội ngũ kỹ thuật hiện đại
         </h2>
         <p className="text-body-lg text-ink-variant">
-          Engineers want realistic prep without wasted time. Hiring managers want deterministic technical certainty
-          without 12-hour weekly interview burdens.
+          Kỹ sư muốn luyện tập đúng thực tế mà không mất thời gian. Người quản lý tuyển dụng muốn chắc chắn về kỹ
+          thuật mà không phải gánh 12 giờ phỏng vấn mỗi tuần.
         </p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -866,12 +866,12 @@ const CodeSandboxSection: React.FC = () => (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-5">
             <span className="text-label-sm uppercase tracking-wider text-primary font-semibold block mb-2">
-              Interactive Code Sandbox
+              Sandbox code tương tác
             </span>
-            <h3 className="text-headline-lg font-bold text-ink mb-3">Live Polyglot Execution</h3>
+            <h3 className="text-headline-lg font-bold text-ink mb-3">Chạy đa ngôn ngữ trực tiếp</h3>
             <p className="text-body-md text-ink-variant mb-6 leading-relaxed">
-              Interactive live code editor with instant test feedback. Write and test real code against dynamic edge
-              cases and unit tests while talking through your architectural assumptions.
+              Trình soạn thảo code trực tiếp với phản hồi test tức thì. Viết và chạy code thật trên các edge case và
+              unit test động, trong khi bạn trình bày giả định về kiến trúc.
             </p>
             <div className="flex items-center gap-2 font-mono text-[12px] leading-4 text-ink-variant mb-6 flex-wrap">
               {SANDBOX_LANGS.map((lang) => (
@@ -882,10 +882,10 @@ const CodeSandboxSection: React.FC = () => (
             </div>
             <div className="flex items-center gap-4 flex-wrap">
               <span className="flex items-center gap-1.5 text-label-sm text-ink">
-                <span className="w-2 h-2 rounded-full bg-primary" /> Memory leak detection
+                <span className="w-2 h-2 rounded-full bg-primary" /> Phát hiện rò rỉ bộ nhớ
               </span>
               <span className="flex items-center gap-1.5 text-label-sm text-ink">
-                <span className="w-2 h-2 rounded-full bg-primary" /> Thread contention logs
+                <span className="w-2 h-2 rounded-full bg-primary" /> Log tranh chấp thread
               </span>
             </div>
           </div>
@@ -894,9 +894,9 @@ const CodeSandboxSection: React.FC = () => (
             <div className="h-9 px-4 bg-surface-high flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-primary" />
-                <span className="font-mono text-[12px] leading-4 text-ink">Ready to Run</span>
+                <span className="font-mono text-[12px] leading-4 text-ink">Sẵn sàng chạy</span>
               </div>
-              <span className="font-mono text-[12px] leading-4 text-ink-variant">Ready to Run</span>
+              <span className="font-mono text-[12px] leading-4 text-ink-variant">Sẵn sàng chạy</span>
             </div>
             <div className="p-4 font-mono text-[12px] leading-4 text-ink overflow-x-auto">
               <pre className="leading-relaxed m-0">
@@ -927,9 +927,9 @@ const CodeSandboxSection: React.FC = () => (
             <div className="px-4 py-2.5 bg-surface-high flex items-center justify-between">
               <span className="text-label-sm text-primary font-medium flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                All Automated Tests Passing
+                Toàn bộ test tự động đều đạt
               </span>
-              <span className="text-label-sm text-ink-variant">Clean Solution</span>
+              <span className="text-label-sm text-ink-variant">Giải pháp sạch</span>
             </div>
           </div>
         </div>
@@ -945,40 +945,40 @@ const FinalCtaSection: React.FC = () => (
         {/* Accent glow */}
         <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-48 bg-[#c3c0ff]/60 blur-3xl rounded-full" />
         <span className="text-label-sm uppercase tracking-wider text-primary font-semibold block mb-3">
-          Instant Evaluation Available
+          Có đánh giá tức thì
         </span>
         <h2 className="text-display font-bold text-ink mb-4 max-w-2xl mx-auto">
-          Ready to Benchmark Your Technical Readiness?
+          Sẵn sàng đo mức sẵn sàng kỹ thuật của bạn?
         </h2>
         <p className="text-body-lg text-ink-variant max-w-xl mx-auto mb-8">
-          Join thousands of engineers who test their skills under real interview conditions and connect directly
-          with high-caliber tech companies.
+          Tham gia cùng hàng nghìn kỹ sư đang thử thách kỹ năng trong điều kiện phỏng vấn thật và kết nối trực tiếp
+          với các công ty công nghệ chất lượng.
         </p>
         <div className="max-w-md mx-auto mb-4">
           <div className="flex flex-col sm:flex-row gap-2">
             <input
               className="flex-1 px-4 py-3 rounded-lg bg-card text-ink text-body-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/40 placeholder:text-ink-variant/70"
-              placeholder="Enter your work or personal email"
+              placeholder="Nhập email của bạn"
               type="email"
             />
             <Link
               to="/register"
               className="px-6 py-3 rounded-lg bg-primary-container text-on-primary text-label-md font-semibold hover:bg-primary shadow-md shadow-primary-container/20 transition-all flex items-center justify-center gap-1.5"
             >
-              <span>Start Practicing</span>
+              <span>Bắt đầu luyện tập</span>
               <span className="material-symbols-outlined text-[18px]">bolt</span>
             </Link>
           </div>
         </div>
         <div className="flex items-center justify-center gap-4 text-ink-variant text-body-sm flex-wrap">
           <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[16px] text-primary">credit_card_off</span> No credit
-            card required
+            <span className="material-symbols-outlined text-[16px] text-primary">credit_card_off</span> Không cần thẻ
+            tín dụng
           </span>
           <span>•</span>
           <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[16px] text-primary">schedule</span> Instant AI feedback
-            in &lt;60s
+            <span className="material-symbols-outlined text-[16px] text-primary">schedule</span> AI phản hồi tức thì
+            trong &lt;60s
           </span>
         </div>
       </div>
@@ -1004,7 +1004,7 @@ const LandingPage: React.FC = () => (
         <FinalCtaSection />
       </div>
     </main>
-    <SiteFooter tagline="© 2025 InterviewAI Inc. All rights reserved." />
+    <SiteFooter tagline="© 2025 AI Interview Inc. Bảo lưu mọi quyền." />
   </div>
 );
 

@@ -88,22 +88,22 @@ const MyJobsPage: React.FC = () => {
   return (
     <div>
       <PageHeader
-        title="My Job Postings"
+        title="Tin đã đăng"
         actions={
           <>
             <Link to="/jobs/new" className={`${buttonClass('primary', 'no-underline')}`}>
               <span className="material-symbols-outlined text-[18px]">add</span>
-              Post New Job
+              Đăng tin mới
             </Link>
             <Link to="/my-slots" className={buttonClass('secondary', 'no-underline')}>
               <span className="material-symbols-outlined text-[18px]">event</span>
-              Manage Availability
+              Quản lý lịch trống
             </Link>
           </>
         }
       />
 
-      {loading && <LoadingState />}
+      {loading && <LoadingState label="Đang tải…" />}
       <ErrorBanner message={error} />
       {successMsg && (
         <div className="mb-4 flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text" role="status">
@@ -130,27 +130,27 @@ const MyJobsPage: React.FC = () => {
                 <div className="flex items-start gap-2 rounded-lg bg-[#fffbeb] px-3 py-2.5 text-body-sm text-[#92400e]" role="status">
                   <span className="material-symbols-outlined shrink-0 text-[18px]">rate_review</span>
                   <div>
-                    <strong className="block">Changes requested</strong>
+                    <strong className="block">Cần chỉnh sửa</strong>
                     <span className="whitespace-pre-wrap">{reviewNote}</span>
                   </div>
                 </div>
               )}
               <div className="flex flex-wrap items-center gap-2 pt-1">
-                <Link to={`/jobs/${job.id}`} className={buttonClass('ghost', 'no-underline')}>View</Link>
+                <Link to={`/jobs/${job.id}`} className={buttonClass('ghost', 'no-underline')}>Xem</Link>
                 {job.status !== 'PENDING_APPROVAL' && (
                   <Link to={`/jobs/${job.id}/edit`} className={buttonClass('ghost', 'no-underline')}>
                     <span className="material-symbols-outlined text-[18px]">edit</span>
-                    Edit
+                    Sửa
                   </Link>
                 )}
                 {pipelineAvailable && (
                   <>
                     <button className={buttonClass('secondary')} onClick={() => toggleStatus(job)}>
                       <span className="material-symbols-outlined text-[18px]">schedule</span>
-                      {job.status === 'OPEN' ? 'Close' : 'Reopen'}
+                      {job.status === 'OPEN' ? 'Đóng tin' : 'Mở lại'}
                     </button>
-                    <button className={buttonClass('secondary')} onClick={() => openApplications(job)}>Applicants</button>
-                    <button className={buttonClass('secondary')} onClick={() => openSuggestions(job)}>Suggested Candidates</button>
+                    <button className={buttonClass('secondary')} onClick={() => openApplications(job)}>Đơn ứng tuyển</button>
+                    <button className={buttonClass('secondary')} onClick={() => openSuggestions(job)}>Ứng viên gợi ý</button>
                   </>
                 )}
                 {job.status !== 'PENDING_APPROVAL' && (
@@ -159,7 +159,7 @@ const MyJobsPage: React.FC = () => {
                     onClick={() => setPendingDelete(job)}
                   >
                     <span className="material-symbols-outlined text-[18px]">delete</span>
-                    Delete
+                    Xoá
                   </button>
                 )}
               </div>
@@ -169,26 +169,26 @@ const MyJobsPage: React.FC = () => {
       </div>
 
       {myJobs && myJobs.content.length === 0 && !loading && (
-        <EmptyState icon="work" title="No job postings yet." />
+        <EmptyState icon="work" title="Chưa có tin tuyển dụng nào." />
       )}
 
       {myJobs && myJobs.totalPages > 1 && (
         <div className="mt-4 flex items-center gap-2">
           <button className={buttonClass('secondary')} disabled={page === 0} onClick={() => setPage(page - 1)}>
-            Previous
+            Trước
           </button>
-          <span className="px-1 text-body-md text-ink-variant">Page {myJobs.number + 1} / {myJobs.totalPages}</span>
+          <span className="px-1 text-body-md text-ink-variant">Trang {myJobs.number + 1} / {myJobs.totalPages}</span>
           <button className={buttonClass('secondary')} disabled={page >= myJobs.totalPages - 1} onClick={() => setPage(page + 1)}>
-            Next
+            Sau
           </button>
         </div>
       )}
 
       {selectedJob && applications && (
         <div className="mt-6 flex flex-col gap-3 rounded-lg border border-[#e2e8f0] bg-surface-low p-4 shadow-card">
-          <h3 className="m-0 text-headline-md text-ink">Applicants for: {selectedJob.title}</h3>
+          <h3 className="m-0 text-headline-md text-ink">Đơn ứng tuyển cho: {selectedJob.title}</h3>
           {applications.content.length === 0 && (
-            <p className="m-0 text-body-sm text-ink-variant">No applicants yet.</p>
+            <p className="m-0 text-body-sm text-ink-variant">Chưa có đơn ứng tuyển nào.</p>
           )}
           {applications.content.map((app) => (
             <div key={app.id} className="flex flex-col gap-1 rounded-lg border border-[#e2e8f0] bg-card p-4">
@@ -203,17 +203,17 @@ const MyJobsPage: React.FC = () => {
               {app.slot && (
                 <p className="m-0 flex items-center gap-1 text-body-sm text-ink-variant">
                   <span className="material-symbols-outlined text-[18px]">event</span>
-                  Booked: {new Date(app.slot.startTime).toLocaleString('vi-VN')}
+                  Đã đặt: {new Date(app.slot.startTime).toLocaleString('vi-VN')}
                 </p>
               )}
-              {app.feedback && <p className="m-0 text-body-sm text-ink">Feedback: {app.feedback}</p>}
+              {app.feedback && <p className="m-0 text-body-sm text-ink">Góp ý: {app.feedback}</p>}
               {(app.status === 'PENDING' || app.status === 'SCHEDULED' || app.status === 'INTERVIEWED') && (
                 <div className="pt-2">
                   <button
                     className={buttonClass('secondary')}
                     onClick={() => { setEvalApp(app); setScore(app.score?.toString() ?? ''); setFeedback(app.feedback ?? ''); }}
                   >
-                    {app.status === 'INTERVIEWED' ? 'Review & Grade' : 'Update Status'}
+                    {app.status === 'INTERVIEWED' ? 'Đánh giá & cho điểm' : 'Cập nhật trạng thái'}
                   </button>
                 </div>
               )}
@@ -222,9 +222,9 @@ const MyJobsPage: React.FC = () => {
 
           {evalApp && (
             <div className="flex flex-col gap-2 rounded-lg border border-[#e2e8f0] bg-card p-4">
-              <h4 className="m-0 text-headline-sm text-ink">Evaluation: {evalApp.candidateName}</h4>
+              <h4 className="m-0 text-headline-sm text-ink">Đánh giá: {evalApp.candidateName}</h4>
               <div>
-                <label className={labelClass}>Score (0-100)</label>
+                <label className={labelClass}>Điểm (0-100)</label>
                 <input
                   type="number" min={0} max={100} value={score}
                   onChange={(e) => setScore(e.target.value)}
@@ -232,7 +232,7 @@ const MyJobsPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className={labelClass}>Feedback</label>
+                <label className={labelClass}>Góp ý</label>
                 <textarea
                   value={feedback} onChange={(e) => setFeedback(e.target.value)}
                   className={textareaClass}
@@ -241,23 +241,23 @@ const MyJobsPage: React.FC = () => {
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 {evalApp.status === 'PENDING' && (
                   <>
-                    <button className={buttonClass('primary')} onClick={() => submitEvaluate('SCHEDULED')}>Accept & Schedule</button>
-                    <button className={buttonClass('danger')} onClick={() => submitEvaluate('REJECTED')}>Reject</button>
+                    <button className={buttonClass('primary')} onClick={() => submitEvaluate('SCHEDULED')}>Duyệt &amp; xếp lịch</button>
+                    <button className={buttonClass('danger')} onClick={() => submitEvaluate('REJECTED')}>Không đạt</button>
                   </>
                 )}
                 {evalApp.status === 'SCHEDULED' && (
                   <>
-                    <button className={buttonClass('primary')} onClick={() => submitEvaluate('INTERVIEWED')}>Interviewed</button>
-                    <button className={buttonClass('danger')} onClick={() => submitEvaluate('REJECTED')}>Reject</button>
+                    <button className={buttonClass('primary')} onClick={() => submitEvaluate('INTERVIEWED')}>Đã phỏng vấn</button>
+                    <button className={buttonClass('danger')} onClick={() => submitEvaluate('REJECTED')}>Không đạt</button>
                   </>
                 )}
                 {evalApp.status === 'INTERVIEWED' && (
                   <>
-                    <button className={buttonClass('primary')} onClick={() => submitEvaluate('ACCEPTED')}>Accept</button>
-                    <button className={buttonClass('danger')} onClick={() => submitEvaluate('REJECTED')}>Reject</button>
+                    <button className={buttonClass('primary')} onClick={() => submitEvaluate('ACCEPTED')}>Trúng tuyển</button>
+                    <button className={buttonClass('danger')} onClick={() => submitEvaluate('REJECTED')}>Không đạt</button>
                   </>
                 )}
-                <button className={buttonClass('ghost')} onClick={() => setEvalApp(null)}>Close</button>
+                <button className={buttonClass('ghost')} onClick={() => setEvalApp(null)}>Đóng</button>
               </div>
             </div>
           )}
@@ -266,15 +266,15 @@ const MyJobsPage: React.FC = () => {
 
       {selectedJob && suggestions.length > 0 && (
         <div className="mt-6 flex flex-col gap-3 rounded-lg border border-[#e2e8f0] bg-surface-low p-4 shadow-card">
-          <h3 className="m-0 text-headline-md text-ink">Suggested Candidates for: {selectedJob.title}</h3>
+          <h3 className="m-0 text-headline-md text-ink">Ứng viên gợi ý cho: {selectedJob.title}</h3>
           {suggestions.map((m) => (
             <div key={m.candidateId} className="flex flex-col gap-1 rounded-lg border border-[#e2e8f0] bg-card p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <strong className="min-w-0 flex-1 truncate text-headline-sm text-ink">{m.fullName}</strong>
-                <span className="text-metric-stat text-primary">{m.matchScore}% Match</span>
+                <span className="text-metric-stat text-primary">Khớp {m.matchScore}%</span>
               </div>
               <p className="m-0 text-body-sm text-ink-variant">{m.email}</p>
-              <p className="m-0 text-body-sm text-ink">Matched Skills: {m.matchedSkills.join(', ')}</p>
+              <p className="m-0 text-body-sm text-ink">Kỹ năng khớp: {m.matchedSkills.join(', ')}</p>
             </div>
           ))}
         </div>
@@ -282,10 +282,10 @@ const MyJobsPage: React.FC = () => {
 
       <ConfirmDialog
         open={pendingDelete !== null}
-        title="Delete this job posting?"
-        message={pendingDelete ? `"${pendingDelete.title}" will be removed from your listings. This can't be undone.` : ''}
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        title="Xoá tin tuyển dụng này?"
+        message={pendingDelete ? `"${pendingDelete.title}" sẽ bị gỡ khỏi danh sách của bạn. Không thể hoàn tác.` : ''}
+        confirmLabel="Xoá"
+        cancelLabel="Huỷ"
         danger
         onConfirm={() => void runDelete()}
         onCancel={() => setPendingDelete(null)}

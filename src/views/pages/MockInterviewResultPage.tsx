@@ -6,7 +6,7 @@ import { buttonClass } from '../components/ui';
 
 // Nhãn dải điểm — CHUỶ ÁNH XẠ TRÌNH BÀY từ điểm thật (a.score), không phải dữ liệu mới.
 const scoreBand = (score: number) =>
-  score >= 90 ? 'Superior' : score >= 80 ? 'Strong' : score >= 70 ? 'Proficient' : score >= 50 ? 'Developing' : 'Needs Work';
+  score >= 90 ? 'Xuất sắc' : score >= 80 ? 'Tốt' : score >= 70 ? 'Khá tốt' : score >= 50 ? 'Cần cải thiện' : 'Cần cố gắng';
 
 // Định dạng giây -> mm:ss cho thời lượng trả lời (durationSec thật từ API).
 const fmtDuration = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
@@ -30,14 +30,14 @@ const MockInterviewResultPage = () => {
   if (!user || user.role !== 'ROLE_USER') {
     return (
       <div className="p-10 text-body-md text-ink-variant">
-        Please sign in with a candidate account.
+        Vui lòng đăng nhập bằng tài khoản ứng viên.
       </div>
     );
   }
   if (!result) {
     return (
       <div className="p-10 text-body-md text-ink-variant">
-        {loading ? 'Loading...' : (error || 'No result found.')}
+        {loading ? 'Đang tải...' : (error || 'Chưa có kết quả.')}
       </div>
     );
   }
@@ -47,14 +47,14 @@ const MockInterviewResultPage = () => {
   const overall = session.overallScore ?? 0;
 
   // Nhãn vai trò / tiêu đề / thời điểm — tất cả dẫn xuất từ field thật của session.
-  const roleLabel = session.mode === 'MOCK' ? (session.jobTitle || 'Mock Interview') : (session.topic || 'Knowledge Practice');
-  const reportTitle = session.mode === 'MOCK' ? (session.jobTitle || 'Simulation') : (session.topic || 'Practice');
+  const roleLabel = session.mode === 'MOCK' ? (session.jobTitle || 'Phiên luyện tập') : (session.topic || 'Luyện tập kiến thức');
+  const reportTitle = session.mode === 'MOCK' ? (session.jobTitle || 'Mô phỏng') : (session.topic || 'Luyện tập');
   const completedAt = session.completedAt || session.createdAt;
-  const completedDate = new Date(completedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  const completedDate = new Date(completedAt).toLocaleDateString('vi-VN', { year: 'numeric', month: 'short', day: 'numeric' });
   const totalSec = answers.reduce((sum, a) => sum + (a.durationSec ?? 0), 0);
   const completedLabel = totalSec > 0
-    ? `Completed ${completedDate} • ${Math.round(totalSec / 60)} mins duration`
-    : `Completed ${completedDate}`;
+    ? `Hoàn tất ${completedDate} • thời lượng ${Math.round(totalSec / 60)} phút`
+    : `Hoàn tất ${completedDate}`;
 
   const toggle = (qid: number) =>
     setOpenIds((prev) => {
@@ -74,10 +74,10 @@ const MockInterviewResultPage = () => {
       <div className="flex items-center gap-1 text-label-sm text-ink-variant">
         <Link to="/mock-interviews" className="flex items-center gap-1 text-ink-variant transition-colors hover:text-primary">
           <span className="material-symbols-outlined text-[16px]">chevron_left</span>
-          <span>Sessions</span>
+          <span>Phiên</span>
         </Link>
         <span>/</span>
-        <span className="text-ink">Session #{session.id}</span>
+        <span className="text-ink">Phiên #{session.id}</span>
       </div>
 
       {/* Header: vai trò + tiêu đề + điểm tổng + cụm nút hành động. */}
@@ -90,26 +90,26 @@ const MockInterviewResultPage = () => {
             </span>
             <span className="rounded-full bg-surface-mid px-2 py-0.5 text-label-sm text-ink-variant">{completedLabel}</span>
           </div>
-          <h1 className="m-0 text-headline-lg text-ink">Evaluation Report: {reportTitle}</h1>
+          <h1 className="m-0 text-headline-lg text-ink">Báo cáo đánh giá: {reportTitle}</h1>
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <span className="flex items-center gap-2 rounded-full bg-info px-3 py-1 text-label-md text-info-text">
               <span className="material-symbols-outlined text-[16px] text-primary">verified</span>
-              <span className="text-headline-sm text-primary tabular-nums">Score: {overall}/100</span>
+              <span className="text-headline-sm text-primary tabular-nums">Điểm: {overall}/100</span>
             </span>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start lg:self-end">
           <button type="button" onClick={() => window.print()} className={buttonClass('secondary')}>
             <span className="material-symbols-outlined text-[16px]">file_download</span>
-            Export PDF Report
+            Xuất báo cáo PDF
           </button>
           <button type="button" onClick={share} className={buttonClass('secondary')}>
             <span className="material-symbols-outlined text-[16px]">share</span>
-            Share with Employer
+            Chia sẻ với nhà tuyển dụng
           </button>
           <Link to="/mock-interviews" className={buttonClass('primary', 'no-underline')}>
             <span className="material-symbols-outlined text-[16px]">restart_alt</span>
-            Retake Practice
+            Luyện tập lại
           </Link>
         </div>
       </div>
@@ -118,7 +118,7 @@ const MockInterviewResultPage = () => {
           Bỏ Percentile / Top % / Benchmarked against N vì model không có field. */}
       <div className="rounded-xl bg-card p-4 shadow-sm">
         <div className="mb-2 flex items-center justify-between">
-          <span className="text-label-sm font-semibold uppercase tracking-wider text-outline-strong">Overall Rating</span>
+          <span className="text-label-sm font-semibold uppercase tracking-wider text-outline-strong">Điểm tổng quan</span>
           <span className="material-symbols-outlined text-[20px] text-primary">military_tech</span>
         </div>
         <div className="mb-2 flex items-baseline gap-1">
@@ -133,7 +133,7 @@ const MockInterviewResultPage = () => {
           />
         </div>
         <div className="mt-2 text-body-sm text-ink-variant tabular-nums">
-          Answered {answered.length}/{session.questions.length} questions
+          Đã trả lời {answered.length}/{session.questions.length} câu hỏi
         </div>
       </div>
 
@@ -145,16 +145,16 @@ const MockInterviewResultPage = () => {
               {answers.length}
             </div>
             <div>
-              <h3 className="m-0 text-headline-sm text-ink">Question-by-Question Deep Dive</h3>
-              <p className="m-0 text-body-sm text-outline-strong">Per-question AI scoring and feedback</p>
+              <h3 className="m-0 text-headline-sm text-ink">Chi tiết theo từng câu hỏi</h3>
+              <p className="m-0 text-body-sm text-outline-strong">AI chấm điểm và góp ý cho từng câu hỏi</p>
             </div>
           </div>
           <div className="flex items-center gap-1 text-label-sm">
             <button type="button" onClick={expandAll} className="rounded bg-surface-mid px-2 py-1 text-ink transition-colors hover:bg-surface-high">
-              Expand All
+              Mở tất cả
             </button>
             <button type="button" onClick={collapseAll} className="rounded bg-surface-mid px-2 py-1 text-ink transition-colors hover:bg-surface-high">
-              Collapse All
+              Thu gọn tất cả
             </button>
           </div>
         </div>
@@ -179,7 +179,7 @@ const MockInterviewResultPage = () => {
                   <div className="flex min-w-0 flex-col">
                     <span className="truncate text-headline-sm text-ink">{a.question}</span>
                     {a.durationSec != null && (
-                      <span className="text-body-sm text-outline-strong tabular-nums">Answered in {fmtDuration(a.durationSec)}</span>
+                      <span className="text-body-sm text-outline-strong tabular-nums">Trả lời trong {fmtDuration(a.durationSec)}</span>
                     )}
                   </div>
                 </div>
@@ -200,17 +200,17 @@ const MockInterviewResultPage = () => {
                 <div className="flex flex-col gap-3 p-4 pt-0">
                   {a.answerText ? (
                     <div className="rounded-lg bg-surface-low p-4">
-                      <span className="text-label-sm font-semibold uppercase tracking-wider text-outline-strong">Transcript Excerpt</span>
+                      <span className="text-label-sm font-semibold uppercase tracking-wider text-outline-strong">Nội dung câu trả lời</span>
                       <p className="m-0 mt-1 whitespace-pre-wrap text-body-md text-ink">{a.answerText}</p>
                     </div>
                   ) : (
-                    <p className="m-0 text-body-sm italic text-ink-variant">No answer recorded.</p>
+                    <p className="m-0 text-body-sm italic text-ink-variant">Chưa ghi nhận câu trả lời.</p>
                   )}
                   {a.feedback && (
                     <div className="flex flex-col gap-1 rounded-lg bg-surface-high p-4">
                       <div className="flex items-center gap-2 text-primary">
                         <span className="material-symbols-outlined text-[16px]">psychology</span>
-                        <span className="text-label-md font-semibold">AI Evaluation Rationale</span>
+                        <span className="text-label-md font-semibold">Cơ sở đánh giá của AI</span>
                       </div>
                       <p className="m-0 text-body-sm text-ink">{a.feedback}</p>
                     </div>

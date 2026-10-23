@@ -14,18 +14,18 @@ const Logo: React.FC<{ size?: 'header' | 'footer' }> = ({ size = 'header' }) => 
 );
 
 const NAV_ITEMS: { label: string; to?: string; active?: boolean }[] = [
-  { label: 'Platform' },
-  { label: 'For Candidates' },
-  { label: 'For Employers' },
-  { label: 'Job Board', to: '/jobs', active: true },
-  { label: 'Pricing' },
+  { label: 'Nền tảng' },
+  { label: 'Dành cho ứng viên' },
+  { label: 'Dành cho nhà tuyển dụng' },
+  { label: 'Tin tuyển dụng', to: '/jobs', active: true },
+  { label: 'Bảng giá' },
 ];
 
 const SiteHeader: React.FC = () => (
   <header className="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-md border-b border-outline/40">
     <div className="h-16 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between gap-4">
       <div className="flex items-center gap-6">
-        <Link to="/" aria-label="InterviewAI home">
+        <Link to="/" aria-label="AI Interview trang chủ">
           <Logo />
         </Link>
         <nav className="hidden lg:flex items-center gap-6">
@@ -55,19 +55,19 @@ const SiteHeader: React.FC = () => (
           to="/login"
           className="hidden sm:inline-flex text-label-md text-ink-variant hover:text-ink px-3 py-2 transition-colors"
         >
-          Sign In
+          Đăng nhập
         </Link>
         <a
           href="#"
           className="hidden xl:inline-flex items-center text-label-md text-ink bg-card border border-outline hover:bg-surface-low px-3 py-1.5 rounded-lg transition-colors"
         >
-          Post a Job
+          Đăng tin tuyển dụng
         </a>
         <Link
           to="/register"
           className="inline-flex items-center text-label-md font-medium text-on-primary bg-primary-container hover:bg-primary px-3.5 py-1.5 rounded-lg shadow-sm transition-colors"
         >
-          Get Started Free
+          Bắt đầu miễn phí
         </Link>
         <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
           <span className="material-symbols-outlined text-on-primary text-[18px]">person</span>
@@ -79,43 +79,43 @@ const SiteHeader: React.FC = () => (
 
 const FOOTER_COLUMNS: { heading: string; links: { label: string; to?: string }[] }[] = [
   {
-    heading: 'Platform',
+    heading: 'Nền tảng',
     links: [
-      { label: 'Adaptive Engine' },
-      { label: 'Live Coding Sandbox' },
-      { label: 'Voice & Telemetry' },
-      { label: 'Deterministic Rubrics' },
-      { label: 'Security & Integrity' },
+      { label: 'Bộ máy thích ứng' },
+      { label: 'Sandbox lập trình trực tiếp' },
+      { label: 'Giọng nói & chỉ số' },
+      { label: 'Bộ tiêu chí chấm nhất quán' },
+      { label: 'Bảo mật & toàn vẹn' },
     ],
   },
   {
-    heading: 'Solutions',
+    heading: 'Giải pháp',
     links: [
-      { label: 'Engineering Leaders' },
-      { label: 'Talent Operations' },
-      { label: 'Candidate Prep' },
-      { label: 'Global Job Board', to: '/jobs' },
-      { label: 'Enterprise' },
+      { label: 'Lãnh đạo kỹ thuật' },
+      { label: 'Vận hành tuyển dụng' },
+      { label: 'Ôn luyện cho ứng viên' },
+      { label: 'Kho tin tuyển dụng', to: '/jobs' },
+      { label: 'Doanh nghiệp' },
     ],
   },
   {
-    heading: 'Resources',
+    heading: 'Tài nguyên',
     links: [
-      { label: 'Documentation' },
-      { label: 'API Reference' },
-      { label: 'Bias Methodology' },
-      { label: 'Latency Benchmarks' },
-      { label: 'Pricing Models' },
+      { label: 'Tài liệu' },
+      { label: 'Tài liệu API' },
+      { label: 'Phương pháp chống thiên kiến' },
+      { label: 'Chuẩn đo độ trễ' },
+      { label: 'Các gói giá' },
     ],
   },
   {
-    heading: 'Company',
+    heading: 'Công ty',
     links: [
-      { label: 'About Us' },
-      { label: 'Careers' },
-      { label: 'Legal & Compliance' },
-      { label: 'Privacy Policy' },
-      { label: 'Terms of Service' },
+      { label: 'Về chúng tôi' },
+      { label: 'Cơ hội nghề nghiệp' },
+      { label: 'Pháp lý & tuân thủ' },
+      { label: 'Chính sách bảo mật' },
+      { label: 'Điều khoản sử dụng' },
     ],
   },
 ];
@@ -129,18 +129,18 @@ const SiteFooter: React.FC = () => (
             <Logo size="footer" />
           </div>
           <p className="text-body-sm text-ink-variant max-w-sm mb-6">
-            Autonomous real-time computational interviews and deterministic technical rubrics. Built for
-            engineering teams, talent leaders, and fair candidate evaluation.
+            Phỏng vấn kỹ thuật thời gian thực bằng AI với bộ tiêu chí chấm minh bạch. Xây dựng cho đội ngũ kỹ thuật,
+            người phụ trách tuyển dụng và việc đánh giá ứng viên công bằng.
           </p>
           <div className="flex items-center gap-2">
             <div className="inline-flex items-center gap-1.5 text-ink-variant text-[12px]">
               <span className="material-symbols-outlined text-[16px] text-primary">verified</span>
-              Verified Hiring Standards
+              Chuẩn tuyển dụng đã xác thực
             </div>
             <span className="text-outline">•</span>
             <div className="inline-flex items-center gap-1.5 text-ink-variant text-[12px]">
               <span className="material-symbols-outlined text-[16px] text-primary">lock</span>
-              Protected Data Privacy
+              Dữ liệu được bảo vệ
             </div>
           </div>
         </div>
@@ -169,17 +169,17 @@ const SiteFooter: React.FC = () => (
       </div>
       <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
         <p className="text-body-sm text-ink-variant">
-          © 2025 InterviewAI Inc. All rights reserved. Connecting engineers with verified opportunities.
+          © 2025 AI Interview Inc. Bảo lưu mọi quyền. Kết nối kỹ sư với cơ hội đã xác thực.
         </p>
         <div className="flex items-center gap-4 text-body-sm text-ink-variant">
           <a href="#" className="hover:text-ink transition-colors">
-            Privacy
+            Bảo mật
           </a>
           <a href="#" className="hover:text-ink transition-colors">
-            Terms
+            Điều khoản
           </a>
           <a href="#" className="hover:text-ink transition-colors">
-            Security
+            An toàn hệ thống
           </a>
           <div className="flex items-center gap-3 pl-3">
             <span className="material-symbols-outlined text-[18px] text-ink-variant hover:text-ink cursor-pointer">
@@ -201,7 +201,7 @@ const SiteFooter: React.FC = () => (
 const VerifiedIcon: React.FC<{ size?: string }> = ({ size = 'text-[16px]' }) => (
   <span
     className={`material-symbols-outlined ${size} text-primary [font-variation-settings:'FILL'_1]`}
-    title="Verified Hiring Partner"
+    title="Nhà tuyển dụng đã xác thực"
   >
     verified
   </span>
@@ -248,22 +248,22 @@ const DEMO_JOBS: DemoJob[] = [
     company: 'CloudScale Tech',
     verified: true,
     req: 'REQ-8492',
-    title: 'Java Backend Developer Intern',
+    title: 'Thực tập sinh Phát triển Backend Java',
     badgeKind: 'fasttrack-strong',
-    badgeText: 'Fast-Track (Score ≥ 80)',
-    badgeSub: 'Your Score: 88 ✓',
+    badgeText: 'Ứng tuyển nhanh (Điểm ≥ 80)',
+    badgeSub: 'Điểm của bạn: 88 ✓',
     hourly: 45,
-    pay: '$45.00/hr',
+    pay: '$45.00/giờ',
     locationIcon: 'public',
-    location: 'Remote (US Only)',
-    schedule: 'Full-time / Summer 2025',
+    location: 'Làm từ xa (chỉ US)',
+    schedule: 'Toàn thời gian / Hè 2025',
     role: 'backend',
     level: 'intern',
     mode: 'remote',
     stack: ['Spring Boot 3', 'PostgreSQL', 'Docker', 'Kafka'],
     moreCount: 2,
     footDot: 'bg-[#10b981]', // emerald-500
-    footNote: '12 candidates fast-tracked this week',
+    footNote: '12 ứng viên được vào thẳng vòng trong tuần này',
     cta: 'apply',
     tags: ['java', 'spring', 'remote-us', 'internship'],
   },
@@ -274,21 +274,21 @@ const DEMO_JOBS: DemoJob[] = [
     company: 'Synthetix AI',
     verified: true,
     req: 'REQ-8310',
-    title: 'Frontend Developer Intern (React/Next.js)',
+    title: 'Thực tập sinh Phát triển Frontend (React/Next.js)',
     badgeKind: 'fasttrack',
-    badgeText: 'Fast-Track (Score ≥ 85)',
-    badgeSub: 'Eligible (88 > 85)',
+    badgeText: 'Ứng tuyển nhanh (Điểm ≥ 85)',
+    badgeSub: 'Đủ điều kiện (88 > 85)',
     hourly: 50,
-    pay: '$50.00/hr',
+    pay: '$50.00/giờ',
     locationIcon: 'location_on',
-    location: 'Hybrid (San Francisco, CA)',
-    schedule: 'Full-time / 16 weeks',
+    location: 'Kết hợp (San Francisco, CA)',
+    schedule: 'Toàn thời gian / 16 tuần',
     role: 'frontend',
     level: 'intern',
     mode: 'hybrid',
     stack: ['TypeScript 5', 'Next.js 15', 'Tailwind CSS', 'WebGL'],
     footDot: 'bg-secondary',
-    footNote: 'Autonomous UI Canvas team • 2 openings',
+    footNote: 'Đội UI Canvas tự vận hành • 2 chỉ tiêu',
     cta: 'inspect',
     tags: ['react', 'internship'],
   },
@@ -299,19 +299,19 @@ const DEMO_JOBS: DemoJob[] = [
     company: 'DataPulse Systems',
     verified: false,
     req: 'REQ-7901',
-    title: 'Fullstack Systems Engineer Intern',
+    title: 'Thực tập sinh Kỹ sư Hệ thống Fullstack',
     badgeKind: 'posted',
-    badgeText: 'Posted 2d ago',
+    badgeText: 'Đăng 2 ngày trước',
     hourly: 42,
-    pay: '$42.00/hr',
+    pay: '$42.00/giờ',
     locationIcon: 'public',
-    location: 'Remote (Global CET/EST)',
-    schedule: 'Internship / Fall 2025',
+    location: 'Làm từ xa (toàn cầu CET/EST)',
+    schedule: 'Thực tập / Mùa thu 2025',
     role: 'fullstack',
     level: 'intern',
     mode: 'remote',
     stack: ['Go (Golang)', 'React', 'Redis', 'Kubernetes'],
-    footNote: 'Standard screening path • Takes ~35 mins',
+    footNote: 'Lộ trình sàng lọc tiêu chuẩn • Mất ~35 phút',
     cta: 'inspect',
     tags: ['react', 'internship'],
   },
@@ -322,20 +322,20 @@ const DEMO_JOBS: DemoJob[] = [
     company: 'Voxel Labs',
     verified: true,
     req: 'REQ-8109',
-    title: 'Distributed Systems Engineering Intern',
+    title: 'Thực tập sinh Kỹ thuật Hệ phân tán',
     badgeKind: 'alignment',
-    badgeText: '92% Alignment',
+    badgeText: '92% độ khớp',
     hourly: 48,
-    pay: '$48.00/hr',
+    pay: '$48.00/giờ',
     locationIcon: 'location_on',
-    location: 'Hybrid (New York, NY)',
-    schedule: 'Summer Internship',
+    location: 'Kết hợp (New York, NY)',
+    schedule: 'Thực tập hè',
     role: 'systems',
     level: 'intern',
     mode: 'hybrid',
     stack: ['Rust', 'C++', 'gRPC', 'Raft Consensus'],
     footDot: 'bg-primary',
-    footNote: 'Requires custom systems memory benchmark',
+    footNote: 'Cần bài kiểm tra bộ nhớ hệ thống riêng',
     cta: 'inspect',
     tags: ['internship'],
   },
@@ -346,19 +346,19 @@ const DEMO_JOBS: DemoJob[] = [
     company: 'FinTech Labs',
     verified: true,
     req: 'REQ-7612',
-    title: 'Cloud Infrastructure & DevOps Intern',
+    title: 'Thực tập sinh Hạ tầng Cloud & DevOps',
     badgeKind: 'verified',
-    badgeText: 'Verified Employer',
+    badgeText: 'Nhà tuyển dụng đã xác thực',
     hourly: 46,
-    pay: '$46.00/hr',
+    pay: '$46.00/giờ',
     locationIcon: 'public',
-    location: 'Remote (US/Canada)',
-    schedule: 'Full-time / 12 weeks',
+    location: 'Làm từ xa (US/Canada)',
+    schedule: 'Toàn thời gian / 12 tuần',
     role: 'backend',
     level: 'intern',
     mode: 'remote',
     stack: ['AWS', 'Terraform', 'Python', 'Docker CI/CD'],
-    footNote: 'Security clearable preferred • 4 rounds max',
+    footNote: 'Ưu tiên ứng viên xác minh an ninh được • Tối đa 4 vòng',
     cta: 'inspect',
     tags: ['remote-us', 'internship'],
   },
@@ -369,11 +369,11 @@ const DEMO_JOBS: DemoJob[] = [
 /* ------------------------------------------------------------------ */
 
 const QUICK_CHIPS: { id: string; label: string; dot?: boolean }[] = [
-  { id: 'fasttrack', label: '🔥 Fast-Track Enabled' },
+  { id: 'fasttrack', label: '🔥 Có ứng tuyển nhanh' },
   { id: 'java', label: 'Java / Spring Boot', dot: true },
   { id: 'react', label: 'React 19' },
-  { id: 'remote-us', label: 'Remote US' },
-  { id: 'internship', label: 'Internships 2025' },
+  { id: 'remote-us', label: 'Làm từ xa tại US' },
+  { id: 'internship', label: 'Thực tập 2025' },
 ];
 
 const chipMatches = (chipId: string, job: DemoJob): boolean => {
@@ -479,7 +479,7 @@ const JobCard: React.FC<{ job: DemoJob; selected: boolean; onSelect: () => void 
         ))}
         {job.moreCount !== undefined && (
           <span className="px-2 py-0.5 rounded bg-surface-mid font-mono text-[11px] text-ink-variant">
-            +{job.moreCount} more
+            +{job.moreCount} nữa
           </span>
         )}
       </div>
@@ -495,11 +495,11 @@ const JobCard: React.FC<{ job: DemoJob; selected: boolean; onSelect: () => void 
               to="/register"
               className="px-3 py-1.5 rounded-lg bg-primary-container text-on-primary text-label-md font-medium hover:bg-primary shadow-sm transition-colors"
             >
-              Apply with AI Score
+              Ứng tuyển bằng điểm AI
             </Link>
           ) : (
             <span className="text-label-sm text-primary font-medium group-hover:translate-x-0.5 transition-transform">
-              Inspect Details →
+              Xem chi tiết →
             </span>
           )}
         </div>
@@ -513,17 +513,17 @@ const JobCard: React.FC<{ job: DemoJob; selected: boolean; onSelect: () => void 
 /* ------------------------------------------------------------------ */
 
 const INSPECTOR_STACK: { icon: string; name: string; note: string }[] = [
-  { icon: 'terminal', name: 'Java 21 LTS', note: 'Virtual Threads & Core' },
+  { icon: 'terminal', name: 'Java 21 LTS', note: 'Virtual Threads & lõi' },
   { icon: 'dns', name: 'Spring Boot 3', note: 'WebMVC & Data JPA' },
-  { icon: 'database', name: 'PostgreSQL', note: 'B-tree indexing & Locks' },
-  { icon: 'hub', name: 'Apache Kafka', note: 'Partitions & Offsets' },
+  { icon: 'database', name: 'PostgreSQL', note: 'Đánh chỉ mục B-tree & khóa' },
+  { icon: 'hub', name: 'Apache Kafka', note: 'Partition & Offset' },
 ];
 
 const INSPECTOR_SKILLS: { name: string; level: string }[] = [
-  { name: 'Memory Management & Concurrency', level: 'Advanced' },
-  { name: 'Query Optimization & Schema Design', level: 'Advanced' },
-  { name: 'RESTful API Architecture & Security', level: 'Proficient' },
-  { name: 'System Scalability & Reliability', level: 'Proficient' },
+  { name: 'Quản lý bộ nhớ & concurrency', level: 'Nâng cao' },
+  { name: 'Tối ưu truy vấn & thiết kế schema', level: 'Nâng cao' },
+  { name: 'Kiến trúc API RESTful & bảo mật', level: 'Thành thạo' },
+  { name: 'Khả năng mở rộng & độ tin cậy hệ thống', level: 'Thành thạo' },
 ];
 
 const InspectorPane: React.FC = () => (
@@ -540,29 +540,29 @@ const InspectorPane: React.FC = () => (
               <span className="text-label-md font-semibold text-ink">CloudScale Tech</span>
               <VerifiedIcon />
             </div>
-            <div className="text-body-sm text-ink-variant">Austin, TX (HQ) • Series B • 140 Engineers</div>
+            <div className="text-body-sm text-ink-variant">Austin, TX (trụ sở) • Series B • 140 kỹ sư</div>
           </div>
         </div>
         <button
           type="button"
           className="p-2 rounded-lg text-ink-variant hover:text-ink hover:bg-surface-low transition-colors"
-          title="Bookmark Job"
-          aria-label="Bookmark Job"
+          title="Lưu tin tuyển dụng"
+          aria-label="Lưu tin tuyển dụng"
         >
           <span className="material-symbols-outlined text-[20px]">bookmark_border</span>
         </button>
       </div>
       <div className="pt-2 pb-4">
-        <h2 className="text-headline-lg font-bold text-ink">Java Backend Developer Intern</h2>
+        <h2 className="text-headline-lg font-bold text-ink">Thực tập sinh Phát triển Backend Java</h2>
         <div className="flex flex-wrap items-center gap-2 mt-2">
           <span className="px-2.5 py-1 rounded-md bg-success-bg text-[#064e3b] text-label-sm font-semibold">
-            $45.00/hr ($93,600 annualized)
+            $45.00/giờ (quy năm $93,600)
           </span>
           <span className="px-2 py-0.5 rounded-md bg-surface-mid text-label-sm text-ink-variant">
-            Remote (US Only)
+            Làm từ xa (chỉ US)
           </span>
           <span className="px-2 py-0.5 rounded-md bg-surface-mid text-label-sm text-ink-variant">
-            Internship / 14 wks
+            Thực tập / 14 tuần
           </span>
         </div>
       </div>
@@ -574,16 +574,16 @@ const InspectorPane: React.FC = () => (
           </div>
           <div>
             <div className="flex items-center justify-between">
-              <h4 className="text-label-md font-bold text-primary">Fast-Track Status: Qualified</h4>
-              <span className="font-mono text-[12px] leading-4 font-bold text-primary">Score: 88 / 100</span>
+              <h4 className="text-label-md font-bold text-primary">Trạng thái ứng tuyển nhanh: Đạt</h4>
+              <span className="font-mono text-[12px] leading-4 font-bold text-primary">Điểm: 88 / 100</span>
             </div>
             <p className="text-body-sm text-ink mt-1 leading-snug">
-              Employer set a threshold of <strong>≥ 80/100</strong>. Your verified benchmark qualifies you to bypass
-              recruiter phone screens and move straight to System Architecture!
+              Nhà tuyển dụng đặt ngưỡng <strong>≥ 80/100</strong>. Điểm chuẩn đã xác thực của bạn giúp bỏ qua vòng gọi
+              điện của recruiter và vào thẳng vòng kiến trúc hệ thống!
             </p>
             <div className="flex items-center gap-2 mt-2 font-mono text-[11px] leading-4 text-ink-variant">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#10b981]" /> {/* emerald-500 */}
-              <span>Verified candidate • Direct interview invite ready</span>
+              <span>Ứng viên đã xác thực • Sẵn sàng lời mời phỏng vấn trực tiếp</span>
             </div>
           </div>
         </div>
@@ -595,11 +595,11 @@ const InspectorPane: React.FC = () => (
           className="flex-1 py-2.5 px-4 rounded-lg bg-primary-container text-on-primary text-label-md font-semibold hover:bg-primary transition-colors flex items-center justify-center gap-2 shadow-sm"
         >
           <span className="material-symbols-outlined text-[18px]">send</span>
-          <span>Apply with Verified Score</span>
+          <span>Ứng tuyển bằng điểm đã xác thực</span>
         </Link>
         <button
           type="button"
-          aria-label="Share"
+          aria-label="Chia sẻ"
           className="py-2.5 px-3 rounded-lg bg-surface-low text-ink text-label-md hover:bg-surface-mid transition-colors flex items-center justify-center gap-1"
         >
           <span className="material-symbols-outlined text-[18px]">share</span>
@@ -609,31 +609,31 @@ const InspectorPane: React.FC = () => (
       <div className="space-y-5">
         <div>
           <h4 className="text-label-sm uppercase tracking-wider font-semibold text-ink-variant mb-2">
-            Role Overview &amp; Mandate
+            Mô tả vai trò &amp; nhiệm vụ
           </h4>
           <p className="text-body-sm text-ink leading-relaxed">
-            As a Java Backend Developer Intern on CloudScale’s Core Telemetry team, you will build and scale
-            distributed transaction pipelines handling 450k events/sec. You'll partner closely with Principal
-            Engineers to deploy performant microservices across our multi-region Kubernetes clusters.
+            Là Thực tập sinh Phát triển Backend Java trong đội Core Telemetry của CloudScale, bạn sẽ xây dựng và mở
+            rộng các pipeline giao dịch phân tán xử lý 450k sự kiện/giây. Bạn làm việc chặt chẽ với các Principal
+            Engineer để triển khai microservice hiệu năng cao trên cụm Kubernetes đa vùng của chúng tôi.
           </p>
           <ul className="mt-2 space-y-1.5 text-body-sm text-ink-variant">
             <li className="flex items-start gap-2">
               <span className="text-primary mt-0.5">•</span>
-              <span>Optimize high-throughput PostgreSQL connection pooling &amp; transaction isolation levels.</span>
+              <span>Tối ưu connection pooling và mức cô lập giao dịch của PostgreSQL với throughput cao.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-primary mt-0.5">•</span>
-              <span>Build event-driven consumers using Apache Kafka and Spring Cloud Stream.</span>
+              <span>Xây consumer hướng sự kiện bằng Apache Kafka và Spring Cloud Stream.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-primary mt-0.5">•</span>
-              <span>Maintain 99.99% reliability SLA with automated canary deployments and metrics.</span>
+              <span>Duy trì SLA độ tin cậy 99.99% nhờ canary deployment và metrics tự động.</span>
             </li>
           </ul>
         </div>
         <div className="pt-2">
           <h4 className="text-label-sm uppercase tracking-wider font-semibold text-ink-variant mb-2.5">
-            Evaluated Technology Stack
+            Stack công nghệ được đánh giá
           </h4>
           <div className="grid grid-cols-2 gap-2">
             {INSPECTOR_STACK.map((item) => (
@@ -650,9 +650,9 @@ const InspectorPane: React.FC = () => (
         <div className="pt-2">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-label-sm uppercase tracking-wider font-semibold text-ink-variant">
-              Core Skills Evaluated
+              Kỹ năng cốt lõi được đánh giá
             </h4>
-            <span className="text-label-sm text-[12px] text-[#047857] font-medium">All Requirements Met</span>
+            <span className="text-label-sm text-[12px] text-[#047857] font-medium">Đã đáp ứng đủ yêu cầu</span>
           </div>
           <div className="space-y-2 p-3 bg-surface-low rounded-lg">
             {INSPECTOR_SKILLS.map((skill, i) => (
@@ -673,31 +673,31 @@ const InspectorPane: React.FC = () => (
         </div>
         <div className="pt-2">
           <h4 className="text-label-sm uppercase tracking-wider font-semibold text-ink-variant mb-2.5">
-            Fast-Track Hiring Pipeline
+            Quy trình ứng tuyển nhanh
           </h4>
           <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-surface-high">
             <div className="relative">
               <div className="absolute -left-6 top-0.5 w-4 h-4 rounded-full bg-[#10b981] text-on-primary flex items-center justify-center text-[10px]">
                 ✓
               </div>
-              <div className="text-label-md font-semibold text-ink">Stage 1: AI Technical Benchmark</div>
-              <p className="text-body-sm text-ink-variant">Completed (Score: 88/100). Recruiter screen waived.</p>
+              <div className="text-label-md font-semibold text-ink">Vòng 1: Đo kỹ thuật bằng AI</div>
+              <p className="text-body-sm text-ink-variant">Đã hoàn thành (Điểm: 88/100). Bỏ qua vòng sàng lọc recruiter.</p>
             </div>
             <div className="relative">
               <div className="absolute -left-6 top-0.5 w-4 h-4 rounded-full bg-primary text-on-primary flex items-center justify-center text-[10px] font-bold">
                 2
               </div>
-              <div className="text-label-md font-semibold text-ink">Stage 2: Live Architecture Deep-Dive</div>
+              <div className="text-label-md font-semibold text-ink">Vòng 2: Đi sâu về kiến trúc trực tiếp</div>
               <p className="text-body-sm text-ink-variant">
-                45-minute interactive session with Staff Platform Architect.
+                Phiên tương tác 45 phút với Kiến trúc sư Platform cấp cao.
               </p>
             </div>
             <div className="relative">
               <div className="absolute -left-6 top-0.5 w-4 h-4 rounded-full bg-surface-high text-ink-variant flex items-center justify-center text-[10px] font-bold">
                 3
               </div>
-              <div className="text-label-md font-semibold text-ink">Stage 3: Executive Sync &amp; Formal Offer</div>
-              <p className="text-body-sm text-ink-variant">Direct placement review with VP of Engineering.</p>
+              <div className="text-label-md font-semibold text-ink">Vòng 3: Thống nhất với lãnh đạo &amp; offer chính thức</div>
+              <p className="text-body-sm text-ink-variant">Đánh giá trực tiếp với VP Engineering.</p>
             </div>
           </div>
         </div>
@@ -707,10 +707,10 @@ const InspectorPane: React.FC = () => (
     <div className="bg-surface-low rounded-xl p-4 flex items-center justify-between text-ink-variant text-body-sm">
       <div className="flex items-center gap-2">
         <span className="material-symbols-outlined text-[20px] text-primary">verified_user</span>
-        <span>Fair &amp; transparent evaluation for every candidate</span>
+        <span>Đánh giá công bằng &amp; minh bạch cho mọi ứng viên</span>
       </div>
       <a href="#" className="text-primary font-medium hover:underline text-label-sm">
-        Learn More →
+        Tìm hiểu thêm →
       </a>
     </div>
   </div>
@@ -807,29 +807,29 @@ const PublicJobBoardPage: React.FC = () => {
               <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
                 <div className="flex items-center gap-2 text-body-sm text-ink-variant">
                   <span className="material-symbols-outlined text-[18px] text-primary">explore</span>
-                  <span>Engineering Job Board</span>
+                  <span>Bảng tin tuyển dụng kỹ thuật</span>
                   <span>/</span>
-                  <span className="text-ink font-medium">Open Roles</span>
+                  <span className="text-ink font-medium">Vị trí đang mở</span>
                   <span className="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-full bg-card text-primary text-label-sm shadow-sm">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    86 Available Roles
+                    86 vị trí đang tuyển
                   </span>
                 </div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-card text-ink-variant text-label-sm shadow-sm">
                   <span className="material-symbols-outlined text-[16px] text-[#059669]">check_circle</span>
                   <span className="text-ink font-medium">Elena Rostova</span>
                   <span className="w-1 h-1 rounded-full bg-outline" />
-                  <span className="text-primary font-medium">Profile Verified</span>
+                  <span className="text-primary font-medium">Hồ sơ đã xác thực</span>
                 </div>
               </div>
               {/* Title & value prop */}
               <div className="max-w-3xl mb-6">
                 <h1 className="text-headline-lg font-bold tracking-tight text-ink mb-2">
-                  Explore Verified Engineering Roles
+                  Xem các vị trí kỹ thuật đã xác thực
                 </h1>
                 <p className="text-body-md text-ink-variant leading-relaxed">
-                  All listings are pre-approved by our platform governance team with clear compensation, tech stack
-                  requirements, and direct AI benchmark fast-tracks.
+                  Toàn bộ tin đăng đều được đội ngũ quản trị nền tảng duyệt trước, với mức lương, yêu cầu stack công
+                  nghệ và đường ứng tuyển nhanh theo điểm AI rõ ràng.
                 </p>
               </div>
               {/* Search & multi-filter card */}
@@ -842,7 +842,7 @@ const PublicJobBoardPage: React.FC = () => {
                     <input
                       ref={searchRef}
                       className="w-full h-10 pl-10 pr-16 bg-surface-low rounded-lg text-body-md text-ink placeholder:text-outline-strong focus:outline-none focus:bg-card focus:ring-2 focus:ring-primary/20 transition-all"
-                      placeholder="Search by title, skills (e.g. Java, React, Docker), or company..."
+                      placeholder="Tìm theo chức danh, kỹ năng (VD: Java, React, Docker) hoặc công ty..."
                       type="text"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
@@ -855,37 +855,37 @@ const PublicJobBoardPage: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <SelectWrap>
-                      <select className={selectClass} value={role} onChange={(e) => setRole(e.target.value)} aria-label="Role category">
-                        <option value="">Role: All</option>
+                      <select className={selectClass} value={role} onChange={(e) => setRole(e.target.value)} aria-label="Nhóm vai trò">
+                        <option value="">Vai trò: Tất cả</option>
                         <option value="backend">Backend</option>
                         <option value="frontend">Frontend</option>
                         <option value="fullstack">Fullstack</option>
-                        <option value="systems">Systems</option>
+                        <option value="systems">Hệ thống</option>
                       </select>
                     </SelectWrap>
                     <SelectWrap>
-                      <select className={selectClass} value={level} onChange={(e) => setLevel(e.target.value)} aria-label="Experience level">
-                        <option value="">Level: All</option>
-                        <option value="intern">Intern (2025)</option>
-                        <option value="newgrad">New Grad</option>
+                      <select className={selectClass} value={level} onChange={(e) => setLevel(e.target.value)} aria-label="Cấp độ kinh nghiệm">
+                        <option value="">Cấp độ: Tất cả</option>
+                        <option value="intern">Thực tập sinh (2025)</option>
+                        <option value="newgrad">Sinh viên mới tốt nghiệp</option>
                         <option value="junior">Junior</option>
-                        <option value="mid">Mid-Level</option>
+                        <option value="mid">Trung cấp</option>
                       </select>
                     </SelectWrap>
                     <SelectWrap>
-                      <select className={selectClass} value={mode} onChange={(e) => setMode(e.target.value)} aria-label="Work mode">
-                        <option value="">Mode: All</option>
-                        <option value="remote">Remote</option>
-                        <option value="hybrid">Hybrid</option>
-                        <option value="onsite">On-site</option>
+                      <select className={selectClass} value={mode} onChange={(e) => setMode(e.target.value)} aria-label="Hình thức làm việc">
+                        <option value="">Hình thức: Tất cả</option>
+                        <option value="remote">Làm từ xa</option>
+                        <option value="hybrid">Kết hợp</option>
+                        <option value="onsite">Tại văn phòng</option>
                       </select>
                     </SelectWrap>
                     <SelectWrap>
-                      <select className={selectClass} value={comp} onChange={(e) => setComp(e.target.value)} aria-label="Minimum compensation">
-                        <option value="">Comp: Any</option>
-                        <option value="40">$40/hr+ ($83k+)</option>
-                        <option value="50">$50/hr+ ($104k+)</option>
-                        <option value="60">$60/hr+ ($125k+)</option>
+                      <select className={selectClass} value={comp} onChange={(e) => setComp(e.target.value)} aria-label="Mức lương tối thiểu">
+                        <option value="">Lương: Không giới hạn</option>
+                        <option value="40">$40/giờ+ ($83k+)</option>
+                        <option value="50">$50/giờ+ ($104k+)</option>
+                        <option value="60">$60/giờ+ ($125k+)</option>
                       </select>
                     </SelectWrap>
                   </div>
@@ -893,7 +893,7 @@ const PublicJobBoardPage: React.FC = () => {
                 {/* Quick filter badges */}
                 <div className="flex flex-wrap items-center gap-2 mt-3 pt-3">
                   <span className="text-label-sm text-ink-variant uppercase tracking-wider font-semibold mr-1">
-                    Quick:
+                    Nhanh:
                   </span>
                   {QUICK_CHIPS.map((chip) => {
                     const active = activeChips.includes(chip.id);
@@ -932,9 +932,9 @@ const PublicJobBoardPage: React.FC = () => {
                   })}
                   <div className="ml-auto text-ink-variant text-label-sm hidden sm:inline-flex items-center gap-1">
                     <span className="material-symbols-outlined text-[16px]">tune</span>
-                    <span>{activeFilterCount} filters active</span>
+                    <span>{activeFilterCount} bộ lọc đang bật</span>
                     <button type="button" className="text-primary hover:underline ml-1" onClick={resetFilters}>
-                      Reset
+                      Đặt lại
                     </button>
                   </div>
                 </div>
@@ -946,21 +946,21 @@ const PublicJobBoardPage: React.FC = () => {
             {/* Results metadata bar */}
             <div className="flex items-center justify-between pb-4">
               <div className="flex items-center gap-2">
-                <h2 className="text-headline-sm font-bold text-ink">Verified Open Requisitions</h2>
+                <h2 className="text-headline-sm font-bold text-ink">Tin đã xác thực đang mở</h2>
                 <span className="px-2 py-0.5 rounded-full bg-surface-high font-mono text-[11px] leading-4 text-ink-variant">
-                  {filtered.length} of 86
+                  {filtered.length} / 86
                 </span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="hidden md:inline text-body-sm text-ink-variant">
-                  Sorted by: <span className="font-medium text-ink">AI Score Fast-Track Eligibility</span>
+                  Sắp xếp theo: <span className="font-medium text-ink">Điều kiện ứng tuyển nhanh theo điểm AI</span>
                 </span>
                 <button
                   type="button"
                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-low text-ink hover:bg-surface-mid text-label-sm transition-colors"
                 >
                   <span className="material-symbols-outlined text-[16px]">swap_vert</span>
-                  <span>Sort</span>
+                  <span>Sắp xếp</span>
                 </button>
               </div>
             </div>
@@ -978,9 +978,9 @@ const PublicJobBoardPage: React.FC = () => {
                 {filtered.length === 0 && (
                   <div className="flex flex-col items-center justify-center gap-2 rounded-xl bg-card px-6 py-12 text-center shadow-sm">
                     <span className="material-symbols-outlined text-[28px] text-ink-variant">search_off</span>
-                    <p className="m-0 text-headline-sm text-ink">No matching requisitions</p>
+                    <p className="m-0 text-headline-sm text-ink">Không tìm thấy tin phù hợp</p>
                     <p className="m-0 text-body-sm text-ink-variant">
-                      Adjust the search or filters to see more verified open roles.
+                      Điều chỉnh tìm kiếm hoặc bộ lọc để xem thêm vị trí đã xác thực.
                     </p>
                   </div>
                 )}
@@ -989,7 +989,7 @@ const PublicJobBoardPage: React.FC = () => {
                   <div className="flex items-center gap-2 text-body-sm text-ink-variant">
                     <span className="w-2 h-2 rounded-full bg-[#10b981] animate-ping" />
                     <span>
-                      Showing 1-{filtered.length} of 86 verified open requisitions • Auto-updated live
+                      Đang hiển thị 1-{filtered.length} / 86 tin tuyển dụng đã xác thực • Tự cập nhật trực tiếp
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
@@ -998,7 +998,7 @@ const PublicJobBoardPage: React.FC = () => {
                       className="px-3 py-1.5 rounded-lg bg-surface-low text-ink-variant hover:text-ink text-label-sm disabled:opacity-50"
                       disabled
                     >
-                      Previous
+                      Trước
                     </button>
                     <button type="button" className="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-label-sm">
                       1
@@ -1019,7 +1019,7 @@ const PublicJobBoardPage: React.FC = () => {
                       type="button"
                       className="px-3 py-1.5 rounded-lg bg-surface-low text-ink hover:bg-surface-mid text-label-sm"
                     >
-                      Next
+                      Sau
                     </button>
                   </div>
                 </div>

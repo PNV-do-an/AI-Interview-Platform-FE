@@ -361,8 +361,8 @@ export const errorText = (err: unknown, fallback = 'Không tải được dữ l
 };
 
 /**
- * Nhãn vai trò tiếng Việt theo mockup (ROLE_LABELS trong User.model là chrome tiếng Anh của
- * màn cũ). ROLE_STAFF không có trong mockup nhưng BE vẫn trả về nên phải có nhãn.
+ * Nhãn vai trò tiếng Việt theo mockup admin (giữ riêng vì mockup gọi ROLE_INTERVIEWER là
+ * "Nhà tuyển dụng / Cố vấn"). ROLE_STAFF không có trong mockup nhưng BE vẫn trả về nên phải có nhãn.
  */
 export const ROLE_VN: Record<Role, string> = {
   ROLE_USER: 'Ứng viên',

@@ -43,8 +43,8 @@ const EmployerReviewsPage: React.FC = () => {
 
   return (
     <div>
-      <PageHeader title="Employer Reviews" />
-      {loading && <LoadingState />}
+      <PageHeader title="Đánh giá nhà tuyển dụng" />
+      {loading && <LoadingState label="Đang tải…" />}
       <ErrorBanner message={error} />
       {successMsg && (
         <div className="mb-4 flex items-start gap-2 rounded-lg bg-success-bg px-3 py-2.5 text-body-sm text-success-text" role="status">
@@ -60,16 +60,16 @@ const EmployerReviewsPage: React.FC = () => {
               {reviewList.averageRating != null ? reviewList.averageRating.toFixed(1) : '—'}
             </div>
             <StarDisplay rating={Math.round(reviewList.averageRating || 0)} />
-            <p className="m-0 text-body-sm text-ink-variant">{reviewList.totalReviews} reviews</p>
+            <p className="m-0 text-body-sm text-ink-variant">{reviewList.totalReviews} đánh giá</p>
           </div>
         </Card>
       )}
 
       {isCandidate && (
         <Card className="mb-4">
-          <h2 className="m-0 text-headline-sm text-ink">Write your review</h2>
+          <h2 className="m-0 text-headline-sm text-ink">Viết đánh giá</h2>
           <p className="mt-1 text-body-sm text-ink-variant">
-            You can only leave a review after completing an interview with this employer.
+            Bạn chỉ có thể đánh giá sau khi hoàn thành một buổi phỏng vấn với nhà tuyển dụng này.
           </p>
           <div className="mt-2 flex items-center gap-1" onMouseLeave={() => setHover(0)}>
             {[1, 2, 3, 4, 5].map((n) => (
@@ -88,21 +88,21 @@ const EmployerReviewsPage: React.FC = () => {
           </div>
           <textarea
             className={`${textareaClass} mt-2`}
-            placeholder="Share your interview experience..."
+            placeholder="Chia sẻ trải nghiệm phỏng vấn của bạn..."
             value={comment}
             onChange={(e) => setComment(e.target.value)}
           />
           <div className="mt-2">
             <button type="button" className={buttonClass('primary')} onClick={onSubmit} disabled={!comment.trim()}>
               <span className="material-symbols-outlined text-[18px]">send</span>
-              Submit review
+              Gửi đánh giá
             </button>
           </div>
         </Card>
       )}
 
       {reviewList && reviewList.reviews.length === 0 && (
-        <p className="m-0 text-body-sm text-ink-variant">No reviews yet.</p>
+        <p className="m-0 text-body-sm text-ink-variant">Chưa có đánh giá nào.</p>
       )}
 
       <div className="flex flex-col gap-3">
@@ -112,11 +112,11 @@ const EmployerReviewsPage: React.FC = () => {
               <strong className="text-headline-sm text-ink">{r.reviewerName}</strong>
               <StarDisplay rating={r.rating} />
             </div>
-            {r.jobTitle && <p className="mt-1 text-body-sm text-ink-variant">Position: {r.jobTitle}</p>}
+            {r.jobTitle && <p className="mt-1 text-body-sm text-ink-variant">Vị trí: {r.jobTitle}</p>}
             <p className="mt-2 text-body-md text-ink">{r.comment}</p>
             {r.reply && (
               <div className="mt-2 rounded-md bg-surface-low p-3">
-                <strong className="text-label-md text-ink">Reply from {r.repliedByName || 'the administrator'}:</strong>
+                <strong className="text-label-md text-ink">Phản hồi từ {r.repliedByName || 'quản trị viên'}:</strong>
                 <p className="mt-1 text-body-sm text-ink-variant">{r.reply}</p>
               </div>
             )}
@@ -126,7 +126,7 @@ const EmployerReviewsPage: React.FC = () => {
 
       <p className="mt-6">
         <Link to="/jobs" className="text-body-sm text-ink-variant no-underline transition-colors hover:text-primary">
-          ← Back to jobs
+          ← Quay lại danh sách tin
         </Link>
       </p>
     </div>

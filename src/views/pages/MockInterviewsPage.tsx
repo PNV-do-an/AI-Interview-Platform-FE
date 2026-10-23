@@ -15,19 +15,19 @@ import {
   labelClass,
 } from '../components/ui';
 
-// "Completed N days ago" dẫn xuất từ completedAt/createdAt thật (không hardcode).
+// Suy ra "Hoàn tất N ngày trước" từ completedAt/createdAt thật, không hardcode.
 const relativeDays = (iso?: string): string => {
   if (!iso) return '';
   const then = new Date(iso).getTime();
   if (Number.isNaN(then)) return '';
   const days = Math.floor((Date.now() - then) / 86400000);
-  if (days <= 0) return 'Completed today';
-  if (days === 1) return 'Completed 1 day ago';
-  return `Completed ${days} days ago`;
+  if (days <= 0) return 'Hoàn tất hôm nay';
+  if (days === 1) return 'Hoàn tất 1 ngày trước';
+  return `Hoàn tất ${days} ngày trước`;
 };
 
 const sessionTitle = (s: InterviewSession): string =>
-  s.mode === 'MOCK' ? (s.jobTitle ?? 'Mock interview') : (s.topic ?? 'Knowledge practice');
+  s.mode === 'MOCK' ? (s.jobTitle ?? 'Phiên luyện tập') : (s.topic ?? 'Luyện tập kiến thức');
 
 const MockInterviewsPage = () => {
   const { user } = useAuth();
@@ -61,7 +61,7 @@ const MockInterviewsPage = () => {
   if (!user || user.role !== 'ROLE_USER') {
     return (
       <div className="p-10 text-body-md text-ink-variant">
-        Please sign in with a candidate account.
+        Vui lòng đăng nhập bằng tài khoản ứng viên.
       </div>
     );
   }
@@ -71,25 +71,25 @@ const MockInterviewsPage = () => {
       {/* Header: breadcrumb + title + description (nguyên văn nhãn tiếng Anh của mockup) */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-1 text-label-sm text-outline-strong">
-          <span>Candidate Core</span>
+          <span>Ứng viên</span>
           <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span>Growth &amp; Preparation</span>
+          <span>Phát triển &amp; Chuẩn bị</span>
           <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="font-medium text-primary">Skills Hub &amp; Practice</span>
+          <span className="font-medium text-primary">Kho kỹ năng &amp; Luyện tập</span>
         </div>
-        <h1 className="m-0 text-display-mobile text-ink sm:text-display">Skills Hub &amp; Interactive AI Practice</h1>
+        <h1 className="m-0 text-display-mobile text-ink sm:text-display">Kho kỹ năng &amp; Luyện tập tương tác với AI</h1>
         <p className="m-0 max-w-3xl text-body-md text-ink-variant">
-          Sharpen your technical interview readiness with simulated live coding challenges, system design
-          architectural whiteboards, and sub-second synthesized AI feedback.
+          Rèn luyện sự sẵn sàng cho phỏng vấn kỹ thuật qua các thử thách live coding mô phỏng, bảng trắng
+          thiết kế hệ thống và phản hồi AI tổng hợp tức thì.
         </p>
       </div>
 
       {/* Start new session (giữ 100% logic cũ) */}
       <Card className="bg-surface-low">
-        <h3 className="m-0 mb-4 text-headline-md text-ink">Start a New Session</h3>
+        <h3 className="m-0 mb-4 text-headline-md text-ink">Bắt đầu phiên mới</h3>
         <form onSubmit={handleStart} className="flex flex-col gap-4">
           <div>
-            <label className={labelClass}>Practice Mode</label>
+            <label className={labelClass}>Chế độ luyện tập</label>
             <select
               className={inputClass}
               value={mode}
@@ -103,9 +103,9 @@ const MockInterviewsPage = () => {
 
           {mode === 'MOCK' && (
             <div>
-              <label className={labelClass}>Job Posting</label>
+              <label className={labelClass}>Tin tuyển dụng</label>
               <select className={inputClass} value={jobId} onChange={(e) => setJobId(e.target.value ? Number(e.target.value) : '')}>
-                <option value="">— Select a job posting —</option>
+                <option value="">— Chọn tin tuyển dụng —</option>
                 {jobs?.content.map((j) => (
                   <option key={j.id} value={j.id}>{j.title} — {j.companyName}</option>
                 ))}
@@ -115,18 +115,18 @@ const MockInterviewsPage = () => {
 
           {mode === 'KNOWLEDGE' && (
             <div>
-              <label className={labelClass}>Practice Topic</label>
+              <label className={labelClass}>Chủ đề luyện tập</label>
               <input
                 className={inputClass}
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
-                placeholder="e.g. Java Spring Boot, React, SQL..."
+                placeholder="vd. Java Spring Boot, React, SQL..."
               />
             </div>
           )}
 
           <div>
-            <label className={labelClass}>Number of Questions (3-10)</label>
+            <label className={labelClass}>Số câu hỏi (3-10)</label>
             <input
               className={`${inputClass} max-w-[120px] tabular-nums`}
               type="number"
@@ -138,7 +138,7 @@ const MockInterviewsPage = () => {
           </div>
 
           <button type="submit" className={buttonClass('primary', 'self-start gap-1')}>
-            <span>Launch Live Simulation</span>
+            <span>Bắt đầu mô phỏng trực tiếp</span>
             <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
           </button>
         </form>
@@ -157,19 +157,19 @@ const MockInterviewsPage = () => {
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h3 className="m-0 text-headline-md text-ink">Recent Mock Sessions &amp; Diagnostic History</h3>
-            <p className="m-0 text-body-sm text-ink-variant">Deep-dive telemetry transcripts and synthetic proctor scorecards.</p>
+            <h3 className="m-0 text-headline-md text-ink">Phiên luyện tập gần đây &amp; Lịch sử chẩn đoán</h3>
+            <p className="m-0 text-body-sm text-ink-variant">Bản ghi chi tiết và bảng điểm do AI đánh giá.</p>
           </div>
           {sessions && sessions.totalElements > 0 && (
             <span className="text-label-sm text-ink-variant tabular-nums">
-              Showing {sessions.content.length} of {sessions.totalElements} sessions
+              Hiển thị {sessions.content.length} trong {sessions.totalElements} phiên
             </span>
           )}
         </div>
 
         {loading && <LoadingState />}
         {!sessions || sessions.content.length === 0 ? (
-          <EmptyState icon="smart_toy" title="No mock sessions yet." />
+          <EmptyState icon="smart_toy" title="Chưa có phiên luyện tập." />
         ) : (
           <div className="flex flex-col gap-3">
             {sessions.content.map((s) => {
@@ -187,7 +187,7 @@ const MockInterviewsPage = () => {
                         <span className="font-mono text-[12px] font-medium text-primary">#{s.mode === 'MOCK' ? 'MOCK' : 'KNOW'}-{s.id}</span>
                         <span className="text-outline-strong">•</span>
                         <span className="text-label-sm text-ink-variant">
-                          {done ? relativeDays(s.completedAt ?? s.createdAt) : `In progress · ${s.answeredCount}/${s.questions.length} answered`}
+                          {done ? relativeDays(s.completedAt ?? s.createdAt) : `Đang làm · ${s.answeredCount}/${s.questions.length} đã trả lời`}
                         </span>
                       </div>
                       <h5 className="m-0 mt-0.5 truncate text-headline-sm text-ink">{sessionTitle(s)}</h5>
@@ -197,16 +197,16 @@ const MockInterviewsPage = () => {
                     {s.overallScore != null ? (
                       <div className="flex flex-col items-end">
                         <span className="text-headline-md font-semibold text-primary tabular-nums">{s.overallScore} / 100</span>
-                        {done && <Badge tone="success">Completed</Badge>}
+                        {done && <Badge tone="success">Hoàn tất</Badge>}
                       </div>
                     ) : (
-                      <Badge tone={done ? 'success' : 'info'}>{done ? 'Completed' : 'In progress'}</Badge>
+                      <Badge tone={done ? 'success' : 'info'}>{done ? 'Hoàn tất' : 'Đang làm'}</Badge>
                     )}
                     <Link
                       to={done ? `/mock-interviews/${s.id}/result` : `/mock-interviews/${s.id}`}
                       className={buttonClass(done ? 'secondary' : 'primary', 'no-underline whitespace-nowrap')}
                     >
-                      {done ? 'View Detailed Feedback' : 'Continue'}
+                      {done ? 'Xem góp ý chi tiết' : 'Tiếp tục'}
                     </Link>
                   </div>
                 </Card>

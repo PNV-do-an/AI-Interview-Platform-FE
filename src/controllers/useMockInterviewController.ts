@@ -26,7 +26,7 @@ export const useMockInterviewController = () => {
       setSession(res.data.data!);
       return res.data.data!;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to start the interview session');
+      setError(e.response?.data?.message || 'Không bắt đầu được phiên luyện tập');
       return null;
     }
   }, []);
@@ -38,7 +38,7 @@ export const useMockInterviewController = () => {
       const res = await InterviewService.getMySessions({ page, size: 10 });
       setSessions(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to load session history');
+      setError(e.response?.data?.message || 'Không tải được lịch sử phiên luyện tập');
     } finally {
       setLoading(false);
     }
@@ -52,7 +52,7 @@ export const useMockInterviewController = () => {
       setResult(res.data.data!);
       setSession(res.data.data!.session);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to load session results');
+      setError(e.response?.data?.message || 'Không tải được kết quả phiên luyện tập');
     } finally {
       setLoading(false);
     }
@@ -65,7 +65,7 @@ export const useMockInterviewController = () => {
       setLastAnswer(res.data.data!);
       return res.data.data!;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to submit answer');
+      setError(e.response?.data?.message || 'Không gửi được câu trả lời');
       return null;
     }
   }, []);
@@ -76,10 +76,10 @@ export const useMockInterviewController = () => {
       const res = await InterviewService.finish(id);
       setResult(res.data.data!);
       setSession(res.data.data!.session);
-      setSuccessMsg('Interview session completed');
+      setSuccessMsg('Đã hoàn thành phiên luyện tập');
       return res.data.data!;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to end the interview session');
+      setError(e.response?.data?.message || 'Không kết thúc được phiên luyện tập');
       return null;
     }
   }, []);

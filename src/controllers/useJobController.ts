@@ -19,7 +19,7 @@ export const useJobController = () => {
       const res = await ProgramService.searchJobs({ page, size: 10, search });
       setJobs(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to load job listings');
+      setError(e.response?.data?.message || 'Không tải được danh sách tin tuyển dụng');
     } finally {
       setLoading(false);
     }
@@ -32,7 +32,7 @@ export const useJobController = () => {
       const res = await ProgramService.getJobDetail(id);
       setJobDetail(res.data.data!);
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to load job details');
+      setError(e.response?.data?.message || 'Không tải được chi tiết tin tuyển dụng');
     } finally {
       setLoading(false);
     }
@@ -42,10 +42,10 @@ export const useJobController = () => {
     clearMessages();
     try {
       await ProgramService.applyJob(jobId, coverLetter);
-      setSuccessMsg('Application submitted!');
+      setSuccessMsg('Đã gửi đơn ứng tuyển');
       return true;
     } catch (e: any) {
-      setError(e.response?.data?.message || 'Failed to submit application');
+      setError(e.response?.data?.message || 'Không gửi được đơn ứng tuyển');
       return false;
     }
   }, []);

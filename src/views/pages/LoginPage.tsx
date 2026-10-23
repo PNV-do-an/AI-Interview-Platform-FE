@@ -218,11 +218,11 @@ const LoginPage: React.FC = () => {
                     </div>
                     <div className="flex flex-col">
                       <h4 className="text-[15px] font-semibold leading-5 text-white">Nguyễn Minh Anh</h4>
-                      <p className="text-[12px] leading-[18px] text-slate-400">Software Engineer Candidate</p>
+                      <p className="text-[12px] leading-[18px] text-slate-400">Ứng viên Kỹ sư Phần mềm</p>
                     </div>
                   </div>
                   <span className="flex items-center gap-1 rounded-full border border-secondary-fixed/30 bg-secondary-fixed/10 px-2.5 py-1 text-[12px] font-semibold text-secondary-fixed">
-                    <span className="material-symbols-outlined text-[14px]">trending_up</span> Match: 94%
+                    <span className="material-symbols-outlined text-[14px]">trending_up</span> Độ khớp: 94%
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 border-b border-surface-highest/15 py-3 text-center">

@@ -31,10 +31,10 @@ const MAX_SCORE = 95;
 const MIN_SCORE = 50;
 
 const STEP_TITLES = [
-  'Basic Info & Meta',
-  'Role & Responsibilities',
-  'Compensation & Perks',
-  'AI Screening Setup',
+  'Thông tin cơ bản',
+  'Mô tả công việc',
+  'Lương & phúc lợi',
+  'Cấu hình sàng lọc AI',
 ];
 
 const DEPARTMENTS = [
@@ -60,10 +60,10 @@ const EMPLOYMENT_TYPES = [
 ];
 
 const CURRENCIES = [
-  { value: 'USD', label: 'USD ($) United States' },
-  { value: 'EUR', label: 'EUR (€) Eurozone' },
-  { value: 'CAD', label: 'CAD ($) Canadian Dollar' },
-  { value: 'GBP', label: 'GBP (£) British Pound' },
+  { value: 'USD', label: 'USD ($) - Đô la Mỹ' },
+  { value: 'EUR', label: 'EUR (€) - Đồng euro' },
+  { value: 'CAD', label: 'CAD ($) - Đô la Canada' },
+  { value: 'GBP', label: 'GBP (£) - Bảng Anh' },
 ];
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -74,9 +74,9 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 };
 
 const WORKPLACE_OPTIONS: { value: WorkplaceModel; label: string; icon: string }[] = [
-  { value: 'ONSITE', label: 'On-site', icon: 'apartment' },
-  { value: 'HYBRID', label: 'Hybrid', icon: 'hub' },
-  { value: 'REMOTE', label: 'Fully Remote', icon: 'public' },
+  { value: 'ONSITE', label: 'Tại văn phòng', icon: 'apartment' },
+  { value: 'HYBRID', label: 'Kết hợp', icon: 'hub' },
+  { value: 'REMOTE', label: 'Làm từ xa', icon: 'public' },
 ];
 
 const TRACK_OPTIONS = Object.keys(AI_SCREENING_TRACK_LABELS) as AiScreeningTrack[];
@@ -193,7 +193,7 @@ const deriveSalaryRange = (form: JobFormState): string => {
     return `${form.salaryCurrency} ${formatNumber(min)} – ${formatNumber(max)}`;
   }
   if (hasMin && min != null) return `${form.salaryCurrency} ${formatNumber(min)}+`;
-  if (hasMax && max != null) return `Up to ${form.salaryCurrency} ${formatNumber(max)}`;
+  if (hasMax && max != null) return `Tối đa ${form.salaryCurrency} ${formatNumber(max)}`;
   if (form.hadStructuredSalary) return '';
   return form.legacySalaryRange;
 };
@@ -206,7 +206,7 @@ const previewSalaryChip = (form: JobFormState): string => {
     return `${symbol}${compactNumber(min)} - ${symbol}${compactNumber(max)}`;
   }
   if (min != null && min > 0) return `${symbol}${compactNumber(min)}+`;
-  if (max != null && max > 0) return `Up to ${symbol}${compactNumber(max)}`;
+  if (max != null && max > 0) return `Tối đa ${symbol}${compactNumber(max)}`;
   return form.legacySalaryRange;
 };
 
@@ -262,13 +262,13 @@ const validateForm = (form: JobFormState, step?: number): Record<string, string>
 
   if (step === undefined || step === 0) {
     if (!form.title.trim()) {
-      errors.title = 'Job title is required.';
+      errors.title = 'Vui lòng nhập tiêu đề tin.';
     } else if (!isItRelatedJobTitle(form.title)) {
-      errors.title = 'This platform only lists IT roles. Use an IT job title (e.g. Developer, Data Engineer, DevOps).';
+      errors.title = 'Nền tảng chỉ đăng vị trí IT. Hãy dùng chức danh IT (VD: Developer, Data Engineer, DevOps).';
     }
-    if (!form.companyName.trim()) errors.companyName = 'Company name is required.';
+    if (!form.companyName.trim()) errors.companyName = 'Vui lòng nhập tên công ty.';
     if (form.timezoneRequirement.length > 100) {
-      errors.timezoneRequirement = 'Timezone requirement must be 100 characters or fewer.';
+      errors.timezoneRequirement = 'Yêu cầu múi giờ tối đa 100 ký tự.';
     }
   }
 
@@ -276,25 +276,25 @@ const validateForm = (form: JobFormState, step?: number): Record<string, string>
     const min = parseSalary(form.salaryMin);
     const max = parseSalary(form.salaryMax);
     if (form.salaryMin.trim() && (min == null || min <= 0 || !Number.isInteger(min))) {
-      errors.salaryMin = 'Enter a positive whole amount.';
+      errors.salaryMin = 'Hãy nhập số nguyên dương.';
     }
     if (form.salaryMax.trim() && (max == null || max <= 0 || !Number.isInteger(max))) {
-      errors.salaryMax = 'Enter a positive whole amount.';
+      errors.salaryMax = 'Hãy nhập số nguyên dương.';
     }
     if (min != null && max != null && min > max) {
-      errors.salaryMin = 'Minimum cannot exceed maximum.';
+      errors.salaryMin = 'Mức tối thiểu không được lớn hơn mức tối đa.';
     }
   }
 
   if (step === undefined || step === 3) {
     if (form.aiScreeningEnabled && !form.aiScreeningTrack) {
-      errors.aiScreeningTrack = 'Select a screening track.';
+      errors.aiScreeningTrack = 'Hãy chọn hình thức sàng lọc.';
     }
     if (
       form.aiScreeningEnabled
       && (form.aiScreeningPassScore < MIN_SCORE || form.aiScreeningPassScore > MAX_SCORE)
     ) {
-      errors.aiScreeningPassScore = `Passing score must be between ${MIN_SCORE} and ${MAX_SCORE}.`;
+      errors.aiScreeningPassScore = `Điểm đạt phải từ ${MIN_SCORE} đến ${MAX_SCORE}.`;
     }
   }
 
@@ -312,13 +312,13 @@ const firstErrorStep = (errors: Record<string, string>): number => {
 
 const formatSavedAgo = (date: Date, now: number): string => {
   const seconds = Math.max(0, Math.floor((now - date.getTime()) / 1000));
-  if (seconds < 10) return 'just now';
-  if (seconds < 60) return `${seconds}s ago`;
+  if (seconds < 10) return 'vừa rồi';
+  if (seconds < 60) return `${seconds} giây trước`;
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60) return `${minutes} phút trước`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  if (hours < 24) return `${hours} giờ trước`;
+  return date.toLocaleDateString('vi-VN');
 };
 
 const initialsOf = (name: string): string =>
@@ -403,8 +403,8 @@ const Stepper: React.FC<{ step: number }> = ({ step }) => (
                   isCurrent ? 'font-semibold text-primary' : 'text-outline-strong'
                 }`}
               >
-                Step {String(index + 1).padStart(2, '0')}
-                {isCurrent ? ' (Current)' : ''}
+                Bước {String(index + 1).padStart(2, '0')}
+                {isCurrent ? ' (Bước hiện tại)' : ''}
               </span>
               <span
                 className={`truncate text-headline-sm ${
@@ -474,15 +474,15 @@ const RichTextEditor: React.FC<{
   const addLink = () => {
     const selection = window.getSelection()?.toString().trim();
     if (!selection) {
-      setLinkError('Select the text you want to link first.');
+      setLinkError('Hãy chọn đoạn nội dung muốn chèn liên kết trước.');
       return;
     }
-    const url = window.prompt('Link URL (http, https, or mailto)', 'https://');
+    const url = window.prompt('URL liên kết (http, https hoặc mailto)', 'https://');
     if (url == null) return;
     const trimmed = url.trim();
     if (!trimmed) return;
     if (!/^(https?:\/\/|mailto:)/i.test(trimmed)) {
-      setLinkError('Only http, https, or mailto links are allowed.');
+      setLinkError('Chỉ cho phép liên kết http, https hoặc mailto.');
       return;
     }
     apply('createLink', trimmed);
@@ -493,21 +493,21 @@ const RichTextEditor: React.FC<{
       <div className="overflow-hidden rounded-xl border border-[#e2e8f0] bg-card focus-within:border-[#6366f1] focus-within:ring-1 focus-within:ring-[#6366f1]">
         {!disabled && (
           <div className="flex flex-wrap items-center gap-0.5 border-b border-[#e2e8f0] bg-surface-low/60 px-2 py-1">
-            <ToolButton title="Bold" onClick={() => apply('bold')}><span className="font-bold">B</span></ToolButton>
-            <ToolButton title="Italic" onClick={() => apply('italic')}><span className="italic">I</span></ToolButton>
-            <ToolButton title="Underline" onClick={() => apply('underline')}><span className="underline">U</span></ToolButton>
+            <ToolButton title="Đậm" onClick={() => apply('bold')}><span className="font-bold">B</span></ToolButton>
+            <ToolButton title="Nghiêng" onClick={() => apply('italic')}><span className="italic">I</span></ToolButton>
+            <ToolButton title="Gạch chân" onClick={() => apply('underline')}><span className="underline">U</span></ToolButton>
             <span className="mx-1 h-4 w-px bg-[#e2e8f0]" />
-            <ToolButton title="Heading" onClick={() => apply('formatBlock', 'h2')}><span className="font-semibold">H2</span></ToolButton>
-            <ToolButton title="Bulleted list" onClick={() => apply('insertUnorderedList')}>
+            <ToolButton title="Tiêu đề lớn" onClick={() => apply('formatBlock', 'h2')}><span className="font-semibold">H2</span></ToolButton>
+            <ToolButton title="Danh sách dấu đầu dòng" onClick={() => apply('insertUnorderedList')}>
               <span className="material-symbols-outlined text-[18px]">format_list_bulleted</span>
             </ToolButton>
-            <ToolButton title="Numbered list" onClick={() => apply('insertOrderedList')}>
+            <ToolButton title="Danh sách đánh số" onClick={() => apply('insertOrderedList')}>
               <span className="material-symbols-outlined text-[18px]">format_list_numbered</span>
             </ToolButton>
-            <ToolButton title="Code block" onClick={() => apply('formatBlock', 'pre')}>
+            <ToolButton title="Khối mã" onClick={() => apply('formatBlock', 'pre')}>
               <span className="material-symbols-outlined text-[18px]">code</span>
             </ToolButton>
-            <ToolButton title="Link" onClick={addLink}>
+            <ToolButton title="Chèn liên kết" onClick={addLink}>
               <span className="material-symbols-outlined text-[18px]">link</span>
             </ToolButton>
           </div>
@@ -517,7 +517,7 @@ const RichTextEditor: React.FC<{
             ref={editorRef}
             role="textbox"
             aria-multiline="true"
-            aria-label="Job description"
+            aria-label="Mô tả công việc"
             aria-disabled={disabled}
             contentEditable={!disabled}
             suppressContentEditableWarning
@@ -531,7 +531,7 @@ const RichTextEditor: React.FC<{
           />
           {isEmpty && !disabled && (
             <span className="pointer-events-none absolute left-3 top-3 text-body-md text-[#94a3b8]">
-              Describe the role, responsibilities, and what success looks like...
+              Mô tả công việc, trách nhiệm và tiêu chí để được đánh giá cao...
             </span>
           )}
         </div>
@@ -554,11 +554,11 @@ const SkillTags: React.FC<{
     const skill = draft.trim();
     if (!skill) return;
     if (skill.includes(',')) {
-      setError('Commas are not allowed. Add one skill per tag.');
+      setError('Không dùng dấu phẩy. Mỗi thẻ chỉ một kỹ năng.');
       return;
     }
     if (values.some((value) => value.toLowerCase() === skill.toLowerCase())) {
-      setError('That skill is already added.');
+      setError('Kỹ năng này đã được thêm.');
       return;
     }
     onChange([...values, skill]);
@@ -585,7 +585,7 @@ const SkillTags: React.FC<{
             {!disabled && (
               <button
                 type="button"
-                aria-label={`Remove ${skill}`}
+                aria-label={`Xoá ${skill}`}
                 onClick={() => onChange(values.filter((value) => value !== skill))}
                 className="text-outline-strong transition-colors hover:text-error"
               >
@@ -601,7 +601,7 @@ const SkillTags: React.FC<{
             className="inline-flex items-center gap-1 rounded-full bg-surface-mid px-3 py-1 text-label-md text-primary transition-colors hover:bg-surface-high"
           >
             <span className="material-symbols-outlined text-[16px]">add</span>
-            Add Skill Tag
+            Thêm kỹ năng
           </button>
         )}
       </div>
@@ -619,12 +619,12 @@ const SkillTags: React.FC<{
               }
               if (event.key === 'Escape') close();
             }}
-            placeholder="e.g. Go / Golang"
-            aria-label="New skill"
+            placeholder="VD: Go / Golang"
+            aria-label="Kỹ năng mới"
             className={`${inputClass} h-8 w-56`}
           />
-          <button type="button" onClick={addSkill} className={buttonClass('primary')}>Add</button>
-          <button type="button" onClick={close} className={buttonClass('ghost')}>Done</button>
+          <button type="button" onClick={addSkill} className={buttonClass('primary')}>Thêm</button>
+          <button type="button" onClick={close} className={buttonClass('ghost')}>Xong</button>
         </div>
       )}
 
@@ -648,21 +648,21 @@ const LivePreviewCard: React.FC<{
 
   const createdDate = parseServerTimestamp(createdAt);
   const postedLabel = status === 'OPEN'
-    ? `Posted ${createdDate ? formatSavedAgo(createdDate, now) : 'just now'}`
+    ? (createdDate ? `Đăng ${formatSavedAgo(createdDate, now)}` : 'Vừa đăng')
     : status === 'PENDING_APPROVAL'
-      ? 'Awaiting review'
+      ? 'Đang chờ xét duyệt'
       : status === 'CLOSED'
-        ? 'Closed'
-        : 'Not published yet';
+        ? 'Đã đóng'
+        : 'Chưa đăng';
 
   return (
     <div className="flex flex-col gap-3 rounded-[0.5rem] border border-[#e2e8f0] bg-card p-4 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 text-ink-variant">
           <span className="material-symbols-outlined text-[18px]">devices</span>
-          <h2 className="m-0 text-headline-sm text-ink">Live Board Preview</h2>
+          <h2 className="m-0 text-headline-sm text-ink">Xem trước bản đăng</h2>
         </div>
-        <span className="text-label-sm text-outline-strong">Candidate View</span>
+        <span className="text-label-sm text-outline-strong">Góc nhìn ứng viên</span>
       </div>
 
       <div className="flex flex-col gap-3 rounded-xl bg-surface-low p-4">
@@ -672,10 +672,10 @@ const LivePreviewCard: React.FC<{
           </div>
           <div className="min-w-0">
             <span className="block truncate text-headline-sm text-ink">
-              {form.title.trim() || 'Untitled position'}
+              {form.title.trim() || 'Chưa đặt tiêu đề'}
             </span>
             <span className="block truncate text-label-sm text-ink-variant">
-              {form.companyName.trim() || 'Company name'} • {locationLabel}
+              {form.companyName.trim() || 'Tên công ty'} • {locationLabel}
             </span>
           </div>
         </div>
@@ -691,13 +691,13 @@ const LivePreviewCard: React.FC<{
               </span>
             )}
             {form.aiScreeningEnabled && (
-              <span className="rounded-full bg-info px-2 py-0.5 text-label-sm text-info-text">AI Screening</span>
+              <span className="rounded-full bg-info px-2 py-0.5 text-label-sm text-info-text">Sàng lọc AI</span>
             )}
           </div>
         )}
 
         <p className="m-0 line-clamp-3 text-body-sm text-ink-variant">
-          {excerpt || 'No role summary yet.'}
+          {excerpt || 'Chưa có mô tả công việc.'}
         </p>
 
         <div className="flex items-center justify-between gap-2 pt-1">
@@ -705,18 +705,18 @@ const LivePreviewCard: React.FC<{
             <span className="material-symbols-outlined text-[14px]">schedule</span>
             {postedLabel}
           </span>
-          <button type="button" disabled className={buttonClass('primary')}>Quick Apply</button>
+          <button type="button" disabled className={buttonClass('primary')}>Ứng tuyển nhanh</button>
         </div>
       </div>
 
       <p className="m-0 text-label-sm text-outline-strong">
         {status === 'OPEN'
-          ? 'This posting is live. Preview shows the current form state.'
+          ? 'Tin đang hiển thị công khai. Bản xem trước phản ánh nội dung hiện tại của form.'
           : status === 'PENDING_APPROVAL'
-            ? 'Preview only - the posting is awaiting admin review.'
+            ? 'Chỉ xem trước - tin đang chờ quản trị viên xét duyệt.'
             : status === 'CLOSED'
-              ? 'Preview only - this posting is closed.'
-              : 'Preview only - nothing is published until an admin approves the posting.'}
+              ? 'Chỉ xem trước - tin này đã đóng.'
+              : 'Chỉ xem trước - tin chưa được đăng cho tới khi quản trị viên phê duyệt.'}
       </p>
     </div>
   );
@@ -748,7 +748,7 @@ const PreviewModal: React.FC<{
       className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink/50 px-4 py-10"
       role="dialog"
       aria-modal="true"
-      aria-label="Job posting preview"
+      aria-label="Xem trước tin tuyển dụng"
       onClick={onClose}
     >
       <div
@@ -757,18 +757,18 @@ const PreviewModal: React.FC<{
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Badge tone="info">Preview only</Badge>
+            <Badge tone="info">Chỉ xem trước</Badge>
             <Badge tone={statusTone(status)}>{JOB_STATUS_LABELS[status]}</Badge>
           </div>
-          <button type="button" aria-label="Close preview" onClick={onClose} className={buttonClass('ghost')}>
+          <button type="button" aria-label="Đóng bản xem trước" onClick={onClose} className={buttonClass('ghost')}>
             <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
 
         <div>
-          <h2 className="m-0 text-headline-lg text-ink">{form.title.trim() || 'Untitled position'}</h2>
+          <h2 className="m-0 text-headline-lg text-ink">{form.title.trim() || 'Chưa đặt tiêu đề'}</h2>
           <p className="m-0 mt-1 text-body-md text-ink-variant">
-            {form.companyName.trim() || 'Company name'}
+            {form.companyName.trim() || 'Tên công ty'}
             {form.location.trim() ? ` • ${form.location.trim()}` : ''}
           </p>
           {meta.length > 0 && (
@@ -797,12 +797,12 @@ const PreviewModal: React.FC<{
             </span>
           )}
           {form.aiScreeningEnabled && (
-            <span className="rounded-full bg-info px-2.5 py-0.5 text-label-sm text-info-text">AI Screening</span>
+            <span className="rounded-full bg-info px-2.5 py-0.5 text-label-sm text-info-text">Sàng lọc AI</span>
           )}
         </div>
 
         <div>
-          <h3 className="m-0 text-headline-sm text-ink">Role Summary & Key Responsibilities</h3>
+          <h3 className="m-0 text-headline-sm text-ink">Mô tả công việc &amp; trách nhiệm chính</h3>
           {description ? (
             isRichTextHtml(description) ? (
               <div
@@ -813,13 +813,13 @@ const PreviewModal: React.FC<{
               <p className="m-0 mt-2 whitespace-pre-wrap text-body-md leading-relaxed text-ink">{description}</p>
             )
           ) : (
-            <p className="m-0 mt-2 text-body-sm text-ink-variant">No role summary yet.</p>
+            <p className="m-0 mt-2 text-body-sm text-ink-variant">Chưa có mô tả công việc.</p>
           )}
         </div>
 
         {form.requiredSkills.length > 0 && (
           <div>
-            <h3 className="m-0 text-headline-sm text-ink">Required Skills</h3>
+            <h3 className="m-0 text-headline-sm text-ink">Kỹ năng yêu cầu</h3>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {form.requiredSkills.map((skill) => (
                 <span key={skill} className="rounded-full bg-surface-low px-2.5 py-0.5 text-label-md text-ink">
@@ -831,8 +831,8 @@ const PreviewModal: React.FC<{
         )}
 
         <div className="flex items-center justify-between gap-3 border-t border-[#e2e8f0] pt-4">
-          <span className="text-label-sm text-outline-strong">Preview only - Quick Apply is disabled.</span>
-          <button type="button" disabled className={buttonClass('primary')}>Quick Apply</button>
+          <span className="text-label-sm text-outline-strong">Chỉ xem trước - Ứng tuyển nhanh đang bị tắt.</span>
+          <button type="button" disabled className={buttonClass('primary')}>Ứng tuyển nhanh</button>
         </div>
       </div>
     </div>
@@ -999,7 +999,7 @@ const JobFormPage: React.FC = () => {
 
   useEffect(() => {
     if (invalidRouteId) {
-      setLoadError('Invalid job posting id.');
+      setLoadError('Mã tin tuyển dụng không hợp lệ.');
       setLoadFailed(true);
       return;
     }
@@ -1158,7 +1158,7 @@ const JobFormPage: React.FC = () => {
     }
 
     const confirmed = window.confirm(
-      'Submit this posting for admin review? Editing will be locked until an admin reviews it.',
+      'Gửi tin này cho quản trị viên xét duyệt? Bạn sẽ không sửa được cho tới khi quản trị viên xem xong.',
     );
     if (!confirmed) return;
 
@@ -1198,23 +1198,23 @@ const JobFormPage: React.FC = () => {
 
   const saveLabel = status === 'PENDING_APPROVAL'
     ? justSubmitted
-      ? 'Submitted for review'
-      : 'Locked for review'
+      ? 'Đã gửi xét duyệt'
+      : 'Đã khoá để xét duyệt'
     : saving
-      ? 'Saving...'
+      ? 'Đang lưu...'
       : saveState === 'error'
-        ? 'Save failed'
+        ? 'Lưu thất bại'
         : dirty
-          ? 'Unsaved changes'
+          ? 'Có thay đổi chưa lưu'
           : lastSavedAt
-            ? `Auto-saved ${formatSavedAgo(lastSavedAt, now)}`
-            : 'Not saved yet';
+            ? `Đã tự động lưu ${formatSavedAgo(lastSavedAt, now)}`
+            : 'Chưa lưu';
 
   const reqCode = jobId
     ? `REQ-${(parseServerTimestamp(createdAt) ?? new Date()).getFullYear()}-${jobId}`
     : 'NEW';
 
-  const hiringManager = employerName || user?.fullName || 'Hiring team';
+  const hiringManager = employerName || user?.fullName || 'Nhóm tuyển dụng';
   const focusOptions = [
     ...FOCUS_AREAS,
     ...form.aiQuestionFocusAreas
@@ -1237,18 +1237,18 @@ const JobFormPage: React.FC = () => {
           <div className="flex min-w-0 flex-col gap-0.5">
             <nav className="flex flex-wrap items-center gap-1.5 text-label-sm text-ink-variant">
               <Link to="/dashboard" className="text-ink-variant no-underline transition-colors hover:text-primary">
-                Employer Workspace
+                Không gian nhà tuyển dụng
               </Link>
               <span>/</span>
               <Link to="/my-jobs" className="text-ink-variant no-underline transition-colors hover:text-primary">
-                Job Postings
+                Tin đã đăng
               </Link>
               <span>/</span>
-              <span className="text-ink">{isEdit ? 'Edit Job Posting' : 'Create New Position'}</span>
+              <span className="text-ink">{isEdit ? 'Sửa tin tuyển dụng' : 'Đăng tin mới'}</span>
             </nav>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="m-0 text-headline-lg text-ink">
-                {isEdit ? 'Edit Job Posting' : 'Create Job Posting'}
+                {isEdit ? 'Sửa tin tuyển dụng' : 'Đăng tin mới'}
               </h1>
               <Badge tone={saveState === 'error' ? 'danger' : statusTone(status)} dot pill>
                 {JOB_STATUS_LABELS[status]} • {saveLabel}
@@ -1259,7 +1259,7 @@ const JobFormPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" onClick={() => setPreviewOpen(true)} className={buttonClass('secondary')}>
               <span className="material-symbols-outlined text-[16px]">visibility</span>
-              Preview
+              Xem trước
             </button>
             {!readOnly && (
               <button
@@ -1269,7 +1269,7 @@ const JobFormPage: React.FC = () => {
                 className={buttonClass('secondary')}
               >
                 <span className="material-symbols-outlined text-[16px]">save</span>
-                Save Draft
+                Lưu nháp
               </button>
             )}
             {!readOnly && canSubmit && (
@@ -1279,7 +1279,7 @@ const JobFormPage: React.FC = () => {
                 disabled={saving || submitting}
                 className={buttonClass('primary')}
               >
-                {submitting ? 'Submitting...' : 'Submit for Admin Review'}
+                {submitting ? 'Đang gửi...' : 'Gửi quản trị viên xét duyệt'}
                 <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
               </button>
             )}
@@ -1288,13 +1288,13 @@ const JobFormPage: React.FC = () => {
       </div>
 
       <div className="mx-auto max-w-7xl pt-4">
-        {!hydrated && !loadFailed && <LoadingState label="Loading job posting..." />}
+        {!hydrated && !loadFailed && <LoadingState label="Đang tải tin tuyển dụng..." />}
 
         {loadFailed && (
           <div className="flex flex-col gap-3 py-8">
-            <ErrorBanner message={loadError || error || 'Failed to load the job posting'} />
+            <ErrorBanner message={loadError || error || 'Không tải được tin tuyển dụng'} />
             <Link to="/my-jobs" className="self-start text-label-md text-primary no-underline hover:underline">
-              ← Back to My Job Postings
+              ← Về tin đã đăng
             </Link>
           </div>
         )}
@@ -1314,7 +1314,7 @@ const JobFormPage: React.FC = () => {
                   {/* amber-50 / amber-800: mockup warning tone, no token yet */}
                   <span className="material-symbols-outlined shrink-0 text-[18px]">rate_review</span>
                   <div>
-                    <strong className="block">Changes requested</strong>
+                    <strong className="block">Cần chỉnh sửa</strong>
                     <span className="whitespace-pre-wrap">{reviewNote}</span>
                   </div>
                 </div>
@@ -1325,8 +1325,8 @@ const JobFormPage: React.FC = () => {
                   <span className="material-symbols-outlined shrink-0 text-[18px]">hourglass_top</span>
                   <span>
                     {justSubmitted
-                      ? 'Submitted for admin review. This posting is now read-only until an admin reviews it.'
-                      : 'Awaiting admin review. This posting is read-only until an admin approves or returns it.'}
+                      ? 'Đã gửi quản trị viên xét duyệt. Tin đang ở chế độ chỉ đọc cho tới khi được xem.'
+                      : 'Đang chờ quản trị viên xét duyệt. Tin ở chế độ chỉ đọc tới khi được duyệt hoặc trả lại.'}
                   </span>
                 </div>
               )}
@@ -1334,14 +1334,14 @@ const JobFormPage: React.FC = () => {
               {status === 'OPEN' && (
                 <div className="mb-4 flex items-start gap-2 rounded-lg bg-info px-3 py-2.5 text-body-sm text-info-text" role="status">
                   <span className="material-symbols-outlined shrink-0 text-[18px]">public</span>
-                  <span>This posting is live. Changes are saved immediately and visible to candidates.</span>
+                  <span>Tin đang hiển thị công khai. Thay đổi được lưu ngay và ứng viên nhìn thấy luôn.</span>
                 </div>
               )}
 
               {status === 'CLOSED' && (
                 <div className="mb-4 flex items-start gap-2 rounded-lg bg-surface-low px-3 py-2.5 text-body-sm text-ink-variant" role="status">
                   <span className="material-symbols-outlined shrink-0 text-[18px]">lock</span>
-                  <span>This posting is closed. Edits are saved to the posting; reopen it from My Job Postings.</span>
+                  <span>Tin này đã đóng. Bản sửa vẫn được lưu; bạn có thể mở lại trong mục Tin đã đăng.</span>
                 </div>
               )}
             </div>
@@ -1355,15 +1355,15 @@ const JobFormPage: React.FC = () => {
                   <>
                     <Section
                       icon="badge"
-                      title="Position Identity"
-                      description="Primary job nomenclature and organizational alignment."
+                      title="Thông tin vị trí"
+                      description="Chức danh và thông tin tổ chức gắn với tin tuyển dụng."
                       aside={<span className="rounded bg-surface-low px-2 py-0.5 font-mono text-label-sm text-ink-variant">{reqCode}</span>}
                     >
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <Field
-                          label="Job Title"
+                          label="Tiêu đề tin"
                           required
-                          hint="High visibility title recommended"
+                          hint="Nên chọn tiêu đề nổi bật"
                           error={errors.title}
                           className="md:col-span-2"
                         >
@@ -1371,31 +1371,31 @@ const JobFormPage: React.FC = () => {
                             value={form.title}
                             onChange={(event) => updateField('title', event.target.value)}
                             disabled={formLocked}
-                            placeholder="e.g. Lead SRE / Infrastructure Architect"
+                            placeholder="VD: Lead SRE / Infrastructure Architect"
                             aria-invalid={Boolean(errors.title)}
                             className={`${disabledInputClass} ${errors.title ? 'border-error' : ''}`}
                           />
                         </Field>
 
-                        <Field label="Company Name" required error={errors.companyName}>
+                        <Field label="Tên công ty" required error={errors.companyName}>
                           <input
                             value={form.companyName}
                             onChange={(event) => updateField('companyName', event.target.value)}
                             disabled={formLocked}
-                            placeholder="Company shown on the posting"
+                            placeholder="Tên công ty hiển thị trên tin"
                             aria-invalid={Boolean(errors.companyName)}
                             className={`${disabledInputClass} ${errors.companyName ? 'border-error' : ''}`}
                           />
                         </Field>
 
-                        <Field label="Department">
+                        <Field label="Phòng ban">
                           <select
                             value={form.department}
                             onChange={(event) => updateField('department', event.target.value)}
                             disabled={formLocked}
                             className={disabledInputClass}
                           >
-                            <option value="">Select department</option>
+                            <option value="">Chọn phòng ban</option>
                             {form.department && !DEPARTMENTS.includes(form.department) && (
                               <option value={form.department}>{form.department}</option>
                             )}
@@ -1405,14 +1405,14 @@ const JobFormPage: React.FC = () => {
                           </select>
                         </Field>
 
-                        <Field label="Experience Level">
+                        <Field label="Cấp bậc">
                           <select
                             value={form.experienceLevel}
                             onChange={(event) => updateField('experienceLevel', event.target.value)}
                             disabled={formLocked}
                             className={disabledInputClass}
                           >
-                            <option value="">Select experience level</option>
+                            <option value="">Chọn cấp bậc</option>
                             {form.experienceLevel && !EXPERIENCE_LEVELS.includes(form.experienceLevel) && (
                               <option value={form.experienceLevel}>{form.experienceLevel}</option>
                             )}
@@ -1422,14 +1422,14 @@ const JobFormPage: React.FC = () => {
                           </select>
                         </Field>
 
-                        <Field label="Employment Type">
+                        <Field label="Hình thức tuyển dụng">
                           <select
                             value={form.employmentType}
                             onChange={(event) => updateField('employmentType', event.target.value)}
                             disabled={formLocked}
                             className={disabledInputClass}
                           >
-                            <option value="">Select employment type</option>
+                            <option value="">Chọn hình thức tuyển dụng</option>
                             {form.employmentType && !EMPLOYMENT_TYPES.includes(form.employmentType) && (
                               <option value={form.employmentType}>{form.employmentType}</option>
                             )}
@@ -1439,7 +1439,7 @@ const JobFormPage: React.FC = () => {
                           </select>
                         </Field>
 
-                        <Field label="Hiring Manager">
+                        <Field label="Người phụ trách tuyển dụng">
                           <div className="flex h-9 items-center gap-2 rounded-md bg-surface-low px-2.5">
                             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-on-primary">
                               {initialsOf(hiringManager) || 'HR'}
@@ -1452,11 +1452,11 @@ const JobFormPage: React.FC = () => {
 
                     <Section
                       icon="location_on"
-                      title="Work Location & Regional Policy"
-                      description="Define physical presence requirements and permissible time zones."
+                      title="Địa điểm và khu vực làm việc"
+                      description="Quy định về có mặt tại văn phòng và múi giờ làm việc cho phép."
                     >
                       <div className="flex flex-col gap-1.5">
-                        <span className="text-label-md font-medium text-ink">Workplace Model</span>
+                        <span className="text-label-md font-medium text-ink">Mô hình làm việc</span>
                         <div className="grid grid-cols-1 gap-1 rounded-xl bg-surface-low p-1 sm:grid-cols-3">
                           {WORKPLACE_OPTIONS.map((option) => {
                             const active = form.workplaceModel === option.value;
@@ -1481,17 +1481,17 @@ const JobFormPage: React.FC = () => {
                       </div>
 
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <Field label="Primary Base Location">
+                        <Field label="Địa điểm làm việc chính">
                           <input
                             value={form.location}
                             onChange={(event) => updateField('location', event.target.value)}
                             disabled={formLocked}
-                            placeholder="e.g. San Francisco, CA (or Remote US/Canada)"
+                            placeholder="VD: TP.HCM (hoặc Remote)"
                             className={disabledInputClass}
                           />
                         </Field>
                         <Field
-                          label="Timezone Requirement"
+                          label="Yêu cầu múi giờ"
                           error={errors.timezoneRequirement}
                           hint={`${form.timezoneRequirement.length}/100`}
                         >
@@ -1500,7 +1500,7 @@ const JobFormPage: React.FC = () => {
                             onChange={(event) => updateField('timezoneRequirement', event.target.value)}
                             disabled={formLocked}
                             maxLength={100}
-                            placeholder="e.g. PST / EST core overlap +/- 3 hrs"
+                            placeholder="VD: chồng giờ làm việc với PST/EST +/- 3h"
                             className={`${disabledInputClass} ${errors.timezoneRequirement ? 'border-error' : ''}`}
                           />
                         </Field>
@@ -1513,9 +1513,9 @@ const JobFormPage: React.FC = () => {
                   <>
                     <Section
                       icon="terminal"
-                      title="Core Technical Stack & Skills"
-                      description="These tags drive candidate matching and screening topics."
-                      aside={<span className="text-label-sm text-outline-strong">{form.requiredSkills.length} tags configured</span>}
+                      title="Công nghệ và kỹ năng cốt lõi"
+                      description="Các thẻ này quyết định mức độ khớp ứng viên và chủ đề sàng lọc."
+                      aside={<span className="text-label-sm text-outline-strong">Đã cấu hình {form.requiredSkills.length} thẻ</span>}
                     >
                       <SkillTags
                         values={form.requiredSkills}
@@ -1526,8 +1526,8 @@ const JobFormPage: React.FC = () => {
 
                     <Section
                       icon="edit_document"
-                      title="Role Summary & Key Responsibilities"
-                      description="Describe the role, responsibilities, and what success looks like."
+                      title="Mô tả công việc"
+                      description="Mô tả công việc, trách nhiệm và tiêu chí để được đánh giá cao."
                     >
                       <RichTextEditor
                         value={form.description}
@@ -1541,11 +1541,11 @@ const JobFormPage: React.FC = () => {
                 {step === 2 && (
                   <Section
                     icon="payments"
-                    title="Compensation & Pay Transparency"
-                    description="Set a transparent salary band and incentive details."
+                    title="Mức lương và tính minh bạch"
+                    description="Đưa ra khoảng lương rõ ràng cùng chi tiết đãi ngộ."
                   >
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                      <Field label="Currency">
+                      <Field label="Đơn vị tiền tệ">
                         <select
                           value={form.salaryCurrency}
                           onChange={(event) => updateField('salaryCurrency', event.target.value)}
@@ -1561,7 +1561,7 @@ const JobFormPage: React.FC = () => {
                         </select>
                       </Field>
 
-                      <Field label="Minimum Base Salary" error={errors.salaryMin}>
+                      <Field label="Lương cơ bản tối thiểu" error={errors.salaryMin}>
                         <input
                           type="number"
                           min={1}
@@ -1570,13 +1570,13 @@ const JobFormPage: React.FC = () => {
                           value={form.salaryMin}
                           onChange={(event) => updateField('salaryMin', event.target.value)}
                           disabled={formLocked}
-                          placeholder="e.g. 165000"
+                          placeholder="VD: 165000"
                           aria-invalid={Boolean(errors.salaryMin)}
                           className={`${disabledInputClass} ${errors.salaryMin ? 'border-error' : ''}`}
                         />
                       </Field>
 
-                      <Field label="Maximum Base Salary" error={errors.salaryMax}>
+                      <Field label="Lương cơ bản tối đa" error={errors.salaryMax}>
                         <input
                           type="number"
                           min={1}
@@ -1585,7 +1585,7 @@ const JobFormPage: React.FC = () => {
                           value={form.salaryMax}
                           onChange={(event) => updateField('salaryMax', event.target.value)}
                           disabled={formLocked}
-                          placeholder="e.g. 210000"
+                          placeholder="VD: 210000"
                           aria-invalid={Boolean(errors.salaryMax)}
                           className={`${disabledInputClass} ${errors.salaryMax ? 'border-error' : ''}`}
                         />
@@ -1593,23 +1593,23 @@ const JobFormPage: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <Field label="Equity / Stock Grant Band">
+                      <Field label="Mức cổ phần thưởng">
                         <input
                           value={form.equityBand}
                           onChange={(event) => updateField('equityBand', event.target.value)}
                           disabled={formLocked}
                           maxLength={200}
-                          placeholder="e.g. 0.05% - 0.15% (RSUs or ISOs)"
+                          placeholder="VD: 0.05% - 0.15% (RSU hoặc ISO)"
                           className={disabledInputClass}
                         />
                       </Field>
-                      <Field label="Annual Incentive Bonus">
+                      <Field label="Thưởng hàng năm">
                         <input
                           value={form.annualBonus}
                           onChange={(event) => updateField('annualBonus', event.target.value)}
                           disabled={formLocked}
                           maxLength={200}
-                          placeholder="e.g. 15% Performance Target"
+                          placeholder="VD: 15% theo hiệu suất"
                           className={disabledInputClass}
                         />
                       </Field>
@@ -1620,18 +1620,18 @@ const JobFormPage: React.FC = () => {
                 {step === 3 && (
                   <Section
                     icon="neurology"
-                    title="AI Autonomous Screening Engine"
-                    description="Configure the screening track and evaluation focus areas."
+                    title="Công cụ sàng lọc AI tự động"
+                    description="Cấu hình hình thức sàng lọc và trọng số câu hỏi đánh giá."
                     aside={
                       <div className="flex items-center gap-2">
                         <span className="text-label-sm text-ink-variant">
-                          {form.aiScreeningEnabled ? 'Enabled' : 'Disabled'}
+                          {form.aiScreeningEnabled ? 'Đã bật' : 'Đã tắt'}
                         </span>
                         <button
                           type="button"
                           role="switch"
                           aria-checked={form.aiScreeningEnabled}
-                          aria-label="Enable AI screening"
+                          aria-label="Bật sàng lọc AI"
                           disabled={formLocked}
                           onClick={() => updateField('aiScreeningEnabled', !form.aiScreeningEnabled)}
                           className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed ${
@@ -1649,7 +1649,7 @@ const JobFormPage: React.FC = () => {
                   >
                     <div className={`flex flex-col gap-5 ${form.aiScreeningEnabled ? '' : 'opacity-60'}`}>
                       <div className="flex flex-col gap-2">
-                        <span className="text-label-md font-medium text-ink">Screening Track & Format</span>
+                        <span className="text-label-md font-medium text-ink">Hình thức sàng lọc</span>
                         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                           {TRACK_OPTIONS.map((track) => {
                             const selected = form.aiScreeningTrack === track;
@@ -1680,7 +1680,7 @@ const JobFormPage: React.FC = () => {
 
                       <div className="flex flex-col gap-2">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-label-md font-medium text-ink">Passing Score Threshold</span>
+                          <span className="text-label-md font-medium text-ink">Ngưỡng điểm đạt</span>
                           <span className="rounded bg-surface-low px-2 py-0.5 font-mono text-label-md font-semibold text-primary">
                             {form.aiScreeningPassScore} / 100
                           </span>
@@ -1694,12 +1694,12 @@ const JobFormPage: React.FC = () => {
                           onChange={(event) => updateField('aiScreeningPassScore', Number(event.target.value))}
                           disabled={!form.aiScreeningEnabled || formLocked}
                           className="mt-1 h-2 w-full cursor-pointer appearance-none rounded-lg bg-surface-high accent-primary disabled:cursor-not-allowed"
-                          aria-label="Passing score threshold"
+                          aria-label="Ngưỡng điểm đạt"
                         />
                         <div className="flex justify-between px-0.5 text-label-sm text-outline-strong">
-                          <span>{MIN_SCORE} (Permissive)</span>
-                          <span>80 (Recommended)</span>
-                          <span>{MAX_SCORE} (Strict)</span>
+                          <span>{MIN_SCORE} (Dễ)</span>
+                          <span>80 (Khuyên dùng)</span>
+                          <span>{MAX_SCORE} (Khắt khe)</span>
                         </div>
                         {errors.aiScreeningPassScore && (
                           <p className="m-0 text-label-sm text-error">{errors.aiScreeningPassScore}</p>
@@ -1708,7 +1708,7 @@ const JobFormPage: React.FC = () => {
 
                       <div className="flex flex-col gap-2">
                         <span className="text-label-md font-medium text-ink">
-                          Dynamic Question Focus Areas (Multi-select)
+                          Trọng số câu hỏi (chọn được nhiều)
                         </span>
                         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                           {focusOptions.map((area) => (
@@ -1745,12 +1745,12 @@ const JobFormPage: React.FC = () => {
                     className={buttonClass('ghost')}
                   >
                     <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-                    {step === 0 ? 'Back' : `Back to Step ${step}`}
+                    {step === 0 ? 'Quay lại' : `Về bước ${step}`}
                   </button>
 
                   <div className="flex flex-wrap items-center gap-2">
                     {readOnly ? (
-                      <span className="text-label-sm text-ink-variant">Locked while awaiting admin review.</span>
+                      <span className="text-label-sm text-ink-variant">Đã khoá trong lúc chờ quản trị viên xét duyệt.</span>
                     ) : (
                       <>
                         <button
@@ -1759,7 +1759,7 @@ const JobFormPage: React.FC = () => {
                           disabled={saving || submitting}
                           className={buttonClass('secondary')}
                         >
-                          Save Draft
+                          Lưu nháp
                         </button>
                         {step < STEP_TITLES.length - 1 ? (
                           <button
@@ -1768,7 +1768,7 @@ const JobFormPage: React.FC = () => {
                             disabled={saving || submitting}
                             className={buttonClass('primary')}
                           >
-                            Continue to Step {step + 2}
+                            Tiếp tục (bước {step + 2})
                             <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                           </button>
                         ) : canSubmit ? (
@@ -1778,7 +1778,7 @@ const JobFormPage: React.FC = () => {
                             disabled={saving || submitting}
                             className={buttonClass('primary')}
                           >
-                            {submitting ? 'Submitting...' : 'Submit for Admin Review'}
+                            {submitting ? 'Đang gửi...' : 'Gửi quản trị viên xét duyệt'}
                             <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                           </button>
                         ) : null}

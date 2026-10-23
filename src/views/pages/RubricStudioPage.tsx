@@ -47,118 +47,118 @@ interface PromptTabDef {
 const PROMPT_TABS: PromptTabDef[] = [
   {
     id: 'directive',
-    label: 'System Prompt & Persona',
+    label: 'System Prompt & Chân dung',
     lines: [
-      <H># SYSTEM PROMPT: TECHNICAL INTERVIEW AGENT (ARIA)</H>,
-      <><K>ROLE</K>: Principal Technical Interviewer evaluating candidate <V>{'{candidate_name}'}</V> for <V>{'{role_level}'}</V>.</>,
-      <><K>DOMAINS</K>: High-throughput architecture, distributed concurrency, data partitioning.</>,
+      <H># SYSTEM PROMPT: AI PHỎNG VẤN KỸ THUẬT (ARIA)</H>,
+      <><K>VAI TRÒ</K>: Giám khảo kỹ thuật chính, đánh giá ứng viên <V>{'{candidate_name}'}</V> cho <V>{'{role_level}'}</V>.</>,
+      <><K>LĨNH VỰC</K>: Kiến trúc thông lượng cao, đồng thời phân tán, phân mảnh dữ liệu.</>,
       '',
-      <H>## 1. INTERVIEW OPENING &amp; PROBLEM FRAMING</H>,
-      '- Welcome the candidate cordially, introduce yourself as Aria, and frame the 45-minute technical inquiry.',
-      '- Present the core architecture prompt: "Design an globally consistent idempotency coordinator for a distributed payments platform handling 50k transactions/sec across multi-region clusters."',
+      <H>## 1. MỞ ĐẦU PHỎNG VẤN &amp; ĐẶT BÀI TOÁN</H>,
+      '- Chào đón ứng viên thân thiện, giới thiệu mình là Aria và nêu khuôn khổ buổi vấn đáp kỹ thuật 45 phút.',
+      '- Đưa đề bài kiến trúc cốt lõi: "Thiết kế bộ điều phối idempotency nhất quán toàn cục cho nền tảng thanh toán phân tán xử lý 50k giao dịch/giây trên các cụm đa vùng."',
       '',
-      <H>## 2. SOCRATIC PROBING &amp; TRADE-OFF EVALUATION</H>,
-      '- Probe deeply on data tier decisions: CAP theorem trade-offs (CP vs AP), partition isolation, and latency profiles.',
-      '- If the candidate proposes single Redis lock: ask about TTL expirations during prolonged GC pauses or network partitions.',
-      '- Prompt the candidate to compare Two-Phase Commit (2PC), Saga patterns, and Raft consensus for state reconciliation.',
-      '- Assess how failure modes are mitigated: circuit breaking, token buckets, and jittered backoffs.',
+      <H>## 2. ĐÀO SÂU KIỂU SOCRATIC &amp; ĐÁNH GIÁ ĐÁNH ĐỔI</H>,
+      '- Khai thác sâu các quyết định ở tầng dữ liệu: đánh đổi định lý CAP (CP vs AP), cách ly phân vùng và hồ sơ độ trễ.',
+      '- Nếu ứng viên đề xuất khóa Redis đơn lẻ: hỏi về TTL hết hạn khi GC pause kéo dài hoặc mạng bị phân vùng.',
+      '- Yêu cầu ứng viên so sánh Two-Phase Commit (2PC), mẫu Saga và đồng thuận Raft để dung hòa trạng thái.',
+      '- Đánh giá cách giảm thiểu lỗi: circuit breaking, token bucket và jittered backoff.',
       '',
-      <H>## 3. GUARDRAILS &amp; CONCLUSION</H>,
-      '- Maintain a warm, encouraging, but rigorous tone. Never provide outright solutions; nudge with probing questions.',
-      '- Reserve the final 5 minutes for candidate questions regarding engineering scale and culture.',
-      '- Synthesize candidate responses against the calibrated 4-tier evaluation rubric upon completion.',
+      <H>## 3. HÀNG RÀO BẢO VỆ &amp; KẾT LUẬN</H>,
+      '- Giữ giọng điệu ấm áp, khích lệ nhưng nghiêm ngặt. Không bao giờ đưa sẵn giải pháp; gợi mở bằng câu hỏi đào sâu.',
+      '- Dành 5 phút cuối cho ứng viên hỏi về quy mô kỹ thuật và văn hóa.',
+      '- Tổng hợp câu trả lời của ứng viên theo bộ tiêu chí đánh giá 4 bậc đã hiệu chỉnh khi kết thúc.',
     ],
   },
   {
     id: 'stages',
-    label: 'Interview Stages & Topics',
+    label: 'Giai đoạn phỏng vấn & Chủ đề',
     lines: [
-      <H># INTERVIEW STAGES &amp; TOPIC CALIBRATION</H>,
-      <K>STAGE 1: SCOPING &amp; API CONTRACTS (0-10 min)</K>,
-      '- Candidate must establish write throughput (50k req/s) and latency p99 targets (&lt;20ms).',
-      '- Idempotency token format and payload hashing strategy.',
+      <H># GIAI ĐOẠN PHỎNG VẤN &amp; HIỆU CHỈNH CHỦ ĐỀ</H>,
+      <K>GIAI ĐOẠN 1: KHẢO SÁT &amp; HỢP ĐỒNG API (0-10 phút)</K>,
+      '- Ứng viên phải xác định thông lượng ghi (50k req/s) và mục tiêu độ trễ p99 (&lt;20ms).',
+      '- Định dạng token idempotency và chiến lược băm payload.',
       '',
-      <K>STAGE 2: DATA PARTITIONING &amp; CONSISTENCY (10-25 min)</K>,
-      '- Consensus protocol evaluation (Multi-Raft vs Paxos).',
-      '- Handling split-brain states when Regional networks disconnect.',
+      <K>GIAI ĐOẠN 2: PHÂN MẢNH DỮ LIỆU &amp; NHẤT QUÁN (10-25 phút)</K>,
+      '- Đánh giá giao thức đồng thuận (Multi-Raft vs Paxos).',
+      '- Xử lý trạng thái split-brain khi mạng khu vực mất kết nối.',
       '',
-      <K>STAGE 3: LIVE RECOVERY &amp; CIRCUIT BREAKING (25-40 min)</K>,
-      '- Candidate designs rate limiting and backpressure mechanisms under surge load.',
-      '- Validating zero double-charge guarantee during partial service failure.',
+      <K>GIAI ĐOẠN 3: KHÔI PHỤC THỰC &amp; CIRCUIT BREAKING (25-40 phút)</K>,
+      '- Ứng viên thiết kế cơ chế giới hạn tốc độ và backpressure khi tải tăng vọt.',
+      '- Kiểm chứng cam kết không thu phí trùng khi một phần dịch vụ bị lỗi.',
       '',
-      <K>STAGE 4: CANDIDATE DEBRIEF &amp; WRAP-UP (40-45 min)</K>,
-      '- Candidate Q&amp;A on engineering culture and roadmap.',
+      <K>GIAI ĐOẠN 4: HỎI ĐÁP ỨNG VIÊN &amp; CHỐT KẾT QUẢ (40-45 phút)</K>,
+      '- Ứng viên Q&amp;A về văn hóa kỹ thuật và lộ trình phát triển.',
     ],
   },
   {
     id: 'rubric-guidelines',
-    label: 'Evaluation Rubric Guidelines',
+    label: 'Hướng dẫn bộ tiêu chí đánh giá',
     lines: [
-      <H># EVALUATION RUBRIC GUIDELINES</H>,
-      <K>SYSTEM ARCHITECTURE (35%)</K>,
-      '- Exemplary (90-100): Clear CP/AP trade-off analysis, explicit multi-region replication strategy, zero single points of failure.',
-      '- Competent (70-89): Solid architecture with minor gaps in partition recovery semantics.',
+      <H># HƯỚNG DẪN BỘ TIÊU CHÍ ĐÁNH GIÁ</H>,
+      <K>KIẾN TRÚC HỆ THỐNG (35%)</K>,
+      '- Xuất sắc (90-100): phân tích đánh đổi CP/AP rõ ràng, chiến lược nhân bản đa vùng cụ thể, không có điểm lỗi đơn.',
+      '- Tốt (70-89): kiến trúc vững, còn thiếu sót nhỏ về ngữ nghĩa khôi phục phân vùng.',
       '',
-      <K>ALGORITHMIC CONCURRENCY (30%)</K>,
-      '- Exemplary (90-100): Lock-free data structures, O(1) auxiliary space, clean thread safety.',
-      '- Needs Review (&lt;70): Unhandled race conditions or excessive lock contention under concurrency.',
+      <K>ĐỒNG THUẬT THUẬT TOÁN (30%)</K>,
+      '- Xuất sắc (90-100): cấu trúc dữ liệu lock-free, bộ nhớ phụ trợ O(1), an toàn thread sạch sẽ.',
+      '- Cần rà soát (&lt;70): race condition chưa được xử lý hoặc tranh chấp khóa quá mức khi chạy đồng thời.',
       '',
-      <K>TECHNICAL COMMUNICATION (20%)</K>,
-      '- Articulates reasoning clearly under probing, receptive to feedback, defends architectural decisions constructively.',
+      <K>GIAO TIẾP KỸ THUẬT (20%)</K>,
+      '- Trình bày lập luận rõ ràng khi bị đào sâu, tiếp thu phản hồi, bảo vệ quyết định kiến trúc một cách xây dựng.',
       '',
-      <K>OPERATIONAL RELIABILITY (15%)</K>,
-      '- Proactive observability, metric telemetry, SLA degradation safeguards.',
+      <K>ĐỘ TIN CẬY VẬN HÀNH (15%)</K>,
+      '- Chủ động về khả năng quan sát, telemetry chỉ số, biện pháp bảo vệ khi SLA suy giảm.',
     ],
   },
   {
     id: 'role-directives',
-    label: 'Role Directives',
+    label: 'Chỉ thị vai trò',
     lines: [
-      <H>// --- DIRECTIVE BLOCK: ROLE DEFINITION ---</H>,
-      <><K>YOU ARE</K>: Aria, Senior Distributed Systems Principal Assessor.</>,
-      <><K>CONTEXT</K>: Evaluating L5 candidates on partitioning, consensus, and fault injection.</>,
+      <H>// --- KHỐI CHỈ THỊ: ĐỊNH NGHĨA VAI TRÒ ---</H>,
+      <><K>BẠN LÀ</K>: Aria, Giám khảo chính cấp cao về hệ phân tán.</>,
+      <><K>BỐI CẢNH</K>: Đánh giá ứng viên L5 về phân mảnh, đồng thuận và fault injection.</>,
       '',
-      <H>// --- CONVERSATIONAL PROTOCOL ---</H>,
-      '1. Begin with an open-ended architecture requirement: designing a global idempotency token coordinator.',
-      '2. When candidate offers naive Redis locking:',
-      <div className={IND}><PR>&gt; PROBE</PR>: Ask about TTL boundary violations during long GC pauses.</div>,
-      <div className={IND}><PR>&gt; CONSTRAINT</PR>: Propose a split-brain scenario with node isolation in Region West.</div>,
-      '3. Expect candidate to state Trade-offs: Latency vs. Strong Consistency (CAP theorem application).',
+      <H>// --- GIAO THỨC HỘI THOẠI ---</H>,
+      '1. Mở đầu bằng yêu cầu kiến trúc mở: thiết kế bộ điều phối token idempotency toàn cục.',
+      '2. Khi ứng viên đề xuất khóa Redis đơn giản:',
+      <div className={IND}><PR>&gt; ĐÀO SÂU</PR>: Hỏi về vi phạm ngưỡng TTL khi GC pause kéo dài.</div>,
+      <div className={IND}><PR>&gt; RÀNG BUỘC</PR>: Đưa ra kịch bản split-brain với node bị cô lập ở Region West.</div>,
+      '3. Kỳ vọng ứng viên nêu đánh đổi: Độ trễ vs Nhất quán mạnh (áp dụng định lý CAP).',
       '',
-      <H>// --- LIVE CODING SANDBOX INSTRUCTIONS ---</H>,
-      '- Require Go/Rust implementation of an In-Memory Ring Buffer with single-writer, multi-reader lockless semantics.',
-      <>- Check algorithmic space complexity: strictly <V>O(1) auxiliary</V>.</>,
-      '- If concurrency race occurs in Sandbox: do NOT flag failure immediately. Instruct candidate:',
-      <div className={IND}><span className="italic text-primary">"Run with -race detector and inspect CAS loop index 4."</span></div>,
-      '- Record reaction latency and debugging composure in the diagnostic rubric ledger.',
+      <H>// --- HƯỚNG DẪN SANDBOX CODE TRỰC TIẾP ---</H>,
+      '- Yêu cầu cài đặt Go/Rust cho In-Memory Ring Buffer với ngữ nghĩa lock-free một ghi, nhiều đọc.',
+      <>- Kiểm tra độ phức tạp không gian thuật toán: bộ nhớ phụ trợ đúng <V>O(1)</V>.</>,
+      '- Nếu race đồng thời xảy ra trong Sandbox: KHÔNG báo lỗi ngay. Hướng dẫn ứng viên:',
+      <div className={IND}><span className="italic text-primary">"Chạy với -race detector và kiểm tra vòng lặp CAS tại index 4."</span></div>,
+      '- Ghi nhận độ trễ phản xạ và sự bình tĩnh khi debug vào sổ theo dõi bộ tiêu chí chẩn đoán.',
     ],
   },
   {
     id: 'probing',
-    label: 'Probing Matrix',
+    label: 'Ma trận đào sâu',
     lines: [
-      <H>// --- PROBING MATRIX &amp; ESCALATION TREE ---</H>,
-      <K>TRIGGER [Consensus Mentioned]</K>,
-      <div className={IND}>- If candidate suggests Paxos: request distinction between Multi-Paxos and Raft leader election.</div>,
-      <div className={IND}>- If candidate mentions Cassandra: verify tuning of LOCAL_QUORUM vs ALL for read repair.</div>,
+      <H>// --- MA TRẬN ĐÀO SÂU &amp; CÂY LEO THANG ---</H>,
+      <K>KÍCH HOẠT [Nhắc đến đồng thuận]</K>,
+      <div className={IND}>- Nếu ứng viên nêu Paxos: yêu cầu phân biệt Multi-Paxos và bầu leader của Raft.</div>,
+      <div className={IND}>- Nếu ứng viên nhắc Cassandra: kiểm chứng cấu hình LOCAL_QUORUM vs ALL cho read repair.</div>,
       '',
-      <K>TRIGGER [Backpressure / Queue Stalls]</K>,
-      <div className={IND}>- Interrogate: "Under sudden 10x ingress surge, where do you shed load to preserve p99 SLA?"</div>,
-      <div className={IND}>- Require explicit definition of token bucket vs leaky bucket algorithm.</div>,
+      <K>KÍCH HOẠT [Backpressure / Hàng đợi tắc]</K>,
+      <div className={IND}>- Chất vấn: "Khi lưu lượng vào tăng gấp 10 lần đột ngột, bạn shed load ở đâu để giữ SLA p99?"</div>,
+      <div className={IND}>- Yêu cầu định nghĩa rõ thuật toán token bucket vs leaky bucket.</div>,
     ],
   },
   {
     id: 'sandbox',
-    label: 'Sandbox Protocol',
+    label: 'Giao thức Sandbox',
     lines: [
-      <H>// --- CODE SANDBOX RUNTIME PROTOCOL ---</H>,
-      <><K>TARGET PROBLEM</K>: Lockless Single-Writer Multi-Reader Ring Buffer.</>,
-      <K>CONSTRAINTS</K>,
-      <div className={IND}>1. Memory: 512MB max heap.</div>,
-      <div className={IND}>2. Disallow external third-party sync libraries (pure stdlib atomic primitives).</div>,
-      <div className={IND}>3. Provide unit test suite with 10 concurrent reader goroutines / threads.</div>,
+      <H>// --- GIAO THỨC RUNTIME SANDBOX CODE ---</H>,
+      <><K>BÀI TOÁN MỤC TIÊU</K>: Ring Buffer lock-free một ghi, nhiều đọc.</>,
+      <K>RÀNG BUỘC</K>,
+      <div className={IND}>1. Bộ nhớ: heap tối đa 512MB.</div>,
+      <div className={IND}>2. Cấm thư viện đồng bộ của bên thứ ba (chỉ dùng primitive atomic của stdlib).</div>,
+      <div className={IND}>3. Cung cấp bộ unit test với 10 goroutine / thread đọc đồng thời.</div>,
       '',
-      <><PR>&gt; PASSING CRITERIA</PR>: Zero race detector warnings; memory throughput &gt; 250k ops/sec.</>,
+      <><PR>&gt; TIÊU CHÍ ĐẠT</PR>: Không có cảnh báo race detector; thông lượng bộ nhớ &gt; 250k ops/sec.</>,
     ],
   },
 ];
@@ -227,21 +227,21 @@ const WeightSlider: React.FC<{
 );
 
 const VOICES = [
-  { id: 'aria', name: 'Aria', desc: 'Natural & Socratic, collaborative cadence' },
-  { id: 'nova', name: 'Nova', desc: 'Deep Analytical, rigorous architecture depth' },
-  { id: 'echo', name: 'Echo', desc: 'Precise & Technical, low latency conciseness' },
+  { id: 'aria', name: 'Aria', desc: 'Tự nhiên & kiểu Socratic, nhịp độ hợp tác' },
+  { id: 'nova', name: 'Nova', desc: 'Phân tích sâu, đào sâu kiến trúc chặt chẽ' },
+  { id: 'echo', name: 'Echo', desc: 'Chính xác & kỹ thuật, súc tích, độ trễ thấp' },
 ];
 
 const GUARDRAILS = [
-  { title: 'Prevent Direct Answer Leakage', desc: 'Ensure AI guides candidates with Socratic hints instead of giving answers' },
-  { title: 'Adaptive Difficulty Scaling', desc: 'Dynamically adjust problem complexity if candidate demonstrates mastery' },
-  { title: 'Anonymize Candidate Demographic Cues', desc: 'Strip identifying personal background context from interviewer prompt' },
-  { title: 'Enforce Timekeeping & Milestone Pacing', desc: 'Ensure all rubric competencies are evaluated within the session timeline' },
+  { title: 'Chống lộ câu trả lời trực tiếp', desc: 'Đảm bảo AI dẫn dắt ứng viên bằng gợi mở kiểu Socratic thay vì đưa sẵn đáp án' },
+  { title: 'Tăng độ khó thích ứng', desc: 'Tự động điều chỉnh độ phức tạp đề bài khi ứng viên thể hiện sự thành thạo' },
+  { title: 'Ẩn danh thông tin nhân thân ứng viên', desc: 'Loại bỏ ngữ cảnh cá nhân mang tính định danh khỏi prompt phỏng vấn' },
+  { title: 'Đảm bảo thời gian & nhịp mốc', desc: 'Đảm bảo mọi năng lực trong bộ tiêu chí được đánh giá trong khuôn khổ thời lượng phiên' },
 ];
 
 const LANG_CHIPS = ['Go 1.22', 'Python 3.12', 'Java 21', 'Rust 1.78', 'TypeScript 5.4'];
 
-const DOMAIN_ANCHORS = ['Distributed Systems', 'Concurrency & Locks', 'Raft / Paxos Consensuses', 'gRPC / RPC Wire Protocols'];
+const DOMAIN_ANCHORS = ['Hệ phân tán', 'Đồng thời & Khóa', 'Đồng thuận Raft / Paxos', 'Giao thức gRPC / RPC'];
 
 const WAVE_BARS = [
   'h-3 bg-primary/40', 'h-5 bg-primary/60', 'h-7 bg-primary animate-pulse', 'h-4 bg-primary',
@@ -251,9 +251,9 @@ const WAVE_BARS = [
   'h-5 bg-primary/70', 'h-6 bg-primary', 'h-3 bg-primary/50', 'h-5 bg-primary/80',
 ];
 
-const depthLabel = (v: number) => `${v >= 75 ? 'Deep Dive' : v <= 40 ? 'Surface' : 'Standard'} (${v}%)`;
-const interruptLabel = (v: number) => `${v >= 70 ? 'Dynamic' : v <= 30 ? 'Patient' : 'Balanced'} (${v}%)`;
-const toneLabel = (v: number) => `${v >= 70 ? 'Supportive' : v <= 30 ? 'Strict' : 'Neutral'} (${v}%)`;
+const depthLabel = (v: number) => `${v >= 75 ? 'Đào sâu' : v <= 40 ? 'Bề mặt' : 'Tiêu chuẩn'} (${v}%)`;
+const interruptLabel = (v: number) => `${v >= 70 ? 'Linh hoạt' : v <= 30 ? 'Kiên nhẫn' : 'Cân bằng'} (${v}%)`;
+const toneLabel = (v: number) => `${v >= 70 ? 'Hỗ trợ' : v <= 30 ? 'Nghiêm khắc' : 'Trung lập'} (${v}%)`;
 
 const RubricStudioPage: React.FC = () => {
   const [voice, setVoice] = useState('aria');
@@ -276,14 +276,14 @@ const RubricStudioPage: React.FC = () => {
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1 text-label-sm text-outline-strong">
-              <span>Employer Workspace</span>
+              <span>Không gian Nhà tuyển dụng</span>
               <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span>AI Calibration</span>
+              <span>Hiệu chỉnh AI</span>
               <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span className="font-medium text-primary">Rubric &amp; Prompt Studio</span>
+              <span className="font-medium text-primary">Studio rubric &amp; prompt</span>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="m-0 tracking-tight text-headline-lg text-ink">AI Interview Engine &amp; Rubric Studio</h1>
+              <h1 className="m-0 tracking-tight text-headline-lg text-ink">AI Interview Engine — Studio rubric &amp; prompt</h1>
               <div className="flex cursor-pointer items-center gap-1 rounded-md border border-surface-high bg-surface-mid px-2.5 py-1 text-label-sm text-ink transition-colors hover:bg-surface-high">
                 <span className="material-symbols-outlined text-[16px] text-primary">smart_toy</span>
                 <span className="font-semibold">Claude 3.5 Sonnet / GPT-4o Evaluator</span>
@@ -292,18 +292,18 @@ const RubricStudioPage: React.FC = () => {
               </div>
               <div className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[12px] font-medium text-emerald-800">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                <span>Published &amp; Active in Live Interviews</span>
+                <span>Đã công bố &amp; đang áp dụng trong phỏng vấn thực tế</span>
               </div>
             </div>
             <p className="m-0 max-w-3xl text-body-md text-ink-variant">
-              Configure conversational interviewer behavior, interactive coding protocols, and multi-dimensional rubric scoring applied during candidate evaluations.
+              Cấu hình hành vi người phỏng vấn trò chuyện, giao thức lập trình tương tác và cách chấm điểm theo bộ tiêu chí đa chiều khi đánh giá ứng viên.
             </p>
           </div>
           {/* Action Cluster */}
           <div className="flex flex-wrap items-center gap-2 self-start md:self-center">
             <button type="button" className="flex items-center gap-1 rounded-md border border-surface-high bg-card px-3 py-1.5 text-label-md text-ink shadow-sm transition-colors hover:bg-surface-mid">
               <span className="material-symbols-outlined text-[16px] text-outline-strong">history</span>
-              <span>Version History (v4.18.2)</span>
+              <span>Lịch sử phiên bản (v4.18.2)</span>
               <span className="material-symbols-outlined text-[16px] text-outline-strong">expand_more</span>
             </button>
             <button
@@ -312,12 +312,12 @@ const RubricStudioPage: React.FC = () => {
               className="flex items-center gap-1 rounded-md border border-surface-high bg-surface-low px-3 py-1.5 text-label-md text-primary shadow-sm transition-colors hover:bg-info/40"
             >
               <span className="material-symbols-outlined text-[16px]">terminal</span>
-              <span>Test in Playground</span>
+              <span>Thử trong Playground</span>
               <kbd className="rounded bg-surface-high px-1 font-mono text-[10px] text-ink-variant">⌘P</kbd>
             </button>
             <button type="button" className="flex items-center gap-1 rounded-md bg-primary px-4 py-1.5 text-label-md text-on-primary shadow-sm transition-all hover:bg-primary-container active:scale-95">
               <span className="material-symbols-outlined text-[16px]">publish</span>
-              <span className="font-semibold">Deploy Changes</span>
+              <span className="font-semibold">Triển khai thay đổi</span>
             </button>
           </div>
         </div>
@@ -325,44 +325,44 @@ const RubricStudioPage: React.FC = () => {
         <div className="flex items-center gap-6 overflow-x-auto border-t border-surface-mid/60 pt-1 text-label-sm text-ink-variant">
           <div className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[16px] text-primary">tag</span>
-            <span>Release Tag: <strong className="font-mono font-medium text-ink">prod-v4.18.2</strong></span>
+            <span>Nhãn phát hành: <strong className="font-mono font-medium text-ink">prod-v4.18.2</strong></span>
           </div>
           <span className="text-outline">•</span>
           <div className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[16px] text-primary">edit_calendar</span>
-            <span>Last modified: <strong className="text-ink">Today at 10:48 AM by Sarah Jenkins</strong></span>
+            <span>Sửa lần cuối: <strong className="text-ink">Hôm nay lúc 10:48 bởi Sarah Jenkins</strong></span>
           </div>
           <span className="text-outline">•</span>
           <div className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[16px] text-primary">domain_verification</span>
-            <span>Target Role: <strong className="text-ink">Senior Staff Distributed Systems (L5/L6)</strong></span>
+            <span>Vai trò đích: <strong className="text-ink">Senior Staff Distributed Systems (L5/L6)</strong></span>
           </div>
           <span className="text-outline">•</span>
           <div className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[16px] text-emerald-600">check_circle</span>
-            <span>All 4 Guardrails Active</span>
+            <span>Cả 4 hàng rào bảo vệ đang bật</span>
           </div>
         </div>
         {/* Active Metadata Pill Strip (state 2) */}
         <div className="flex items-center gap-6 overflow-x-auto text-label-sm text-ink-variant">
           <div className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[16px] text-primary">check_circle</span>
-            <span>Runtime Safety: <strong className="font-semibold text-ink">Strict Anonymization</strong></span>
+            <span>An toàn runtime: <strong className="font-semibold text-ink">Ẩn danh nghiêm ngặt</strong></span>
           </div>
           <span className="text-outline">•</span>
           <div className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[16px] text-primary">memory</span>
-            <span>Sandbox Memory Cap: <strong className="font-semibold text-ink">512MB / Process</strong></span>
+            <span>Giới hạn bộ nhớ sandbox: <strong className="font-semibold text-ink">512MB / tiến trình</strong></span>
           </div>
           <span className="text-outline">•</span>
           <div className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[16px] text-primary">timer</span>
-            <span>Timeout Envelope: <strong className="font-semibold text-ink">45m Standard</strong></span>
+            <span>Giới hạn thời gian: <strong className="font-semibold text-ink">45 phút tiêu chuẩn</strong></span>
           </div>
           <span className="text-outline">•</span>
           <div className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[16px] text-outline-strong">history_toggle_off</span>
-            <span>Last Published: <strong className="font-semibold text-ink">Today, 09:42 UTC by Sarah K.</strong></span>
+            <span>Công bố lần cuối: <strong className="font-semibold text-ink">Hôm nay, 09:42 UTC bởi Sarah K.</strong></span>
           </div>
         </div>
       </div>
@@ -375,11 +375,11 @@ const RubricStudioPage: React.FC = () => {
           <div className={CARD}>
             <SectionTitle
               icon="record_voice_over"
-              title="Interviewer Persona"
-              right={<span className="rounded bg-surface-mid px-2 py-0.5 font-mono text-[11px] font-medium text-ink">Voice Mode</span>}
+              title="Chân dung người phỏng vấn"
+              right={<span className="rounded bg-surface-mid px-2 py-0.5 font-mono text-[11px] font-medium text-ink">Chế độ giọng nói</span>}
             />
             <div className="flex flex-col gap-1">
-              <label className="text-label-sm text-ink-variant">Voice &amp; Conversational Style</label>
+              <label className="text-label-sm text-ink-variant">Giọng nói &amp; Phong cách trò chuyện</label>
               <div className="grid grid-cols-1 gap-1">
                 {VOICES.map((v) => {
                   const active = voice === v.id;
@@ -397,7 +397,7 @@ const RubricStudioPage: React.FC = () => {
                       <div className="flex items-center gap-3">
                         <button
                           type="button"
-                          title="Preview voice sample"
+                          title="Nghe thử mẫu giọng nói"
                           className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
                             active ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'bg-surface-mid text-ink-variant hover:text-ink'
                           }`}
@@ -419,13 +419,13 @@ const RubricStudioPage: React.FC = () => {
             </div>
             {/* Conversational Tuning Sliders */}
             <div className="flex flex-col gap-3 border-t border-surface-mid/80 pt-1">
-              <SliderField label="Follow-up Probing Depth" display={depthLabel(depth)} value={depth} min={20} max={100} leftHint="Surface Overview" rightHint="Multi-turn Deep Dive" onChange={setDepth} />
-              <SliderField label="Interruption & Flow Allowance" display={interruptLabel(interrupt)} value={interrupt} min={10} max={100} leftHint="Wait for Full Silence" rightHint="Adaptive Dynamic Interjections" onChange={setInterrupt} />
-              <SliderField label="Pacing &amp; Interviewer Tone" display={toneLabel(tone)} value={tone} min={10} max={100} leftHint="Strict / Neutral Stance" rightHint="Supportive Guidance" onChange={setTone} />
+              <SliderField label="Độ sâu khai thác" display={depthLabel(depth)} value={depth} min={20} max={100} leftHint="Tổng quan bề mặt" rightHint="Đào sâu đa lượt" onChange={setDepth} />
+              <SliderField label="Cho phép ngắt lời" display={interruptLabel(interrupt)} value={interrupt} min={10} max={100} leftHint="Chờ im lặng tuyệt đối" rightHint="Chèn lời linh hoạt" onChange={setInterrupt} />
+              <SliderField label="Nhịp độ & Giọng điệu" display={toneLabel(tone)} value={tone} min={10} max={100} leftHint="Nghiêm khắc / Trung lập" rightHint="Thân thiện, hỗ trợ" onChange={setTone} />
             </div>
             {/* Primary Domain Anchors (state 2) */}
             <div className="flex flex-col gap-1 border-t border-surface-mid/80 pt-1">
-              <label className="text-label-sm text-ink-variant">Primary Domain Anchors</label>
+              <label className="text-label-sm text-ink-variant">Lĩnh vực cốt lõi</label>
               <div className="flex flex-wrap gap-1.5">
                 {DOMAIN_ANCHORS.map((a) => (
                   <span key={a} className="flex items-center gap-1 rounded-md bg-surface-high px-2 py-1 text-[12px] text-ink">
@@ -434,7 +434,7 @@ const RubricStudioPage: React.FC = () => {
                   </span>
                 ))}
                 <button type="button" className="flex items-center gap-0.5 rounded-md bg-primary-container/10 px-2 py-1 text-[12px] text-primary transition-colors hover:bg-primary-container/20">
-                  <span className="material-symbols-outlined text-[14px]">add</span> Add Anchor
+                  <span className="material-symbols-outlined text-[14px]">add</span> Thêm lĩnh vực
                 </button>
               </div>
             </div>
@@ -444,8 +444,8 @@ const RubricStudioPage: React.FC = () => {
           <div className={CARD}>
             <SectionTitle
               icon="shield_check"
-              title="Safety & Guardrails"
-              right={<span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Enforced</span>}
+              title="An toàn &amp; hàng rào bảo vệ"
+              right={<span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Đang áp dụng</span>}
             />
             <div className="flex flex-col gap-2 text-label-sm">
               {GUARDRAILS.map((g, i) => (
@@ -470,16 +470,16 @@ const RubricStudioPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <h3 className="m-0 flex items-center gap-1 text-headline-sm text-ink">
                 <span className="material-symbols-outlined text-[18px] text-primary">code</span>
-                <span>Candidate Coding Environment</span>
+                <span>Môi trường lập trình của ứng viên</span>
               </h3>
-              <span className="rounded-md bg-primary-container/10 px-2 py-0.5 text-[11px] font-medium text-primary">Live IDE Synced</span>
+              <span className="rounded-md bg-primary-container/10 px-2 py-0.5 text-[11px] font-medium text-primary">Đồng bộ IDE trực tiếp</span>
             </div>
             <p className="m-0 text-body-sm text-ink-variant">
-              Runtime configurations provisioned during the interactive problem-solving stage.
+              Cấu hình môi trường thực thi được cấp phát trong giai đoạn giải đề tương tác.
             </p>
             <div className="flex flex-col gap-2 pt-1">
               <div className="flex flex-col gap-1">
-                <span className="text-[11px] uppercase text-outline-strong">Supported Languages</span>
+                <span className="text-[11px] uppercase text-outline-strong">Ngôn ngữ hỗ trợ</span>
                 <div className="flex flex-wrap gap-1">
                   {LANG_CHIPS.map((l) => (
                     <span key={l} className="rounded border border-surface-high bg-surface-mid px-2 py-0.5 font-mono text-[11px] font-medium text-ink">{l}</span>
@@ -488,12 +488,12 @@ const RubricStudioPage: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-2 pt-1">
                 <div className="flex flex-col rounded-lg border border-surface-mid bg-surface-low p-2">
-                  <span className="text-[11px] text-outline-strong">Test Runner</span>
+                  <span className="text-[11px] text-outline-strong">Trình chạy test</span>
                   <span className="font-mono text-[12px] font-medium text-ink">JUnit / PyTest / Go Test</span>
                 </div>
                 <div className="flex flex-col rounded-lg border border-surface-mid bg-surface-low p-2">
-                  <span className="text-[11px] text-outline-strong">Execution Timeout</span>
-                  <span className="font-mono text-[12px] font-medium text-ink">10s Per Unit Run</span>
+                  <span className="text-[11px] text-outline-strong">Timeout thực thi</span>
+                  <span className="font-mono text-[12px] font-medium text-ink">10s mỗi lượt chạy</span>
                 </div>
               </div>
             </div>
@@ -524,18 +524,18 @@ const RubricStudioPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700">
                   <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                  <span>Syntax Validated</span>
+                  <span>Cú pháp hợp lệ</span>
                 </div>
                 <button type="button" className="flex items-center gap-1 rounded bg-primary-container px-2 py-1 text-[11px] text-on-primary transition-colors hover:bg-[#313ba4]">
                   <span className="material-symbols-outlined text-[13px]">auto_fix_high</span>
-                  <span>Optimize</span>
+                  <span>Tối ưu</span>
                 </button>
               </div>
             </div>
             {/* Template Presets and Variables Toolbar (state 1) */}
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-mid bg-card px-4 py-2 text-label-sm text-ink-variant">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-[11px] font-medium uppercase text-outline-strong">Presets:</span>
+                <span className="text-[11px] font-medium uppercase text-outline-strong">Cấu hình mẫu:</span>
                 {['Senior Distributed Systems', 'Full-Stack Tech Lead', 'Site Reliability Eng'].map((p) => (
                   <button
                     key={p}
@@ -552,19 +552,19 @@ const RubricStudioPage: React.FC = () => {
                 ))}
               </div>
               <div className="flex items-center gap-1.5 text-xs text-outline-strong">
-                <span>Insert Variable:</span>
-                <span className="cursor-pointer rounded bg-surface-mid px-1.5 py-0.5 font-mono text-[11px] text-ink hover:bg-surface-high" title="Click to insert">{'{candidate_name}'}</span>
-                <span className="cursor-pointer rounded bg-surface-mid px-1.5 py-0.5 font-mono text-[11px] text-ink hover:bg-surface-high" title="Click to insert">{'{role_level}'}</span>
-                <span className="cursor-pointer rounded bg-surface-mid px-1.5 py-0.5 font-mono text-[11px] text-ink hover:bg-surface-high" title="Click to insert">{'{target_skills}'}</span>
+                <span>Chèn biến:</span>
+                <span className="cursor-pointer rounded bg-surface-mid px-1.5 py-0.5 font-mono text-[11px] text-ink hover:bg-surface-high" title="Bấm để chèn">{'{candidate_name}'}</span>
+                <span className="cursor-pointer rounded bg-surface-mid px-1.5 py-0.5 font-mono text-[11px] text-ink hover:bg-surface-high" title="Bấm để chèn">{'{role_level}'}</span>
+                <span className="cursor-pointer rounded bg-surface-mid px-1.5 py-0.5 font-mono text-[11px] text-ink hover:bg-surface-high" title="Bấm để chèn">{'{target_skills}'}</span>
               </div>
             </div>
             {/* Section Info Bar (state 2) */}
             <div className="flex items-center justify-between bg-surface-mid/60 px-4 py-2 text-label-sm text-ink-variant">
               <div className="flex items-center gap-1">
                 <span className="rounded bg-card px-1.5 py-0.5 font-mono text-[11px] text-ink">system_prompt.jinja2</span>
-                <span>Targeting: Senior L5+ Staff Evaluator</span>
+                <span>Dành cho: Senior L5+ Staff Evaluator</span>
               </div>
-              <span className="font-mono text-[11px] text-primary">UTF-8 • Synthesizer Sync OK</span>
+              <span className="font-mono text-[11px] text-primary">UTF-8 • Đã đồng bộ synthesizer</span>
             </div>
             {/* Code / Markdown Prompt Area */}
             <div className="flex min-h-[440px] overflow-x-auto bg-card p-3 font-mono text-body-sm leading-relaxed">
@@ -584,13 +584,13 @@ const RubricStudioPage: React.FC = () => {
               <div className="flex items-center gap-3">
                 <span className="font-mono text-xs text-ink">Tokens: <strong>1,840</strong> / 8,192</span>
                 <span className="text-outline">•</span>
-                <span>Temperature: <strong className="font-mono text-ink">0.20 (Deterministic)</strong></span>
+                <span>Nhiệt độ: <strong className="font-mono text-ink">0.20 (Tất định)</strong></span>
               </div>
               <div className="flex items-center gap-1">
-                <button type="button" className="rounded border border-surface-mid bg-card px-2.5 py-1 text-xs font-medium text-ink shadow-sm transition-colors hover:bg-surface-mid">Revert to Default</button>
-                <button type="button" className="rounded border border-surface-mid bg-card px-2.5 py-1 text-xs font-medium text-ink shadow-sm transition-colors hover:bg-surface-mid">Export Prompt Template</button>
-                <button type="button" className="rounded border border-surface-mid bg-card px-2.5 py-1 text-xs font-medium text-ink shadow-sm transition-colors hover:bg-surface-mid">Format Template</button>
-                <button type="button" className="rounded border border-surface-mid bg-card px-2.5 py-1 text-xs font-medium text-ink shadow-sm transition-colors hover:bg-surface-mid">View JSON Schema</button>
+                <button type="button" className="rounded border border-surface-mid bg-card px-2.5 py-1 text-xs font-medium text-ink shadow-sm transition-colors hover:bg-surface-mid">Khôi phục mặc định</button>
+                <button type="button" className="rounded border border-surface-mid bg-card px-2.5 py-1 text-xs font-medium text-ink shadow-sm transition-colors hover:bg-surface-mid">Xuất mẫu prompt</button>
+                <button type="button" className="rounded border border-surface-mid bg-card px-2.5 py-1 text-xs font-medium text-ink shadow-sm transition-colors hover:bg-surface-mid">Định dạng mẫu</button>
+                <button type="button" className="rounded border border-surface-mid bg-card px-2.5 py-1 text-xs font-medium text-ink shadow-sm transition-colors hover:bg-surface-mid">Xem JSON Schema</button>
               </div>
             </div>
           </div>
@@ -600,25 +600,25 @@ const RubricStudioPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <h3 className="m-0 flex items-center gap-1 text-headline-sm text-ink">
                 <span className="material-symbols-outlined text-[18px] text-primary">terminal</span>
-                <span>Coding Sandbox Environment</span>
+                <span>Môi trường Sandbox lập trình</span>
               </h3>
-              <span className="rounded-full bg-primary-container/10 px-2 py-0.5 font-mono text-xs text-primary">Firecracker VM isolated</span>
+              <span className="rounded-full bg-primary-container/10 px-2 py-0.5 font-mono text-xs text-primary">VM Firecracker cách ly</span>
             </div>
             <p className="m-0 text-body-sm text-ink-variant">
-              Live execution parameters fed directly to candidate IDE during coding challenge checkpoints.
+              Thông số thực thi trực tiếp được cấp cho IDE của ứng viên tại các mốc thử thách lập trình.
             </p>
             <div className="grid grid-cols-3 gap-2 pt-1">
               <div className="flex flex-col gap-1 rounded-lg bg-surface-low p-2.5">
-                <span className="text-[11px] uppercase text-outline-strong">Runtimes</span>
+                <span className="text-[11px] uppercase text-outline-strong">Runtime</span>
                 <span className="font-mono text-xs font-medium text-ink">Go 1.22, Rust 1.78</span>
               </div>
               <div className="flex flex-col gap-1 rounded-lg bg-surface-low p-2.5">
-                <span className="text-[11px] uppercase text-outline-strong">CPU Throttling</span>
-                <span className="font-mono text-xs font-medium text-ink">2 vCPU (Pinned)</span>
+                <span className="text-[11px] uppercase text-outline-strong">Giới hạn CPU</span>
+                <span className="font-mono text-xs font-medium text-ink">2 vCPU (ghim)</span>
               </div>
               <div className="flex flex-col gap-1 rounded-lg bg-surface-low p-2.5">
-                <span className="text-[11px] uppercase text-outline-strong">Network Isolation</span>
-                <span className="font-mono text-xs font-semibold text-emerald-600">Full Airgap (Zero egress)</span>
+                <span className="text-[11px] uppercase text-outline-strong">Cách ly mạng</span>
+                <span className="font-mono text-xs font-semibold text-emerald-600">Airgap tuyệt đối (không egress)</span>
               </div>
             </div>
           </div>
@@ -630,21 +630,21 @@ const RubricStudioPage: React.FC = () => {
           <div className={CARD}>
             <SectionTitle
               icon="tune"
-              title="Evaluation Rubric Weights"
+              title="Trọng số bộ tiêu chí đánh giá"
               right={
                 <div className={`rounded-full px-2 py-0.5 font-mono text-[11px] font-semibold text-on-primary ${total === 100 ? 'bg-primary' : 'bg-error'}`}>
-                  Total: {total}%
+                  Tổng: {total}%
                 </div>
               }
             />
             <p className="m-0 text-body-sm text-ink-variant">
-              Adjust the weighted distribution applied across evaluation categories to compute composite scores.
+              Điều chỉnh phân bố trọng số giữa các nhóm tiêu chí để tính điểm tổng hợp.
             </p>
             <div className="flex flex-col gap-3 pt-1">
-              <WeightSlider dotClass="bg-indigo-600" label="System Architecture & Scalability" hint="Multi-region design, data sharding, throughput" value={weights.design} min={5} max={60} onChange={(v) => setWeights({ ...weights, design: v })} />
-              <WeightSlider dotClass="bg-blue-600" label="Data Structures & Algorithmic Concurrency" hint="Lock-free patterns, memory footprint, time complexity" value={weights.algo} min={5} max={60} onChange={(v) => setWeights({ ...weights, algo: v })} />
-              <WeightSlider dotClass="bg-emerald-600" label="Technical Communication & Trade-offs" hint="Clarity of reasoning, defense of design decisions" value={weights.comm} min={5} max={50} onChange={(v) => setWeights({ ...weights, comm: v })} />
-              <WeightSlider dotClass="bg-amber-600" label="Operational Reliability & Edge Cases" hint="Fault tolerance, observability, circuit breakers" value={weights.rel} min={5} max={40} onChange={(v) => setWeights({ ...weights, rel: v })} />
+              <WeightSlider dotClass="bg-indigo-600" label="Kiến trúc hệ thống & Khả năng mở rộng" hint="Thiết kế đa vùng, phân mảnh dữ liệu, thông lượng" value={weights.design} min={5} max={60} onChange={(v) => setWeights({ ...weights, design: v })} />
+              <WeightSlider dotClass="bg-blue-600" label="Cấu trúc dữ liệu & Đồng thời thuật toán" hint="Mẫu lock-free, mức dùng bộ nhớ, độ phức tạp thời gian" value={weights.algo} min={5} max={60} onChange={(v) => setWeights({ ...weights, algo: v })} />
+              <WeightSlider dotClass="bg-emerald-600" label="Giao tiếp kỹ thuật & Đánh đổi" hint="Lập luận rõ ràng, bảo vệ quyết định thiết kế" value={weights.comm} min={5} max={50} onChange={(v) => setWeights({ ...weights, comm: v })} />
+              <WeightSlider dotClass="bg-amber-600" label="Độ tin cậy vận hành & Trường hợp biên" hint="Chịu lỗi, khả năng quan sát, circuit breaker" value={weights.rel} min={5} max={40} onChange={(v) => setWeights({ ...weights, rel: v })} />
             </div>
             {/* Weight Progress Bar Visual (state 1) */}
             <div className="mt-1 flex flex-col gap-1.5 rounded-lg border border-surface-mid bg-surface-low p-2.5">
@@ -655,10 +655,10 @@ const RubricStudioPage: React.FC = () => {
                 <div className="h-full bg-amber-600" style={{ width: `${weights.rel}%` }} />
               </div>
               <div className="flex justify-between pt-0.5 text-[11px] text-outline-strong">
-                <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-indigo-600" /> Design {weights.design}%</span>
-                <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> Algo {weights.algo}%</span>
-                <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-600" /> Comm {weights.comm}%</span>
-                <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-amber-600" /> Ops {weights.rel}%</span>
+                <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-indigo-600" /> Thiết kế {weights.design}%</span>
+                <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> Thuật toán {weights.algo}%</span>
+                <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-emerald-600" /> Giao tiếp {weights.comm}%</span>
+                <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-amber-600" /> Vận hành {weights.rel}%</span>
               </div>
             </div>
             {/* Auto-Normalized Weight Matrix donut (state 2) */}
@@ -671,8 +671,8 @@ const RubricStudioPage: React.FC = () => {
                 <circle cx="18" cy="18" r="15.91549430918954" fill="transparent" stroke="#d97706" strokeDasharray="15 85" strokeDashoffset="40" strokeWidth="3.2" />
               </svg>
               <div className="flex flex-col text-xs text-ink-variant">
-                <span className="font-semibold text-ink">Auto-Normalized Weight Matrix</span>
-                <span>Evaluations adhere to deterministic sum policy. Any deviation is normalized at scoring runtime.</span>
+                <span className="font-semibold text-ink">Ma trận trọng số tự chuẩn hóa</span>
+                <span>Điểm chấm tuân thủ chính sách tổng tất định. Mọi sai lệch được chuẩn hóa khi chạy chấm.</span>
               </div>
             </div>
           </div>
@@ -681,16 +681,16 @@ const RubricStudioPage: React.FC = () => {
           <div className={CARD}>
             <SectionTitle
               icon="rule"
-              title="Score Cutoffs & Hiring Triggers"
-              right={<span className="font-mono text-[11px] text-outline-strong">Scale 0–100 pts</span>}
+              title="Ngưỡng điểm & Ngưỡng tuyển"
+              right={<span className="font-mono text-[11px] text-outline-strong">Thang 0–100 điểm</span>}
             />
             <div className="flex flex-col gap-2 text-label-sm">
               <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-emerald-950">
                 <div className="flex items-center gap-2.5">
                   <span className="material-symbols-outlined text-[20px] text-emerald-600">verified</span>
                   <div>
-                    <div className="text-[13px] font-semibold text-emerald-900">Strong Recommend (≥ 85 pts)</div>
-                    <div className="text-[11px] text-emerald-700">Auto-advance candidate to Partner Executive round</div>
+                    <div className="text-[13px] font-semibold text-emerald-900">Rất khuyến nghị (≥ 85 điểm)</div>
+                    <div className="text-[11px] text-emerald-700">Tự động đưa ứng viên vào vòng Partner Executive</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 font-mono text-[13px] font-bold text-emerald-800">
@@ -701,8 +701,8 @@ const RubricStudioPage: React.FC = () => {
                 <div className="flex items-center gap-2.5">
                   <span className="material-symbols-outlined text-[20px] text-amber-600">rate_review</span>
                   <div>
-                    <div className="text-[13px] font-semibold text-amber-900">Review Required (70 – 84 pts)</div>
-                    <div className="text-[11px] text-amber-700">Flag for Hiring Manager manual recording review</div>
+                    <div className="text-[13px] font-semibold text-amber-900">Cần rà soát (70 – 84 điểm)</div>
+                    <div className="text-[11px] text-amber-700">Gắn cờ để quản lý tuyển dụng xem lại bản ghi thủ công</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 font-mono text-[13px] font-bold text-amber-800">
@@ -713,8 +713,8 @@ const RubricStudioPage: React.FC = () => {
                 <div className="flex items-center gap-2.5">
                   <span className="material-symbols-outlined text-[20px] text-rose-600">cancel</span>
                   <div>
-                    <div className="text-[13px] font-semibold text-rose-900">Not Moving Forward (&lt; 70 pts)</div>
-                    <div className="text-[11px] text-rose-700">Generate constructive feedback packet for candidate</div>
+                    <div className="text-[13px] font-semibold text-rose-900">Không đi tiếp (&lt; 70 điểm)</div>
+                    <div className="text-[11px] text-rose-700">Tạo gói phản hồi xây dựng cho ứng viên</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 font-mono text-[13px] font-bold text-rose-800">
@@ -728,26 +728,26 @@ const RubricStudioPage: React.FC = () => {
           <div className="flex flex-col gap-2 rounded-lg border border-surface-mid bg-card p-4 shadow-sm">
             <SectionTitle
               icon="assignment_turned_in"
-              title="Candidate Feedback Preview"
-              right={<Badge>Auto-Generated</Badge>}
+              title="Xem trước phản hồi cho ứng viên"
+              right={<Badge>Tự sinh</Badge>}
             />
             <p className="m-0 text-[12px] text-ink-variant">
-              Preview of structured output delivered to candidates and hiring teams under this rubric:
+              Xem trước đầu ra có cấu trúc gửi cho ứng viên và đội tuyển dụng theo bộ tiêu chí này:
             </p>
             <div className="flex flex-col gap-2 rounded-lg border border-surface-mid bg-surface-low p-2 text-xs">
               <div className="flex items-center justify-between border-b border-surface-high pb-1.5">
-                <span className="font-semibold text-ink">Evaluation Summary for Elena R.</span>
-                <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-mono text-[11px] font-bold text-emerald-700">Score: 88.5 / 100</span>
+                <span className="font-semibold text-ink">Tóm tắt đánh giá cho Elena R.</span>
+                <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-mono text-[11px] font-bold text-emerald-700">Điểm: 88.5 / 100</span>
               </div>
               <div className="leading-relaxed text-ink-variant">
-                <strong className="text-ink">Strengths:</strong> Demonstrated master-level command of Raft consensus and split-brain recovery under simulated node failure.
+                <strong className="text-ink">Điểm mạnh:</strong> Thể hiện làm chủ ở mức chuyên gia về đồng thuận Raft và khôi phục split-brain khi mô phỏng lỗi node.
               </div>
               <div className="leading-relaxed text-ink-variant">
-                <strong className="text-ink">Growth Area:</strong> In-memory ring buffer space complexity breached O(1) auxiliary boundary during initial sandbox draft.
+                <strong className="text-ink">Cần cải thiện:</strong> Độ phức tạp không gian của ring buffer in-memory vượt giới hạn bộ nhớ phụ trợ O(1) ở bản nháp sandbox đầu tiên.
               </div>
               <div className="flex items-center justify-between pt-1 text-[11px] text-outline-strong">
-                <span>Calibrated with v4.18.2 Prompt Matrix</span>
-                <a className="flex items-center gap-0.5 font-medium text-primary hover:underline" href="#/">Full Scorecard <span className="material-symbols-outlined text-[13px]">arrow_forward</span></a>
+                <span>Đã hiệu chỉnh theo Prompt Matrix v4.18.2</span>
+                <a className="flex items-center gap-0.5 font-medium text-primary hover:underline" href="#/">Bảng điểm đầy đủ <span className="material-symbols-outlined text-[13px]">arrow_forward</span></a>
               </div>
             </div>
           </div>
@@ -756,7 +756,7 @@ const RubricStudioPage: React.FC = () => {
           <div className={CARD}>
             <SectionTitle
               icon="mic"
-              title="Voice Latency & Waveform"
+              title="Độ trễ giọng nói & Sóng âm"
               right={
                 <span className="flex items-center gap-1 font-mono text-[11px] text-emerald-600">
                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
@@ -772,10 +772,10 @@ const RubricStudioPage: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center justify-between text-xs text-ink-variant">
-              <span className="font-medium">Candidate Speaking Simulation</span>
+              <span className="font-medium">Mô phỏng ứng viên đang nói</span>
               <button type="button" className="flex items-center gap-1 font-semibold text-primary hover:underline">
                 <span className="material-symbols-outlined text-[15px]">play_arrow</span>
-                <span>Simulate Probing Turn</span>
+                <span>Mô phỏng lượt đào sâu</span>
               </button>
             </div>
           </div>
@@ -790,8 +790,8 @@ const RubricStudioPage: React.FC = () => {
               <div className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-[22px] text-primary">terminal</span>
                 <div>
-                  <h3 className="m-0 text-headline-sm text-ink">Interactive Interview Playground</h3>
-                  <p className="m-0 text-[12px] text-ink-variant">Test interviewer responses against your configured system prompt &amp; guardrails</p>
+                  <h3 className="m-0 text-headline-sm text-ink">Playground phỏng vấn tương tác</h3>
+                  <p className="m-0 text-[12px] text-ink-variant">Kiểm tra phản hồi của người phỏng vấn với system prompt và hàng rào bảo vệ bạn đã cấu hình</p>
                 </div>
               </div>
               <button type="button" onClick={() => setPlaygroundOpen(false)} className="rounded-lg p-1 text-outline-strong transition-colors hover:text-ink">
@@ -802,24 +802,24 @@ const RubricStudioPage: React.FC = () => {
               <div className="flex items-start gap-2">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-on-primary shadow-sm">AI</div>
                 <div className="max-w-[85%] rounded-xl border border-surface-mid bg-surface-low p-3 text-body-sm text-ink">
-                  <p className="mb-1 font-semibold text-primary">Aria (AI Evaluator)</p>
-                  "Welcome! To kick off the distributed systems portion: let's explore building an idempotency coordinator across three write-heavy regions. If a network partition isolates Region West, how does your leasing mechanism prevent duplicate execution?"
+                  <p className="mb-1 font-semibold text-primary">Aria (AI chấm điểm)</p>
+                  "Chào mừng! Bắt đầu phần hệ phân tán: ta sẽ khám phá việc xây dựng bộ điều phối idempotency trên ba vùng ghi nhiều. Nếu một phân vùng mạng cô lập Region West, cơ chế leasing của bạn ngăn thực thi trùng lặp như thế nào?"
                 </div>
               </div>
               <div className="flex items-start justify-end gap-2">
                 <div className="max-w-[85%] rounded-xl bg-primary-container p-3 text-body-sm text-on-primary">
-                  <p className="mb-1 font-semibold text-on-primary-container">Simulated Candidate Response</p>
-                  "I'd place a Redis instance with a 15-second TTL lock in West and simply let transactions proceed if the lock acquires successfully."
+                  <p className="mb-1 font-semibold text-on-primary-container">Phản hồi mô phỏng của ứng viên</p>
+                  "Tôi sẽ đặt một instance Redis với khóa TTL 15 giây ở West và để giao dịch chạy tiếp nếu lấy khóa thành công."
                 </div>
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#dae2fd] text-xs font-bold text-ink">You</div>
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#dae2fd] text-xs font-bold text-ink">Bạn</div>
               </div>
               <div className="flex items-start gap-2">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-on-primary shadow-sm">AI</div>
                 <div className="max-w-[85%] rounded-xl border-l-2 border-primary border-surface-mid bg-surface-low p-3 text-body-sm text-ink">
-                  <p className="mb-1 font-semibold text-primary">Aria (Socratic Probing Guardrail Triggered)</p>
-                  "What happens if an unexpected GC pause of 18 seconds occurs right after lock acquisition in West, while another client in Central attempts execution after TTL expiration? How do we prevent split-brain processing without relying on synchronized wall clocks?"
+                  <p className="mb-1 font-semibold text-primary">Aria (Hàng rào đào sâu Socratic được kích hoạt)</p>
+                  "Chuyện gì xảy ra nếu một GC pause 18 giây bất ngờ xuất hiện ngay sau khi lấy khóa ở West, trong khi một client khác ở Central cố thực thi sau khi TTL đã hết hạn? Làm sao ngăn xử lý split-brain mà không phụ thuộc vào đồng hồ tường thuật được đồng bộ?"
                   <div className="mt-2 flex items-center gap-2 border-t border-surface-high/60 pt-2 font-mono text-[11px] text-outline-strong">
-                    <span className="font-semibold text-emerald-700">✓ Guardrail Matched:</span> Prevent Direct Answer Leakage &amp; Socratic Escalation
+                    <span className="font-semibold text-emerald-700">✓ Hàng rào khớp:</span> Chống lộ câu trả lời trực tiếp &amp; Leo thang Socratic
                   </div>
                 </div>
               </div>
@@ -827,11 +827,11 @@ const RubricStudioPage: React.FC = () => {
             <div className="flex items-center gap-2 border-t border-surface-mid bg-surface-low p-3">
               <input
                 type="text"
-                placeholder="Type a mock candidate response to test AI follow-up..."
+                placeholder="Nhập phản hồi mô phỏng của ứng viên để thử câu hỏi tiếp của AI..."
                 className="flex-1 rounded-md border border-surface-mid bg-card px-3 py-2 text-body-sm text-ink shadow-sm placeholder:text-outline-strong focus:outline-none focus:ring-1 focus:ring-primary"
               />
               <button type="button" className="flex items-center gap-1 rounded-md bg-primary px-3 py-2 text-label-md text-on-primary shadow-sm transition-colors hover:bg-primary-container">
-                <span>Send Turn</span>
+                <span>Gửi lượt</span>
                 <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
               </button>
             </div>

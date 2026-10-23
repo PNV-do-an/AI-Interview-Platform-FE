@@ -18,18 +18,18 @@ const BAR_TRACK = 'flex h-3 w-full overflow-hidden rounded-full bg-[#dae2fd]'; /
 
 const KPIS = [
   {
-    label: 'Avg. Time-to-Hire',
+    label: 'TB. thời gian tuyển dụng',
     icon: 'speed',
     iconTone: 'text-primary',
     blob: 'bg-primary/5',
     value: '14.2',
-    unit: 'Days',
+    unit: 'Ngày',
     foot: (
       <>
         <div className="flex items-center gap-1 text-label-sm font-semibold text-ink">
           <span className="material-symbols-outlined text-[16px] text-primary">trending_down</span>
           <span className="text-primary">-42%</span>
-          <span className="font-normal text-outline-strong">vs. industry (24.5d)</span>
+          <span className="font-normal text-outline-strong">so với ngành (24.5 ngày)</span>
         </div>
         <svg className="h-6 w-16 overflow-visible text-primary" fill="none" viewBox="0 0 64 24">
           <path d="M1 19 L14 15 L28 17 L42 8 L54 11 L63 3" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.2" />
@@ -39,7 +39,7 @@ const KPIS = [
     ),
   },
   {
-    label: 'Calibration Accuracy',
+    label: 'Độ chính xác hiệu chỉnh',
     icon: 'verified',
     iconTone: 'text-secondary',
     blob: 'bg-secondary/5',
@@ -48,83 +48,83 @@ const KPIS = [
     badge: '+3.1%',
     foot: (
       <>
-        <span className="text-label-sm text-outline-strong">Human panel agreement</span>
+        <span className="text-label-sm text-outline-strong">Mức đồng thuận với hội đồng người</span>
         <div className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-primary" />
           <span className="h-2 w-2 rounded-full bg-primary" />
           <span className="h-2 w-2 rounded-full bg-primary" />
           <span className="h-2 w-2 rounded-full bg-primary" />
-          <span className="ml-1 font-mono text-[12px] font-semibold text-ink">4/4 Tiers</span>
+          <span className="ml-1 font-mono text-[12px] font-semibold text-ink">4/4 Bậc</span>
         </div>
       </>
     ),
   },
   {
-    label: 'Qualified Throughput',
+    label: 'Thông lượng đạt yêu cầu',
     icon: 'group_work',
     iconTone: 'text-primary',
     blob: 'bg-surface-high',
     value: '148',
-    unit: 'Engineers',
+    unit: 'Kỹ sư',
     foot: (
       <>
         <div className="flex items-center gap-1 text-label-sm text-ink">
           <span className="font-semibold text-primary">74.2%</span>
-          <span className="text-outline-strong">Screening pass rate</span>
+          <span className="text-outline-strong">Tỷ lệ qua vòng sàng lọc</span>
         </div>
-        <span className="rounded bg-surface-mid px-2 py-0.5 font-mono text-[12px] font-medium text-ink-variant">356 screened</span>
+        <span className="rounded bg-surface-mid px-2 py-0.5 font-mono text-[12px] font-medium text-ink-variant">Đã sàng lọc 356</span>
       </>
     ),
   },
   {
-    label: 'Efficiency Gain',
+    label: 'Mức tăng hiệu suất',
     icon: 'savings',
     iconTone: 'text-primary',
     blob: 'bg-info/20',
     value: '340+',
-    unit: 'Hours Saved',
+    unit: 'Giờ tiết kiệm',
     foot: (
       <>
         <span className="text-label-sm font-semibold text-primary">~$38,200</span>
-        <span className="text-label-sm text-outline-strong">Engineering time retained</span>
+        <span className="text-label-sm text-outline-strong">Giờ kỹ thuật giữ lại được</span>
       </>
     ),
   },
 ];
 
 const FUNNEL_STAGES = [
-  { n: '1', name: 'Sourced & Applied', tag: '', tagClass: '', note: 'Direct, Referral, Partners', count: '480 Candidates', days: 'Avg: 0.5d', width: '100%', bar: 'bg-primary', numClass: 'bg-surface-high text-ink' },
-  { n: '2', name: 'AI Dynamic Technical Screen', tag: '74.2% Yield', tagClass: 'bg-info text-primary', note: '', count: '356 Completed', days: 'Avg: 1.8d', width: '74.2%', bar: 'bg-primary', numClass: 'bg-surface-high text-ink' },
-  { n: '3', name: 'Staff/Lead Architect Interview', tag: '31.4% Passed', tagClass: 'bg-surface-high text-ink-variant', note: '', count: '112 Interviewed', days: 'Avg: 4.2d', width: '31.4%', bar: 'bg-secondary', numClass: 'bg-surface-high text-ink' },
-  { n: '4', name: 'Final Offer Extended', tag: '25.0% Conversion', tagClass: 'bg-surface-high text-ink-variant', note: '', count: '28 Offers', days: 'Avg: 2.1d', width: '18.2%', bar: 'bg-[#4a55be]', numClass: 'bg-surface-high text-ink' }, // tertiary-container: no token
-  { n: '5', name: 'Offer Accepted & Onboarded', tag: '85.7% Close Rate', tagClass: 'bg-surface-mid text-primary font-semibold', note: '', count: '24 Signed', days: 'Avg: 3.5d', width: '14.5%', bar: 'bg-primary', numClass: 'bg-info text-primary' },
+  { n: '1', name: 'Được tìm nguồn & Nộp đơn', tag: '', tagClass: '', note: 'Trực tiếp, Giới thiệu, Đối tác', count: '480 ứng viên', days: 'TB: 0.5 ngày', width: '100%', bar: 'bg-primary', numClass: 'bg-surface-high text-ink' },
+  { n: '2', name: 'Sàng lọc kỹ thuật động bằng AI', tag: '74.2% đạt', tagClass: 'bg-info text-primary', note: '', count: '356 hoàn thành', days: 'TB: 1.8 ngày', width: '74.2%', bar: 'bg-primary', numClass: 'bg-surface-high text-ink' },
+  { n: '3', name: 'Phỏng vấn Kiến trúc sư Staff/Lead', tag: '31.4% qua', tagClass: 'bg-surface-high text-ink-variant', note: '', count: '112 đã phỏng vấn', days: 'TB: 4.2 ngày', width: '31.4%', bar: 'bg-secondary', numClass: 'bg-surface-high text-ink' },
+  { n: '4', name: 'Gửi lời mời nhận việc cuối cùng', tag: '25.0% chuyển đổi', tagClass: 'bg-surface-high text-ink-variant', note: '', count: '28 lời mời', days: 'TB: 2.1 ngày', width: '18.2%', bar: 'bg-[#4a55be]', numClass: 'bg-surface-high text-ink' }, // tertiary-container: no token
+  { n: '5', name: 'Nhận lời mời & Hội nhập', tag: '85.7% tỷ lệ chốt', tagClass: 'bg-surface-mid text-primary font-semibold', note: '', count: '24 đã ký', days: 'TB: 3.5 ngày', width: '14.5%', bar: 'bg-primary', numClass: 'bg-info text-primary' },
 ];
 
 const CALIBRATION = [
-  { name: 'Algorithms & Core Data Structs', match: '98.2% Match', ai: 88, staff: 89 },
-  { name: 'Distributed System Architecture', match: '94.7% Match', ai: 82, staff: 84 },
-  { name: 'Production Maturity & Observability', match: '92.0% Match', ai: 79, staff: 81 },
-  { name: 'Technical Communication & Tradeoffs', match: '91.5% Match', ai: 85, staff: 83 },
+  { name: 'Thuật toán & Cấu trúc dữ liệu cốt lõi', match: '98.2% khớp', ai: 88, staff: 89 },
+  { name: 'Kiến trúc hệ phân tán', match: '94.7% khớp', ai: 82, staff: 84 },
+  { name: 'Độ trưởng thành production & Khả năng quan sát', match: '92.0% khớp', ai: 79, staff: 81 },
+  { name: 'Giao tiếp kỹ thuật & Đánh đổi', match: '91.5% khớp', ai: 85, staff: 83 },
 ];
 
 const SKILLS = [
-  { name: 'Go / Rust Concurrency Patterns', pct: 84, bar: 'bg-primary', note: 'Channel leader: Direct Referral & GitHub OSS', noteClass: 'text-outline-strong', chipClass: 'text-primary' },
-  { name: 'Distributed Consensus (Raft / Paxos)', pct: 68, bar: 'bg-[#6063ee]', note: 'Slight talent gap; recommended rubric boost', noteClass: 'text-outline-strong', chipClass: 'text-primary' }, // secondary-container: no token
-  { name: 'Cloud DB Partitioning & Sharding', pct: 76, bar: 'bg-primary', note: 'Exceeds team baseline across Postgres/Cassandra', noteClass: 'text-outline-strong', chipClass: 'text-primary' },
-  { name: 'Kubernetes Internals & eBPF', pct: 52, bar: 'bg-outline-strong', note: 'High rarity skill: Sourcing priority needed', noteClass: 'text-error', chipClass: 'text-error' },
+  { name: 'Mẫu đồng thời Go / Rust', pct: 84, bar: 'bg-primary', note: 'Kênh dẫn đầu: Giới thiệu trực tiếp & GitHub OSS', noteClass: 'text-outline-strong', chipClass: 'text-primary' },
+  { name: 'Đồng thuận phân tán (Raft / Paxos)', pct: 68, bar: 'bg-[#6063ee]', note: 'Hụt nhân tài nhẹ; đề xuất tăng trọng số tiêu chí', noteClass: 'text-outline-strong', chipClass: 'text-primary' }, // secondary-container: no token
+  { name: 'Phân vùng & Sharding DB Cloud', pct: 76, bar: 'bg-primary', note: 'Vượt chuẩn đội với Postgres/Cassandra', noteClass: 'text-outline-strong', chipClass: 'text-primary' },
+  { name: 'Kubernetes chuyên sâu & eBPF', pct: 52, bar: 'bg-outline-strong', note: 'Kỹ năng rất hiếm: cần ưu tiên tạo nguồn', noteClass: 'text-error', chipClass: 'text-error' },
 ];
 
 const CHANNELS = [
-  { dot: 'bg-primary', name: 'Stripe Partner Network', stat: '32% Final Acceptance' },
-  { dot: 'bg-secondary', name: 'Direct Tech Referrals', stat: '28% Final Acceptance' },
-  { dot: 'bg-[#313ba4]', name: 'University Top-Tier CS', stat: '19% Final Acceptance' }, // tertiary: no token
+  { dot: 'bg-primary', name: 'Stripe Partner Network', stat: '32% tỷ lệ nhận việc' },
+  { dot: 'bg-secondary', name: 'Giới thiệu kỹ thuật trực tiếp', stat: '28% tỷ lệ nhận việc' },
+  { dot: 'bg-[#313ba4]', name: 'Đại học CNTT hàng đầu', stat: '19% tỷ lệ nhận việc' }, // tertiary: no token
 ];
 
 const CALIBRATION_LOG = [
-  { code: '#CAN-8841', role: 'Principal Cloud Architect', ai: '94 / 100', panel: '96 / 100', delta: '-2.0%', duration: '32 min', status: 'Confirmed', statusDot: 'bg-primary', statusText: 'text-primary' },
-  { code: '#CAN-8839', role: 'Senior Distributed Systems Dev', ai: '88 / 100', panel: '87 / 100', delta: '+1.1%', duration: '36 min', status: 'Confirmed', statusDot: 'bg-primary', statusText: 'text-primary' },
-  { code: '#CAN-8832', role: 'Machine Learning Core Engineer', ai: '78 / 100', panel: '75 / 100', delta: '+3.8%', duration: '40 min', status: 'Secondary Audit', statusDot: 'bg-secondary', statusText: 'text-ink' },
-  { code: '#CAN-8828', role: 'Staff Infrastructure / SRE', ai: '91 / 100', panel: '92 / 100', delta: '-1.0%', duration: '29 min', status: 'Confirmed', statusDot: 'bg-primary', statusText: 'text-primary' },
+  { code: '#CAN-8841', role: 'Principal Cloud Architect', ai: '94 / 100', panel: '96 / 100', delta: '-2.0%', duration: '32 phút', status: 'Đã xác nhận', statusDot: 'bg-primary', statusText: 'text-primary' },
+  { code: '#CAN-8839', role: 'Senior Distributed Systems Dev', ai: '88 / 100', panel: '87 / 100', delta: '+1.1%', duration: '36 phút', status: 'Đã xác nhận', statusDot: 'bg-primary', statusText: 'text-primary' },
+  { code: '#CAN-8832', role: 'Machine Learning Core Engineer', ai: '78 / 100', panel: '75 / 100', delta: '+3.8%', duration: '40 phút', status: 'Kiểm toán bổ sung', statusDot: 'bg-secondary', statusText: 'text-ink' },
+  { code: '#CAN-8828', role: 'Staff Infrastructure / SRE', ai: '91 / 100', panel: '92 / 100', delta: '-1.0%', duration: '29 phút', status: 'Đã xác nhận', statusDot: 'bg-primary', statusText: 'text-primary' },
 ];
 
 const HiringAnalyticsPage: React.FC = () => {
@@ -137,50 +137,50 @@ const HiringAnalyticsPage: React.FC = () => {
         <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-1 text-label-sm text-outline-strong">
-              <span>Employer Workspace</span>
+              <span>Không gian Nhà tuyển dụng</span>
               <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span>Intelligence</span>
+              <span>Phân tích</span>
               <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span className="font-medium text-primary">Hiring Analytics &amp; AI Insights</span>
+              <span className="font-medium text-primary">Phân tích tuyển dụng &amp; Insight AI</span>
             </div>
             <div className="flex items-center gap-3">
-              <h1 className="m-0 text-headline-lg text-ink">Hiring Analytics &amp; Predictive Talent Insights</h1>
+              <h1 className="m-0 text-headline-lg text-ink">Phân tích tuyển dụng &amp; Dự báo nhân tài</h1>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-mid px-2.5 py-0.5 text-label-sm text-primary">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-                Real-time Telemetry
+                Dữ liệu thời gian thực
               </span>
             </div>
             <p className="m-0 max-w-3xl text-body-md text-ink-variant">
-              Real-time pipeline conversion, assessment velocity, candidate skill distribution, and AI evaluation calibration.
+              Tỷ lệ chuyển đổi quy trình thời gian thực, tốc độ đánh giá, phân bố kỹ năng ứng viên và hiệu chỉnh chấm điểm AI.
             </p>
           </div>
           {/* Action Controls */}
           <div className="flex flex-wrap items-center gap-2">
             <div className={FILTER_BOX}>
               <span className="material-symbols-outlined mr-2 text-[18px] text-outline-strong">calendar_today</span>
-              <select className="cursor-pointer bg-transparent pr-2 text-label-md text-ink focus:outline-none" defaultValue="Last 30 Days (Active)">
-                <option>Last 30 Days (Active)</option>
-                <option>Q3 2025 (Jul - Sep)</option>
-                <option>Year to Date (2025)</option>
-                <option>Custom Interval...</option>
+              <select className="cursor-pointer bg-transparent pr-2 text-label-md text-ink focus:outline-none" defaultValue="30 ngày gần nhất (Đang bật)">
+                <option>30 ngày gần nhất (Đang bật)</option>
+                <option>Q3 2025 (Th7 - Th9)</option>
+                <option>Từ đầu năm (2025)</option>
+                <option>Khoảng tùy chỉnh...</option>
               </select>
             </div>
             <div className={FILTER_BOX}>
               <span className="material-symbols-outlined mr-2 text-[18px] text-outline-strong">domain</span>
-              <select className="cursor-pointer bg-transparent pr-2 text-label-md text-ink focus:outline-none" defaultValue="All Engineering">
-                <option>All Engineering</option>
-                <option>Platform Core &amp; Infra</option>
-                <option>Machine Learning Systems</option>
-                <option>Product &amp; Distributed Apps</option>
+              <select className="cursor-pointer bg-transparent pr-2 text-label-md text-ink focus:outline-none" defaultValue="Toàn bộ khối Kỹ thuật">
+                <option>Toàn bộ khối Kỹ thuật</option>
+                <option>Nền tảng lõi &amp; Hạ tầng</option>
+                <option>Hệ thống Machine Learning</option>
+                <option>Sản phẩm &amp; Ứng dụng phân tán</option>
               </select>
             </div>
             <div className={FILTER_BOX}>
               <span className="material-symbols-outlined mr-2 text-[18px] text-outline-strong">badge</span>
-              <select className="cursor-pointer bg-transparent pr-2 text-label-md text-ink focus:outline-none" defaultValue="Senior & Staff Roles">
-                <option>Senior &amp; Staff Roles</option>
-                <option>All Seniorities</option>
-                <option>Junior &amp; Mid Engineers</option>
-                <option>Engineering Managers</option>
+              <select className="cursor-pointer bg-transparent pr-2 text-label-md text-ink focus:outline-none" defaultValue="Cấp Senior & Staff">
+                <option>Cấp Senior &amp; Staff</option>
+                <option>Mọi cấp bậc</option>
+                <option>Kỹ sư Junior &amp; Mid</option>
+                <option>Quản lý kỹ thuật</option>
               </select>
             </div>
             {/* Export Dropdown */}
@@ -191,22 +191,22 @@ const HiringAnalyticsPage: React.FC = () => {
                 className="flex items-center gap-2 rounded-xl bg-primary-container px-4 py-2 text-label-md text-on-primary shadow-sm transition-colors hover:bg-primary"
               >
                 <span className="material-symbols-outlined text-[18px]">ios_share</span>
-                <span>Export Report</span>
+                <span>Xuất báo cáo</span>
                 <span className="material-symbols-outlined text-[16px]">expand_more</span>
               </button>
               {exportOpen && (
                 <div className="absolute right-0 z-30 mt-2 w-48 rounded-xl bg-card py-1 shadow-card">
                   <a className="flex items-center gap-2 px-4 py-2 text-label-md text-ink hover:bg-surface-low" href="#/">
                     <span className="material-symbols-outlined text-[18px] text-primary">picture_as_pdf</span>
-                    <span>Executive Brief (PDF)</span>
+                    <span>Bản tóm tắt lãnh đạo (PDF)</span>
                   </a>
                   <a className="flex items-center gap-2 px-4 py-2 text-label-md text-ink hover:bg-surface-low" href="#/">
                     <span className="material-symbols-outlined text-[18px] text-secondary">table_view</span>
-                    <span>Raw Telemetry (CSV)</span>
+                    <span>Dữ liệu thô (CSV)</span>
                   </a>
                   <a className="flex items-center gap-2 px-4 py-2 text-label-md text-ink hover:bg-surface-low" href="#/">
                     <span className="material-symbols-outlined text-[18px] text-outline-strong">tune</span>
-                    <span>AI Calibration Log (JSON)</span>
+                    <span>Nhật ký hiệu chỉnh AI (JSON)</span>
                   </a>
                 </div>
               )}
@@ -245,17 +245,17 @@ const HiringAnalyticsPage: React.FC = () => {
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="m-0 text-headline-md text-ink">End-to-End Pipeline Conversion Funnel</h2>
-                  <Badge tone="info">Live Q3</Badge>
+                  <h2 className="m-0 text-headline-md text-ink">Phễu chuyển đổi quy trình end-to-end</h2>
+                  <Badge tone="info">Q3 trực tiếp</Badge>
                 </div>
-                <p className="m-0 text-body-sm text-ink-variant">Stage duration, drop-offs, and automated qualification throughput</p>
+                <p className="m-0 text-body-sm text-ink-variant">Thời lượng từng giai đoạn, tỷ lệ rớt và thông lượng đạt chuẩn tự động</p>
               </div>
               <div className="flex items-center gap-2">
                 <span className="flex items-center gap-1 text-label-sm text-outline-strong">
-                  <span className="h-2.5 w-2.5 rounded-sm bg-primary" /> Volume
+                  <span className="h-2.5 w-2.5 rounded-sm bg-primary" /> Số lượng
                 </span>
                 <span className="ml-2 flex items-center gap-1 text-label-sm text-outline-strong">
-                  <span className="h-2.5 w-2.5 rounded-sm bg-[#6063ee]" /> Conversion %
+                  <span className="h-2.5 w-2.5 rounded-sm bg-[#6063ee]" /> % Chuyển đổi
                 </span>
               </div>
             </div>
@@ -282,10 +282,10 @@ const HiringAnalyticsPage: React.FC = () => {
               ))}
             </div>
             <div className="mt-3 flex flex-wrap items-center justify-between border-t border-surface-mid pt-3 text-label-sm text-outline-strong">
-              <span>Overall Pipeline Efficiency: <strong className="text-ink">5.0% Applicant-to-Hire</strong></span>
+              <span>Hiệu quả quy trình tổng thể: <strong className="text-ink">5.0% ứng tuyển thành tuyển dụng</strong></span>
               <span className="flex items-center gap-1 text-primary">
                 <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                Bottleneck removed: Auto-scheduling saved 2.6 days
+                Đã gỡ nút thắt: tự động xếp lịch tiết kiệm 2.6 ngày
               </span>
             </div>
           </div>
@@ -294,11 +294,11 @@ const HiringAnalyticsPage: React.FC = () => {
           <div className="flex flex-col justify-between rounded-xl bg-card p-6 shadow-sm xl:col-span-5">
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <h2 className="m-0 text-headline-md text-ink">AI vs. Human Calibration</h2>
+                <h2 className="m-0 text-headline-md text-ink">Hiệu chỉnh AI vs. Con người</h2>
                 <span className="rounded bg-surface-mid px-2 py-1 font-mono text-[12px] font-bold text-primary">r² = 0.941</span>
               </div>
               <p className="mb-4 mt-0 text-body-sm text-ink-variant">
-                Aria AI assessment scores vs. Staff Engineer blind panel outcomes.
+                Điểm đánh giá của Aria AI so với kết quả hội đồng Staff Engineer ẩn danh.
               </p>
               {/* Correlation Competency Matrix */}
               <div className="flex flex-col gap-3">
@@ -327,9 +327,9 @@ const HiringAnalyticsPage: React.FC = () => {
             <div className="mt-3 flex items-center justify-between rounded-lg bg-surface-mid p-2 text-label-sm text-ink">
               <span className="flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px] text-primary">auto_fix_high</span>
-                Calibration drift rate: &lt; 0.8%
+                Tốc độ trôi hiệu chỉnh: &lt; 0.8%
               </span>
-              <button type="button" className="font-semibold text-primary hover:underline">Re-calibrate Model</button>
+              <button type="button" className="font-semibold text-primary hover:underline">Hiệu chỉnh lại mô hình</button>
             </div>
           </div>
         </div>
@@ -340,11 +340,11 @@ const HiringAnalyticsPage: React.FC = () => {
           <div className="flex flex-col justify-between rounded-xl bg-card p-6 shadow-sm xl:col-span-8">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h2 className="m-0 text-headline-md text-ink">Candidate Skill Competency Matrix</h2>
-                <p className="m-0 text-body-sm text-ink-variant">Applicant proficiency breakdown across 148 evaluated candidates</p>
+                <h2 className="m-0 text-headline-md text-ink">Ma trận năng lực kỹ năng ứng viên</h2>
+                <p className="m-0 text-body-sm text-ink-variant">Mức thành thạo của ứng viên trên 148 hồ sơ đã được đánh giá</p>
               </div>
               <div className="flex items-center gap-2 rounded-lg bg-surface-low px-3 py-1">
-                <span className="text-label-sm text-outline-strong">Benchmark target: </span>
+                <span className="text-label-sm text-outline-strong">Mục tiêu đối chiếu: </span>
                 <span className="font-mono text-[12px] font-semibold text-primary">&gt; 70%</span>
               </div>
             </div>
@@ -353,7 +353,7 @@ const HiringAnalyticsPage: React.FC = () => {
                 <div key={s.name} className="flex flex-col justify-between rounded-xl bg-surface-low p-3">
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-label-md font-semibold text-ink">{s.name}</span>
-                    <span className={`rounded bg-surface-mid px-2 py-0.5 font-mono text-[12px] font-semibold ${s.chipClass}`}>{s.pct}% Proficient</span>
+                    <span className={`rounded bg-surface-mid px-2 py-0.5 font-mono text-[12px] font-semibold ${s.chipClass}`}>{s.pct}% thành thạo</span>
                   </div>
                   <div className="mb-2 h-2 w-full rounded-full bg-[#dae2fd]">
                     <div className={`h-full rounded-full ${s.bar}`} style={{ width: `${s.pct}%` }} />
@@ -365,8 +365,8 @@ const HiringAnalyticsPage: React.FC = () => {
             {/* Sourcing Channels Yield Summary */}
             <div className="mt-6 rounded-xl bg-surface-low p-3">
               <div className="mb-3 flex items-center justify-between">
-                <span className="text-label-sm uppercase tracking-wider text-outline-strong">Top-Yield Sourcing Channels</span>
-                <span className="text-label-sm font-medium text-primary">Ranked by Hire Ratio</span>
+                <span className="text-label-sm uppercase tracking-wider text-outline-strong">Kênh tạo nguồn hiệu quả nhất</span>
+                <span className="text-label-sm font-medium text-primary">Xếp theo tỷ lệ tuyển dụng</span>
               </div>
               <div className="grid grid-cols-1 gap-3 text-label-md sm:grid-cols-3">
                 {CHANNELS.map((c) => (
@@ -386,48 +386,48 @@ const HiringAnalyticsPage: React.FC = () => {
           <div className="flex flex-col justify-between rounded-xl bg-card p-6 shadow-sm xl:col-span-4">
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <h2 className="m-0 text-headline-md text-ink">Demographic &amp; Bias Audit</h2>
+                <h2 className="m-0 text-headline-md text-ink">Kiểm toán nhân khẩu học &amp; Thiên kiến</h2>
                 <span className="rounded-full bg-surface-mid p-1 text-primary">
                   <span className="material-symbols-outlined text-[20px]">gavel</span>
                 </span>
               </div>
               <p className="mb-3 mt-0 text-body-sm text-ink-variant">
-                Continuous fairness auditing across automated transcripts and scoring prompts.
+                Liên tục kiểm toán công bằng trên bản ghi tự động và prompt chấm điểm.
               </p>
               <div className="mb-3 flex flex-col gap-2 rounded-xl bg-surface-low p-3">
                 <div className="flex items-center gap-2 text-label-md font-semibold text-primary">
                   <span className="material-symbols-outlined text-[18px]">verified_user</span>
-                  <span>100% Blind Scoring Compliant</span>
+                  <span>Đạt 100% chấm điểm ẩn danh</span>
                 </div>
                 <p className="m-0 text-body-sm text-outline-strong">
-                  Identifiers, institutions, gender markers, and vocal timbre characteristics scrubbed prior to rubric generation.
+                  Định danh, trường học, dấu hiệu giới tính và đặc trưng giọng nói đều được loại bỏ trước khi chấm theo tiêu chí.
                 </p>
                 <div className="flex items-center justify-between pt-2">
-                  <span className="font-mono text-[12px] font-semibold text-ink">1,420 Transcripts Scanned</span>
-                  <span className="rounded bg-surface-high px-2 py-0.5 text-label-sm text-ink">0 Disparities</span>
+                  <span className="font-mono text-[12px] font-semibold text-ink">1,420 bản ghi đã quét</span>
+                  <span className="rounded bg-surface-high px-2 py-0.5 text-label-sm text-ink">0 sai lệch</span>
                 </div>
               </div>
               {/* Actionable AI Recommendations */}
               <div className="flex flex-col gap-1">
-                <span className="text-label-sm uppercase tracking-wider text-outline-strong">AI Optimization Recs</span>
+                <span className="text-label-sm uppercase tracking-wider text-outline-strong">Khuyến nghị tối ưu AI</span>
                 <div className="flex items-start gap-2 rounded-lg bg-surface-low p-2">
                   <span className="material-symbols-outlined mt-0.5 shrink-0 text-[18px] text-primary">lightbulb</span>
                   <div className="flex flex-col">
-                    <span className="text-label-md font-semibold text-ink">Senior Backend Funnel Adjustment</span>
-                    <span className="text-body-sm text-outline-strong">Adjust Kubernetes weight from 25% to 15% to increase qualifying candidate pool by +18%.</span>
+                    <span className="text-label-md font-semibold text-ink">Điều chỉnh phễu Senior Backend</span>
+                    <span className="text-body-sm text-outline-strong">Giảm trọng số Kubernetes từ 25% xuống 15% để tăng pool ứng viên đạt chuẩn thêm +18%.</span>
                   </div>
                 </div>
                 <div className="mt-2 flex items-start gap-2 rounded-lg bg-surface-low p-2">
                   <span className="material-symbols-outlined mt-0.5 shrink-0 text-[18px] text-primary">schedule</span>
                   <div className="flex flex-col">
-                    <span className="text-label-md font-semibold text-ink">Interview Duration Efficiency</span>
-                    <span className="text-body-sm text-outline-strong">Candidate accuracy reaches steady state at minute 28. Reduce mock duration from 45m to 35m.</span>
+                    <span className="text-label-md font-semibold text-ink">Hiệu quả thời lượng phỏng vấn</span>
+                    <span className="text-body-sm text-outline-strong">Độ chính xác của ứng viên đạt trạng thái ổn định ở phút 28. Giảm thời lượng mock từ 45m xuống 35m.</span>
                   </div>
                 </div>
               </div>
             </div>
             <button type="button" className="mt-6 flex w-full items-center justify-center gap-1.5 rounded-xl bg-surface-high py-2 text-label-md text-ink transition-colors hover:bg-surface-mid">
-              <span>Apply Rubric Tweaks</span>
+              <span>Áp dụng điều chỉnh tiêu chí</span>
               <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
             </button>
           </div>
@@ -437,13 +437,13 @@ const HiringAnalyticsPage: React.FC = () => {
         <div className="flex flex-col rounded-xl bg-card p-6 shadow-sm">
           <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             <div>
-              <h2 className="m-0 text-headline-md text-ink">Evaluated Candidates Calibration Log</h2>
-              <p className="m-0 text-body-sm text-ink-variant">Live feed of AI scoring runs and cross-verification status with engineering leadership</p>
+              <h2 className="m-0 text-headline-md text-ink">Nhật ký hiệu chỉnh ứng viên đã đánh giá</h2>
+              <p className="m-0 text-body-sm text-ink-variant">Luồng trực tiếp các lượt chấm điểm AI và trạng thái xác minh chéo với lãnh đạo kỹ thuật</p>
             </div>
             <div className="flex items-center gap-2">
               <input
                 type="text"
-                placeholder="Filter by candidate ID or skill..."
+                placeholder="Lọc theo mã ứng viên hoặc kỹ năng..."
                 className="w-64 rounded-lg bg-surface-low px-3 py-1.5 text-body-sm text-ink focus:outline-none"
               />
               <button type="button" className="rounded-lg bg-surface-low p-1.5 text-outline-strong hover:text-ink">
@@ -455,14 +455,14 @@ const HiringAnalyticsPage: React.FC = () => {
             <table className="w-full text-left text-body-md text-ink">
               <thead>
                 <tr className="bg-surface-low text-label-sm uppercase tracking-wider text-outline-strong">
-                  <th className="rounded-l-lg px-4 py-2.5 text-left font-medium">Candidate Code</th>
-                  <th className="px-4 py-2.5 text-left font-medium">Role Pipeline</th>
-                  <th className="px-4 py-2.5 text-left font-medium">AI Score</th>
-                  <th className="px-4 py-2.5 text-left font-medium">Panel Score</th>
-                  <th className="px-4 py-2.5 text-left font-medium">Delta</th>
-                  <th className="px-4 py-2.5 text-left font-medium">Duration</th>
-                  <th className="px-4 py-2.5 text-left font-medium">Calibration Status</th>
-                  <th className="rounded-r-lg px-4 py-2.5 text-right font-medium">Actions</th>
+                  <th className="rounded-l-lg px-4 py-2.5 text-left font-medium">Mã ứng viên</th>
+                  <th className="px-4 py-2.5 text-left font-medium">Vai trò quy trình</th>
+                  <th className="px-4 py-2.5 text-left font-medium">Điểm AI</th>
+                  <th className="px-4 py-2.5 text-left font-medium">Điểm hội đồng</th>
+                  <th className="px-4 py-2.5 text-left font-medium">Độ lệch</th>
+                  <th className="px-4 py-2.5 text-left font-medium">Thời lượng</th>
+                  <th className="px-4 py-2.5 text-left font-medium">Trạng thái hiệu chỉnh</th>
+                  <th className="rounded-r-lg px-4 py-2.5 text-right font-medium">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-low">
@@ -493,13 +493,13 @@ const HiringAnalyticsPage: React.FC = () => {
           </div>
           {/* Footer Pagination / Quick View Link */}
           <div className="mt-3 flex items-center justify-between text-label-sm text-outline-strong">
-            <span>Showing 4 of 148 verified candidates</span>
+            <span>Hiển thị 4 trong 148 ứng viên đã xác minh</span>
             <div className="flex items-center gap-2">
-              <button type="button" className="rounded bg-surface-low px-3 py-1 text-ink hover:bg-surface-mid">Previous</button>
+              <button type="button" className="rounded bg-surface-low px-3 py-1 text-ink hover:bg-surface-mid">Trước</button>
               <button type="button" className="rounded bg-primary px-3 py-1 text-on-primary">1</button>
               <button type="button" className="rounded bg-surface-low px-3 py-1 text-ink hover:bg-surface-mid">2</button>
               <button type="button" className="rounded bg-surface-low px-3 py-1 text-ink hover:bg-surface-mid">3</button>
-              <button type="button" className="rounded bg-surface-low px-3 py-1 text-ink hover:bg-surface-mid">Next</button>
+              <button type="button" className="rounded bg-surface-low px-3 py-1 text-ink hover:bg-surface-mid">Sau</button>
             </div>
           </div>
         </div>

@@ -36,7 +36,7 @@ export const useEmployerJobController = () => {
       const res = await ProgramService.getMyJobs({ page, size: 10 });
       setMyJobs(res.data.data!);
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to load your job postings'));
+      setError(readApiErrorMessage(e, 'Không tải được tin tuyển dụng của bạn'));
     } finally {
       setLoading(false);
     }
@@ -46,10 +46,10 @@ export const useEmployerJobController = () => {
     clearMessages();
     try {
       await ProgramService.createJob(body);
-      setSuccessMsg('Job posting created');
+      setSuccessMsg('Đã tạo tin tuyển dụng');
       return true;
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to create job posting', JOB_REQUEST_FIELDS));
+      setError(readApiErrorMessage(e, 'Không tạo được tin tuyển dụng', JOB_REQUEST_FIELDS));
       return false;
     }
   }, []);
@@ -58,10 +58,10 @@ export const useEmployerJobController = () => {
     clearMessages();
     try {
       await ProgramService.updateJob(id, body);
-      setSuccessMsg('Job posting updated');
+      setSuccessMsg('Đã cập nhật tin tuyển dụng');
       return true;
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to update job posting', JOB_REQUEST_FIELDS));
+      setError(readApiErrorMessage(e, 'Không cập nhật được tin tuyển dụng', JOB_REQUEST_FIELDS));
       return false;
     }
   }, []);
@@ -74,7 +74,7 @@ export const useEmployerJobController = () => {
         : await ProgramService.updateJob(id, body);
       return res.data.data ?? null;
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to save job posting', JOB_REQUEST_FIELDS));
+      setError(readApiErrorMessage(e, 'Không lưu được tin tuyển dụng', JOB_REQUEST_FIELDS));
       return null;
     }
   }, []);
@@ -86,7 +86,7 @@ export const useEmployerJobController = () => {
       const res = await ProgramService.getJobDetail(id);
       return res.data.data ?? null;
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to load job posting'));
+      setError(readApiErrorMessage(e, 'Không tải được tin tuyển dụng'));
       return null;
     } finally {
       setLoading(false);
@@ -111,10 +111,10 @@ export const useEmployerJobController = () => {
     clearMessages();
     try {
       const res = await ProgramService.submitJobForReview(id);
-      setSuccessMsg('Submitted for admin review');
+      setSuccessMsg('Đã gửi để xét duyệt');
       return res.data.data ?? null;
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to submit job posting for review', JOB_REQUEST_FIELDS));
+      setError(readApiErrorMessage(e, 'Không gửi được tin tuyển dụng để xét duyệt', JOB_REQUEST_FIELDS));
       return null;
     }
   }, []);
@@ -123,10 +123,10 @@ export const useEmployerJobController = () => {
     clearMessages();
     try {
       await ProgramService.changeJobStatus(id, status);
-      setSuccessMsg('Status updated');
+      setSuccessMsg('Đã cập nhật trạng thái');
       return true;
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to update status'));
+      setError(readApiErrorMessage(e, 'Không cập nhật được trạng thái'));
       return false;
     }
   }, []);
@@ -135,10 +135,10 @@ export const useEmployerJobController = () => {
     clearMessages();
     try {
       await ProgramService.deleteJob(id);
-      setSuccessMsg('Job posting deleted');
+      setSuccessMsg('Đã xoá tin tuyển dụng');
       return true;
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to delete job posting'));
+      setError(readApiErrorMessage(e, 'Không xoá được tin tuyển dụng'));
       return false;
     }
   }, []);
@@ -150,7 +150,7 @@ export const useEmployerJobController = () => {
       const res = await ProgramService.getJobApplications(jobId, { page, size: 10 });
       setApplications(res.data.data!);
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to load applicants'));
+      setError(readApiErrorMessage(e, 'Không tải được danh sách ứng viên'));
     } finally {
       setLoading(false);
     }
@@ -162,7 +162,7 @@ export const useEmployerJobController = () => {
       const res = await ProgramService.getMatchingCandidates(jobId);
       setSuggestions(res.data.data!);
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to load suggested candidates'));
+      setError(readApiErrorMessage(e, 'Không tải được ứng viên gợi ý'));
     }
   }, []);
 
@@ -170,10 +170,10 @@ export const useEmployerJobController = () => {
     clearMessages();
     try {
       await ProgramService.evaluateApplication(id, body);
-      setSuccessMsg('Evaluation updated');
+      setSuccessMsg('Đã cập nhật đánh giá');
       return true;
     } catch (e: any) {
-      setError(readApiErrorMessage(e, 'Failed to save evaluation'));
+      setError(readApiErrorMessage(e, 'Không lưu được đánh giá'));
       return false;
     }
   }, []);

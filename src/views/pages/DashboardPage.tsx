@@ -22,6 +22,9 @@ const fmtTime = new Intl.DateTimeFormat('vi-VN', { hour: 'numeric', minute: '2-d
 const fmtMonth = new Intl.DateTimeFormat('vi-VN', { month: 'short' });
 const fmtWeekday = new Intl.DateTimeFormat('vi-VN', { weekday: 'short' });
 
+/** Nhãn thứ gọn cho dải lịch 7 ô (vi-VN short cho ra "Thứ 2" – quá dài). */
+const WEEKDAY_COMPACT = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 const sameDay = (a: Date, b: Date) => startOfDay(a) === startOfDay(b);
 
@@ -95,7 +98,7 @@ const CandidateDashboard: React.FC = () => {
       day.setDate(monday.getDate() + i);
       return {
         day,
-        label: fmtWeekday.format(day),
+        label: WEEKDAY_COMPACT[day.getDay()],
         hasInterview: interviews.some((it) => sameDay(it.start, day)),
         isToday: sameDay(day, today),
       };

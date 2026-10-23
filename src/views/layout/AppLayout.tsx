@@ -12,46 +12,46 @@ interface NavItem {
 
 const WORKSPACES: { title: string; items: NavItem[] }[] = [
   {
-    title: 'Candidate Workspace',
+    title: 'Khu vực ứng viên',
     items: [
-      { to: '/dashboard', label: 'Overview', icon: 'dashboard' },
-      { to: '/mock-interviews', label: 'AI Mock Sessions', icon: 'smart_toy', roles: ['ROLE_USER'] },
-      { to: '/my-applications', label: 'Applications', icon: 'assignment', roles: ['ROLE_USER'] },
-      { to: '/jobs', label: 'Job Board', icon: 'search' },
-      { to: '/my-profile', label: 'Profile & CV', icon: 'person', roles: ['ROLE_USER'] },
-      { to: '/cv-analyzer', label: 'CV Analysis', icon: 'fact_check', roles: ['ROLE_USER'] },
-      { to: '/cover-letters', label: 'Cover Letters', icon: 'mail', roles: ['ROLE_USER'] },
-      { to: '/device-check', label: 'Device Check', icon: 'videocam', roles: ['ROLE_USER'] },
+      { to: '/dashboard', label: 'Tổng quan', icon: 'dashboard' },
+      { to: '/mock-interviews', label: 'Luyện tập cùng AI', icon: 'smart_toy', roles: ['ROLE_USER'] },
+      { to: '/my-applications', label: 'Đơn ứng tuyển', icon: 'assignment', roles: ['ROLE_USER'] },
+      { to: '/jobs', label: 'Bảng tin tuyển dụng', icon: 'search' },
+      { to: '/my-profile', label: 'Hồ sơ & CV', icon: 'person', roles: ['ROLE_USER'] },
+      { to: '/cv-analyzer', label: 'Phân tích CV', icon: 'fact_check', roles: ['ROLE_USER'] },
+      { to: '/cover-letters', label: 'Thư xin việc', icon: 'mail', roles: ['ROLE_USER'] },
+      { to: '/device-check', label: 'Kiểm tra thiết bị', icon: 'videocam', roles: ['ROLE_USER'] },
     ],
   },
   {
-    title: 'Employer Workspace',
+    title: 'Khu vực nhà tuyển dụng',
     items: [
-      { to: '/my-jobs', label: 'Job Postings', icon: 'work', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
-      { to: '/jobs/new', label: 'Post a Job', icon: 'add', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
-      { to: '/my-slots', label: 'Availability', icon: 'event_available', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
-      { to: '/my-slots/calendar', label: 'Slot Calendar', icon: 'calendar_month', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
-      { to: '/packages', label: 'Packages', icon: 'deployed_code', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
-      { to: '/my-orders', label: 'Orders', icon: 'receipt_long', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
+      { to: '/my-jobs', label: 'Tin đã đăng', icon: 'work', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
+      { to: '/jobs/new', label: 'Đăng tin mới', icon: 'add', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
+      { to: '/my-slots', label: 'Lịch trống', icon: 'event_available', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
+      { to: '/my-slots/calendar', label: 'Lịch khung giờ', icon: 'calendar_month', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
+      { to: '/packages', label: 'Gói dịch vụ', icon: 'deployed_code', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
+      { to: '/my-orders', label: 'Đơn hàng', icon: 'receipt_long', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
     ],
   },
   {
-    title: 'Admin',
+    title: 'Quản trị',
     items: [
       // Giao diện admin cũ đã xoá: mọi màn /admin/* sống trong shell AdminLayout
       // (tiếng Việt, theo mockup Stitch). Shell này chỉ còn 1 cửa vào, destinations
       // khớp guard role trong App.tsx để không dẫn tới 403.
-      { to: '/admin/dashboard', label: 'Admin Console', icon: 'dashboard', roles: ['ROLE_ADMIN'] },
-      { to: '/admin/job-approvals', label: 'Admin Console', icon: 'dashboard', roles: ['ROLE_STAFF'] },
+      { to: '/admin/dashboard', label: 'Trang quản trị', icon: 'dashboard', roles: ['ROLE_ADMIN'] },
+      { to: '/admin/job-approvals', label: 'Trang quản trị', icon: 'dashboard', roles: ['ROLE_STAFF'] },
     ],
   },
 ];
 
 const ROLE_CHIP: Record<string, string> = {
-  ROLE_USER: 'Candidate Role',
-  ROLE_INTERVIEWER: 'Employer Role',
-  ROLE_STAFF: 'Operations Role',
-  ROLE_ADMIN: 'Admin Role',
+  ROLE_USER: 'Vai trò ứng viên',
+  ROLE_INTERVIEWER: 'Vai trò nhà tuyển dụng',
+  ROLE_STAFF: 'Vai trò vận hành',
+  ROLE_ADMIN: 'Vai trò quản trị',
 };
 
 const NAV_ITEM_CLASS =
@@ -65,7 +65,7 @@ const AppLayout: React.FC = () => {
   const [query, setQuery] = useState('');
 
   const role = user?.role ?? '';
-  const roleChip = ROLE_CHIP[role] ?? 'Member Role';
+  const roleChip = ROLE_CHIP[role] ?? 'Thành viên';
   const initials = (user?.fullName || user?.email || '?')
     .split(' ')
     .filter(Boolean)
@@ -124,13 +124,13 @@ const AppLayout: React.FC = () => {
 
       <div className="flex flex-col gap-1 p-3">
         <Link to="/bug-reports" className={NAV_ITEM_CLASS} onClick={() => setDrawerOpen(false)}>
-          <span className="material-symbols-outlined text-[18px]">help_outline</span>Support
+          <span className="material-symbols-outlined text-[18px]">help_outline</span>Hỗ trợ
         </Link>
         <button type="button" className={`${NAV_ITEM_CLASS} w-full border-0 bg-transparent text-left`} onClick={() => setDrawerOpen(false)}>
-          <span className="material-symbols-outlined text-[18px]">menu_book</span>Documentation
+          <span className="material-symbols-outlined text-[18px]">menu_book</span>Tài liệu
         </button>
         <button type="button" className={`${NAV_ITEM_CLASS} w-full border-0 bg-transparent text-left`} onClick={() => setDrawerOpen(false)}>
-          <span className="material-symbols-outlined text-[18px]">settings</span>Settings
+          <span className="material-symbols-outlined text-[18px]">settings</span>Cấu hình
         </button>
         <button
           type="button"
@@ -140,7 +140,7 @@ const AppLayout: React.FC = () => {
             navigate('/login');
           }}
         >
-          <span className="material-symbols-outlined text-[18px]">logout</span>Sign out
+          <span className="material-symbols-outlined text-[18px]">logout</span>Đăng xuất
         </button>
       </div>
     </>
@@ -165,7 +165,7 @@ const AppLayout: React.FC = () => {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            aria-label="Open navigation"
+            aria-label="Mở menu điều hướng"
             className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-variant hover:bg-surface-high lg:hidden"
             onClick={() => setDrawerOpen(true)}
           >
@@ -175,10 +175,10 @@ const AppLayout: React.FC = () => {
             <span className="material-symbols-outlined text-[18px] text-outline-strong">search</span>
             <input
               className="w-full border-0 bg-transparent text-body-sm text-ink placeholder:text-outline-strong focus:outline-none"
-              placeholder="Search candidates, sessions, jobs..."
+              placeholder="Tìm ứng viên, phiên luyện tập, tin tuyển dụng..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              aria-label="Search"
+              aria-label="Tìm kiếm"
             />
             <kbd className="rounded bg-surface-mid px-1 py-0.5 font-mono text-[12px] text-ink-variant">⌘K</kbd>
           </form>
@@ -187,7 +187,7 @@ const AppLayout: React.FC = () => {
         <div className="flex items-center gap-4">
           <Link
             to="/notifications"
-            aria-label="Notifications"
+            aria-label="Thông báo"
             className="relative flex h-8 w-8 items-center justify-center rounded-lg no-underline hover:bg-surface-high"
           >
             <span className="material-symbols-outlined text-[20px] text-ink-variant">notifications</span>

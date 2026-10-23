@@ -67,7 +67,7 @@ const CandidateProfilePage = () => {
   if (!user || user.role !== 'ROLE_USER') {
     return (
       <Card className="text-body-md text-ink-variant">
-        Please sign in with a candidate account.
+        Vui lòng đăng nhập bằng tài khoản ứng viên.
       </Card>
     );
   }
@@ -79,13 +79,13 @@ const CandidateProfilePage = () => {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 py-2">
           <div className="flex items-center gap-1.5 text-label-sm text-ink-variant">
             <span className="material-symbols-outlined text-[16px]">account_box</span>
-            <span>Candidate Core</span>
+            <span>Ứng viên</span>
             <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="font-semibold text-ink">Profile &amp; CV Ledger</span>
+            <span className="font-semibold text-ink">Hồ sơ &amp; CV</span>
           </div>
           <button type="submit" className={buttonClass('primary')}>
             <span className="material-symbols-outlined text-[18px]">save</span>
-            <span>Save Changes</span>
+            <span>Lưu thay đổi</span>
           </button>
         </div>
 
@@ -134,7 +134,7 @@ const CandidateProfilePage = () => {
                         <span className="material-symbols-outlined text-[16px] text-outline-strong">
                           event
                         </span>
-                        {new Date(profile.updatedAt).toLocaleDateString('en-US')}
+                        {new Date(profile.updatedAt).toLocaleDateString('vi-VN')}
                       </span>
                     )}
                   </div>
@@ -146,14 +146,14 @@ const CandidateProfilePage = () => {
             <div className={sectionCard}>
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[22px] text-primary">subject</span>
-                <h2 className="m-0 text-headline-md text-ink">Executive Summary</h2>
+                <h2 className="m-0 text-headline-md text-ink">Tóm tắt bản thân</h2>
               </div>
               <div className="rounded-xl bg-surface-low p-4">
                 <textarea
                   className={`${textareaClass} min-h-[120px]`}
                   value={summary}
                   onChange={(e) => setSummary(e.target.value)}
-                  placeholder="Summarize your experience and strengths"
+                  placeholder="Tóm tắt kinh nghiệm và điểm mạnh của bạn"
                 />
               </div>
             </div>
@@ -162,11 +162,11 @@ const CandidateProfilePage = () => {
             <div className={sectionCard}>
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[22px] text-primary">code</span>
-                <h2 className="m-0 text-headline-md text-ink">Technical Skills &amp; Stack</h2>
+                <h2 className="m-0 text-headline-md text-ink">Kỹ năng &amp; công nghệ</h2>
               </div>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div className="flex flex-col gap-1 rounded-xl bg-surface-low p-4 md:col-span-2">
-                  <label className={labelClass}>Skills (comma separated)</label>
+                  <label className={labelClass}>Kỹ năng (phân tách bằng dấu phẩy)</label>
                   <input
                     className={inputClass}
                     value={skills}
@@ -175,7 +175,7 @@ const CandidateProfilePage = () => {
                   />
                 </div>
                 <div className="flex flex-col gap-1 rounded-xl bg-surface-low p-4">
-                  <label className={labelClass}>Years of Experience</label>
+                  <label className={labelClass}>Số năm kinh nghiệm</label>
                   <input
                     className={inputClass}
                     type="number"
@@ -209,7 +209,7 @@ const CandidateProfilePage = () => {
                 <span className="material-symbols-outlined text-[22px] text-primary">
                   description
                 </span>
-                <h2 className="m-0 text-headline-md text-ink">Active Resume / CV</h2>
+                <h2 className="m-0 text-headline-md text-ink">CV hiện tại</h2>
               </div>
               {cvFileName ? (
                 <div className="flex items-center gap-3 rounded-xl bg-surface-low p-4">
@@ -223,16 +223,16 @@ const CandidateProfilePage = () => {
                 </div>
               ) : (
                 <div className="rounded-xl bg-surface-low p-4 text-body-sm text-ink-variant">
-                  No CV on file yet.
+                  Chưa có CV nào.
                 </div>
               )}
               <div className="flex flex-col gap-1">
-                <label className={labelClass}>CV File Name</label>
+                <label className={labelClass}>Tên file CV</label>
                 <input
                   className={inputClass}
                   value={cvFileName}
                   onChange={(e) => setCvFileName(e.target.value)}
-                  placeholder="your_name_resume.pdf"
+                  placeholder="vd: NguyenVanA_CV.pdf"
                 />
               </div>
             </div>
@@ -243,14 +243,14 @@ const CandidateProfilePage = () => {
                 <span className="material-symbols-outlined text-[22px] text-primary">
                   edit_note
                 </span>
-                <h2 className="m-0 text-headline-md text-ink">Career Goal</h2>
+                <h2 className="m-0 text-headline-md text-ink">Mục tiêu nghề nghiệp</h2>
               </div>
               <div className="rounded-xl bg-surface-low p-4">
                 <textarea
                   className={`${textareaClass} min-h-[80px]`}
                   value={careerGoal}
                   onChange={(e) => setCareerGoal(e.target.value)}
-                  placeholder="Where do you want your career to go?"
+                  placeholder="Bạn muốn phát triển sự nghiệp theo hướng nào?"
                 />
               </div>
             </div>
