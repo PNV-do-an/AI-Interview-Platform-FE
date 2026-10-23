@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import logoWordmark from '../../assets/logo-wordmark.png';
+import BrandLogo from '../components/BrandLogo';
 
 /**
  * SCR-31 "Trang lỗi ... 404" (FR-AUTH-07). Trang độc lập, mở được cho cả khách lẫn
@@ -16,7 +16,7 @@ const NotFoundPage: React.FC = () => {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-surface px-6 text-center font-sans text-ink">
       <Link to="/" className="inline-flex items-center no-underline">
-        <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto object-contain" />
+        <BrandLogo markClass="h-6" />
       </Link>
 
       <span className="font-mono text-[64px] font-bold leading-none text-primary">404</span>

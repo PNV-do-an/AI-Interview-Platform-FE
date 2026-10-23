@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import AuthService from '../../services/auth.service';
 import { readApiErrorMessage } from '../../utils/apiError';
-import logoWordmark from '../../assets/logo-wordmark.png';
+import BrandLogo from '../components/BrandLogo';
 
 type Status = 'loading' | 'success' | 'error';
 
@@ -38,7 +38,7 @@ const VerifyEmailPage: React.FC = () => {
 
       <div className="relative z-10 w-full max-w-md">
         <Link to="/" className="mb-6 inline-flex items-center no-underline">
-          <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto object-contain" />
+          <BrandLogo markClass="h-6" />
         </Link>
 
         <div className="rounded-2xl border border-outline/60 bg-card p-6 shadow-card sm:p-8">

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import logoWordmark from '../../assets/logo-wordmark.png';
+import BrandLogo from '../components/BrandLogo';
 
 interface NavItem {
   to: string;
@@ -86,8 +86,8 @@ const AppLayout: React.FC = () => {
   const sidebar = (
     <>
       <div className="flex flex-col">
-        <div className="flex h-16 items-center gap-2 px-6">
-          <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto" />
+        <div className="flex h-16 items-center px-6">
+          <BrandLogo markClass="h-6" nameClass="text-[15px] font-bold tracking-tight text-ink" />
         </div>
 
         <div className="px-6 py-1">

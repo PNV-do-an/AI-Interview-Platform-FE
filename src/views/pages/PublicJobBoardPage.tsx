@@ -1,16 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import logoWordmark from '../../assets/logo-wordmark.png';
+import BrandLogo from '../components/BrandLogo';
 
 /* ------------------------------------------------------------------ */
 /* Marketing chrome (header / footer), same as public landing design   */
 /* ------------------------------------------------------------------ */
 
 const Logo: React.FC<{ size?: 'header' | 'footer' }> = ({ size = 'header' }) => (
-  <img
-    src={logoWordmark}
-    alt="AI Interview"
-    className={`w-auto ${size === 'header' ? 'h-6' : 'h-5'}`}
+  <BrandLogo
+    markClass={size === 'header' ? 'h-7' : 'h-6'}
+    nameClass="text-[15px] font-bold tracking-tight text-ink"
   />
 );
 

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AuthService from '../../services/auth.service';
 import { readApiErrorMessage } from '../../utils/apiError';
-import logoWordmark from '../../assets/logo-wordmark.png';
+import { LogoMark } from '../components/BrandLogo';
 
 declare global {
   interface Window {
@@ -200,8 +200,8 @@ const RegisterPage: React.FC = () => {
             </div>
 
             <div className="relative z-10 flex items-center gap-3">
-              <div className="flex h-10 items-center justify-center rounded-xl bg-white px-3 shadow-lg">
-                <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto object-contain" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-lg">
+                <LogoMark className="h-7" />
               </div>
               <span className="text-[11px] font-medium uppercase tracking-wider text-slate-400">Nền tảng phỏng vấn AI</span>
             </div>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import logoWordmark from '../../assets/logo-wordmark.png';
+import BrandLogo from '../components/BrandLogo';
 
 const NEXT_STEPS = [
   { icon: 'mail', title: '1. Check your inbox', body: 'Open the email sent from InterviewAI in your mail client.' },
@@ -23,7 +23,7 @@ const MagicLinkPage: React.FC = () => {
         <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-6">
           <div className="flex items-center gap-4">
                         <Link to="/" className="flex items-center no-underline">
-              <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto object-contain" />
+              <BrandLogo markClass="h-6" />
             </Link>
             <span className="hidden h-4 w-px bg-outline sm:block" />
             <Link to="/" className="hidden items-center gap-1 text-label-sm text-ink-variant no-underline transition-colors hover:text-ink sm:flex">

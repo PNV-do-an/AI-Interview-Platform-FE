@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import logoWordmark from '../../assets/logo-wordmark.png';
+import BrandLogo from './BrandLogo';
 
 /** Khung chung cho các trang auth dạng thẻ giữa trang: blob nền, header logo, footer 1 dòng. */
 const AuthShell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -12,7 +12,7 @@ const AuthShell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
     <header className="relative z-10 mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-5">
       <Link to="/" className="inline-flex items-center no-underline">
-        <img src={logoWordmark} alt="AI Interview" className="h-5 w-auto object-contain" />
+        <BrandLogo markClass="h-6" />
       </Link>
       <Link
         to="/"

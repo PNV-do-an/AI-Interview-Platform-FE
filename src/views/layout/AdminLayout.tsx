@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import AdminService from '../../services/admin.service';
-import logoWordmark from '../../assets/logo-wordmark.png';
+import BrandLogo from '../components/BrandLogo';
 import { UserStats } from '../../models/User.model';
 
 /**
@@ -161,13 +161,12 @@ const AdminLayout: React.FC = () => {
   const sidebar = (
     <>
       <div className="flex flex-col flex-1 overflow-y-auto">
-        <div className="h-16 px-space-lg flex items-center gap-space-sm border-b border-surface-container">
-          <img src={logoWordmark} alt="AI Interview" className="h-6 w-auto object-contain" />
-          <div className="flex flex-col min-w-0 ml-2">
-            <span className="text-ds-label-sm text-on-surface leading-tight tracking-tight font-semibold uppercase">
-              Admin Portal
-            </span>
-          </div>
+        <div className="h-16 px-space-lg flex items-center border-b border-surface-container">
+          <BrandLogo
+            markClass="h-7"
+            nameClass="text-ds-label-lg text-on-surface font-bold tracking-tight"
+            sub="Admin Portal"
+          />
         </div>
 
         <div className="px-space-md py-space-md">
