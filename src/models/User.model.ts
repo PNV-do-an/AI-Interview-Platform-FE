@@ -41,6 +41,45 @@ export interface UserDetail {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  /** 009: dòng `success = true` mới nhất trong login_attempts; null khi chưa từng đăng nhập. */
+  lastLoginAt: string | null;
+  /** 009: IP của lần đăng nhập thành công gần nhất - không có bảng phiên nên không phải danh sách thiết bị. */
+  lastIp: string | null;
+  /** 009: trung bình overall_score các session COMPLETED của riêng user, 1 chữ số; null khi chưa có điểm. */
+  aiReadinessScore: number | null;
+  activity: UserActivityCounts | null;
+  /** Null khi user chưa từng tạo candidate_profiles. */
+  profile: UserProfileDetail | null;
+}
+
+/** 009: các endpoint ghi (`lock`, `role`, `status`, …) trả UserDetailResponse NHƯNG không kèm 5 field mới. */
+export interface UserActivityCounts {
+  applications: number;
+  mockSessions: number;
+  bookedInterviews: number;
+}
+
+export interface UserProfileDetail {
+  /** candidate_profiles.skills là TEXT phân tách dấu phẩy phía BE. */
+  skills: string[];
+  experienceYears: number | null;
+  summary: string | null;
+  careerGoal: string | null;
+  cvFileName: string | null;
+  updatedAt: string | null;
+}
+
+/** GET /admin/users/{id}/activity - một sự kiện gộp (009 FR-003). */
+export type UserActivityType = 'APPLICATION' | 'MOCK_SESSION' | 'INTERVIEW_SLOT';
+
+export interface UserActivityRow {
+  type: UserActivityType;
+  id: number;
+  /** Tên tin tuyển dụng / chủ đề luyện tập / doanh nghiệp đặt lịch. */
+  title: string | null;
+  /** Nguyên văn trạng thái nguồn (PENDING, COMPLETED, BOOKED …). */
+  status: string | null;
+  occurredAt: string;
 }
 
 export interface AuditLog {

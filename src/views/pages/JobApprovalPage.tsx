@@ -7,9 +7,9 @@ import {
   JobStatusCode,
   ModerationJob,
   ModerationJobDetail,
+  ModerationQueueStats,
 } from '../../models/AdminConsole.model';
 import {
-  DemoTag,
   EmptyBlock,
   ErrorBlock,
   ICON,
@@ -28,12 +28,13 @@ import {
  * Hàng đợi kiểm duyệt JD (mockup Stitch `kiểm duyệt tin tuyển dụng`) — DATA page.
  * Nguồn số thật:
  *   GET /admin/jobs/moderation?page&size&status&search  -> danh sách hàng đợi
- *   GET /admin/jobs/moderation/{id}                     -> khung inspect bên phải
+ *   GET /admin/jobs/moderation/stats                    -> số trên 4 chip lọc (009 FR-004)
+ *   GET /admin/jobs/moderation/{id}                     -> khung inspect + aiSafety + employer (009 FR-005/006)
  *   PATCH /api/v1/jobs/{id}/review {approved, reason}   -> phê duyệt / từ chối
- * Ba endpoint đọc đều guard ADMIN -> ROLE_STAFF nhận 403 và màn hiện ErrorBlock.
- * `aiSafetyScore` là cột placeholder chưa có writer phía BE nên hiển thị "Chưa chấm",
- * không dựng số demo. Điểm tín nhiệm NTD / lịch sử đăng tin / 4 thẻ thẩm định AI là demo
- * nguyên văn mockup (không có endpoint) - ghi chú trong spec/INDEX.md.
+ * Cả ba endpoint đọc guard ADMIN + STAFF từ 009 FR-007, nên ROLE_STAFF không còn nhận 403 ở màn này.
+ * `aiSafetyScore` là điểm rule tất định BE ghi lúc nộp; null với tin nộp trước 009.
+ * Điểm tín nhiệm NTD = 100 x approved/(approved+rejected) của `employer`, null khi chưa có quyết định.
+ * Chip "Từng bị từ chối" không phải bộ lọc: tin bị trả về DRAFT nên con số giao với chip Bản nháp.
  */
 
 const PAGE_SIZE = 50;
@@ -46,20 +47,13 @@ const STATUS_CHIPS: { value: JobStatusCode; label: string }[] = [
   { value: 'CLOSED', label: 'Đã đóng' },
 ];
 
-/** Chip mockup không có bộ lọc phía backend -> hiển thị nguyên văn, không click. */
-const DEMO_CHIPS: { label: string; count: string; dot?: string }[] = [
-  { label: 'Cần AI đánh giá lại', count: '(3)', dot: 'bg-amber-500' },
-  { label: 'Khẩn cấp / VIP', count: '(5)', dot: 'bg-secondary-teal' },
-  { label: 'Đã duyệt hôm nay', count: '(28)' },
-  { label: 'Bị từ chối', count: '(4)' },
-];
-
+/** Số trên 4 chip lấy từ GET /admin/jobs/moderation/stats (009 FR-004). */
 type SortKey = 'newest' | 'oldest' | 'score';
 
 const SORTERS: Record<SortKey, (a: ModerationJob, b: ModerationJob) => number> = {
   newest: (a, b) => ts(b) - ts(a),
   oldest: (a, b) => ts(a) - ts(b),
-  // Điểm AI luôn null ở hiện tại -> ổn định theo id khi hai hàng bằng nhau.
+  // Tin nộp trước 009 vẫn null -> xếp cuối; hai hàng bằng nhau thì ổn định theo id.
   score: (a, b) => (a.aiSafetyScore ?? -1) - (b.aiSafetyScore ?? -1) || b.id - a.id,
 };
 
@@ -78,25 +72,6 @@ const TRACK_VN: Record<string, string> = {
   ASYNC_TECHNICAL: 'Kỹ thuật async',
   CULTURAL_FIT: 'Phù hợp văn hoá',
 };
-
-const AI_CHECKS = [
-  {
-    tone: 'ok', icon: 'check_circle', title: 'Độ tương thích chính sách lao động',
-    desc: 'Đạt chuẩn 100%. Không có yếu tố phân biệt độ tuổi, giới tính, tôn giáo hay vùng miền.',
-  },
-  {
-    tone: 'ok', icon: 'check_circle', title: 'Minh bạch khung lương',
-    desc: 'Mức lương công khai hợp lý, nằm trong ngưỡng thị trường cho cấp bậc tương ứng.',
-  },
-  {
-    tone: 'ok', icon: 'check_circle', title: 'Rà soát từ khóa cấm & nhạy cảm',
-    desc: '0 phát hiện vi phạm. Nội dung văn bản nghiêm túc, chuyên nghiệp và chuẩn mực.',
-  },
-  {
-    tone: 'warn', icon: 'info', title: 'Ghi chú hình thức Hybrid',
-    desc: 'Cần đảm bảo địa chỉ trụ sở văn phòng làm việc rõ ràng cho các ngày On-site.',
-  },
-] as const;
 
 const DEMO_BENEFITS = [
   'Thu nhập cạnh tranh: Lương cứng theo dải đã công khai + Lương tháng 13 + Thưởng KPI dự án.',
@@ -170,6 +145,7 @@ const JobApprovalPage: React.FC = () => {
 
   const [rows, setRows] = useState<ModerationJob[]>([]);
   const [total, setTotal] = useState(0);
+  const [stats, setStats] = useState<ModerationQueueStats | null>(null);
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState('');
 
@@ -192,6 +168,10 @@ const JobApprovalPage: React.FC = () => {
   const loadList = useCallback(async () => {
     setListLoading(true);
     setListError('');
+    // 009 FR-004: số trên 4 chip độc lập với bộ lọc đang chọn -> gọi lại mỗi lần tải danh sách.
+    AdminService.getModerationStats()
+      .then((res) => { if (alive.current) setStats(res.data.data ?? null); })
+      .catch(() => { if (alive.current) setStats(null); });
     try {
       const res = await AdminService.getModerationQueue({ page, size: PAGE_SIZE, status, search: search || undefined });
       const body = res.data.data!;
@@ -227,6 +207,15 @@ const JobApprovalPage: React.FC = () => {
 
   const pendingRows = rows.filter((r) => r.status === 'PENDING_APPROVAL');
   const sortedRows = [...rows].sort(SORTERS[sort]);
+
+  /** `total` của stats = số tin live mọi trạng thái => đóng = total - pending - draft - approved. */
+  const chipCount = (value: JobStatusCode): number | null => {
+    if (!stats) return null;
+    if (value === 'PENDING_APPROVAL') return stats.pending;
+    if (value === 'DRAFT') return stats.draft;
+    if (value === 'OPEN') return stats.approved;
+    return Math.max(stats.total - stats.pending - stats.draft - stats.approved, 0);
+  };
 
   const submitDecision = useCallback(async (approved: boolean, reason?: string) => {
     if (selectedId == null) return;
@@ -293,6 +282,11 @@ const JobApprovalPage: React.FC = () => {
   };
 
   const job = detail?.job ?? null;
+  const employer = detail?.employer ?? null;
+  /** 009 FR-006: 4 kiểm tra tất định trên nội dung tin, thứ tự cố định như BE trả. */
+  const safetyChecks = detail?.aiSafety?.checks ?? [];
+  const safetyScore = detail?.aiSafety?.score ?? null;
+  const failedChecks = safetyChecks.filter((c) => !c.passed);
 
   return (
     <div className="flex flex-col w-full">
@@ -357,23 +351,20 @@ const JobApprovalPage: React.FC = () => {
                 {idx === 0 && <span className="w-2 h-2 rounded-full bg-amber-500" />}
                 <span>{chip.label}</span>
                 <span className={active ? 'px-1.5 rounded-full bg-primary-fixed text-on-primary-fixed text-[10px] font-bold' : ''}>
-                  {idx === 0 ? total : ''}
+                  {chipCount(chip.value) ?? ''}
                 </span>
               </button>
             );
           })}
-          <DemoTag>Khối demo — chưa có API bộ lọc</DemoTag>
-          {DEMO_CHIPS.map((chip) => (
+          {stats && (
             <span
-              key={chip.label}
-              title="Chưa có bộ lọc phía backend"
+              title="Không phải một bộ lọc: tin bị từ chối quay về trạng thái Bản nháp nên con số này giao với chip 'Bản nháp'."
               className="h-8 px-space-md rounded-full bg-surface-container-low text-on-surface-variant text-ds-label-sm font-medium flex items-center gap-1.5 border border-surface-container-high"
             >
-              {chip.dot && <span className={`w-2 h-2 rounded-full ${chip.dot}`} />}
-              <span>{chip.label}</span>
-              <span>{chip.count}</span>
+              <span>Từng bị từ chối</span>
+              <span>({stats.rejected})</span>
             </span>
-          ))}
+          )}
         </div>
       </div>
 
@@ -600,18 +591,23 @@ const JobApprovalPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-space-lg pl-space-md border-l border-surface-container-high">
-                    <DemoTag>Khối demo — chưa có API</DemoTag>
                     <div className="flex flex-col text-right">
                       <span className="text-ds-label-sm text-on-surface-variant uppercase tracking-wider text-[11px]">
                         Điểm tín nhiệm NTD
                       </span>
-                      <span className="text-ds-headline-sm text-secondary-teal font-bold">99 / 100</span>
+                      <span className="text-ds-headline-sm text-secondary-teal font-bold">
+                        {employer?.trustScore === null || employer?.trustScore === undefined
+                          ? 'Chưa có dữ liệu'
+                          : `${employer.trustScore} / 100`}
+                      </span>
                     </div>
                     <div className="flex flex-col text-right">
                       <span className="text-ds-label-sm text-on-surface-variant uppercase tracking-wider text-[11px]">
                         Lịch sử đăng tin
                       </span>
-                      <span className="text-ds-headline-sm text-on-surface font-semibold">42 tin / 0 vi phạm</span>
+                      <span className="text-ds-headline-sm text-on-surface font-semibold">
+                        {(employer?.jobs.total ?? 0).toLocaleString('vi-VN')} tin / {(employer?.jobs.rejected ?? 0).toLocaleString('vi-VN')} bị từ chối
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -631,36 +627,42 @@ const JobApprovalPage: React.FC = () => {
                       <p className="text-ds-body-sm text-on-surface-variant">
                         Kiểm tra vi phạm chính sách, phân biệt đối xử và chuẩn hóa bộ kỹ năng
                       </p>
-                      <div className="pt-1"><DemoTag>Khối demo — 4 thẻ thẩm định nguyên văn mockup</DemoTag></div>
                     </div>
                   </div>
-                  <div className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border shrink-0 ${detail.aiSafetyScore === null ? 'bg-surface-container-high text-on-surface-variant border-outline-variant' : 'bg-emerald-50 text-emerald-800 border-emerald-600/20'}`}>
-                    <span className={`${ICON} text-[18px]`}>{detail.aiSafetyScore === null ? 'hourglass_empty' : 'verified_user'}</span>
+                  <div className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border shrink-0 ${safetyScore === null ? 'bg-surface-container-high text-on-surface-variant border-outline-variant' : failedChecks.length ? 'bg-amber-50 text-amber-800 border-amber-200/80' : 'bg-emerald-50 text-emerald-800 border-emerald-600/20'}`}>
+                    <span className={`${ICON} text-[18px]`}>{safetyScore === null ? 'hourglass_empty' : failedChecks.length ? 'report' : 'verified_user'}</span>
                     <span className="text-ds-label-md font-bold">
-                      {detail.aiSafetyScore === null ? 'Chưa có điểm an toàn' : `Độ an toàn: ${detail.aiSafetyScore}/100 (Đạt chuẩn)`}
+                      {safetyScore === null
+                        ? 'Chưa tính được điểm an toàn'
+                        : `Điểm an toàn: ${safetyScore}/100 — ${safetyChecks.length - failedChecks.length}/${safetyChecks.length} kiểm tra đạt`}
                     </span>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-space-sm pt-space-xs">
-                  {AI_CHECKS.map((check) => (
+                  {safetyChecks.map((check) => (
                     <div
-                      key={check.title}
-                      className={`p-space-md rounded-xl border flex items-start gap-space-sm ${check.tone === 'ok' ? 'bg-surface-container-low border-surface-container-high' : 'bg-amber-50 border-amber-200/80'}`}
+                      key={check.key}
+                      className={`p-space-md rounded-xl border flex items-start gap-space-sm ${check.passed ? 'bg-surface-container-low border-surface-container-high' : 'bg-amber-50 border-amber-200/80'}`}
                     >
-                      <span className={`${ICON} text-[22px] shrink-0 mt-0.5 ${check.tone === 'ok' ? 'text-emerald-600' : 'text-amber-700'}`}>
-                        {check.icon}
+                      <span className={`${ICON} text-[22px] shrink-0 mt-0.5 ${check.passed ? 'text-emerald-600' : 'text-amber-700'}`}>
+                        {check.passed ? 'check_circle' : 'info'}
                       </span>
                       <div className="flex flex-col gap-1">
-                        <span className={`text-ds-label-md font-semibold ${check.tone === 'ok' ? 'text-on-surface' : 'text-amber-900'}`}>
-                          {check.title}
+                        <span className={`text-ds-label-md font-semibold ${check.passed ? 'text-on-surface' : 'text-amber-900'}`}>
+                          {check.label}
                         </span>
-                        <span className={`text-ds-body-sm leading-relaxed ${check.tone === 'ok' ? 'text-on-surface-variant' : 'text-amber-800'}`}>
-                          {check.desc}
+                        <span className={`text-ds-body-sm leading-relaxed ${check.passed ? 'text-on-surface-variant' : 'text-amber-800'}`}>
+                          {check.note}
                         </span>
                       </div>
                     </div>
                   ))}
+                  {safetyChecks.length === 0 && (
+                    <div className="md:col-span-2 p-space-md rounded-xl border border-surface-container-high bg-surface-container-low text-ds-body-sm text-on-surface-variant">
+                      Endpoint chưa trả bộ kiểm tra an toàn cho tin này.
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-space-md bg-primary-fixed/30 rounded-xl border border-primary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-space-xs">

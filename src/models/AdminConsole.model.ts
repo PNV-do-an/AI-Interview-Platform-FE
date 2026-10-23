@@ -1,7 +1,8 @@
 /**
- * Hợp đồng Admin Console 004-008 (BE commit bfc368d, branch feature/admin-console-004-008).
- * Tất cả endpoint nhóm này guard `hasRole('ADMIN')` -> ROLE_STAFF nhận 403, FE phải ẩn khối
- * khi gọi lỗi chứ không hiển thị số demo.
+ * Hợp đồng Admin Console 004-009.
+ * Tüm endpoint nhóm 005-008 vẫn guard `hasRole('ADMIN')` -> ROLE_STAFF nhận 403.
+ * RIÊNG `/api/v1/admin/jobs/moderation/**` (queue, `/{id}`, `/stats`, `/history`, `/history/stats`)
+ * đã mở cho ADMIN + STAFF từ 009 FR-007 vì STAFF vẫn quyết định qua `PATCH /jobs/{id}/review`.
  * Timestamp là LocalDateTime naive (không kèm Z) -> luôn đọc qua `parseServerTimestamp`.
  */
 import { Role } from './User.model';
@@ -42,9 +43,25 @@ export interface DashboardResponse {
     completedInPeriod: number;
     /** null khi chưa có phiên nào có điểm. */
     avgOverallScore: number | null;
+    /** 009: trung bình giây của session đã hoàn thành; null khi chưa có cặp timestamp nào. */
+    avgDurationSeconds: number | null;
+    /** 009: số session đang IN_PROGRESS tại thời điểm gọi. */
+    liveNow: number;
   };
   logins: { successInPeriod: number; failedInPeriod: number };
   moderation: { pendingApproval: number };
+  /** 009 FR-001: chuỗi 12 tháng, không phụ thuộc `days`. */
+  trends: { months: TrendMonth[] };
+}
+
+/** ĐÚNG 12 phần tử, tháng cũ nhất trước, phần tử cuối = tháng hiện tại; tháng trống = 0 (BE đã điền). */
+export interface TrendMonth {
+  /** `yyyy-MM`. */
+  month: string;
+  /** interview_sessions tạo trong tháng (cả hai mode). */
+  mock: number;
+  /** interview_slots đã đặt (booked_by != null, chưa hủy) có start_time trong tháng. */
+  formal: number;
 }
 
 /** GET /admin/jobs/moderation - một hàng hàng chờ kiểm duyệt. */
@@ -58,7 +75,7 @@ export interface ModerationJob {
   reviewNote: string | null;
   submittedAt: string | null;
   decidedAt: string | null;
-  /** Cột placeholder phía BE, chưa có writer -> luôn null ở hiện tại. */
+  /** Điểm lưu lúc nộp. 009 ghi thật bằng rule tất định; null với tin nộp trước 009. */
   aiSafetyScore: number | null;
   createdAt: string;
 }
@@ -113,8 +130,50 @@ export interface ModerationJobDetail {
   submittedAt: string | null;
   decidedAt: string | null;
   aiSafetyScore: number | null;
+  /**
+   * 009 FR-006: 4 kiểm tra tất định trên chính nội dung tin (KHÔNG có model AI), mỗi kiểm tra trượt
+   * trừ 25 => score thuộc {100,75,50,25,0}. Tính lại lúc đọc nên luôn có, kể cả tin nộp trước 009.
+   */
+  aiSafety: AiSafety | null;
+  /** 009 FR-005: hồ sơ NTD đăng tin + lịch sử quyết định của họ. */
+  employer: ModerationEmployer | null;
   /** Mới nhất trước. */
   timeline: ModerationRecord[];
+}
+
+export interface AiSafety {
+  score: number;
+  /** Thứ tự cố định: tiêu đề, mô tả, yêu cầu, rò rỉ thông tin liên lạc. */
+  checks: AiSafetyCheck[];
+}
+
+export interface AiSafetyCheck {
+  key: string;
+  label: string;
+  passed: boolean;
+  /** Giải thích bằng tiếng Việt cho thẻ kiểm duyệt. */
+  note: string | null;
+}
+
+export interface ModerationEmployer {
+  id: number;
+  companyName: string;
+  email: string;
+  accountCreatedAt: string;
+  jobs: { total: number; approved: number; rejected: number; pending: number };
+  /** 100 x approved / (approved + rejected), đã làm tròn; null khi NTD chưa có quyết định nào. */
+  trustScore: number | null;
+}
+
+/** GET /admin/jobs/moderation/stats (009 FR-004) - 4 chip đầu màn hàng chờ. */
+export interface ModerationQueueStats {
+  pending: number;
+  draft: number;
+  approved: number;
+  /** Số JOB KHÁC nhau từng có một quyết định REJECTED; giao với `draft` vì tin bị trả về DRAFT. */
+  rejected: number;
+  /** Số tin live mọi trạng thái - khớp jobs.total trên dashboard. */
+  total: number;
 }
 
 /** GET /admin/jobs/moderation/history - param lọc quyết định tên là `decision`. */

@@ -1,22 +1,24 @@
 /**
  * Màn "Hồ sơ người dùng" (screen_22 — admin user detail) — DATA page.
  *
- * Số thật: GET /admin/users/{id}; `lastLoginAt` chỉ có ở GET /admin/users nên phải tra thêm
- * một trang danh sách theo email; tab "Lịch sử" = GET /admin/audit-logs?targetUserId;
- * "Khóa tài khoản" = PATCH /users/{id}/lock kèm reason bắt buộc + notifyUser; "Đổi vai trò" =
- * PATCH /users/{id}/role.
+ * Số thật: GET /admin/users/{id} — từ 009 endpoint này kèm `lastLoginAt`, `lastIp`,
+ * `aiReadinessScore`, `activity{applications,mockSessions,bookedInterviews}`, `profile{...}`;
+ * tab "Hoạt động" = GET /admin/users/{id}/activity?page&size (mới, 009 FR-003);
+ * tab "Lịch sử" = GET /admin/audit-logs?targetUserId; "Khóa tài khoản" = PATCH /users/{id}/lock
+ * kèm reason bắt buộc + notifyUser; "Đổi vai trò" = PATCH /users/{id}/role.
+ * Không còn phải tra `lastLoginAt` qua GET /admin/users nữa (009 đã trả trong detail).
  *
- * Khối demo (BE không có endpoint, giữ nguyên văn mockup — đã ghi ở spec/INDEX.md):
- * chỉ số sẵn sàng AI 94%, ngày sinh / nơi cư trú / kinh nghiệm / mục tiêu nghề nghiệp,
- * chip kỹ năng + tệp CV, tab "Hoạt động" (12 đơn / 8 phiên / 3 buổi + timeline),
- * "Địa chỉ IP gần nhất". Chip góc phải tiêu đề thay "Đang kết nối" (không có realtime presence)
+ * Khối demo còn lại (BE không có field/endpoint — đã ghi ở spec/INDEX.md): ngày sinh, nơi cư trú,
+ * ảnh avatar + dot online. Chip góc phải tiêu đề thay "Đang kết nối" (không có realtime presence)
  * bằng trạng thái thật của tài khoản.
+ * Lưu ý: các endpoint ghi trả UserDetailResponse KHÔNG kèm 5 field 009, nên sau mỗi hành động
+ * controller gọi lại GET /users/{id} (xem useAdminUserController.refreshAfterAction).
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import AdminService from '../../services/admin.service';
 import { useAdminUserController } from '../../controllers/useAdminUserController';
-import { Role, UserDetail } from '../../models/User.model';
+import { Role, UserActivityRow, UserDetail } from '../../models/User.model';
 import { parseServerTimestamp } from '../../utils/date';
 import {
   AUDIT_ACTION_ICON, AUDIT_ACTION_VN, DemoTag, EmptyBlock, ErrorBlock, ICON, LoadingBlock, ModalBackdrop,
@@ -40,10 +42,10 @@ const WIDE_BTN = (tone: string) =>
   `w-full py-2.5 px-space-md rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${tone}`;
 
 /** Mockup ghi "Hôm nay, 10:15"; mốc khác thì "dd/MM/yyyy, HH:mm". */
-const lastLoginLabel = (iso: string | null): string => {
-  if (!iso) return 'Chưa đăng nhập';
+const timeLabel = (iso: string | null): string => {
+  if (!iso) return '—';
   const d = parseServerTimestamp(iso);
-  if (!d) return 'Chưa đăng nhập';
+  if (!d) return '—';
   const today = new Date();
   const sameDay = d.getFullYear() === today.getFullYear()
     && d.getMonth() === today.getMonth() && d.getDate() === today.getDate();
@@ -51,6 +53,8 @@ const lastLoginLabel = (iso: string | null): string => {
   if (sameDay) return `Hôm nay, ${time}`;
   return `${d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })}, ${time}`;
 };
+
+const lastLoginLabel = (iso: string | null): string => (iso ? timeLabel(iso) : 'Chưa đăng nhập');
 
 const MetaRow: React.FC<{ icon: string; label: string; value: React.ReactNode }> = ({ icon, label, value }) => (
   <div className="flex items-center justify-between p-2 rounded-lg bg-surface-container-low gap-space-sm">
@@ -76,7 +80,8 @@ const AdminUserDetailPage: React.FC = () => {
   const validId = Number.isInteger(userId) && userId > 0;
 
   const [tab, setTab] = useState<TabKey>('info');
-  const [lastLoginAt, setLastLoginAt] = useState<string | null>(null);
+  const [activity, setActivity] = useState<UserActivityRow[] | null>(null);
+  const [activityLoading, setActivityLoading] = useState(false);
   const [lockOpen, setLockOpen] = useState(false);
   const [lockReason, setLockReason] = useState('');
   const [notifyUser, setNotifyUser] = useState(true);
@@ -103,20 +108,17 @@ const AdminUserDetailPage: React.FC = () => {
     loadHistory(0);
   }, [validId, userId, loadHistory]);
 
-  // `lastLoginAt` chỉ có trong UserSummary của GET /admin/users.
+  // Dòng thời gian chỉ cần khi mở tab "Hoạt động" -> gọi lười, BE chặn (page+1)*size > 1000.
   useEffect(() => {
-    const email = user?.email;
-    if (!email) return undefined;
+    if (!validId || tab !== 'activity') return undefined;
     let alive = true;
-    AdminService.getUsers({ page: 0, size: 5, search: email })
-      .then((res) => {
-        if (!alive) return;
-        const row = (res.data.data?.content ?? []).find((u) => u.id === userId) ?? null;
-        setLastLoginAt(row?.lastLoginAt ?? null);
-      })
-      .catch(() => { if (alive) setLastLoginAt(null); });
+    setActivityLoading(true);
+    AdminService.getUserActivity(userId, { page: 0, size: 10 })
+      .then((res) => { if (alive) setActivity(res.data.data?.content ?? []); })
+      .catch(() => { if (alive) setActivity([]); })
+      .finally(() => { if (alive) setActivityLoading(false); });
     return () => { alive = false; };
-  }, [user?.email, userId]);
+  }, [validId, userId, tab]);
 
   useEffect(() => {
     if (user) setPendingRole(user.role);
@@ -187,6 +189,9 @@ const AdminUserDetailPage: React.FC = () => {
 
   const historyRows = ctrl.auditLogs?.content ?? [];
   const historyTotal = ctrl.auditLogs?.totalElements ?? 0;
+
+  /** 009: trung bình overall_score phiên của riêng tài khoản, BE làm tròn 1 chữ số. */
+  const readiness = user?.aiReadinessScore ?? null;
 
   const downloadHistory = () => {
     const esc = (v: string | null | undefined) => `"${String(v ?? '').replace(/"/g, '""')}"`;
@@ -310,7 +315,7 @@ const AdminUserDetailPage: React.FC = () => {
                   label="Ngày tạo tài khoản"
                   value={`${fmtServer(user.createdAt, 'date')} - ${fmtServer(user.createdAt, 'time')}`}
                 />
-                <MetaRow icon="schedule" label="Đăng nhập gần nhất" value={lastLoginLabel(lastLoginAt)} />
+                <MetaRow icon="schedule" label="Đăng nhập gần nhất" value={lastLoginLabel(user.lastLoginAt)} />
                 <MetaRow
                   icon="verified_user"
                   label="Xác thực email"
@@ -326,16 +331,12 @@ const AdminUserDetailPage: React.FC = () => {
                     </span>
                   )}
                 />
-                {/* Demo: BE không lưu IP đăng nhập. */}
                 <MetaRow
                   icon="lan"
                   label="Địa chỉ IP gần nhất"
-                  value={(
-                    <span className="flex items-center gap-1.5">
-                      <span className="font-mono text-ds-label-sm text-on-surface-variant">118.69.182.42</span>
-                      <DemoTag>Khối demo</DemoTag>
-                    </span>
-                  )}
+                  value={user.lastIp
+                    ? <span className="font-mono text-ds-label-sm text-on-surface-variant">{user.lastIp}</span>
+                    : <span className="text-on-surface-variant italic">Chưa có</span>}
                 />
                 {user.blockedUntil && (
                   <MetaRow
@@ -380,7 +381,6 @@ const AdminUserDetailPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Demo: BE chưa có điểm hoàn thiện hồ sơ. */}
             <div className={`${CARD} border border-surface-container-high/60 p-space-md flex flex-col gap-space-sm`}>
               <div className="flex items-center justify-between gap-space-sm">
                 <div className="flex items-center gap-space-sm">
@@ -389,21 +389,20 @@ const AdminUserDetailPage: React.FC = () => {
                   </div>
                   <div>
                     <div className="text-ds-headline-sm text-[13px] text-on-surface font-semibold">Chỉ số sẵn sàng AI</div>
-                    <div className="text-ds-body-sm text-[12px] text-on-surface-variant">Độ hoàn thiện &amp; xác thực hồ sơ</div>
-                    <div className="pt-0.5"><DemoTag>Khối demo — chưa có API</DemoTag></div>
+                    <div className="text-ds-body-sm text-[12px] text-on-surface-variant">
+                      Điểm trung bình các phiên phỏng vấn đã hoàn thành
+                    </div>
                   </div>
                 </div>
-                <span className="text-ds-headline-sm text-primary font-bold text-[16px] whitespace-nowrap">94%</span>
+                <span className="text-ds-headline-sm text-primary font-bold text-[16px] whitespace-nowrap">
+                  {readiness === null ? '—' : `${readiness}%`}
+                </span>
               </div>
               <div className="w-full bg-surface-container-high rounded-full h-2 overflow-hidden">
-                <div className="bg-primary h-2 rounded-full" style={{ width: '94%' }} />
+                <div className="bg-primary h-2 rounded-full" style={{ width: `${readiness ?? 0}%` }} />
               </div>
-              <div className="flex items-center justify-between text-ds-label-sm text-[11px] text-outline-strong">
-                <span>Đạt tiêu chuẩn phỏng vấn AI</span>
-                <span className="text-secondary-teal font-semibold flex items-center gap-0.5">
-                  <span className={`${ICON} text-[13px]`}>check_circle</span>
-                  Xuất sắc
-                </span>
+              <div className="text-ds-label-sm text-[11px] text-outline-strong">
+                {readiness === null ? 'Tài khoản chưa có phiên nào được chấm điểm' : `Đo trên ${user.activity?.mockSessions ?? 0} phiên AI`}
               </div>
             </div>
           </div>
@@ -438,10 +437,13 @@ const AdminUserDetailPage: React.FC = () => {
 
             {tab === 'info' && <InfoTab user={user} />}
             {tab === 'activity' && (
-              <div className="flex flex-col gap-space-md">
-                <DemoTag>Khối demo — chưa có API hoạt động theo user</DemoTag>
-                <ActivityTab onSeeAll={() => setTab('history')} />
-              </div>
+              <ActivityTab
+                counts={user.activity}
+                readiness={readiness}
+                rows={activity ?? []}
+                loading={activityLoading}
+                onSeeAll={() => setTab('history')}
+              />
             )}
             {tab === 'history' && (
               <div className={`${CARD} overflow-hidden`}>
@@ -702,9 +704,11 @@ const AdminUserDetailPage: React.FC = () => {
 
 // ── Tab Thông tin ───────────────────────────────────────────────────────────
 
-/** Phone là số thật; các ô nhân thân còn lại là demo mockup (BE không có field). */
-const InfoTab: React.FC<{ user: UserDetail }> = ({ user }) => (
-  <div className="flex flex-col gap-space-md">
+/** 009: phone + toàn bộ ô nghề nghiệp/kỹ năng/CV lấy từ `user.profile`; chỉ ngày sinh và nơi cư trú là demo. */
+const InfoTab: React.FC<{ user: UserDetail }> = ({ user }) => {
+  const profile = user.profile;
+  return (
+    <div className="flex flex-col gap-space-md">
     <div className={`${CARD} p-space-lg flex flex-col gap-space-md`}>
       <div className="flex items-center justify-between pb-space-sm border-b border-surface-container-high gap-space-sm">
         <div className="flex items-center gap-space-xs">
@@ -714,7 +718,7 @@ const InfoTab: React.FC<{ user: UserDetail }> = ({ user }) => (
         <span className="text-ds-label-sm text-on-surface-variant bg-surface-container-high px-2.5 py-1 rounded-md whitespace-nowrap">
           Chỉ xem (Read-only)
         </span>
-        <DemoTag>Khối demo — ngày sinh, cư trú, kinh nghiệm, mục tiêu</DemoTag>
+        <DemoTag>Khối demo — riêng ngày sinh, nơi cư trú (BE không có cột)</DemoTag>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
@@ -728,7 +732,11 @@ const InfoTab: React.FC<{ user: UserDetail }> = ({ user }) => (
             Hà Nội, Việt Nam
           </span>
         </InfoField>
-        <InfoField label="Kinh nghiệm làm việc">3 năm kinh nghiệm (Frontend Engineer)</InfoField>
+        <InfoField label="Kinh nghiệm làm việc">
+          {profile?.experienceYears != null
+            ? `${profile.experienceYears} năm kinh nghiệm`
+            : <span className="text-on-surface-variant italic">Chưa cập nhật</span>}
+        </InfoField>
       </div>
 
       <div className="p-space-md rounded-lg bg-surface-container-low flex flex-col gap-1.5 mt-1">
@@ -736,40 +744,39 @@ const InfoTab: React.FC<{ user: UserDetail }> = ({ user }) => (
           <span className={`${ICON} text-[16px] text-primary`}>target</span>
           Mục tiêu nghề nghiệp
         </span>
-        <p className="text-ds-body-md text-on-surface leading-relaxed m-0">
-          Phát triển chuyên sâu về Senior Frontend Engineer &amp; UI/UX Design System, mong muốn gia nhập các công ty
-          công nghệ tiên phong ứng dụng AI để xây dựng trải nghiệm…
+        <p className="text-ds-body-md text-on-surface leading-relaxed m-0 break-words">
+          {profile?.careerGoal || <span className="text-on-surface-variant italic">Tài khoản chưa điền mục tiêu nghề nghiệp.</span>}
         </p>
       </div>
 
+      {profile?.summary && (
+        <div className="p-space-md rounded-lg bg-surface-container-low flex flex-col gap-1.5">
+          <span className={`${FIELD_LABEL} flex items-center gap-1`}>
+            <span className={`${ICON} text-[16px] text-primary`}>person</span>
+            Mô tả bản thân
+          </span>
+          <p className="text-ds-body-md text-on-surface leading-relaxed m-0 break-words">{profile.summary}</p>
+        </div>
+      )}
+
       <div className="flex flex-col gap-space-xs mt-2">
         <div className="flex items-center justify-between gap-space-sm">
-          <span className={FIELD_LABEL}>Kỹ năng đã thẩm định &amp; tự khai</span>
-          <DemoTag>Khối demo — chưa có API kỹ năng</DemoTag>
-          <span className="text-ds-label-sm text-secondary-teal font-medium flex items-center gap-1">
-            <span className={`${ICON} text-[14px]`}>auto_awesome</span>
-            Đã chuẩn hóa bởi AI Engine
+          <span className={FIELD_LABEL}>Kỹ năng tự khai</span>
+          <span className="text-ds-label-sm text-on-surface-variant">
+            {(profile?.skills.length ?? 0) > 0 ? `${profile?.skills.length} kỹ năng` : 'Chưa có kỹ năng'}
           </span>
         </div>
         <div className="flex flex-wrap gap-2 pt-1">
-          {['React.js', 'TypeScript'].map((s) => (
-            <span key={s} className="px-3 py-1.5 rounded-full bg-primary-fixed text-on-primary-fixed text-ds-label-md flex items-center gap-1 shadow-sm">
-              <span className={`${ICON} text-[14px]`}>star</span>
-              {s}
-            </span>
-          ))}
-          {['Tailwind CSS', 'Next.js', 'State Management (Redux/Zustand)', 'RESTful API'].map((s) => (
+          {(profile?.skills ?? []).map((s) => (
             <span key={s} className="px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface text-ds-label-md">
               {s}
             </span>
           ))}
-          <span className="px-3 py-1.5 rounded-full bg-secondary-container/40 text-on-secondary-container text-ds-label-md flex items-center gap-1">
-            <span className={`${ICON} text-[14px]`}>brush</span>
-            UI/UX Design
-          </span>
-          <span className="px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface text-ds-label-md">
-            System Design cơ bản
-          </span>
+          {!(profile?.skills.length) && (
+            <span className="text-ds-body-sm text-on-surface-variant italic">
+              Tài khoản chưa tạo hồ sơ ứng viên nên danh sách kỹ năng đang trống.
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -779,9 +786,10 @@ const InfoTab: React.FC<{ user: UserDetail }> = ({ user }) => (
         <span className="text-ds-headline-sm text-on-surface font-semibold flex items-center gap-2">
           <span className={`${ICON} text-error text-[20px]`}>description</span>
           Hồ sơ ứng tuyển đính kèm (CV)
-          <DemoTag>Khối demo — chưa có API tệp CV</DemoTag>
         </span>
-        <span className="text-ds-label-sm text-secondary-teal font-medium">Bản cập nhật gần nhất</span>
+        <span className="text-ds-label-sm text-secondary-teal font-medium">
+          {profile?.updatedAt ? `Bản cập nhật: ${fmtServer(profile.updatedAt, 'date')}` : 'Chưa có tệp'}
+        </span>
       </div>
       <div className="p-space-md rounded-xl bg-surface-container-low border border-surface-container-high/60 flex flex-col sm:flex-row sm:items-center justify-between gap-space-md mt-1">
         <div className="flex items-center gap-space-md min-w-0 flex-1">
@@ -790,31 +798,30 @@ const InfoTab: React.FC<{ user: UserDetail }> = ({ user }) => (
           </div>
           <div className="flex flex-col min-w-0 flex-1">
             <div className="text-ds-headline-sm text-[14px] text-on-surface font-semibold truncate">
-              CV_NguyenVanA_SeniorFrontend_2026.pdf
+              {profile?.cvFileName || <span className="text-on-surface-variant italic font-normal">Tài khoản chưa tải tệp CV nào</span>}
             </div>
-            <div className="text-ds-body-sm text-on-surface-variant flex flex-wrap items-center gap-2 mt-0.5">
-              <span>1.8 MB</span>
-              <span className="text-outline-strong">•</span>
-              <span>Cập nhật ngày 15/01/2026</span>
-              <span className="text-outline-strong">•</span>
-              <span className="inline-flex items-center gap-1 text-secondary-teal font-medium">
-                <span className={`${ICON} text-[14px]`}>verified</span>
-                Đã phân tích ATS
-              </span>
-            </div>
+            {profile?.cvFileName && (
+              <div className="text-ds-body-sm text-on-surface-variant mt-0.5">
+                BE chỉ lưu tên tệp — không có dung lượng, không có API tải tệp nên không mở được từ màn này.
+              </div>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0 sm:self-center">
           <button
             type="button"
-            className="inline-flex items-center gap-1.5 px-space-md py-2 rounded-lg bg-surface-container-lowest text-on-surface hover:bg-surface-container-high transition-colors text-ds-label-md border border-surface-container-high cursor-pointer"
+            disabled
+            title="Chưa có API tệp CV"
+            className="inline-flex items-center gap-1.5 px-space-md py-2 rounded-lg bg-surface-container-high text-outline-strong text-ds-label-md border border-surface-container-high cursor-not-allowed"
           >
             <span className={`${ICON} text-[18px]`}>visibility</span>
             <span>Xem trước</span>
           </button>
           <button
             type="button"
-            className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-primary text-on-primary hover:bg-primary-container transition-all text-ds-label-md shadow-sm border-0 cursor-pointer"
+            disabled
+            title="Chưa có API tệp CV"
+            className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-surface-container-high text-outline-strong text-ds-label-md shadow-sm border-0 cursor-not-allowed"
           >
             <span className={`${ICON} text-[18px]`}>download</span>
             <span>Tải về</span>
@@ -823,12 +830,13 @@ const InfoTab: React.FC<{ user: UserDetail }> = ({ user }) => (
       </div>
     </div>
   </div>
-);
+  );
+};
 
-// ── Tab Hoạt động (demo) ────────────────────────────────────────────────────
+// ── Tab Hoạt động ───────────────────────────────────────────────────────────
 
 const ActivityCard: React.FC<{
-  label: string; icon: string; chip: string; value: string; children: React.ReactNode;
+  label: string; icon: string; chip: string; value: string; children?: React.ReactNode;
 }> = ({ label, icon, chip, value, children }) => (
   <div className={`${CARD} p-space-md flex flex-col justify-between`}>
     <div className="flex items-center justify-between gap-space-sm">
@@ -839,12 +847,12 @@ const ActivityCard: React.FC<{
     </div>
     <div className="mt-space-sm">
       <div className="text-ds-headline-xl text-on-surface font-bold">{value}</div>
-      <div className="text-ds-body-sm text-on-surface-variant mt-1 flex flex-wrap gap-1">{children}</div>
+      {children && <div className="text-ds-body-sm text-on-surface-variant mt-1 flex flex-wrap gap-1">{children}</div>}
     </div>
   </div>
 );
 
-const TimelineEntry: React.FC<{ dot: string; time: string; tag: string; tagClass: string; title: string; body: React.ReactNode }> = ({
+const TimelineEntry: React.FC<{ dot: string; time: string; tag: string; tagClass: string; title: string; body?: React.ReactNode }> = ({
   dot, time, tag, tagClass, title, body,
 }) => (
   <div className="relative flex flex-col gap-1">
@@ -854,32 +862,54 @@ const TimelineEntry: React.FC<{ dot: string; time: string; tag: string; tagClass
       <span className={`px-2 py-0.5 rounded-full text-[11px] ${tagClass}`}>{tag}</span>
     </div>
     <div className="text-ds-headline-sm text-[14px] text-on-surface font-medium">{title}</div>
-    <div className="text-ds-body-sm text-on-surface-variant">{body}</div>
+    {body && <div className="text-ds-body-sm text-on-surface-variant">{body}</div>}
   </div>
 );
 
-/** Demo nguyên văn: BE chưa có endpoint đếm đơn/phiên/buổi theo user và chưa lưu activity timeline. */
-const ActivityTab: React.FC<{ onSeeAll: () => void }> = ({ onSeeAll }) => (
+const ACTIVITY_META: Record<UserActivityRow['type'], { dot: string; tag: string; tagClass: string }> = {
+  APPLICATION: { dot: 'bg-tertiary', tag: 'Tuyển dụng', tagClass: 'bg-tertiary-fixed text-on-tertiary-fixed' },
+  MOCK_SESSION: { dot: 'bg-primary', tag: 'Mock Interview', tagClass: 'bg-primary-fixed text-on-primary-fixed' },
+  INTERVIEW_SLOT: { dot: 'bg-secondary-teal', tag: 'Lịch hẹn', tagClass: 'bg-secondary-container/40 text-secondary-teal' },
+};
+
+/** `status` là nguyên văn enum nguồn (ApplicationStatus / InterviewSessionStatus / "BOOKED"). */
+const ACTIVITY_STATUS_VN: Record<string, string> = {
+  PENDING: 'Chờ doanh nghiệp xét',
+  SHORTLISTED: 'Sơ loại đạt',
+  INTERVIEWED: 'Đã phỏng vấn',
+  ACCEPTED: 'Đạt',
+  REJECTED: 'Không đạt',
+  CANCELLED: 'Đã rút',
+  IN_PROGRESS: 'Đang diễn ra',
+  COMPLETED: 'Hoàn thành',
+  BOOKED: 'Đã đặt lịch',
+};
+
+const ActivityTab: React.FC<{
+  counts: UserDetail['activity'];
+  readiness: number | null;
+  rows: UserActivityRow[];
+  loading: boolean;
+  onSeeAll: () => void;
+}> = ({ counts, readiness, rows, loading, onSeeAll }) => (
   <div className="flex flex-col gap-space-md">
     <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
-      <ActivityCard label="Đơn ứng tuyển" icon="send" chip="bg-primary-fixed text-primary" value="12 đơn">
-        <span className="text-primary font-medium">3 Đang duyệt</span>
-        <span>•</span>
-        <span className="text-secondary-teal font-medium">2 Phỏng vấn</span>
-        <span>•</span>
-        <span>7 Đã xem</span>
+      <ActivityCard label="Đơn ứng tuyển" icon="send" chip="bg-primary-fixed text-primary" value={`${(counts?.applications ?? 0).toLocaleString('vi-VN')} đơn`} />
+      <ActivityCard
+        label="Phiên AI Interview"
+        icon="smart_toy"
+        chip="bg-secondary-container/40 text-secondary-teal"
+        value={`${(counts?.mockSessions ?? 0).toLocaleString('vi-VN')} phiên`}
+      >
+        {readiness === null
+          ? <span>Chưa có phiên nào được chấm điểm</span>
+          : (
+            <span>
+              Điểm TB: <span className="font-bold text-secondary-teal">{readiness}/100</span>
+            </span>
+          )}
       </ActivityCard>
-      <ActivityCard label="Phiên AI Interview" icon="smart_toy" chip="bg-secondary-container/40 text-secondary-teal" value="8 phiên">
-        <span>
-          Điểm TB: <span className="font-bold text-secondary-teal">88/100</span> (Đánh giá Xuất sắc)
-        </span>
-      </ActivityCard>
-      <ActivityCard label="Lịch hẹn phỏng vấn" icon="event" chip="bg-tertiary-fixed text-tertiary" value="3 buổi">
-        <span className="flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-          <span>1 Sắp diễn ra vào 28/01/2026</span>
-        </span>
-      </ActivityCard>
+      <ActivityCard label="Lịch hẹn phỏng vấn" icon="event" chip="bg-tertiary-fixed text-tertiary" value={`${(counts?.bookedInterviews ?? 0).toLocaleString('vi-VN')} buổi`} />
     </div>
 
     <div className={`${CARD} p-space-lg flex flex-col gap-space-md`}>
@@ -896,50 +926,38 @@ const ActivityTab: React.FC<{ onSeeAll: () => void }> = ({ onSeeAll }) => (
           Xem tất cả
         </button>
       </div>
-      <div className="relative pl-6 flex flex-col gap-space-lg before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-surface-container-high">
-        <TimelineEntry
-          dot="bg-secondary-teal"
-          time="Hôm nay - 10:15"
-          tag="Bảo mật"
-          tagClass="bg-surface-container-high text-on-surface-variant"
-          title="Đăng nhập thành công"
-          body="Phiên làm việc trên thiết bị cá nhân: Trình duyệt Google Chrome (macOS Sequoia) từ IP 118.69.182.42."
+
+      {loading ? (
+        <LoadingBlock label="Đang tải dòng thời gian..." />
+      ) : rows.length === 0 ? (
+        <EmptyBlock
+          icon="timeline"
+          title="Chưa có hoạt động nào"
+          description="Tài khoản này chưa nộp đơn, chưa tham gia phiên luyện tập và chưa đặt lịch phỏng vấn."
         />
-        <TimelineEntry
-          dot="bg-primary"
-          time="Hôm qua - 16:45"
-          tag="Mock Interview"
-          tagClass="bg-primary-fixed text-on-primary-fixed"
-          title='Hoàn thành phiên Mock Interview AI "React & System Architecture"'
-          body={(
-            <>
-              Kết quả đánh giá tự động: <span className="font-bold text-secondary-teal">92/100 điểm</span>.
-              Kỹ năng trả lời lưu loát, cấu trúc thuật toán giải thích rõ ràng và mạch lạc.
-            </>
-          )}
-        />
-        <TimelineEntry
-          dot="bg-tertiary"
-          time="22/01/2026 - 14:20"
-          tag="Tuyển dụng"
-          tagClass="bg-tertiary-fixed text-on-tertiary-fixed"
-          title='Nộp đơn ứng tuyển vị trí "Senior Frontend Developer"'
-          body={(
-            <>
-              Doanh nghiệp tiếp nhận: <strong>VNG Corporation</strong>.
-              Hồ sơ đã được chuyển tiếp sang bước kiểm tra độ tương thích JD.
-            </>
-          )}
-        />
-        <TimelineEntry
-          dot="bg-outline"
-          time="20/01/2026 - 09:00"
-          tag="Tài liệu"
-          tagClass="bg-surface-container-high text-on-surface-variant"
-          title="Cập nhật tệp CV mới phiên bản v2.3"
-          body="Bổ sung thêm 2 dự án thương mại thực tế và chứng chỉ AWS Certified Cloud Practitioner."
-        />
-      </div>
+      ) : (
+        <div className="relative pl-6 flex flex-col gap-space-lg before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-surface-container-high">
+          {rows.map((row) => {
+            const meta = ACTIVITY_META[row.type] ?? ACTIVITY_META.APPLICATION;
+            return (
+              <TimelineEntry
+                key={`${row.type}-${row.id}`}
+                dot={meta.dot}
+                time={timeLabel(row.occurredAt)}
+                tag={meta.tag}
+                tagClass={meta.tagClass}
+                title={row.title ?? '—'}
+                body={row.status
+                  ? `Trạng thái: ${ACTIVITY_STATUS_VN[row.status] ?? row.status}`
+                  : undefined}
+              />
+            );
+          })}
+        </div>
+      )}
+      <p className="text-ds-label-sm text-outline-strong m-0">
+        Hiển thị 10 sự kiện gần nhất; nguồn là đơn ứng tuyển, phiên luyện tập và lịch hẹn đã đặt.
+      </p>
     </div>
   </div>
 );

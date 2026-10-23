@@ -1,12 +1,12 @@
 import httpService from './http.service';
 import { ApiResponse } from '../models/Api.model';
 import {
-  AuditLog, PagedResponse, ProfileUpdateResult, Role, UserDetail, UserStats, UserSummary,
+  AuditLog, PagedResponse, ProfileUpdateResult, Role, UserActivityRow, UserDetail, UserStats, UserSummary,
 } from '../models/User.model';
 import {
   AdminSettings, BulkRoleChangeRequest, BulkUserActionResult, CategoryGroupsResponse, DashboardRange, DashboardResponse,
   JobReviewRequest, JobStatusCode, LockAccountRequest, ModerationAction, ModerationHistoryRow,
-  ModerationHistoryStats, ModerationJob, ModerationJobDetail, PermissionMatrix,
+  ModerationHistoryStats, ModerationJob, ModerationJobDetail, ModerationQueueStats, PermissionMatrix,
 } from '../models/AdminConsole.model';
 
 const BASE = '/api/v1/admin';
@@ -45,8 +45,13 @@ const AdminService = {
   updateProfile: (id: number, body: { fullName?: string; email?: string; phone?: string }) =>
     httpService.patch<ApiResponse<ProfileUpdateResult>>(`${BASE}/users/${id}`, body),
 
+  /** Kèm 5 trường 009 (lastLoginAt/lastIp/aiReadinessScore/activity/profile); các endpoint ghi KHÔNG kèm. */
   getUserDetail: (id: number) =>
     httpService.get<ApiResponse<UserDetail>>(`${BASE}/users/${id}`),
+
+  /** 009 FR-003: dòng thời gian gộp applications + mock sessions + slot; BE chặn (page+1)*size > 1000. */
+  getUserActivity: (id: number, params: { page?: number; size?: number }) =>
+    httpService.get<ApiResponse<PagedResponse<UserActivityRow>>>(`${BASE}/users/${id}/activity`, { params }),
 
   lockUser: (id: number) =>
     httpService.patch<ApiResponse<UserDetail>>(`${BASE}/users/${id}/lock`, {}),
@@ -110,6 +115,10 @@ const AdminService = {
 
   getModerationDetail: (id: number) =>
     httpService.get<ApiResponse<ModerationJobDetail>>(`${BASE}/jobs/moderation/${id}`),
+
+  /** 009 FR-004: 4 chip thống kê hàng chờ. `rejected` giao với `draft` nên 4 chip không phải một phép chia tổng. */
+  getModerationStats: () =>
+    httpService.get<ApiResponse<ModerationQueueStats>>(`${BASE}/jobs/moderation/stats`),
 
   /** Param lọc quyết định tên là `decision` (không phải `action`). */
   getModerationHistory: (params: {

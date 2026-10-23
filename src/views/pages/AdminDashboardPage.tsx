@@ -16,15 +16,16 @@ import {
 /**
  * Tổng quan Quản trị Hệ thống — screen `dash_board_admin` (mockup Stitch 2026-10-21).
  *
- * DATA (số thật): GET /admin/dashboard?days=, GET /admin/audit-logs,
- * GET /admin/jobs/moderation?status=PENDING_APPROVAL (+ detail cho 3 thẻ hàng chờ),
- * PATCH /jobs/{id}/review cho "Duyệt nhanh".
- * DEMO giữ nguyên văn mockup (BE chưa có endpoint, đã ghi nhận ở spec/INDEX.md):
- *   - card "Tài nguyên AI & Hệ thống" (uptime 99.98%, độ trễ 320ms, token 1.240/2.500, 14 phòng live);
- *   - biểu đồ area "Tần suất & Xu hướng Lượt phỏng vấn AI" (12 tháng, không có time-series API);
- *   - ô "Thời lượng 24m 18s" trong card phỏng vấn AI;
- *   - block "Cảnh báo kiểm duyệt JD vi phạm chính sách" (cột aiSafetyScore phía BE luôn null).
- * Phân đoạn mốc thời gian chỉ có 7/30/90 vì BE trả 400 với giá trị khác.
+ * DATA (số thật): GET /admin/dashboard?days= (009 thêm `trends.months`,
+ * `interviews.avgDurationSeconds`, `interviews.liveNow`), GET /admin/audit-logs,
+ * GET /admin/jobs/moderation?status=PENDING_APPROVAL (+ detail cho 3 thẻ hàng chờ và
+ * block cảnh báo từ `aiSafety.checks`), PATCH /jobs/{id}/review cho "Duyệt nhanh".
+ * DEMO còn lại (BE chưa có endpoint, đã ghi nhận ở spec/INDEX.md):
+ *   - card "Tài nguyên AI & Hệ thống": uptime 99.98%, độ trễ 320ms, token 1.240/2.500
+ *     (chỉ dòng "phòng đang live" là số thật `interviews.liveNow`);
+ *   - hai nút "Theo tuần" / "Theo giờ trong ngày" của biểu đồ (API chỉ có chuỗi 12 tháng).
+ * Phân đoạn mốc thời gian chỉ có 7/30/90 vì BE trả 400 với giá trị khác. Chuỗi 12 tháng
+ * KHÔNG đổi theo mốc đang xem - BE luôn trả đúng 12 bucket kết thúc ở tháng hiện tại.
  */
 
 const RANGE_LABEL: Record<DashboardRange, string> = { 7: '7 ngày', 30: '30 ngày qua', 90: '90 ngày' };
@@ -70,11 +71,48 @@ const CHIPS: { key: 'all' | 'user' | 'job' | 'interview' | 'security'; label: st
   { key: 'security', label: 'Cảnh báo bảo mật' },
 ];
 
-/** Series demo nguyên văn từ path SVG trong mockup (viewBox 0 0 760 220). */
-const DEMO_AREA_PRIMARY = 'M 0,170 C 65,160 110,140 180,120 C 250,100 310,130 380,85 C 450,40 520,70 600,45 C 670,25 710,35 760,18 L 760,205 L 0,205 Z';
-const DEMO_AREA_SECONDARY = 'M 0,195 C 65,190 110,180 180,165 C 250,150 310,160 380,135 C 450,110 520,125 600,105 C 670,90 710,95 760,80 L 760,205 L 0,205 Z';
-const DEMO_LINE_PRIMARY = DEMO_AREA_PRIMARY.split(' L 760,205')[0];
-const DEMO_LINE_SECONDARY = DEMO_AREA_SECONDARY.split(' L 760,205')[0];
+/**
+ * Biểu đồ area "Tần suất & Xu hướng" vẽ từ `dashboard.trends.months` (009 FR-001),
+ * giữ đúng hình dáng mockup: viewBox 0 0 760 220, đáy y=205, đỉnh y=18, hai series cubic.
+ */
+const CHART_W = 760;
+const CHART_BASE = 205;
+const CHART_TOP = 18;
+
+/** Series thành path lấp (area) + path nét (line) + tọa độ từng điểm; `scale` = max của cả hai series. */
+const seriesPaths = (values: number[], scale: number): {
+  area: string; line: string; points: [number, number][];
+} => {
+  const n = values.length;
+  const point = (i: number, v: number): [number, number] => [
+    n <= 1 ? 0 : (i * CHART_W) / (n - 1),
+    CHART_BASE - (scale > 0 ? (v / scale) * (CHART_BASE - CHART_TOP) : 0),
+  ];
+  const coords = values.map(point);
+  if (coords.length === 0) return { line: '', area: '', points: [] };
+  let line = `M ${coords[0][0].toFixed(1)},${coords[0][1].toFixed(1)}`;
+  for (let i = 1; i < coords.length; i += 1) {
+    const [px, py] = coords[i - 1];
+    const [cx, cy] = coords[i];
+    const mid = ((px + cx) / 2).toFixed(1);
+    line += ` C ${mid},${py.toFixed(1)} ${mid},${cy.toFixed(1)} ${cx.toFixed(1)},${cy.toFixed(1)}`;
+  }
+  const last = coords[coords.length - 1];
+  return { line, points: coords, area: `${line} L ${last[0].toFixed(1)},${CHART_BASE} L 0,${CHART_BASE} Z` };
+};
+
+/** "24m 18s" theo mockup; null/âm -> '—'. */
+const fmtMmSs = (seconds: number | null | undefined): string => {
+  if (seconds == null || seconds < 0) return '—';
+  const m = Math.floor(seconds / 60);
+  return `${m}m ${seconds % 60}s`;
+};
+
+/** "2026-10" -> "T10". */
+const monthLabel = (yyyymm: string): string => {
+  const parts = yyyymm.split('-');
+  return `T${parts[1] ?? yyyymm}`;
+};
 
 const initials = (name: string): string => {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -89,7 +127,7 @@ const AdminDashboardPage: React.FC = () => {
   const [dash, setDash] = useState<DashboardResponse | null>(null);
   const [logs, setLogs] = useState<PagedResponse<AuditLog> | null>(null);
   const [queue, setQueue] = useState<ModerationJob[]>([]);
-  const [queueDetails, setQueueDetails] = useState<Record<number, ModerationJobDetail['job']>>({});
+  const [queueDetails, setQueueDetails] = useState<Record<number, ModerationJobDetail>>({});
   const [chip, setChip] = useState<'all' | 'user' | 'job' | 'interview' | 'security'>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -117,7 +155,7 @@ const AdminDashboardPage: React.FC = () => {
         items.forEach((job) => {
           AdminService.getModerationDetail(job.id)
             .then((res) => {
-              if (reqId.current === id) setQueueDetails((prev) => ({ ...prev, [job.id]: res.data.data!.job }));
+              if (reqId.current === id) setQueueDetails((prev) => ({ ...prev, [job.id]: res.data.data! }));
             })
             .catch(() => {});
         });
@@ -157,6 +195,36 @@ const AdminDashboardPage: React.FC = () => {
     if (chip === 'all') return list;
     return list.filter((row) => (ACTION_META[row.action]?.cat ?? 'user') === chip);
   }, [logs, chip]);
+
+  /** Chuỗi 12 tháng thật; BE luôn trả đủ 12 bucket nên FE chỉ việc vẽ. */
+  const chart = useMemo(() => {
+    const months = dash?.trends?.months ?? [];
+    const mock = months.map((m) => m.mock);
+    const formal = months.map((m) => m.formal);
+    const scale = Math.max(...mock, ...formal, 0);
+    let peak = -1;
+    let peakTotal = 0;
+    months.forEach((m, i) => {
+      const sum = m.mock + m.formal;
+      if (sum > peakTotal) { peakTotal = sum; peak = i; }
+    });
+    return {
+      months, peak, peakTotal,
+      mockSeries: seriesPaths(mock, scale),
+      formalSeries: seriesPaths(formal, scale),
+    };
+  }, [dash]);
+
+  /** Block cảnh báo: tin trong hàng chờ có kiểm tra an toàn KHÔNG đạt (009 FR-006). */
+  const flagged = useMemo(
+    () => queue
+      .map((job) => ({
+        job,
+        failed: (queueDetails[job.id]?.aiSafety?.checks ?? []).filter((c) => !c.passed),
+      }))
+      .filter((entry) => entry.failed.length > 0),
+    [queue, queueDetails],
+  );
 
   const approve = async () => {
     if (!approveTarget) return;
@@ -322,10 +390,11 @@ const AdminDashboardPage: React.FC = () => {
                 </span>
               </div>
               <div className="w-px h-6 bg-surface-container-highest" />
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col">
                 <span className="text-ds-label-sm text-on-surface-variant">Thời lượng</span>
-                <span className="text-ds-label-md font-bold text-on-surface">24m 18s</span>
-                <DemoTag>Khối demo — chưa có API</DemoTag>
+                <span className="text-ds-label-md font-bold text-on-surface">
+                  {fmtMmSs(dash?.interviews.avgDurationSeconds)}
+                </span>
               </div>
             </div>
           </div>
@@ -362,7 +431,8 @@ const AdminDashboardPage: React.FC = () => {
               </div>
               <div className="flex items-center justify-between text-[11px] text-on-surface-variant">
                 <span className="flex items-center gap-1.5 font-medium">
-                  <span className="w-2 h-2 rounded-full bg-secondary-teal animate-pulse" />14 phòng đang live
+                  <span className="w-2 h-2 rounded-full bg-secondary-teal animate-pulse" />
+                  {(dash?.interviews.liveNow ?? 0).toLocaleString('vi-VN')} phòng đang live
                 </span>
                 <span className="font-semibold text-primary">49.6% ngân sách</span>
               </div>
@@ -378,7 +448,6 @@ const AdminDashboardPage: React.FC = () => {
                   <div className="flex items-center gap-space-sm flex-wrap">
                     <span className="w-2.5 h-2.5 rounded-full bg-primary" />
                     <h2 className="text-ds-headline-sm text-on-surface font-bold">Tần suất & Xu hướng Lượt phỏng vấn AI</h2>
-                    <DemoTag>Khối demo — chưa có API chuỗi thời gian</DemoTag>
                   </div>
                   <p className="text-ds-body-sm text-on-surface-variant pl-space-md">
                     Biểu đồ đối sánh số lượt ứng viên tự luyện tập và phỏng vấn chính thức theo ủy quyền doanh nghiệp
@@ -422,41 +491,66 @@ const AdminDashboardPage: React.FC = () => {
                   </defs>
                 </svg>
                 <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 760 220">
-                  <path d={DEMO_AREA_SECONDARY} fill="url(#secondaryAreaGrad)" />
-                  <path d={DEMO_AREA_PRIMARY} fill="url(#primaryAreaGrad)" />
-                  <path d={DEMO_LINE_SECONDARY} fill="none" stroke="#006b5f" strokeWidth="2.5" strokeLinecap="round" />
-                  <path d={DEMO_LINE_PRIMARY} fill="none" stroke="#4f46e5" strokeWidth="3" strokeLinecap="round" />
-                  <circle cx="600" cy="45" r="5" fill="#4f46e5" stroke="#ffffff" strokeWidth="2.5" />
-                  <circle cx="760" cy="18" r="5" fill="#4f46e5" stroke="#ffffff" strokeWidth="2.5" />
-                  <circle cx="600" cy="105" r="4" fill="#006b5f" stroke="#ffffff" strokeWidth="2" />
+                  <path d={chart.formalSeries.area} fill="url(#secondaryAreaGrad)" />
+                  <path d={chart.mockSeries.area} fill="url(#primaryAreaGrad)" />
+                  <path d={chart.formalSeries.line} fill="none" stroke="#006b5f" strokeWidth="2.5" strokeLinecap="round" />
+                  <path d={chart.mockSeries.line} fill="none" stroke="#4f46e5" strokeWidth="3" strokeLinecap="round" />
+                  {chart.peak >= 0 && (
+                    <>
+                      <circle
+                        cx={chart.mockSeries.points[chart.peak][0]}
+                        cy={chart.mockSeries.points[chart.peak][1]}
+                        r="5" fill="#4f46e5" stroke="#ffffff" strokeWidth="2.5"
+                      />
+                      <circle
+                        cx={chart.formalSeries.points[chart.peak][0]}
+                        cy={chart.formalSeries.points[chart.peak][1]}
+                        r="4" fill="#006b5f" stroke="#ffffff" strokeWidth="2"
+                      />
+                    </>
+                  )}
                 </svg>
-                <div className="absolute top-4 left-[72%] -translate-x-1/2 p-space-sm bg-inverse-surface text-inverse-on-surface rounded-xl shadow-xl flex flex-col gap-1 pointer-events-none z-10 w-48">
-                  <div className="flex items-center justify-between pb-1">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-inverse-primary">Tháng 11 / 2026</span>
-                    <span className="px-1.5 py-0.5 rounded bg-secondary-teal text-on-secondary-teal text-[9px] font-bold">+28%</span>
+                {chart.peak >= 0 && (
+                  <div
+                    className="absolute top-4 -translate-x-1/2 p-space-sm bg-inverse-surface text-inverse-on-surface rounded-xl shadow-xl flex flex-col gap-1 pointer-events-none z-10 w-48"
+                    style={{ left: `${Math.min(88, Math.max(12, (chart.peak / Math.max(chart.months.length - 1, 1)) * 100))}%` }}
+                  >
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-inverse-primary">
+                      Tháng {chart.months[chart.peak].month.split('-').reverse().join(' / ')}
+                    </div>
+                    <div className="flex items-center justify-between text-[12px]">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-primary-container" />Tổng lượt:
+                      </span>
+                      <span className="font-bold">{chart.peakTotal.toLocaleString('vi-VN')} lượt</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] pt-0.5 opacity-80">
+                      <span>Tự luyện: {chart.months[chart.peak].mock.toLocaleString('vi-VN')}</span>
+                      <span>Giao đề: {chart.months[chart.peak].formal.toLocaleString('vi-VN')}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between text-[12px]">
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-primary-container" />Lượt phỏng vấn:
+                )}
+                {chart.peak < 0 && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span className="text-ds-body-sm text-on-surface-variant">
+                      Chưa có phiên phỏng vấn nào trong 12 tháng qua
                     </span>
-                    <span className="font-bold">8,960 lượt</span>
                   </div>
-                  <div className="flex items-center justify-between text-[11px] pt-0.5 opacity-80">
-                    <span>Tự luyện: 6,850</span>
-                    <span>Giao đề: 2,110</span>
-                  </div>
-                </div>
+                )}
               </div>
               <div className="flex justify-between items-center pt-space-sm text-on-surface-variant text-ds-label-sm">
-                {Array.from({ length: 12 }, (_, i) => `T${i + 1}`).map((label, i) => (
-                  <span key={label} className={i === 10 ? 'text-primary font-bold' : i === 11 ? 'text-on-surface font-semibold' : undefined}>
-                    {i === 10 ? 'T11 (Đỉnh)' : label}
+                {chart.months.map((m, i) => (
+                  <span
+                    key={m.month}
+                    className={i === chart.peak ? 'text-primary font-bold' : i === chart.months.length - 1 ? 'text-on-surface font-semibold' : undefined}
+                  >
+                    {monthLabel(m.month)}
                   </span>
                 ))}
               </div>
             </div>
 
-            {!alertDismissed && (
+            {!alertDismissed && flagged.length > 0 && (
               <div className="p-space-md rounded-xl bg-surface-container-high flex items-start justify-between gap-space-md">
                 <div className="flex items-start gap-space-md">
                   <div className="w-10 h-10 rounded-xl bg-error-container text-on-error-container flex items-center justify-center shrink-0">
@@ -465,11 +559,12 @@ const AdminDashboardPage: React.FC = () => {
                   <div className="flex flex-col gap-0.5">
                     <div className="flex items-center flex-wrap gap-2">
                       <h3 className="text-ds-headline-sm text-on-surface font-bold">Cảnh báo kiểm duyệt JD vi phạm chính sách</h3>
-                      <DemoTag>Khối demo — cột aiSafetyScore luôn trống</DemoTag>
-                      <span className="px-2 py-0.5 rounded-full bg-error text-on-error text-[10px] font-bold tracking-wide">2 tin bị cắm cờ</span>
+                      <span className="px-2 py-0.5 rounded-full bg-error text-on-error text-[10px] font-bold tracking-wide">
+                        {flagged.length} tin bị cắm cờ
+                      </span>
                     </div>
                     <p className="text-ds-body-sm text-on-surface-variant">
-                      Hệ thống AI tự động phát hiện 2 tin tuyển dụng chứa từ khóa phân biệt tuổi tác và yêu cầu ký quỹ trái quy định tuyển dụng.
+                      {flagged.map((entry) => `“${entry.job.title}”: ${entry.failed.map((c) => c.label).join(', ')}`).join(' · ')}
                     </p>
                   </div>
                 </div>
@@ -656,7 +751,7 @@ const AdminDashboardPage: React.FC = () => {
               ) : (
                 <div className="flex flex-col gap-space-sm">
                   {queue.map((job) => {
-                    const detail = queueDetails[job.id];
+                    const detail = queueDetails[job.id]?.job;
                     return (
                       <div key={job.id} className="p-space-md rounded-xl bg-surface-container-low border border-outline-variant/40 hover:border-outline-variant transition-all flex flex-col gap-2.5 shadow-sm">
                         <div className="flex items-start justify-between gap-2">

@@ -23,7 +23,7 @@ import {
  * Nguồn số thật:
  *   GET /admin/jobs/moderation/history?page&size&decision&from&to&moderatorId&search
  *   GET /admin/jobs/moderation/history/stats -> 4 thẻ chỉ số
- * Hai endpoint guard ADMIN nên ROLE_STAFF nhận 403 và màn hiện ErrorBlock.
+ * Hai endpoint guard ADMIN + STAFF từ 009 FR-007, nên ROLE_STAFF xem được màn này (trước đây 403).
  * Khác biệt so với mockup (ghi trong spec/INDEX.md):
  *   - Cột "field chip" (Công nghệ thông tin / Dữ liệu & AI) và dòng "Remote • Hà Nội" của mockup
  *     không có trong payload lịch sử nên bỏ; thay bằng dữ liệu thật có sẵn.
