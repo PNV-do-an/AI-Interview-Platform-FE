@@ -3,6 +3,7 @@
  * Action label + icon dùng bảng chung adminKit (AUDIT_ACTION_VN / AUDIT_ACTION_ICON).
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import AdminService from '../../services/admin.service';
 import { AUDIT_ACTIONS, AuditLog, PagedResponse } from '../../models/User.model';
 import {
@@ -159,19 +160,34 @@ const AdminAuditLogPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
+                {rows.map((row) => {
+                  const targetHref = row.targetUserId ? `/admin/users/${row.targetUserId}` : null;
+                  const actionCell = (
+                    <>
+                      <AuditActionIcon action={row.action} />
+                      <Pill tone={ACTION_TONE[row.action] ?? 'neutral'}>
+                        {AUDIT_ACTION_VN[row.action] ?? row.action}
+                      </Pill>
+                    </>
+                  );
+                  return (
                   <tr key={row.id} className="hover:bg-surface-container-low/60 transition-colors">
                     <td className={adminTdClass}>
                       <span className="block font-semibold">{fmtServer(row.createdAt)}</span>
                       <span className="block text-ds-body-sm text-on-surface-variant">{timeAgo(row.createdAt)}</span>
                     </td>
                     <td className={adminTdClass}>
-                      <span className="inline-flex items-center gap-1.5">
-                        <AuditActionIcon action={row.action} />
-                        <Pill tone={ACTION_TONE[row.action] ?? 'neutral'}>
-                          {AUDIT_ACTION_VN[row.action] ?? row.action}
-                        </Pill>
-                      </span>
+                      {targetHref ? (
+                        <Link
+                          to={targetHref}
+                          className="inline-flex items-center gap-1.5 no-underline text-inherit"
+                          title={`Xem hồ sơ người dùng ID ${row.targetUserId}`}
+                        >
+                          {actionCell}
+                        </Link>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5">{actionCell}</span>
+                      )}
                     </td>
                     <td className={adminTdClass}>
                       <span className="block font-semibold">{row.adminEmail}</span>
@@ -199,7 +215,8 @@ const AdminAuditLogPage: React.FC = () => {
                       <span className="block text-ds-body-sm text-on-surface-variant break-words">{row.detail ?? '—'}</span>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
