@@ -62,7 +62,6 @@ const NAV: { title: string; items: AdminNavItem[] }[] = [
   {
     title: 'Hệ thống & Thiết lập',
     items: [
-      { to: '/admin/roles', label: 'Phân quyền & Vai trò', icon: 'verified_user', roles: ['ROLE_ADMIN'] },
       { to: '/admin/categories', label: 'Danh mục & Ngành nghề', icon: 'layers', roles: ['ROLE_ADMIN'] },
       { to: '/admin/settings', label: 'Cấu hình & AI Engine', icon: 'tune', roles: ['ROLE_ADMIN'] },
       { to: '/admin/account', label: 'Tài khoản quản trị', icon: 'manage_accounts', roles: ['ROLE_ADMIN'] },

@@ -23,8 +23,8 @@ import {
  *   - "v2.4.0-prod", chip "Live v2.5", khối "Hạ tầng kết nối AI" (24ms / 38% / 14-50) và ô logo:
  *     BE không có endpoint -> giữ nguyên văn số mockup, gắn nhãn Demo.
  *   - BE còn khóa `ai.promptConfig` (2000 ký tự) nhưng mockup không có ô tương ứng nên chưa hiển thị.
- *   - 2 mục điều hướng không có form ("Quy trình kiểm duyệt", "Bảo mật & Phân quyền") chuyển thành
- *     link thật tới /admin/job-approvals và /admin/roles.
+ *   - Mục điều hướng không có form ("Quy trình kiểm duyệt") chuyển thành link thật tới
+ *     /admin/job-approvals.
  */
 
 type Group = 'general' | 'notification' | 'ai';
@@ -432,16 +432,6 @@ const AdminSystemSettingsPage: React.FC = () => {
                   <span className="flex items-center gap-2">
                     <span className={`${ICON} text-[20px]`}>verified_user</span>
                     Quy trình kiểm duyệt
-                  </span>
-                  <span className={`${ICON} text-[16px] text-outline-strong`}>arrow_forward</span>
-                </Link>
-                <Link
-                  to="/admin/roles"
-                  className="flex items-center justify-between rounded-lg px-3 py-2.5 text-ds-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"
-                >
-                  <span className="flex items-center gap-2">
-                    <span className={`${ICON} text-[20px]`}>lock</span>
-                    Bảo mật & Phân quyền
                   </span>
                   <span className={`${ICON} text-[16px] text-outline-strong`}>arrow_forward</span>
                 </Link>

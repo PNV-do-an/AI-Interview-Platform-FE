@@ -44,7 +44,6 @@ import JobReviewDetailPage from './views/pages/JobReviewDetailPage';
 import JobModerationHistoryPage from './views/pages/JobModerationHistoryPage';
 import AdminDashboardPage from './views/pages/AdminDashboardPage';
 import AdminUserDetailPage from './views/pages/AdminUserDetailPage';
-import AdminRolePermissionPage from './views/pages/AdminRolePermissionPage';
 import AdminSystemSettingsPage from './views/pages/AdminSystemSettingsPage';
 import AdminAccountSettingsPage from './views/pages/AdminAccountSettingsPage';
 import CandidateEvaluationPage from './views/pages/CandidateEvaluationPage';
@@ -138,7 +137,6 @@ const App: React.FC = () => {
                 <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
                 <Route path="/admin/users" element={<AdminUserManagementPage />} />
                 <Route path="/admin/users/:id" element={<AdminUserDetailPage />} />
-                <Route path="/admin/roles" element={<AdminRolePermissionPage />} />
                 <Route path="/admin/categories" element={<AdminCategoryPage />} />
                 <Route path="/admin/audit" element={<AdminAuditLogPage />} />
                 <Route path="/admin/settings" element={<AdminSystemSettingsPage />} />

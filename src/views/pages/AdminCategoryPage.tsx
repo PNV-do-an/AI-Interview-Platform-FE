@@ -69,11 +69,6 @@ const AdminCategoryPage: React.FC = () => {
         crumbs={[{ label: 'Hệ thống Quản trị', icon: 'shield' }, { label: 'Danh mục & Ngành nghề' }]}
         title="Danh mục & Ngành nghề"
         subtitle="Danh mục module hệ thống, phân bổ dữ liệu theo nhóm, và các giá trị phân loại nhà tuyển dụng đang dùng thật trên tin tuyển dụng (bốn khóa là chuỗi tự do, chưa có bảng danh mục tập trung)."
-        actions={(
-          <Link to="/admin/roles" className={adminButton('primary', 'no-underline')}>
-            <span className={`${ICON} text-[18px]`}>verified_user</span>Quản lý phân quyền
-          </Link>
-        )}
       />
 
       {error && <div className="mb-space-lg"><ErrorBlock message={error} /></div>}
