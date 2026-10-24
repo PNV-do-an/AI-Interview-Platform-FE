@@ -88,7 +88,7 @@ const seriesPaths = (values: number[], scale: number): {
     n <= 1 ? 0 : (i * CHART_W) / (n - 1),
     CHART_BASE - (scale > 0 ? (v / scale) * (CHART_BASE - CHART_TOP) : 0),
   ];
-  const coords = values.map(point);
+  const coords = values.map((v, i) => point(i, v));
   if (coords.length === 0) return { line: '', area: '', points: [] };
   let line = `M ${coords[0][0].toFixed(1)},${coords[0][1].toFixed(1)}`;
   for (let i = 1; i < coords.length; i += 1) {
