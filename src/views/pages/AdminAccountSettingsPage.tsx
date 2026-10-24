@@ -289,7 +289,6 @@ const AdminAccountSettingsPage: React.FC = () => {
               </p>
             </div>
           </div>
-          <DemoNote>Khối demo — BE chưa có API 2FA</DemoNote>
         </div>
       </div>
 
