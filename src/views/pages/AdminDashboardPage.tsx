@@ -9,7 +9,7 @@ import {
 } from '../../models/AdminConsole.model';
 import ConfirmDialog from '../components/ConfirmDialog';
 import {
-  AdminPageHeader, DemoTag, EmptyBlock, ErrorBlock, ICON, LoadingBlock, Pill, adminButton,
+  AdminPageHeader, EmptyBlock, ErrorBlock, ICON, LoadingBlock, Pill, adminButton,
   errorText, fmtServer, timeAgo,
 } from '../components/adminKit';
 
@@ -401,18 +401,15 @@ const AdminDashboardPage: React.FC = () => {
 
           <div className="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
             <div className="flex flex-col gap-space-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-ds-label-md uppercase tracking-wider text-on-surface-variant font-semibold">
+              <div className="flex items-center justify-between gap-space-sm">
+                <span className="min-w-0 text-ds-label-md uppercase tracking-wider text-on-surface-variant font-semibold">
                   Tài nguyên AI & Hệ thống
                 </span>
-                <div className="flex items-center gap-space-sm">
-                  <DemoTag>Khối demo — chưa có API uptime/token</DemoTag>
-                  <span className="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface">
-                    <span className={`${ICON} text-[20px]`}>dns</span>
-                  </span>
-                </div>
+                <span className="w-8 h-8 shrink-0 rounded-lg bg-surface-container flex items-center justify-center text-on-surface">
+                  <span className={`${ICON} text-[20px]`}>dns</span>
+                </span>
               </div>
-              <div className="flex items-baseline gap-space-sm mt-1">
+              <div className="flex flex-wrap items-baseline gap-x-space-sm gap-y-0.5 mt-1">
                 <span className="text-ds-display-sm text-secondary-teal font-extrabold tracking-tight">99.98%</span>
                 <span className="text-ds-label-sm text-on-surface-variant font-medium">Độ sẵn sàng SLA</span>
               </div>

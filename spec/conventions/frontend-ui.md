@@ -35,7 +35,7 @@ Wave admin 2026-10-21 chép markup từ mockup Stitch nên dùng **đúng tên t
 | Khoảng cách | `space-xs/sm/md/lg/xl/2xl`, `gutter` |
 
 - Primitive riêng cho admin: `views/components/adminKit.tsx` (`adminButton`, `AdminCard`, `AdminPageHeader`, `StatCard`, `Pill`, `SearchField`, `Toggle`, `Pagination`, `ModalBackdrop`, `RoleChip`, `StatusChip`, `fmtServer`, `timeAgo`, `ROLE_VN`, `STATUS_VN`, `AUDIT_ACTION_VN`). Màn candidate/employer vẫn dùng `views/components/ui.tsx`.
-- Khối demo không có endpoint: gắn nhãn `<DemoTag>Khối demo — ...</DemoTag>` (`DemoTag` export từ `adminKit`, là `Pill icon="hive"`). Nhãn phải **nhìn thấy trên màn**, không thay bằng `title` hover. Đã dán nhãn ở: dashboard (4 khối), user detail (IP, chỉ số AI 94%, CV, kỹ năng, tab Hoạt động, thông tin cá nhân), JD queue (chip lọc demo, điểm tín nhiệm, 4 thẻ thẩm định AI), RBAC (mô tả role + mô tả module), settings (version, hạ tầng AI), account (avatar/2FA/phiên).
+- Khối demo không có endpoint: gắn nhãn `<DemoTag>Khối demo — ...</DemoTag>` (`DemoTag` export từ `adminKit`, là `Pill icon="hive"`). Nhãn phải **nhìn thấy trên màn**, không thay bằng `title` hover. Đã dán nhãn ở: user detail (ngày sinh/nơi cư trú, CV), settings (version, hạ tầng AI), account (avatar/2FA/phiên). **Ngoại lệ**: card "Tài nguyên AI & Hệ thống" ở dashboard (uptime/độ trễ/token vẫn là số mockup) **không dán nhãn** — anh Huy bỏ 24/10 vì `Pill` có `whitespace-nowrap` làm vỡ header card; ghi chú demo nằm ở docstring đầu file.
 
 ## 2. Ngôn ngữ
 
