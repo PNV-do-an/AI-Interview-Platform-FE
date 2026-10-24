@@ -361,7 +361,7 @@ const JobModerationHistoryPage: React.FC = () => {
               </select>
               <span className={`${ICON} text-[18px] text-outline-strong absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none`}>calendar_month</span>
             </div>
-            <div className="relative md:col-span-2" title="Lọc trên các bản ghi của trang đang tải (backend chưa có bộ lọc theo doanh nghiệp)">
+            <div className="relative md:col-span-2" title="Lọc trên các bản ghi của trang đang tải">
               <select
                 value={company}
                 onChange={(e) => { setCompany(e.target.value); }}
@@ -597,10 +597,6 @@ const JobModerationHistoryPage: React.FC = () => {
             <span className="text-ds-label-sm">
               Toàn bộ nhật ký kiểm duyệt được ký số kiểm toán và lưu trữ bất biến (Immutable Audit Log) trong vòng 24 tháng theo tiêu chuẩn bảo mật hệ sinh thái AI.
             </span>
-          </div>
-          <div className="flex items-center gap-1.5 text-ds-label-sm font-semibold text-secondary-teal">
-            <span className="w-2 h-2 rounded-full bg-secondary-teal" />
-            Nguồn: GET /admin/jobs/moderation/history
           </div>
         </div>
       </div>

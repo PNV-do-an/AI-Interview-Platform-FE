@@ -480,7 +480,7 @@ const AdminSystemSettingsPage: React.FC = () => {
                   </div>
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
-                      <button type="button" disabled title="Backend chưa có API tải logo" className={`${adminButton('primary', 'h-9')} disabled:opacity-50`}>
+                      <button type="button" disabled title="Chức năng tải logo chưa khả dụng" className={`${adminButton('primary', 'h-9')} disabled:opacity-50`}>
                         <span className={`${ICON} text-[18px]`}>cloud_upload</span>
                         Tải ảnh mới
                       </button>
@@ -721,8 +721,7 @@ const AdminSystemSettingsPage: React.FC = () => {
             </SectionShell>
 
             <p className="text-ds-body-sm text-on-surface-variant">
-              Nguồn dữ liệu: GET /admin/settings • PUT /admin/settings chỉ gửi các khóa đã thay đổi
-              ({changedCount} khóa đang chờ lưu). Lần ghi gần nhất:
+              Chỉ ghi các khóa đã thay đổi ({changedCount} khóa đang chờ lưu). Lần ghi gần nhất:
               <span className="ml-1 font-medium text-on-surface">
                 {loaded.meta.lastUpdatedAt ? fmtServer(loaded.meta.lastUpdatedAt, 'datetime') : 'chưa có'}
               </span>

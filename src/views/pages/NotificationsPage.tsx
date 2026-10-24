@@ -26,7 +26,7 @@ const NotificationsPage: React.FC = () => {
         <EmptyState
           icon="notifications_none"
           title="Chưa có thông báo nào"
-          description="Chưa có thông báo trong ứng dụng — backend hiện chưa có endpoint notifications. Email vẫn gửi khi đặt lịch phỏng vấn và các sự kiện tài khoản."
+          description="Chưa có thông báo trong ứng dụng. Email vẫn gửi khi đặt lịch phỏng vấn và các sự kiện tài khoản."
           action={
             <Link to="/dashboard" className={`${buttonClass('secondary')} no-underline`}>
               Về trang tổng quan

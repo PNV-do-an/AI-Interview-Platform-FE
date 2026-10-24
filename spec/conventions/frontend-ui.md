@@ -44,6 +44,7 @@ Wave admin 2026-10-21 chép markup từ mockup Stitch nên dùng **đúng tên t
   - Màn candidate/employer/landing = **tiếng Anh đúng theo mockup cũ**.
 - Dữ liệu động giữ **nguyên văn từ API**: tên công việc, tên người, nhãn trạng thái trong `*_LABELS` của model (`APPLICATION_STATUS_LABELS`...). Không dịch tay trong từng trang; thiếu nhãn thì sửa map trong `models/*.model.ts`.
 - Màn `DATA`/`UI` của admin: dữ liệu demo không có endpoint thì giữ nguyên văn mockup (tiếng Việt) nhưng phải có nhãn `Khối demo — ...`.
+- **Không in đường dẫn API lên màn** (24/10, anh Huy quét và bỏ hết): không `GET /admin/...`, `PUT /admin/settings`, `PATCH /jobs/{id}/review` trong title/description/empty state, và không nói "Endpoint chưa trả…", "Enum … phía backend". Copy chỉ diễn đạt bằng nghiệp vụ tiếng Việt; đường dẫn API và tên field nằm ở docstring đầu file + `spec/INDEX.md`, không ra tới người dùng.
 - Nhãn trạng thái render qua `<StatusBadge status={x} label={LABELS[x]} />` (candidate/employer) hoặc `<StatusChip status={x} />` (admin). Tone màu chỉ khai ở `STATUS_TONE` trong `views/components/ui.tsx` và `STATUS_VN` trong `adminKit.tsx`, không khai lại trong trang.
 
 ## 3. Số liệu — chỉ đồ thật

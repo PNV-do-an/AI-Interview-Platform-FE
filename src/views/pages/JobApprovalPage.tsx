@@ -665,7 +665,7 @@ const JobApprovalPage: React.FC = () => {
                   ))}
                   {safetyChecks.length === 0 && (
                     <div className="md:col-span-2 p-space-md rounded-xl border border-surface-container-high bg-surface-container-low text-ds-body-sm text-on-surface-variant">
-                      Endpoint chưa trả bộ kiểm tra an toàn cho tin này.
+                      Chưa có dữ liệu kiểm tra an toàn cho tin này.
                     </div>
                   )}
                 </div>
@@ -876,8 +876,8 @@ const JobApprovalPage: React.FC = () => {
               <h3 className="text-ds-headline-sm text-on-surface font-bold">Phê duyệt {pendingRows.length} tin đang chờ?</h3>
             </div>
             <p className="text-ds-body-sm text-on-surface-variant leading-relaxed">
-              Hệ thống sẽ gửi quyết định duyệt từng tin ({pendingRows.map((r) => `#${r.id}`).join(', ')}) sang
-              PATCH /jobs/{'{id}'}/review. Nhà tuyển dụng sẽ nhận email thông báo cho từng tin.
+              Hệ thống ghi quyết định duyệt cho từng tin ({pendingRows.map((r) => `#${r.id}`).join(', ')}).
+              Nhà tuyển dụng sẽ nhận email thông báo cho từng tin.
             </p>
             <div className="flex items-center justify-end gap-space-sm pt-space-xs">
               <button type="button" onClick={() => setBulkOpen(false)} className={modalCancelClass}>Hủy bỏ</button>

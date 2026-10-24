@@ -802,7 +802,7 @@ const InfoTab: React.FC<{ user: UserDetail }> = ({ user }) => {
             </div>
             {profile?.cvFileName && (
               <div className="text-ds-body-sm text-on-surface-variant mt-0.5">
-                BE chỉ lưu tên tệp — không có dung lượng, không có API tải tệp nên không mở được từ màn này.
+                Hệ thống chỉ lưu tên tệp — không có dung lượng và không mở được tệp từ màn này.
               </div>
             )}
           </div>
@@ -811,7 +811,7 @@ const InfoTab: React.FC<{ user: UserDetail }> = ({ user }) => {
           <button
             type="button"
             disabled
-            title="Chưa có API tệp CV"
+            title="Chức năng chưa khả dụng"
             className="inline-flex items-center gap-1.5 px-space-md py-2 rounded-lg bg-surface-container-high text-outline-strong text-ds-label-md border border-surface-container-high cursor-not-allowed"
           >
             <span className={`${ICON} text-[18px]`}>visibility</span>
@@ -820,7 +820,7 @@ const InfoTab: React.FC<{ user: UserDetail }> = ({ user }) => {
           <button
             type="button"
             disabled
-            title="Chưa có API tệp CV"
+            title="Chức năng chưa khả dụng"
             className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-surface-container-high text-outline-strong text-ds-label-md shadow-sm border-0 cursor-not-allowed"
           >
             <span className={`${ICON} text-[18px]`}>download</span>

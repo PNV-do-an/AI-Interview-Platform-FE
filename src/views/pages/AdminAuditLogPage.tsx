@@ -98,7 +98,7 @@ const AdminAuditLogPage: React.FC = () => {
         <div className="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
           <span className="text-ds-label-md text-on-surface-variant uppercase tracking-wider font-semibold">Loại hành động</span>
           <span className="mt-3 text-ds-headline-xl font-bold text-on-surface">{AUDIT_ACTIONS.length}</span>
-          <span className="mt-1 text-ds-body-sm text-on-surface-variant">Enum AuditAction phía backend</span>
+          <span className="mt-1 text-ds-body-sm text-on-surface-variant">Loại hành động được ghi nhận</span>
         </div>
       </div>
 

@@ -93,7 +93,7 @@ const AdminCategoryPage: React.FC = () => {
         <AdminCard
           className="xl:col-span-2"
           title="Danh mục module hệ thống"
-          description={`${moduleRows.length} module trong ma trận quyền (GET /admin/permissions/matrix)`}
+          description={`${moduleRows.length} module trong ma trận quyền`}
           icon="category"
           bodyClass="pt-space-md"
         >
@@ -163,7 +163,7 @@ const AdminCategoryPage: React.FC = () => {
 
           <AdminCard
             title="Giá trị phân loại đang dùng"
-            description="GET /admin/categories — bốn khóa employer tự nhập trên tin đang hoạt động, đọc được nhưng chưa có CRUD tập trung"
+            description="Bốn khóa phân loại do nhà tuyển dụng tự nhập trên tin đang hoạt động, chưa có quản lý danh mục tập trung"
             icon="interests"
           >
             {categoryGroups.length === 0 ? (
