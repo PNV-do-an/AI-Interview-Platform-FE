@@ -27,6 +27,8 @@ export interface UserDetail {
   email: string;
   fullName: string;
   phone: string | null;
+  /** 011: data URL gốc (BE lưu nguyên chuỗi trong users.avatar, không giữ file); null khi chưa có ảnh. */
+  avatar: string | null;
   role: Role;
   enabled: boolean;
   locked: boolean;

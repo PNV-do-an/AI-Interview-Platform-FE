@@ -1,6 +1,6 @@
 import httpService from './http.service';
 import axios from 'axios';
-import { ApiResponse, AuthResponse, LoginRequest, PasswordResetResult, RegisterRequest, ResetTokenInfo, SsoConfig } from '../models/Api.model';
+import { ApiResponse, AuthResponse, LoginRequest, PasswordResetResult, RegisterRequest, ResetTokenInfo, SsoConfig, UserSessionInfo } from '../models/Api.model';
 
 const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
@@ -67,6 +67,23 @@ const AuthService = {
   // tokenVersion => mọi refresh token cũ chết ngay (FE phải bắt người dùng đăng nhập lại).
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     httpService.post<ApiResponse<null>>('/api/user/change-password', data),
+
+  // Đăng xuất thật: BE thu hồi dòng user_session của token đang dùng. Access token sống 24h,
+  // nếu chỉ xóa storage thì token vẫn gọi được API tới hết hạn.
+  // timeout ngắn + bỏ qua lỗi: luồng này chỉ gửi lệnh thu hồi, FE vẫn phải thoát được khi BE chậm.
+  logout: () => httpService.post<ApiResponse<null>>('/api/v1/auth/logout', null, { timeout: 4000 }),
+
+  getSessions: () =>
+    httpService.get<ApiResponse<UserSessionInfo[]>>('/api/user/sessions'),
+
+  revokeSession: (sessionId: number) =>
+    httpService.delete<ApiResponse<null>>(`/api/user/sessions/${sessionId}`),
+
+  // Ảnh gửi nguyên data URL (BE không giữ file); sai loại/cỡ trả 400 kèm detail theo từng khóa.
+  uploadAvatar: (dataUrl: string) =>
+    httpService.put<ApiResponse<null>>('/api/user/avatar', { dataUrl }),
+
+  deleteAvatar: () => httpService.delete<ApiResponse<null>>('/api/user/avatar'),
 };
 
 export default AuthService;

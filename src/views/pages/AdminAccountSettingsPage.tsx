@@ -15,8 +15,16 @@
  * - Side effect: GET /admin/users/{id} ghi 1 dòng audit VIEW_USER mỗi lần mở màn (BE không có endpoint
  *   self-service nào trả createdAt/status; route này đã chặn ROLE_STAFF nên không thể 403).
  *
- * Khối demo (BE chưa có endpoint, giữ nguyên văn mockup — đã ghi ở spec/INDEX.md): tải / xóa ảnh đại
- * diện, ô "Cấp độ bảo mật: 2FA Đã kích hoạt", danh sách "Thiết bị đăng nhập hoạt động" + nút "Thu hồi".
+ * 011 — hai khối từng là demo đã nối số thật:
+ * - Ảnh đại diện: PUT /api/user/avatar gửi data URL gốc (BE không giữ file, chỉ lưu chuỗi vào
+ *   users.avatar) nên ảnh hiển thị lại đúng chuỗi vừa gửi, không cần reload; DELETE /api/user/avatar.
+ *   FE chặn trước PNG/JPG/WEBP <= 2MB đúng rule BE, BE vẫn kiểm tra magic bytes nên file đổi phần
+ *   đuôi vẫn bị từ chối và message 400 hiện nguyên văn.
+ * - "Thiết bị đăng nhập hoạt động": GET /api/user/sessions + DELETE /api/user/sessions/{id};
+ *   "Đăng xuất khỏi thiết bị này" = POST /api/v1/auth/logout (thu hồi đúng dòng user_session của
+ *   token đang dùng — access token sống 24h nên xóa storage đơn thuần thì token vẫn gọi được API).
+ *   BE không có geo-IP: chỉ hiện trình duyệt + hệ điều hành và IP, không có tên thành phố.
+ *  vẫn còn demo: thẻ "Cấp độ bảo mật: 2FA Đã kích hoạt" trên header (màn 2FA là wave riêng).
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -24,9 +32,10 @@ import AdminService from '../../services/admin.service';
 import AuthService from '../../services/auth.service';
 import { useAuth } from '../../context/AuthContext';
 import { Role, UserDetail } from '../../models/User.model';
+import { UserSessionInfo } from '../../models/Api.model';
 import {
-  ErrorBlock, ICON, LoadingBlock, Pill, STATUS_VN, adminButton, adminInputClass,
-  errorText, fmtServer, initialsOf,
+  ErrorBlock, ICON, LoadingBlock, STATUS_VN, adminButton, adminInputClass,
+  errorText, fmtServer, initialsOf, timeAgo,
 } from '../components/adminKit';
 
 /** 4 rule mật khẩu == 4 message BE (validateNewPassword); ký tự đặc biệt đúng dãy @#$%^&+=!. */
@@ -39,17 +48,23 @@ const RULES: { key: string; label: string; test: (v: string) => boolean }[] = [
 
 const STRENGTH_LABEL = ['Rất yếu (0/4)', 'Yếu (1/4)', 'Trung bình (2/4)', 'Khá an toàn (3/4)', 'Mạnh (4/4)'];
 
-/** Nội dung gốc mockup — BE chưa có API danh sách phiên nên chưa có số thật để thay. */
-const SESSIONS = [
-  {
-    icon: 'laptop_mac', tile: 'bg-primary-fixed text-primary', device: 'Chrome trên macOS (Sonoma)',
-    meta: 'Hà Nội, Việt Nam • IP: 14.161.42.10', current: true, state: 'Đang kết nối',
-  },
-  {
-    icon: 'smartphone', tile: 'bg-surface-container-high text-on-surface-variant', device: 'Safari trên iPhone 15 Pro',
-    meta: 'TP. Hồ Chí Minh, Việt Nam • 1 ngày trước', current: false, state: '',
-  },
-];
+/** Giống rule BE (UserServiceImpl.MAX_AVATAR_BYTES) — chặn trước ở trình duyệt để không gửi vô ích. */
+const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
+const AVATAR_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+
+const readFileAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(String(reader.result ?? ''));
+  reader.onerror = () => reject(new Error('Không đọc được tệp ảnh'));
+  reader.readAsDataURL(file);
+});
+
+const fmtMb = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+
+/** BE chỉ mô tả trình duyệt + hệ điều hành (không có geo-IP): thiết bị di động dùng icon khác. */
+const deviceIconOf = (label: string) => (
+  /iPhone|iPad|điện thoại|máy tính bảng/i.test(label) ? 'smartphone' : 'laptop_mac'
+);
 
 const ACCOUNT_TEXT: Record<string, string> = {
   ACTIVE: 'Tài khoản đang hoạt động',
@@ -65,12 +80,20 @@ const ROLE_CHIP_TEXT: Record<Role, string> = {
   ROLE_ADMIN: 'Quản trị viên hệ thống (Super Admin)',
 };
 
-/** Mockup dùng ảnh stock; chưa có endpoint tải ảnh nên thay bằng khối viết tắt từ họ tên thật. */
-const Avatar: React.FC<{ name: string }> = ({ name }) => (
+/** Chưa tải ảnh thì thay khối mockup bằng chữ viết tắt từ họ tên thật. */
+const Avatar: React.FC<{ name: string; src?: string | null }> = ({ name, src }) => (
   <div className="relative w-24 h-24 shrink-0">
-    <div className="w-full h-full rounded-full bg-primary-fixed-dim text-primary flex items-center justify-center text-ds-headline-xl font-bold ring-4 ring-primary-fixed">
-      {initialsOf(name)}
-    </div>
+    {src ? (
+      <img
+        src={src}
+        alt={name || 'Ảnh đại diện'}
+        className="w-full h-full rounded-full object-cover ring-4 ring-primary-fixed"
+      />
+    ) : (
+      <div className="w-full h-full rounded-full bg-primary-fixed-dim text-primary flex items-center justify-center text-ds-headline-xl font-bold ring-4 ring-primary-fixed">
+        {initialsOf(name)}
+      </div>
+    )}
     <span
       className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-secondary-teal text-on-secondary-teal flex items-center justify-center shadow-md"
       title="Đã xác minh"
@@ -115,11 +138,6 @@ const ReadonlyCell: React.FC<{ label: string; icon: string; iconCls: string; val
       <span className="truncate text-ds-label-md text-on-surface">{value}</span>
     </div>
   </div>
-);
-
-/** Ghi chú cho khối không có endpoint (UI tiếng Việt 100%). */
-const DemoNote: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <Pill icon="hive">{children}</Pill>
 );
 
 const MessageRow: React.FC<{ kind: 'success' | 'error'; children: React.ReactNode }> = ({ kind, children }) => (
@@ -167,6 +185,15 @@ const AdminAccountSettingsPage: React.FC = () => {
   const [changing, setChanging] = useState(false);
   const [pwdMsg, setPwdMsg] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
 
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarMsg, setAvatarMsg] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
+  const avatarInput = useRef<HTMLInputElement>(null);
+
+  const [sessions, setSessions] = useState<UserSessionInfo[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [sessionsError, setSessionsError] = useState('');
+  const [revokingId, setRevokingId] = useState<number | null>(null);
+
   const alive = useRef(true);
   useEffect(() => () => { alive.current = false; }, []);
 
@@ -190,6 +217,21 @@ const AdminAccountSettingsPage: React.FC = () => {
 
   // userId bất biến trong phiên -> mỗi lần mở màn đúng một request hồ sơ.
   useEffect(() => { void load(); }, [load]);
+
+  const loadSessions = useCallback(async () => {
+    setSessionsLoading(true);
+    setSessionsError('');
+    try {
+      const res = await AuthService.getSessions();
+      if (alive.current) setSessions(res.data.data ?? []);
+    } catch (err) {
+      if (alive.current) setSessionsError(errorText(err, 'Không tải được danh sách thiết bị đăng nhập.'));
+    } finally {
+      if (alive.current) setSessionsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void loadSessions(); }, [loadSessions]);
 
   const role = profile?.role ?? user?.role ?? 'ROLE_ADMIN';
   const status = profile?.status ?? 'ACTIVE';
@@ -231,6 +273,63 @@ const AdminAccountSettingsPage: React.FC = () => {
     setSaveMsg(null);
   }, [profile]);
 
+  const onAvatarPick = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!AVATAR_TYPES.includes(file.type)) {
+      setAvatarMsg({ kind: 'error', text: 'Chỉ nhận ảnh PNG, JPG hoặc WEBP.' });
+      return;
+    }
+    if (file.size > AVATAR_MAX_BYTES) {
+      setAvatarMsg({ kind: 'error', text: `Ảnh ${fmtMb(file.size)} vượt giới hạn 2MB.` });
+      return;
+    }
+    setAvatarBusy(true);
+    setAvatarMsg(null);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      const res = await AuthService.uploadAvatar(dataUrl);
+      if (!alive.current) return;
+      // BE trả data rỗng -> tự dán chuỗi vừa gửi vào hồ sơ để ảnh hiện ngay không cần tải lại màn.
+      setProfile(prev => (prev ? { ...prev, avatar: dataUrl } : prev));
+      setAvatarMsg({ kind: 'success', text: res.data.message ?? 'Đã cập nhật ảnh đại diện' });
+    } catch (err) {
+      if (alive.current) setAvatarMsg({ kind: 'error', text: errorText(err, 'Không tải được ảnh lên.') });
+    } finally {
+      if (alive.current) setAvatarBusy(false);
+    }
+  }, []);
+
+  const removeAvatar = useCallback(async () => {
+    setAvatarBusy(true);
+    setAvatarMsg(null);
+    try {
+      const res = await AuthService.deleteAvatar();
+      if (!alive.current) return;
+      setProfile(prev => (prev ? { ...prev, avatar: null } : prev));
+      setAvatarMsg({ kind: 'success', text: res.data.message ?? 'Đã xóa ảnh đại diện' });
+    } catch (err) {
+      if (alive.current) setAvatarMsg({ kind: 'error', text: errorText(err, 'Không xóa được ảnh đại diện.') });
+    } finally {
+      if (alive.current) setAvatarBusy(false);
+    }
+  }, []);
+
+  const revokeDevice = useCallback(async (sessionId: number) => {
+    setRevokingId(sessionId);
+    setSessionsError('');
+    try {
+      await AuthService.revokeSession(sessionId);
+      // BE lọc revokedAt IS NULL nên dòng đã thu hồi không quay lại ở lần tải danh sách sau.
+      if (alive.current) setSessions(prev => prev.filter(s => s.id !== sessionId));
+    } catch (err) {
+      if (alive.current) setSessionsError(errorText(err, 'Không thu hồi được thiết bị này.'));
+    } finally {
+      if (alive.current) setRevokingId(null);
+    }
+  }, []);
+
   const submitPassword = useCallback(async () => {
     setPwdMsg(null);
     setChanging(true);
@@ -244,12 +343,13 @@ const AdminAccountSettingsPage: React.FC = () => {
         kind: 'success',
         text: res.data.message ?? 'Đổi mật khẩu thành công. Mọi phiên đăng nhập cũ đã bị thu hồi.',
       });
+      void loadSessions();
     } catch (err) {
       if (alive.current) setPwdMsg({ kind: 'error', text: errorText(err, 'Không đổi được mật khẩu.') });
     } finally {
       if (alive.current) setChanging(false);
     }
-  }, [currentPwd, newPwd]);
+  }, [currentPwd, newPwd, loadSessions]);
 
   const pwdBlocked = changing || currentPwd.length === 0 || passed < 4 || !match;
 
@@ -318,22 +418,31 @@ const AdminAccountSettingsPage: React.FC = () => {
             {!loading && (
               <>
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-space-lg bg-surface-container-low p-space-md rounded-xl">
-                  <Avatar name={fullName || user?.fullName || ''} />
+                  <Avatar name={fullName || user?.fullName || ''} src={profile?.avatar} />
                   <div className="flex-1 min-w-0 text-center sm:text-left flex flex-col gap-2">
                     <div className="flex flex-wrap items-center justify-center sm:justify-start gap-space-sm">
+                      <input
+                        ref={avatarInput}
+                        type="file"
+                        accept={AVATAR_TYPES.join(',')}
+                        className="hidden"
+                        onChange={e => { void onAvatarPick(e); }}
+                      />
                       <button
                         type="button"
-                        disabled
-                        title="Backend chưa có API tải ảnh đại diện"
+                        disabled={avatarBusy || !profile}
+                        title={avatarBusy ? 'Đang gửi ảnh lên hệ thống' : undefined}
+                        onClick={() => avatarInput.current?.click()}
                         className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container-lowest text-primary text-ds-label-md font-semibold shadow-sm border-0 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <span className={`${ICON} text-[18px]`}>cloud_upload</span>
-                        Tải ảnh mới
+                        {avatarBusy ? 'Đang tải ảnh...' : 'Tải ảnh mới'}
                       </button>
                       <button
                         type="button"
-                        disabled
-                        title="Backend chưa có API tải ảnh đại diện"
+                        disabled={avatarBusy || !profile?.avatar}
+                        title={!profile?.avatar ? 'Tài khoản chưa có ảnh để xóa' : undefined}
+                        onClick={() => void removeAvatar()}
                         className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-error text-ds-label-md font-semibold hover:bg-error-container/40 transition-colors border-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                       >
                         <span className={`${ICON} text-[18px]`}>delete</span>
@@ -341,11 +450,13 @@ const AdminAccountSettingsPage: React.FC = () => {
                       </button>
                     </div>
                     <p className="text-ds-body-sm text-on-surface-variant leading-relaxed">
-                      Định dạng hỗ trợ JPG, PNG hoặc GIF. Dung lượng tối đa 2MB. Khuyến nghị ảnh vuông tỉ lệ 1:1 (400x400px).
+                      Định dạng hỗ trợ PNG, JPG hoặc WEBP. Dung lượng tối đa 2MB. Khuyến nghị ảnh vuông tỉ lệ 1:1 (400x400px).
                     </p>
-                    <div className="flex justify-center sm:justify-start">
-                      <DemoNote>Khối demo — chưa có API lưu ảnh, hệ thống hiển thị chữ viết tắt từ họ tên</DemoNote>
-                    </div>
+                    {avatarMsg && (
+                      <div className="text-left">
+                        <MessageRow kind={avatarMsg.kind}>{avatarMsg.text}</MessageRow>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -594,7 +705,7 @@ const AdminAccountSettingsPage: React.FC = () => {
         </section>
       </div>
 
-      {/* Phiên đăng nhập — khối demo vì BE chưa có API danh sách / thu hồi phiên */}
+      {/* Phiên đăng nhập: GET /api/user/sessions — mỗi lần đăng nhập ghi một dòng user_session */}
       <section className="bg-surface-container-lowest rounded-xl shadow-sm border border-surface-container-high p-space-lg">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-space-sm mb-space-md">
           <div>
@@ -602,10 +713,11 @@ const AdminAccountSettingsPage: React.FC = () => {
               <span className={`${ICON} text-[20px] text-primary`}>devices</span>
               Thiết bị đăng nhập hoạt động
             </h3>
-            <p className="text-ds-body-sm text-on-surface-variant">Các phiên làm việc gần nhất bằng tài khoản của bạn</p>
+            <p className="text-ds-body-sm text-on-surface-variant">
+              Mỗi lần đăng nhập ghi một phiên; phiên hết hạn khi token làm mới hết hạn hoặc bị thu hồi.
+            </p>
           </div>
           <div className="self-start sm:self-auto flex items-center gap-space-sm flex-wrap">
-            <DemoNote>Khối demo — BE chưa có API danh sách phiên</DemoNote>
             <button
               type="button"
               onClick={logout}
@@ -616,34 +728,65 @@ const AdminAccountSettingsPage: React.FC = () => {
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
-          {SESSIONS.map(s => (
-            <div
-              key={s.device}
-              className={`p-space-md rounded-lg bg-surface-container-low flex items-center justify-between gap-space-sm ${
-                s.current ? 'border border-primary/20' : 'border border-transparent'
-              }`}
-            >
-              <div className="flex items-center gap-space-md min-w-0">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${s.tile}`}>
-                  <span className={`${ICON} text-[22px]`}>{s.icon}</span>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-ds-label-md text-on-surface font-semibold flex items-center gap-2 flex-wrap">
-                    {s.device}
-                    {s.current && (
-                      <span className="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant text-[11px] font-bold">Hiện tại</span>
+
+        {sessionsError && <ErrorBlock message={sessionsError} onRetry={loadSessions} />}
+
+        {sessionsLoading ? (
+          !sessionsError && <LoadingBlock label="Đang tải danh sách thiết bị..." />
+        ) : sessions.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+            {sessions.map(s => {
+              const device = s.deviceLabel ?? 'Thiết bị không xác định';
+              const meta = [
+                s.ipAddress ? `IP: ${s.ipAddress}` : null,
+                s.lastSeenAt ? `hoạt động ${timeAgo(s.lastSeenAt)}` : null,
+              ].filter(Boolean).join(' • ');
+              return (
+                <div
+                  key={s.id}
+                  className={`p-space-md rounded-lg bg-surface-container-low flex items-center justify-between gap-space-sm ${
+                    s.current ? 'border border-primary/20' : 'border border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-space-md min-w-0">
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                      s.current ? 'bg-primary-fixed text-primary' : 'bg-surface-container-high text-on-surface-variant'
+                    }`}>
+                      <span className={`${ICON} text-[22px]`}>{deviceIconOf(device)}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-ds-label-md text-on-surface font-semibold flex items-center gap-2 flex-wrap">
+                        {device}
+                        {s.current && (
+                          <span className="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant text-[11px] font-bold">Hiện tại</span>
+                        )}
+                      </p>
+                      <p className="text-ds-body-sm text-on-surface-variant truncate">{meta || '—'}</p>
+                    </div>
+                  </div>
+                  {s.current
+                    ? <span className="text-ds-label-sm text-secondary-teal shrink-0">Đang hoạt động</span>
+                    : (
+                      <button
+                        type="button"
+                        disabled={revokingId !== null}
+                        title={revokingId === s.id ? 'Đang thu hồi phiên này' : undefined}
+                        onClick={() => void revokeDevice(s.id)}
+                        className="text-ds-label-sm text-error font-semibold border-0 bg-transparent cursor-pointer hover:underline disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:no-underline"
+                      >
+                        {revokingId === s.id ? 'Đang thu hồi...' : 'Thu hồi'}
+                      </button>
                     )}
-                  </p>
-                  <p className="text-ds-body-sm text-on-surface-variant truncate">{s.meta}</p>
                 </div>
-              </div>
-              {s.current
-                ? <span className="text-ds-label-sm text-secondary-teal shrink-0">{s.state}</span>
-                : <button type="button" disabled className="text-ds-label-sm text-on-surface-variant font-semibold border-0 bg-transparent disabled:opacity-50 disabled:cursor-not-allowed">Thu hồi</button>}
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        ) : sessionsError ? null : (
+          <p className="text-ds-body-sm text-on-surface-variant m-0">
+            Chưa có phiên nào được ghi nhận. Phiên đăng nhập tạo trước khi hệ thống theo dõi thiết bị
+            sẽ không có dòng ở đây — đăng xuất rồi đăng nhập lại để có phiên mới.
+          </p>
+        )}
       </section>
     </div>
   );

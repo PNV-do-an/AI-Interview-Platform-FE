@@ -186,14 +186,20 @@ export const useAuthController = () => {
   );
 
   const logout = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEYS.REMEMBER_ME);
-    [localStorage, sessionStorage].forEach((s) => {
-      s.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-      s.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-      s.removeItem(STORAGE_KEYS.USER);
-    });
-    setState({ ...initialState, isLoading: false });
-    navigate('/login');
+    // Thu hồi phiên trên BE trước: access token sống 24h nên xóa storage đơn phương thì
+    // token vẫn gọi được API. Xin header xong (interceptor chạy ở microtask) mới xóa storage,
+    // nên phần dọn đường nằm trong macrotask tiếp theo. BE chậm/lỗi vẫn phải thoát được.
+    void AuthService.logout().catch(() => undefined);
+    setTimeout(() => {
+      localStorage.removeItem(STORAGE_KEYS.REMEMBER_ME);
+      [localStorage, sessionStorage].forEach((s) => {
+        s.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+        s.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+        s.removeItem(STORAGE_KEYS.USER);
+      });
+      setState({ ...initialState, isLoading: false });
+      navigate('/login');
+    }, 0);
   }, [navigate]);
 
   return {

@@ -50,3 +50,15 @@ export interface PasswordResetResult {
   eventId: string;
   signedOutEverywhere: boolean;
 }
+
+/** Một dòng trong "Thiết bị đăng nhập hoạt động" (GET /api/user/sessions). */
+export interface UserSessionInfo {
+  id: number;
+  deviceLabel: string | null;
+  ipAddress: string | null;
+  createdAt: string | null;
+  lastSeenAt: string | null;
+  expiresAt: string | null;
+  /** Đúng phiên đang gửi request này. */
+  current: boolean;
+}
