@@ -2,9 +2,12 @@ import { useCallback, useState } from 'react';
 import InterviewService from '../services/interview.service';
 import {
   InterviewAnswer,
+  InterviewEvaluationRequest,
+  InterviewReport,
   InterviewResult,
   InterviewSession,
   StartInterviewRequest,
+  SubmitAnswerRequest,
 } from '../models/Interview.model';
 import { PagedResponse } from '../models/User.model';
 
@@ -13,6 +16,9 @@ export const useMockInterviewController = () => {
   const [session, setSession] = useState<InterviewSession | null>(null);
   const [result, setResult] = useState<InterviewResult | null>(null);
   const [lastAnswer, setLastAnswer] = useState<InterviewAnswer | null>(null);
+  const [report, setReport] = useState<InterviewReport | null>(null);
+  /** `GET /report` trả 404 khi chưa nộp rubric — trang dùng cờ này để hiện form tự đánh. */
+  const [reportMissing, setReportMissing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -47,6 +53,8 @@ export const useMockInterviewController = () => {
   const fetchResult = useCallback(async (id: number) => {
     setLoading(true);
     clearMessages();
+    setReport(null);
+    setReportMissing(false);
     try {
       const res = await InterviewService.getResult(id);
       setResult(res.data.data!);
@@ -58,10 +66,9 @@ export const useMockInterviewController = () => {
     }
   }, []);
 
-  const submitAnswer = useCallback(async (id: number, answerText: string, durationSec?: number) => {
-    clearMessages();
+  const submitAnswer = useCallback(async (id: number, body: SubmitAnswerRequest) => {
     try {
-      const res = await InterviewService.submitAnswer(id, { answerText, durationSec });
+      const res = await InterviewService.submitAnswer(id, body);
       setLastAnswer(res.data.data!);
       return res.data.data!;
     } catch (e: any) {
@@ -84,9 +91,49 @@ export const useMockInterviewController = () => {
     }
   }, []);
 
+  /** Đọc báo cáo AVATAR; 404 được tách thành `reportMissing` (chưa nộp rubric), không phải lỗi. */
+  const loadReport = useCallback(async (id: number) => {
+    setReportMissing(false);
+    try {
+      const res = await InterviewService.getReport(id);
+      setReport(res.data.data!);
+      return res.data.data!;
+    } catch (e: any) {
+      if (e.response?.status === 404) setReportMissing(true);
+      else setError(e.response?.data?.message || 'Không tải được báo cáo phiên phỏng vấn');
+      return null;
+    }
+  }, []);
+
+  const submitEvaluation = useCallback(async (id: number, body: InterviewEvaluationRequest) => {
+    clearMessages();
+    try {
+      const res = await InterviewService.submitEvaluation(id, body);
+      setReport(res.data.data!);
+      setReportMissing(false);
+      return res.data.data!;
+    } catch (e: any) {
+      setError(e.response?.data?.message || 'Không nộp được phiếu đánh giá');
+      return null;
+    }
+  }, []);
+
+  const deleteSession = useCallback(async (id: number) => {
+    clearMessages();
+    try {
+      await InterviewService.deleteSession(id);
+      setSuccessMsg('Đã xóa phiên luyện tập');
+      return true;
+    } catch (e: any) {
+      setError(e.response?.data?.message || 'Không xóa được phiên luyện tập');
+      return false;
+    }
+  }, []);
+
   return {
-    sessions, session, result, lastAnswer,
+    sessions, session, result, lastAnswer, report, reportMissing,
     loading, error, successMsg,
-    startSession, fetchMySessions, fetchResult, submitAnswer, finishSession, clearMessages,
+    startSession, fetchMySessions, fetchResult, submitAnswer, finishSession,
+    loadReport, submitEvaluation, deleteSession, clearMessages,
   };
 };
