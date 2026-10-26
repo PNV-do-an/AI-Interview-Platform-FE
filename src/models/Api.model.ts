@@ -62,3 +62,13 @@ export interface UserSessionInfo {
   /** Đúng phiên đang gửi request này. */
   current: boolean;
 }
+
+/** GET /api/user/profile — ProfileResponse trần của BE, không bọc ApiResponse. */
+export interface SelfProfile {
+  email: string;
+  fullName: string;
+  phone: string | null;
+  /** Số lần đăng nhập sai liên tiếp (BE: users.loginAttempts), không phải điểm bảo mật. */
+  counterFail: number;
+  role: string;
+}

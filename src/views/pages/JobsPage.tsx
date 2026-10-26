@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useJobController } from '../../controllers/useJobController';
 import {
   EmptyState,
@@ -13,15 +13,22 @@ import {
 
 const JobsPage: React.FC = () => {
   const { jobs, loading, error, fetchJobs } = useJobController();
-  const [search, setSearch] = useState('');
+  // Từ khoá tìm nằm trên URL (`?q=`) vì ô search của shell ứng viên dẫn tới /jobs?q=...
+  const [params, setParams] = useSearchParams();
+  const q = params.get('q') ?? '';
+  const [search, setSearch] = useState(q);
   const [page, setPage] = useState(0);
 
-  useEffect(() => { fetchJobs(page, search); }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchJobs(page, q); }, [page, q]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setSearch(q); }, [q]);
 
   const onSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    const next = search.trim();
+    const p = new URLSearchParams(params);
+    if (next) p.set('q', next); else p.delete('q');
     setPage(0);
-    fetchJobs(0, search);
+    setParams(p, { replace: true });
   };
 
   return (

@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './views/components/ProtectedRoute';
 import AppLayout from './views/layout/AppLayout';
+import CandidateLayout from './views/layout/CandidateLayout';
 import AdminLayout from './views/layout/AdminLayout';
 import LoginPage from './views/pages/LoginPage';
 import RegisterPage from './views/pages/RegisterPage';
@@ -23,6 +24,9 @@ import MySlotsPage from './views/pages/MySlotsPage';
 import InterviewCalendarPage from './views/pages/InterviewCalendarPage';
 import MyApplicationsPage from './views/pages/MyApplicationsPage';
 import CandidateProfilePage from './views/pages/CandidateProfilePage';
+import MyInterviewsPage from './views/pages/MyInterviewsPage';
+import CandidateAccountPage from './views/pages/CandidateAccountPage';
+import MockInterviewHistoryPage from './views/pages/MockInterviewHistoryPage';
 import MockInterviewsPage from './views/pages/MockInterviewsPage';
 import MockInterviewSessionPage from './views/pages/MockInterviewSessionPage';
 import MockInterviewResultPage from './views/pages/MockInterviewResultPage';
@@ -58,6 +62,15 @@ const HomeRoute: React.FC = () => {
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <LandingPage />;
 };
 
+/**
+ * Ứng viên vào `CandidateLayout` (shell "CANDIDATE PORTAL" theo mockup 2026-10-26); các vai trò
+ * khác giữ `AppLayout` vì chưa có thiết kế mới. Route dùng chung nên không phải nhân đôi khai báo.
+ */
+const WorkspaceLayout: React.FC = () => {
+  const { user } = useAuth();
+  return user?.role === 'ROLE_USER' ? <CandidateLayout /> : <AppLayout />;
+};
+
 const App: React.FC = () => {
   return (
     <BrowserRouter>
@@ -77,7 +90,7 @@ const App: React.FC = () => {
 
           {/* Protected routes — any authenticated user */}
           <Route element={<ProtectedRoute />}>
-            <Route element={<AppLayout />}>
+            <Route element={<WorkspaceLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/jobs" element={<JobsPage />} />
               <Route path="/jobs/:id" element={<JobDetailPage />} />
@@ -99,8 +112,12 @@ const App: React.FC = () => {
               {/* Candidate routes */}
               <Route element={<ProtectedRoute allowedRoles={['ROLE_USER']} />}>
                 <Route path="/my-applications" element={<MyApplicationsPage />} />
+                <Route path="/my-interviews" element={<MyInterviewsPage />} />
                 <Route path="/my-profile" element={<CandidateProfilePage />} />
+                <Route path="/account" element={<CandidateAccountPage />} />
                 <Route path="/mock-interviews" element={<MockInterviewsPage />} />
+                {/* Route tĩnh xếp trên `:id` để "history" không bị màn session nuốt. */}
+                <Route path="/mock-interviews/history" element={<MockInterviewHistoryPage />} />
                 <Route path="/mock-interviews/:id" element={<MockInterviewSessionPage />} />
                 <Route path="/mock-interviews/:id/result" element={<MockInterviewResultPage />} />
                 <Route path="/cv-analyzer" element={<CvAnalyzerPage />} />

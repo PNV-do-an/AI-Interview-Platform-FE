@@ -1,6 +1,6 @@
 import httpService from './http.service';
 import axios from 'axios';
-import { ApiResponse, AuthResponse, LoginRequest, PasswordResetResult, RegisterRequest, ResetTokenInfo, SsoConfig, UserSessionInfo } from '../models/Api.model';
+import { ApiResponse, AuthResponse, LoginRequest, PasswordResetResult, RegisterRequest, ResetTokenInfo, SelfProfile, SsoConfig, UserSessionInfo } from '../models/Api.model';
 
 const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
 
@@ -63,8 +63,12 @@ const AuthService = {
     publicHttp.get<ApiResponse<string>>('/api/v1/auth/verify', { params: { token } }),
 
   // hồ sơ tự phục vụ: base /api/user (KHÔNG có /v1) -> dùng httpService để có auth interceptor.
-  // GET trả {email, fullName, phone, counterFail, role}; POST đổi mật khẩu thì BE tăng
-  // tokenVersion => mọi refresh token cũ chết ngay (FE phải bắt người dùng đăng nhập lại).
+  // BE trả ProfileResponse TRẦN (không bọc ApiResponse): {email, fullName, phone, counterFail, role}.
+  getSelfProfile: () =>
+    httpService.get<SelfProfile>('/api/user/profile'),
+
+  // POST đổi mật khẩu thì BE tăng tokenVersion => mọi phiên (kể cả máy đang dùng) chết ngay,
+  // FE phải bắt người dùng đăng nhập lại.
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     httpService.post<ApiResponse<null>>('/api/user/change-password', data),
 
