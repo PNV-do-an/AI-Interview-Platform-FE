@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useMockInterviewController } from '../../controllers/useMockInterviewController';
 import { useAuth } from '../../context/AuthContext';
 import ConfirmDialog from '../components/ConfirmDialog';
+import AvatarInterviewSessionPage from './AvatarInterviewSessionPage';
 import { Card, buttonClass, inputClass } from '../components/ui';
 
 // Textarea: kế thừa inputClass, bỏ h-9, thay bằng py-2 (theo luật design system).
@@ -27,7 +28,7 @@ const MockInterviewSessionPage = () => {
   }, [user, id]);
 
   useEffect(() => {
-    if (session?.status === 'COMPLETED') {
+    if (session?.status === 'COMPLETED' && session.mode !== 'AVATAR') {
       navigate(`/mock-interviews/${id}/result`, { replace: true });
     }
   }, [session?.status]);
@@ -55,6 +56,11 @@ const MockInterviewSessionPage = () => {
     );
   }
 
+  // Phiên AVATAR (BE 012) vào phòng video call; MOCK/KNOWLEDGE giữ màn chữ cũ.
+  if (session.mode === 'AVATAR') {
+    return <AvatarInterviewSessionPage sessionId={session.id} />;
+  }
+
   const total = session.questions.length;
   const index = Math.min(session.currentQuestionIndex, total - 1);
   const isDone = session.currentQuestionIndex >= total;
@@ -63,7 +69,7 @@ const MockInterviewSessionPage = () => {
   const handleSubmit = async () => {
     clearMessages();
     if (!answerText.trim()) return;
-    const saved = await submitAnswer(session.id, answerText.trim(), elapsed);
+    const saved = await submitAnswer(session.id, { answerText: answerText.trim(), durationSec: elapsed });
     if (saved && session.currentQuestionIndex + 1 >= total) {
       await finishSession(session.id);
       navigate(`/mock-interviews/${session.id}/result`);

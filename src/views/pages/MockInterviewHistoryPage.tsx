@@ -11,14 +11,17 @@
  * - Tab lọc theo chủ đề ("Frontend Dev (8)", "System Design (3)"…) -> tab theo TRẠNG THÁI thật vì
  *   phiên chỉ có mode MOCK/KNOWLEDGE + status; đếm trong trang đang xem (BE không có bộ lọc status
  *   nên tab chỉ áp dụng trên trang này — ghi rõ dưới hàng tab).
- * - Cột "Thời lượng": InterviewSession không có field thời lượng -> thay bằng "Số câu đã trả lời".
+ * - Cột "Thời lượng": InterviewSession không có field thời lượng -> thay bằng "Tiến trình"
+ *   (MOCK/KNOWLEDGE: số câu đã trả lời/tổng; AVATAR: số lượt đã chốt — BE 012 không sinh câu trước).
+ * - Wave 26/10 (BE 012): thêm chip "Video Call" cho mode AVATAR + nút xóa phiên qua DELETE (ConfirmDialog).
  * - Cột "Đánh giá chính": mockup dùng chữ do AI viết -> dùng dải điểm suy ra từ overallScore.
  * - Cột "Hành động" bỏ nút replay riêng -> "Luyện phiên mới" ở đầu trang dẫn tới màn bắt đầu phiên.
  */
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMockInterviewController } from '../../controllers/useMockInterviewController';
-import { InterviewSession } from '../../models/Interview.model';
+import { INTERVIEW_MODE_LABELS, InterviewSession } from '../../models/Interview.model';
+import ConfirmDialog from '../components/ConfirmDialog';
 import {
   EmptyBlock, ErrorBlock, ICON, LoadingBlock, Pagination, Pill,
   adminButton, adminTableClass, adminTdClass, adminThClass, fmtServer, timeAgo,
@@ -45,15 +48,32 @@ const scoreTone = (score?: number): 'success' | 'primary' | 'warning' | 'danger'
   return 'danger';
 };
 
-const titleOf = (s: InterviewSession) => (s.mode === 'MOCK' ? s.jobTitle ?? 'Phiên mô phỏng' : s.topic ?? 'Luyện theo chủ đề');
-const subOf = (s: InterviewSession) => (s.mode === 'MOCK' ? s.companyName ?? 'Theo tin tuyển dụng' : 'Luyện kiến thức theo chủ đề');
+const titleOf = (s: InterviewSession) =>
+  s.mode === 'MOCK' ? s.jobTitle ?? 'Phiên mô phỏng'
+    : s.mode === 'AVATAR' ? s.jobTitle ?? 'Phòng video call AI'
+      : s.topic ?? 'Luyện theo chủ đề';
+const subOf = (s: InterviewSession) =>
+  s.mode === 'MOCK' ? s.companyName ?? 'Theo tin tuyển dụng'
+    : s.mode === 'AVATAR' ? INTERVIEW_MODE_LABELS.AVATAR
+      : 'Luyện kiến thức theo chủ đề';
+/** MOCK/KNOWLEDGE: câu hỏi sinh trước; AVATAR: `questions` rỗng, đếm theo lượt đã chốt (BE 012). */
+const progressOf = (s: InterviewSession) =>
+  s.mode === 'AVATAR' ? `${s.answeredCount} lượt chốt` : `${s.answeredCount}/${s.questions?.length ?? 0}`;
 
 const MockInterviewHistoryPage: React.FC = () => {
-  const { sessions, loading, error, fetchMySessions } = useMockInterviewController();
+  const { sessions, loading, error, successMsg, fetchMySessions, deleteSession } = useMockInterviewController();
   const [tab, setTab] = useState<Tab>('ALL');
   const [page, setPage] = useState(0);
+  const [toDelete, setToDelete] = useState<InterviewSession | null>(null);
 
   useEffect(() => { void fetchMySessions(page); }, [fetchMySessions, page]);
+
+  const runDelete = async () => {
+    if (!toDelete) return;
+    const target = toDelete;
+    setToDelete(null);
+    if (await deleteSession(target.id)) void fetchMySessions(page);
+  };
 
   const rows = sessions?.content ?? [];
   const visible = useMemo(
@@ -192,7 +212,7 @@ const MockInterviewHistoryPage: React.FC = () => {
                 <tr>
                   <th className={adminThClass}>Ngày thực hiện</th>
                   <th className={adminThClass}>Vị trí / Chủ đề</th>
-                  <th className={adminThClass}>Số câu đã trả lời</th>
+                  <th className={adminThClass}>Tiến trình</th>
                   <th className={adminThClass}>Điểm tổng</th>
                   <th className={adminThClass}>Đánh giá</th>
                   <th className={`${adminThClass} text-right`}>Hành động</th>
@@ -210,14 +230,15 @@ const MockInterviewHistoryPage: React.FC = () => {
                       </div>
                     </td>
                     <td className={adminTdClass}>
-                      <div className="flex items-center gap-space-xs">
+                      <div className="flex flex-wrap items-center gap-space-xs">
                         <span className={`h-2 w-2 shrink-0 rounded-full ${s.status === 'COMPLETED' ? 'bg-secondary-teal' : 'bg-primary'}`} />
                         <span className="font-medium text-on-surface">{titleOf(s)}</span>
+                        {s.mode === 'AVATAR' && <Pill tone="warning">Video Call</Pill>}
                       </div>
                       <span className="text-ds-label-sm text-outline-variant">{subOf(s)}</span>
                     </td>
                     <td className={`${adminTdClass} tabular-nums`}>
-                      {s.answeredCount}/{s.questions?.length ?? 0}
+                      {progressOf(s)}
                     </td>
                     <td className={adminTdClass}>
                       {s.overallScore != null ? (
@@ -239,13 +260,23 @@ const MockInterviewHistoryPage: React.FC = () => {
                       )}
                     </td>
                     <td className={`${adminTdClass} text-right`}>
-                      <Link
-                        to={s.status === 'COMPLETED' ? `/mock-interviews/${s.id}/result` : `/mock-interviews/${s.id}`}
-                        className={adminButton('soft', 'h-9 no-underline')}
-                      >
-                        <span className={`${ICON} text-[16px]`}>visibility</span>
-                        {s.status === 'COMPLETED' ? 'Xem báo cáo' : 'Tiếp tục'}
-                      </Link>
+                      <div className="flex items-center justify-end gap-2">
+                        <Link
+                          to={s.status === 'COMPLETED' ? `/mock-interviews/${s.id}/result` : `/mock-interviews/${s.id}`}
+                          className={adminButton('soft', 'h-9 no-underline')}
+                        >
+                          <span className={`${ICON} text-[16px]`}>visibility</span>
+                          {s.status === 'COMPLETED' ? 'Xem báo cáo' : 'Tiếp tục'}
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => setToDelete(s)}
+                          className={adminButton('ghost', 'h-9 px-2.5')}
+                          title={`Xóa phiên ${titleOf(s)}`}
+                        >
+                          <span className={`${ICON} text-[16px] text-error`}>delete</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -275,9 +306,27 @@ const MockInterviewHistoryPage: React.FC = () => {
           <span className="text-ds-label-lg font-bold text-on-surface">Điểm theo từng câu mới hiện trong báo cáo</span>
           <p className="text-ds-body-sm text-on-surface-variant">
             Mở một phiên đã hoàn thành để xem điểm từng câu hỏi, nội dung trả lời và nhận xét kèm theo.
+            Phiên video call hiển thị transcript từng lượt và rubric 5 chiều bạn đã nộp.
           </p>
         </div>
       </div>
+
+      {successMsg && (
+        <Pill tone="success" icon="check_circle">{successMsg}</Pill>
+      )}
+
+      <ConfirmDialog
+        open={toDelete != null}
+        title="Xóa phiên luyện tập này?"
+        message={toDelete
+          ? `"${titleOf(toDelete)}" cùng toàn bộ câu trả lời và báo cáo của phiên sẽ bị xóa vĩnh viễn, không thể hoàn tác.`
+          : ''}
+        confirmLabel="Xóa phiên"
+        cancelLabel="Giữ lại"
+        danger
+        onConfirm={() => void runDelete()}
+        onCancel={() => setToDelete(null)}
+      />
     </div>
   );
 };

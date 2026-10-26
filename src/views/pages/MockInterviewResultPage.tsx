@@ -19,7 +19,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useMockInterviewController } from '../../controllers/useMockInterviewController';
 import { useAuth } from '../../context/AuthContext';
-import { InterviewAnswer } from '../../models/Interview.model';
+import {
+  AVATAR_RUBRIC_VERSION, InterviewAnswer, InterviewRubric, RUBRIC_DIMENSIONS,
+} from '../../models/Interview.model';
 import {
   DemoTag, EmptyBlock, ErrorBlock, ICON, LoadingBlock, Pill, adminButton, fmtServer,
 } from '../components/adminKit';
@@ -54,6 +56,253 @@ const InsightItem: React.FC<{ icon: string; iconClass: string; title: string; bo
     </div>
   </div>
 );
+
+const clampScore = (n: number) => Math.max(0, Math.min(100, Math.round(n || 0)));
+
+/**
+ * Báo cáo phiên AVATAR (mockup 2 + BE 012): finish xong BE chưa có điểm -> `GET /report` 404,
+ * màn hiện form tự đánh rubric 5 chiều (0..100) + 2 ô điểm mạnh/cần cải thiện (trần 4000 ký tự),
+ * nộp qua `POST /{id}/evaluation`; overall do BE tính từ trung bình 5 chiều.
+ */
+const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
+  const { user } = useAuth();
+  const {
+    result, report, reportMissing, loading, error,
+    fetchResult, loadReport, submitEvaluation, clearMessages,
+  } = useMockInterviewController();
+  const [rubric, setRubric] = useState<InterviewRubric>({
+    chuyenMon: 70, duAn: 70, tuDuy: 70, truyenDat: 70, mucKhop: 70,
+  });
+  const [strengths, setStrengths] = useState('');
+  const [improvements, setImprovements] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (user?.role === 'ROLE_USER') void fetchResult(sessionId);
+  }, [user, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (result?.session.mode === 'AVATAR' && result.session.status === 'COMPLETED') {
+      void loadReport(sessionId);
+    }
+  }, [result, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const session = result?.session;
+  const transcript = result?.transcript ?? [];
+  const confirmed = transcript.filter(t => t.confirmed);
+  const totalSec = transcript.reduce((sum, t) => sum + (t.durationSec ?? 0), 0);
+
+  if (!session) {
+    return loading
+      ? <div className={`${CARD} p-space-lg`}><LoadingBlock label="Đang tải báo cáo..." /></div>
+      : <div className={`${CARD} p-space-lg`}><ErrorBlock message={error || 'Không tìm thấy phiên phỏng vấn.'} onRetry={() => void fetchResult(sessionId)} /></div>;
+  }
+
+  const submit = async () => {
+    setBusy(true);
+    clearMessages();
+    await submitEvaluation(sessionId, {
+      rubric,
+      rubricVersion: AVATAR_RUBRIC_VERSION,
+      strengths: strengths.trim() || undefined,
+      improvements: improvements.trim() || undefined,
+    });
+    setBusy(false);
+  };
+
+  return (
+    <div className="flex flex-col gap-space-xl">
+      <div className="flex flex-col gap-space-lg lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0 flex-1">
+          <nav className="flex flex-wrap items-center gap-space-xs text-ds-label-md text-on-surface-variant">
+            <Link to="/dashboard" className="no-underline text-on-surface-variant hover:text-primary">Trang chủ</Link>
+            <span className={`${ICON} text-outline text-[14px]`}>chevron_right</span>
+            <Link to="/mock-interviews/history" className="no-underline text-on-surface-variant hover:text-primary">Lịch sử &amp; Đánh giá</Link>
+            <span className={`${ICON} text-outline text-[14px]`}>chevron_right</span>
+            <span className="flex items-center gap-1.5 font-semibold text-on-surface">
+              Báo cáo phiên Video Call AI
+              <span className="rounded bg-surface-container-high px-space-xs py-0.5 text-ds-label-sm text-on-surface">#AV-{session.id}</span>
+            </span>
+          </nav>
+          <h1 className="pt-space-xs text-ds-headline-xl font-bold tracking-tight text-on-surface">
+            {session.jobTitle ?? 'Phòng phỏng vấn AVATAR'}
+          </h1>
+          <div className="flex flex-wrap items-center gap-space-lg pt-1 text-ds-body-sm text-on-surface-variant">
+            <span>{session.companyName ?? 'Luyện với AI'}</span>
+            <span>{confirmed.length} lượt đã chốt</span>
+            {totalSec > 0 && <span>~{Math.round(totalSec / 60)} phút trả lời</span>}
+            <span>Bắt đầu {fmtServer(session.createdAt, 'datetime')}</span>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-space-sm">
+          <Link to={`/mock-interviews/${session.id}`} className={adminButton('ghost', 'h-10 no-underline')}>
+            <span className={`${ICON} text-[18px]`}>subtitles</span>
+            Xem lại transcript
+          </Link>
+          <Link to="/mock-interviews" className={adminButton('primary', 'h-10 no-underline')}>
+            <span className={`${ICON} text-[18px]`}>add_circle</span>
+            Luyện phiên mới
+          </Link>
+        </div>
+      </div>
+
+      {error && <ErrorBlock message={error} />}
+
+      {session.status !== 'COMPLETED' ? (
+        <div className={`${CARD} flex flex-col items-center gap-space-md p-space-2xl text-center`}>
+          <span className={`${ICON} text-[34px] text-primary`}>videocam</span>
+          <p className="m-0 text-ds-headline-sm font-bold text-on-surface">Phiên vẫn đang mở</p>
+          <p className="m-0 max-w-md text-ds-body-sm text-on-surface-variant">
+            Kết thúc phiên trong phòng phỏng vấn để mở rubric tự đánh 5 chiều.
+          </p>
+          <Link to={`/mock-interviews/${session.id}`} className={adminButton('primary', 'h-11 no-underline')}>
+            Tiếp tục phiên
+          </Link>
+        </div>
+      ) : report ? (
+        <div className={`${CARD} flex flex-col gap-space-xl p-space-xl`}>
+          <div className="flex flex-col items-center gap-space-lg md:flex-row md:items-start">
+            <ScoreRing value={report.overallScore} caption={scoreBand(report.overallScore)} size={176} />
+            <div className="flex min-w-0 flex-1 flex-col gap-space-md">
+              <h2 className="text-ds-headline-sm font-bold text-on-surface">Rubric 5 chiều bạn đã nộp</h2>
+              {RUBRIC_DIMENSIONS.map(d => {
+                const v = report[d.key];
+                return (
+                  <div key={d.key} className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between text-ds-label-md">
+                      <span className="font-semibold text-on-surface">{d.label}</span>
+                      <span className="tabular-nums text-on-surface-variant">{v}/100</span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container">
+                      <div className="h-full rounded-full bg-primary" style={{ width: `${v}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+              <p className="text-ds-label-sm text-outline">
+                Điểm tổng = trung bình cộng 5 chiều do hệ thống tính · thang đánh giá {report.rubricVersion}
+              </p>
+            </div>
+          </div>
+          {(report.strengths || report.improvements) && (
+            <div className="grid grid-cols-1 gap-space-md md:grid-cols-2">
+              {report.strengths && (
+                <div className="rounded-lg bg-secondary-container/40 p-space-lg">
+                  <span className="flex items-center gap-1.5 text-ds-label-lg font-bold text-secondary-teal">
+                    <span className={`${ICON} text-[18px]`}>verified</span> Điểm mạnh của bạn
+                  </span>
+                  <p className="m-0 mt-2 whitespace-pre-line text-ds-body-md text-on-surface">{report.strengths}</p>
+                </div>
+              )}
+              {report.improvements && (
+                <div className="rounded-lg bg-tertiary-fixed/60 p-space-lg">
+                  <span className="flex items-center gap-1.5 text-ds-label-lg font-bold text-on-tertiary-fixed-variant">
+                    <span className={`${ICON} text-[18px]`}>north_east</span> Cần cải thiện
+                  </span>
+                  <p className="m-0 mt-2 whitespace-pre-line text-ds-body-md text-on-surface">{report.improvements}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : reportMissing ? (
+        <div className={`${CARD} flex flex-col gap-space-lg p-space-xl`}>
+          <div>
+            <h2 className="flex items-center gap-2 text-ds-headline-sm font-bold text-on-surface">
+              <span className={`${ICON} text-primary`}>rate_review</span>
+              Tự đánh giá phiên theo rubric 5 chiều
+            </h2>
+            <p className="mt-1 text-ds-body-sm text-on-surface-variant">
+              Phiên video call không có hội đồng chấm tự động — bạn kéo thanh điểm cho từng chiều,
+              điểm tổng được tính bằng trung bình cộng 5 chiều.
+            </p>
+          </div>
+          {RUBRIC_DIMENSIONS.map(d => (
+            <div key={d.key} className="flex flex-col gap-1">
+              <div className="flex items-center justify-between text-ds-label-lg">
+                <span className="font-semibold text-on-surface">{d.label}</span>
+                <span className="tabular-nums text-primary">{rubric[d.key]}/100</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={rubric[d.key]}
+                onChange={e => setRubric(prev => ({ ...prev, [d.key]: clampScore(Number(e.target.value)) }))}
+                className="w-full accent-[#4f46e5]"
+                aria-label={`Điểm ${d.label}`}
+              />
+              <span className="text-ds-label-sm text-outline">{d.hint}</span>
+            </div>
+          ))}
+          <div className="grid grid-cols-1 gap-space-md md:grid-cols-2">
+            <label className="flex flex-col gap-1 text-ds-label-lg font-semibold text-on-surface">
+              Điểm mạnh muốn ghi vào báo cáo
+              <textarea
+                value={strengths}
+                maxLength={4000}
+                onChange={e => setStrengths(e.target.value)}
+                placeholder="vd. Trả lời đúng trọng tâm phần kiến trúc, dẫn chứng dự án rõ ràng..."
+                className="min-h-[110px] w-full resize-y rounded-lg border border-outline-variant bg-surface-container-lowest p-3 text-ds-body-sm font-normal text-on-surface placeholder:text-outline focus:border-primary focus:outline-none"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-ds-label-lg font-semibold text-on-surface">
+              Điểm cần cải thiện
+              <textarea
+                value={improvements}
+                maxLength={4000}
+                onChange={e => setImprovements(e.target.value)}
+                placeholder="vd. Thiếu số liệu định lượng ở phần Result của STAR..."
+                className="min-h-[110px] w-full resize-y rounded-lg border border-outline-variant bg-surface-container-lowest p-3 text-ds-body-sm font-normal text-on-surface placeholder:text-outline focus:border-primary focus:outline-none"
+              />
+            </label>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-space-md border-t border-surface-container-high pt-space-lg">
+            <span className="text-ds-label-md text-outline tabular-nums">
+              Điểm tổng dự kiến: {clampScore(Object.values(rubric).reduce((a, b) => a + b, 0) / RUBRIC_DIMENSIONS.length)}/100
+            </span>
+            <button type="button" onClick={() => void submit()} disabled={busy} className={adminButton('primary', 'h-11 disabled:opacity-40')}>
+              <span className={`${ICON} text-[18px]`}>assignment_turned_in</span>
+              Nộp rubric &amp; xem báo cáo
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className={`${CARD} p-space-xl`}><LoadingBlock label="Đang tải báo cáo..." /></div>
+      )}
+
+      {confirmed.length > 0 && (
+        <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
+          <h2 className="flex items-center gap-2 text-ds-headline-sm font-bold text-on-surface">
+            <span className={`${ICON} text-primary`}>forum</span>
+            Transcript phiên ({confirmed.length} lượt đã chốt)
+          </h2>
+          <div className="flex flex-col">
+            {confirmed.map(t => (
+              <div key={t.index} className="flex flex-col gap-2 border-b border-surface-container-low py-space-md last:border-b-0">
+                <div className="flex items-start gap-2">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-fixed text-ds-label-sm font-bold text-on-primary-fixed-variant">AI</span>
+                  <p className="m-0 flex-1 text-ds-body-md text-on-surface">{t.questionText}</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary-container text-ds-label-sm font-bold text-on-secondary-container">Bạn</span>
+                  <div className="flex-1">
+                    <p className="m-0 whitespace-pre-line text-ds-body-md text-on-surface">{t.answerText}</p>
+                    <span className="text-ds-label-sm text-outline">
+                      {t.durationSec != null ? `${fmtDuration(t.durationSec)} · ` : ''}
+                      {t.answeredAt ? fmtServer(t.answeredAt, 'time') : ''}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+};
 
 const MockInterviewResultPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -98,6 +347,12 @@ const MockInterviewResultPage = () => {
   }
 
   const { session } = result;
+
+  // Phiên AVATAR (BE 012) có luồng báo cáo rubric riêng; MOCK/KNOWLEDGE giữ màn chấm điểm cũ.
+  if (session.mode === 'AVATAR') {
+    return <AvatarReportView sessionId={session.id} />;
+  }
+
   const answered = answers.filter(a => a.answerText);
   const overall = session.overallScore ?? 0;
   const total = session.questions?.length ?? answers.length;
