@@ -63,7 +63,16 @@ const MockInterviewsPage = () => {
   const [group, setGroup] = useState(0);
   const [busy, setBusy] = useState(false);
   const [interviewMode, setInterviewMode] = useState<'text' | 'avatar'>('text'); // text = browser TTS, avatar = live talking
+  const [hasAiServiceUrl, setHasAiServiceUrl] = useState<boolean>(false); // Check AI service URL availability
+
   const scriptsRef = useRef<HTMLDivElement>(null);
+
+  // Check environment variable on mount
+  useEffect(() => {
+    // Get from window.env or process.env (depends on CRA build)
+    const env = (window as any).env || {};
+    setHasAiServiceUrl(!!env.REACT_APP_AI_SERVICE_URL);
+  }, []);
 
   useEffect(() => {
     if (user?.role === 'ROLE_USER') {
@@ -142,10 +151,10 @@ const MockInterviewsPage = () => {
                   ? 'bg-primary text-white' 
                   : 'bg-surface-container-lowest text-on-surface-variant'
               }`}
-              disabled={!import.env?.REACT_APP_AI_SERVICE_URL}
-              title={!import.env?.REACT_APP_AI_SERVICE_URL ? "Chưa cấu hình AI service URL" : undefined}
+              disabled={!hasAiServiceUrl}
+              title={!hasAiServiceUrl ? "Chưa cấu hình AI service URL (mặc định dùng Browser TTS)" : undefined}
             >
-              LiveTalking Avatar {import.env?.REACT_APP_AI_SERVICE_URL && '(Real)'}
+              LiveTalking Avatar {hasAiServiceUrl && '(Real)'}
             </button>
           </div>
         </div>
