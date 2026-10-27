@@ -1,26 +1,15 @@
 /**
  * Phòng "Phỏng vấn Video call AI trực tiếp" cho phiên mode=AVATAR
- * (mockup Stitch 6 `screen_9_...`, hợp đồng BE 012) — route /mock-interviews/:id
- * (MockInterviewSessionPage chuyển sang màn này khi session.mode === 'AVATAR').
- *
- * Cơ chế thật (chốt 26/10, spec/features/ai-interview-redesign.md mục 9):
- * - Câu hỏi do FE sinh từ JD (jobTitle + requiredSkills qua `fetchJobDetail`), relay lên BE
- *   trong mỗi lượt `POST /{id}/answer {questionText, answerText, confirm}` — BE 012 không sinh trước.
- * - AI "đọc" câu hỏi bằng `speechSynthesis` của trình duyệt (ưu tiên voice vi-VN); "Nghe lại" là thật.
- * - Không có STT: ứng viên GÕ transcript. Nháp lưu bằng `confirm=false` (upsert đúng lượt,
- *   không tạo bản sao), chốt lượt bằng `confirm=true`.
- * - Camera/mic: `getUserMedia` preview thật + toggle `track.enabled`; từ chối quyền vẫn gõ được.
- * - "18ms" = RTT đo bằng `performance.now()` quanh `GET /api/v1/packages`.
- *
- * Bỏ vì không có nguồn số (BE 012 không có avatar/STT/analytics): ảnh persona "Sarah Nguyễn",
- * "Ánh mắt 96%", "Tự tin", "Micro chuẩn", "Chỉ số đánh giá Real-time" (89/100, 130 wpm, filler <2%),
- * "Điểm tối đa 100" + chip chủ đề, "Gợi ý trả lời" cá nhân hoá, "Mẹo từ Sarah", trần 03:00/câu,
- * stepper 5 chặng theo tên đề (thay bằng stepper lượt hội thoại thật, trần 40 lượt của BE).
+ * 
+ * Hỗ trợ 2 chế độ:
+ * 1. Text Mode (Browser TTS): Câu hỏi tự sinh, giọng đọc trình duyệt, gõ trả lời
+ * 2. LiveTalking Mode (WebRTC): Kết nối với Python AI service, có video avatar thật + mic
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import httpService from '../../services/http.service';
 import ProgramService from '../../services/program.service';
+import AIService from '../../services/ai.service';
 import { useMockInterviewController } from '../../controllers/useMockInterviewController';
 import { useAuth } from '../../context/AuthContext';
 import { InterviewTranscriptEntry } from '../../models/Interview.model';
@@ -29,6 +18,12 @@ import { ICON } from '../components/candidateKit';
 import { adminButton, ErrorBlock, LoadingBlock, Pill, fmtServer } from '../components/adminKit';
 
 const MAX_TURNS = 40; // trần lượt của BE 012
+
+/** Đọc interview mode từ localStorage (text hoặc avatar) */
+const getInterviewMode = (): 'text' | 'avatar' => {
+  const stored = localStorage.getItem('ai_interview_mode');
+  return (stored === 'avatar') ? 'avatar' : 'text';
+};
 
 /* --------------------------------- câu hỏi AI --------------------------------- */
 
@@ -183,6 +178,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
   const { result, session, loading, error, fetchResult, submitAnswer, finishSession, clearMessages } =
     useMockInterviewController();
 
+  const [interviewMode, setInterviewMode] = useState<'text' | 'avatar'>('text'); // mặc định text mode
   const [draft, setDraft] = useState('');
   const [question, setQuestion] = useState('');
   const [turn, setTurn] = useState(0);
@@ -196,6 +192,11 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
   const [savingDraft, setSavingDraft] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const devicesRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Đọc interview mode từ localStorage khi mount
+    setInterviewMode(getInterviewMode());
+  }, []);
 
   const speech = useSpeech();
   const media = useLocalMedia();
