@@ -67,11 +67,25 @@ const MockInterviewsPage = () => {
 
   const scriptsRef = useRef<HTMLDivElement>(null);
 
-  // Check environment variable on mount
+  // Check environment variable on mount (fixed for production)
   useEffect(() => {
-    // Get from window.env or process.env (depends on CRA build)
-    const env = (window as any).env || {};
-    setHasAiServiceUrl(!!env.REACT_APP_AI_SERVICE_URL);
+    // Get from window.env or process.env (CRA builds with env in window.__ENV__)
+    const getEnvVar = (name: string): string | undefined => {
+      if ((window as any).env?.REACT_APP_AI_SERVICE_URL) {
+        return (window as any).env.REACT_APP_AI_SERVICE_URL;
+      }
+      if (import.meta.env?.REACT_APP_AI_SERVICE_URL) {
+        return import.meta.env.REACT_APP_AI_SERVICE_URL;
+      }
+      if (process.env?.REACT_APP_AI_SERVICE_URL) {
+        return process.env.REACT_APP_AI_SERVICE_URL;
+      }
+      return undefined;
+    };
+
+    const aiUrl = getEnvVar('REACT_APP_AI_SERVICE_URL');
+    setHasAiServiceUrl(!!aiUrl);
+    console.log('🔍 AI Service URL Status:', aiUrl ? '✅ Configured' : '❌ Not configured');
   }, []);
 
   useEffect(() => {
