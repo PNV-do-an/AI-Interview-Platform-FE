@@ -29,11 +29,13 @@ export const useEmployerJobController = () => {
 
   const clearMessages = () => { setError(''); setSuccessMsg(''); };
 
-  const fetchMyJobs = useCallback(async (page = 0) => {
+  const fetchMyJobs = useCallback(async (page = 0, size = 10) => {
     setLoading(true);
-    clearMessages();
+    // Chỉ xoá lỗi: đọc lại danh sách là hành động nền, không được xoá thông báo "Đã xoá/Đã cập nhật"
+    // mà trang vừa hiển thị sau khi ghi.
+    setError('');
     try {
-      const res = await ProgramService.getMyJobs({ page, size: 10 });
+      const res = await ProgramService.getMyJobs({ page, size });
       setMyJobs(res.data.data!);
     } catch (e: any) {
       setError(readApiErrorMessage(e, 'Không tải được tin tuyển dụng của bạn'));
