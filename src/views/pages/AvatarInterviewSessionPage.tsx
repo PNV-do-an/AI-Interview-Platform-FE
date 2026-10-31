@@ -9,7 +9,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import httpService from '../../services/http.service';
 import ProgramService from '../../services/program.service';
-import AIService from '../../services/ai.service';
+import { useLiveTalkingController } from '../../controllers/useLiveTalkingController';
 import { useMockInterviewController } from '../../controllers/useMockInterviewController';
 import { useAuth } from '../../context/AuthContext';
 import { InterviewTranscriptEntry } from '../../models/Interview.model';
@@ -29,15 +29,21 @@ const getInterviewMode = (): 'text' | 'avatar' => {
 
 const cleanSkill = (s: string) => s.replace(/\(.*?\)/g, '').trim();
 
-/** Kỹ năng từ JD thật (`requiredSkills`, CSV) — nguồn nguyên liệu câu hỏi của AI. */
-const fetchJobSkills = async (jobId?: number): Promise<string[]> => {
-  if (!jobId) return [];
+/**
+ * JD thật của vị trí: `jdText` đưa cho AI service để LLM sinh câu hỏi, `skills` nuôi ngân hàng
+ * câu hỏi dự phòng — avatar rơi giữa phiên thì phòng phải tự chạy tiếp bằng text mode.
+ */
+const fetchJobBrief = async (jobId?: number): Promise<{ skills: string[]; jdText: string }> => {
+  if (!jobId) return { skills: [], jdText: '' };
   try {
-    const res = await ProgramService.getJobDetail(jobId);
-    return (res.data.data?.requiredSkills ?? '')
-      .split(/[,;\n•]+/).map(cleanSkill).filter(Boolean).slice(0, 6);
+    const job = (await ProgramService.getJobDetail(jobId)).data.data;
+    return {
+      skills: (job?.requiredSkills ?? '').split(/[,;\n•]+/).map(cleanSkill).filter(Boolean).slice(0, 6),
+      jdText: [job?.description, job?.requirements, job?.requiredSkills]
+        .filter(Boolean).join('\n').slice(0, 4000),
+    };
   } catch {
-    return [];
+    return { skills: [], jdText: '' };
   }
 };
 
@@ -91,35 +97,69 @@ const useSpeech = () => {
 
 /* ------------------------------ media (cam/mic) ------------------------------ */
 
+/** Lý do getUserMedia thất bại, kèm cách mở khoá để ứng viên tự xử lý mà không phải tải lại trang. */
+const mediaFailureReason = (err: unknown): string => {
+  const name = (err as { name?: string })?.name || '';
+  if (name === 'NotAllowedError' || name === 'SecurityError') {
+    return 'Trình duyệt đang chặn camera và micro. Bấm biểu tượng quyền ở thanh địa chỉ, chọn Cho phép, rồi bấm "Xin lại quyền".';
+  }
+  if (name === 'NotFoundError' || name === 'NotReadableError' || name === 'OverconstrainedError') {
+    return 'Không có thiết bị sẵn dùng, hoặc ứng dụng khác đang giữ webcam/mic. Cắm thiết bị hoặc tắt ứng dụng đó rồi bấm "Xin lại quyền".';
+  }
+  return `Không mở được camera/micro${name ? ` (${name})` : ''}. Bấm "Xin lại quyền" để thử lần nữa.`;
+};
+
 const useLocalMedia = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [state, setState] = useState<'idle' | 'granted' | 'denied'>('idle');
+  const aliveRef = useRef(true);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [state, setState] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
+  const [reason, setReason] = useState('');
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setState('denied');
+  /** Xin quyền thiết bị. Chạy lúc vào phòng và chạy lại được khi người dùng vừa mở khoá trong trình duyệt. */
+  const request = useCallback(async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setState('denied');
+      setReason('Trình duyệt này không hỗ trợ mở camera/micro. Bạn vẫn gõ được câu trả lời.');
+      return;
+    }
+    setState('requesting');
+    try {
+      const next = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      if (!aliveRef.current) {
+        next.getTracks().forEach(t => t.stop());
         return;
       }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
-        streamRef.current = stream;
-        setState('granted');
-        if (videoRef.current) videoRef.current.srcObject = stream;
-      } catch {
-        if (!cancelled) setState('denied');
-      }
-    })();
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      streamRef.current = next;
+      setStream(next);
+      setReason('');
+      setState('granted');
+      setMicOn(true);
+      setCamOn(true);
+    } catch (err) {
+      if (!aliveRef.current) return;
+      setState('denied');
+      setReason(mediaFailureReason(err));
+    }
+  }, []);
+
+  useEffect(() => {
+    aliveRef.current = true;
+    void request();
     return () => {
-      cancelled = true;
+      aliveRef.current = false;
       streamRef.current?.getTracks().forEach(t => t.stop());
     };
-  }, []);
+  }, [request]);
+
+  // Khung tự-view chỉ được render sau khi cấp quyền, nên srcObject phải gắn ở effect chứ không gắn trong request.
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.srcObject = stream;
+  }, [stream]);
 
   const toggleMic = () => {
     const track = streamRef.current?.getAudioTracks()[0];
@@ -133,7 +173,7 @@ const useLocalMedia = () => {
     track.enabled = !track.enabled;
     setCamOn(track.enabled);
   };
-  return { videoRef, state, micOn, camOn, toggleMic, toggleCam };
+  return { videoRef, state, reason, micOn, camOn, request, toggleMic, toggleCam };
 };
 
 /* --------------------------------- RTT probe -------------------------------- */
@@ -201,6 +241,24 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
   const speech = useSpeech();
   const media = useLocalMedia();
   const { rtt, label: rttLabel } = useLatency();
+  const rtc = useLiveTalkingController();
+
+  /** Lý do phòng đang chạy browser TTS thay vì avatar — rỗng khi kênh avatar còn sống. */
+  const [fallbackNote, setFallbackNote] = useState('');
+  const avatarLive = interviewMode === 'avatar' && rtc.link === 'live' && !fallbackNote;
+  const briefRef = useRef<{ skills: string[]; jdText: string }>({ skills: [], jdText: '' });
+
+  useEffect(() => {
+    if (interviewMode !== 'avatar' || !session || session.status === 'COMPLETED' || rtc.link !== 'off') return;
+    void (async () => {
+      briefRef.current = await fetchJobBrief(session.jobId);
+      await rtc.connect(session.jobTitle ?? '', briefRef.current.jdText);
+    })();
+  }, [interviewMode, session, rtc.link]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (rtc.link === 'unavailable' && rtc.reason) setFallbackNote(`${rtc.reason} — phòng chuyển về giọng đọc trình duyệt.`);
+  }, [rtc.link, rtc.reason]);
 
   useEffect(() => {
     if (user?.role === 'ROLE_USER') void fetchResult(sessionId);
@@ -224,23 +282,31 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
   const bootedRef = useRef(false);
   useEffect(() => {
     if (!session || session.mode !== 'AVATAR' || session.status === 'COMPLETED' || bootedRef.current) return;
+    // Chế độ avatar: câu hỏi do AI service sinh nên phải chờ xong bước bắt tay kênh video.
+    if (interviewMode === 'avatar' && (rtc.link === 'off' || rtc.link === 'connecting')) return;
     bootedRef.current = true;
     const src: InterviewTranscriptEntry[] = result?.transcript ?? [];
     const last = src[src.length - 1];
     const idx = session.currentQuestionIndex;
+    // resume giữa phiên: `turn` phải khớp chỉ số lượt BE đã lưu, nếu không lượt kế lặp câu hỏi
+    setTurn(idx);
     if (last && last.index === idx && !last.confirmed) {
       setQuestion(last.questionText);
       setDraft(last.answerText ?? '');
-      speech.speak(last.questionText);
+      if (avatarLive) void rtc.repeat(last.questionText); else speech.speak(last.questionText);
       return;
     }
     void (async () => {
-      const skills = await fetchJobSkills(session.jobId);
-      const q = buildAvatarQuestion(idx, session.jobTitle ?? 'lập trình viên', skills);
+      if (avatarLive) {
+        const ai = await rtc.takeQuestion(true).catch(() => null);
+        if (ai?.questionText) { setQuestion(ai.questionText); return; }
+        setFallbackNote('AI service không trả về câu hỏi — phòng chuyển về giọng đọc trình duyệt.');
+      }
+      const q = buildAvatarQuestion(idx, session.jobTitle ?? 'lập trình viên', briefRef.current.skills);
       setQuestion(q);
       speech.speak(q);
     })();
-  }, [session]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [session, rtc.link, interviewMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     setTurnElapsed(0);
@@ -279,15 +345,25 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
   const nextTurn = async () => {
     if (!draft.trim() || !question || busy || atCap) return;
     setBusy(true);
-    const ok = await submitAnswer(sessionId, { questionText: question, answerText: draft.trim(), durationSec: turnElapsed, confirm: true });
+    const answerText = draft.trim();
+    // BE 012 mới là nơi lưu transcript; đồng bộ sang avatar chỉ để nó giữ hội thoại + sinh câu kế.
+    const ok = await submitAnswer(sessionId, { questionText: question, answerText, durationSec: turnElapsed, confirm: true });
     if (ok) {
       const nextIdx = turn + 1;
       setTurn(nextIdx);
       setDraft('');
-      const skills = await fetchJobSkills(session.jobId);
-      const q = buildAvatarQuestion(nextIdx, session.jobTitle ?? 'lập trình viên', skills);
-      setQuestion(q);
-      speech.speak(q);
+      let next = '';
+      if (avatarLive) {
+        const synced = await rtc.sendAnswer({ answerText, questionIndex: turn, durationSec: turnElapsed, confirm: true }).catch(() => null);
+        next = synced?.next?.questionText ?? '';
+        if (!next && synced) next = (await rtc.takeQuestion(true).catch(() => null))?.questionText ?? '';
+        if (!next) setFallbackNote('Không đồng bộ được lượt trả lời với avatar — phòng chuyển về giọng đọc trình duyệt.');
+      }
+      if (!next) {
+        next = buildAvatarQuestion(nextIdx, session.jobTitle ?? 'lập trình viên', briefRef.current.skills);
+        speech.speak(next);
+      }
+      setQuestion(next);
       void fetchResult(sessionId);
     }
     setBusy(false);
@@ -296,11 +372,13 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
   const runFinish = async () => {
     setConfirmFinish(false);
     speech.stop();
+    rtc.teardown();
     const res = await finishSession(sessionId);
     if (res) navigate(`/mock-interviews/${sessionId}/result`);
   };
 
   const contextLabel = session.jobTitle ?? 'Phòng phỏng vấn AVATAR';
+  const aiSpeaking = avatarLive ? rtc.speaking : speech.speaking;
 
   return (
     <div className="flex flex-col gap-space-md">
@@ -356,6 +434,11 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
       </div>
 
       {error && <ErrorBlock message={error} />}
+      {interviewMode === 'avatar' && fallbackNote && (
+        <p className="m-0 rounded-lg bg-tertiary-fixed/40 px-space-md py-2 text-ds-label-md text-on-tertiary-fixed-variant">
+          {fallbackNote}
+        </p>
+      )}
       {atCap && !finished && (
         <ErrorBlock message="Phiên đã đạt số lượt tối đa, hãy kết thúc để nhận báo cáo." />
       )}
@@ -364,9 +447,32 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
         {/* Hai khung video + câu trả lời */}
         <div className="flex min-w-0 flex-col gap-space-md">
           <div className="grid grid-cols-1 gap-space-md lg:grid-cols-2">
-            {/* AI panel */}
-            <div className="relative flex h-[280px] flex-col rounded-xl bg-inverse-surface p-space-md text-inverse-on-surface shadow-md">
-              <div className="flex items-start justify-between gap-2">
+            {/* AI panel: avatar chiếm trọn khung, phụ đề để ở khối riêng dưới để không che miệng. */}
+            <div className="relative flex h-[280px] flex-col justify-between overflow-hidden rounded-xl bg-inverse-surface p-space-md text-inverse-on-surface shadow-md">
+              {/* Stream avatar từ LiveTalking: WebRTC thì có tiếng ngay, HLS phải bật tiếng bằng một cú click.
+                  Khung video cố định đúng tỷ lệ 3:4 của luồng nên crop không đổi theo chiều rộng tile. */}
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                {interviewMode === 'avatar' && (
+                  <video
+                    ref={rtc.videoRef}
+                    autoPlay
+                    playsInline
+                    className={`h-full w-auto max-w-full aspect-[3/4] object-cover ${avatarLive ? '' : 'hidden'}`}
+                  />
+                )}
+              </div>
+              {rtc.link === 'connecting' && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-inverse-surface/85 text-center">
+                  <span className={`${ICON} animate-pulse text-[30px]`}>handshake</span>
+                  <p className="m-0 text-ds-label-lg font-semibold">Đang kết nối avatar...</p>
+                </div>
+              )}
+              {!avatarLive && rtc.link !== 'connecting' && (
+                <div className="absolute inset-0 flex items-center justify-center text-inverse-on-surface/50">
+                  <span className={`${ICON} text-[42px]`}>smart_toy</span>
+                </div>
+              )}
+              <div className="relative flex flex-wrap items-start justify-between gap-2">
                 <span className="flex items-center gap-2 rounded-lg bg-black/25 px-3 py-1.5">
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-container">
                     <span className={`${ICON} text-[18px] text-on-primary`}>smart_toy</span>
@@ -374,28 +480,9 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
                   <span className="text-ds-label-md font-semibold">Trợ lý AI</span>
                 </span>
                 <span className="flex items-center gap-1.5 rounded-lg bg-black/25 px-3 py-1.5 text-ds-label-sm">
-                  <span className={`h-2 w-2 rounded-full ${speech.speaking ? 'animate-pulse bg-secondary-teal' : 'bg-outline'}`} />
-                  {speech.speaking ? 'AI đang nói' : 'Đang chờ trả lời'}
+                  <span className={`h-2 w-2 rounded-full ${aiSpeaking ? 'animate-pulse bg-secondary-teal' : 'bg-outline'}`} />
+                  {aiSpeaking ? 'AI đang nói' : 'Đang chờ trả lời'}
                 </span>
-              </div>
-              <div className="mt-6 min-h-0 flex-1 overflow-y-auto rounded-lg bg-black/30 p-space-md backdrop-blur-sm">
-                <div className="flex items-center justify-between text-ds-label-sm text-inverse-on-surface/70">
-                  <span className="flex items-center gap-1">
-                    <span className={`${ICON} text-[16px]`}>subtitles</span> Phụ đề AI
-                  </span>
-                  <span className="tabular-nums">Câu {turn + 1}</span>
-                </div>
-                <p className="mt-1 text-ds-body-md leading-relaxed">“{question || 'Đang chuẩn bị câu hỏi...'}”</p>
-                <button
-                  type="button"
-                  onClick={() => speech.speak(question)}
-                  disabled={!speech.supported || !question}
-                  className={adminButton('soft', 'mt-2 h-9 disabled:opacity-40')}
-                  title={speech.supported ? 'AI đọc lại câu hỏi bằng giọng của trình duyệt' : 'Trình duyệt không hỗ trợ đọc giọng nói'}
-                >
-                  <span className={`${ICON} text-[16px]`}>volume_up</span>
-                  Nghe lại
-                </button>
               </div>
             </div>
 
@@ -411,13 +498,22 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
                 />
               ) : (
                 <div className="flex flex-col items-center gap-2 p-space-lg text-center text-inverse-on-surface/80">
-                  <span className={`${ICON} text-[34px]`}>videocam_off</span>
+                  <span className={`${ICON} text-[34px]`}>{media.state === 'requesting' ? 'hourglass_top' : 'videocam_off'}</span>
                   <p className="m-0 text-ds-label-lg font-semibold">
-                    {media.state === 'denied' ? 'Không truy cập được camera' : 'Đang xin quyền camera...'}
+                    {media.state === 'requesting' ? 'Đang mở camera...' : 'Chưa bật được mic và camera'}
                   </p>
-                  <p className="m-0 text-ds-body-sm">
-                    Bạn vẫn gõ được câu trả lời — transcript không cần camera.
+                  <p className="m-0 max-w-[44ch] text-ds-body-sm">
+                    {media.reason || 'Bấm nút dưới để trình duyệt hỏi quyền dùng camera và micro.'}
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => void media.request()}
+                    disabled={media.state === 'requesting'}
+                    className={adminButton('primary', 'h-9 mt-1 disabled:opacity-40')}
+                  >
+                    <span className={`${ICON} text-[16px]`}>videocam</span>
+                    {media.state === 'denied' ? 'Xin lại quyền' : 'Bật mic và camera'}
+                  </button>
                 </div>
               )}
               <span className="absolute left-3 top-3 flex items-center gap-1.5 rounded-lg bg-black/40 px-3 py-1.5 text-ds-label-md text-inverse-on-surface">
@@ -429,6 +525,51 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
                   <span className={`${ICON} text-[14px]`}>{media.micOn ? 'mic' : 'mic_off'}</span>
                   {media.micOn ? 'Mic bật' : 'Mic tắt'}
                 </span>
+              )}
+            </div>
+          </div>
+
+          {/* Phụ đề + điều khiển giọng đọc, nằm ngoài khung video để avatar không bị che mặt. */}
+          <div className="rounded-xl bg-inverse-surface p-space-md text-inverse-on-surface shadow-sm">
+            <div className="flex items-center justify-between text-ds-label-sm text-inverse-on-surface/70">
+              <span className="flex items-center gap-1">
+                <span className={`${ICON} text-[16px]`}>subtitles</span> Phụ đề AI
+              </span>
+              <span className="tabular-nums">Câu {turn + 1}</span>
+            </div>
+            <p className="mt-1 text-ds-body-md leading-relaxed">“{question || 'Đang chuẩn bị câu hỏi...'}”</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {rtc.needsPlayGesture && (
+                <button
+                  type="button"
+                  onClick={rtc.enableSound}
+                  className={adminButton('primary', 'h-9')}
+                  title="Trình duyệt chặn tiếng tự động, bấm để avatar nói"
+                >
+                  <span className={`${ICON} text-[16px]`}>volume_up</span>
+                  Bật tiếng avatar
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => (avatarLive ? void rtc.repeat(question) : speech.speak(question))}
+                disabled={!question || (!avatarLive && !speech.supported)}
+                className={adminButton('soft', 'h-9 bg-surface-container-lowest disabled:opacity-40')}
+                title={avatarLive ? 'Avatar đọc lại câu hỏi' : speech.supported ? 'AI đọc lại câu hỏi bằng giọng của trình duyệt' : 'Trình duyệt không hỗ trợ đọc giọng nói'}
+              >
+                <span className={`${ICON} text-[16px]`}>volume_up</span>
+                Nghe lại
+              </button>
+              {rtc.speaking && (
+                <button
+                  type="button"
+                  onClick={() => void rtc.interruptSpeaking()}
+                  className={adminButton('soft', 'h-9 bg-surface-container-lowest')}
+                  title="Avatar đang đọc, bấm để ngừng"
+                >
+                  <span className={`${ICON} text-[16px]`}>stop_circle</span>
+                  Ngừng đọc
+                </button>
               )}
             </div>
           </div>
@@ -455,11 +596,11 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
               className="mt-2 min-h-[120px] w-full resize-y rounded-lg border border-outline-variant bg-surface-container-lowest p-3 text-ds-body-md text-on-surface placeholder:text-outline focus:border-primary focus:outline-none disabled:opacity-50"
             />
             <div ref={devicesRef} className="mt-3 flex flex-wrap items-center gap-2">
-              <button type="button" onClick={media.toggleMic} disabled={media.state !== 'granted'} className={adminButton('ghost', 'h-11 disabled:opacity-40')}>
+              <button type="button" onClick={media.toggleMic} disabled={media.state !== 'granted'} title={media.state === 'granted' ? 'Tắt/bật micro trong phiên' : 'Bấm "Bật mic và camera" ở khung video để cấp quyền trước'} className={adminButton('ghost', 'h-11 disabled:opacity-40')}>
                 <span className={`${ICON} text-[18px]`}>{media.micOn ? 'mic' : 'mic_off'}</span>
                 {media.micOn ? 'Bật mic' : 'Tắt mic'}
               </button>
-              <button type="button" onClick={media.toggleCam} disabled={media.state !== 'granted'} className={adminButton('ghost', 'h-11 disabled:opacity-40')}>
+              <button type="button" onClick={media.toggleCam} disabled={media.state !== 'granted'} title={media.state === 'granted' ? 'Tắt/bật camera trong phiên' : 'Bấm "Bật mic và camera" ở khung video để cấp quyền trước'} className={adminButton('ghost', 'h-11 disabled:opacity-40')}>
                 <span className={`${ICON} text-[18px]`}>{media.camOn ? 'videocam' : 'videocam_off'}</span>
                 Camera
               </button>
@@ -556,7 +697,8 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
             {media.state === 'granted'
               ? `${media.micOn ? 'Micro đang bật' : 'Micro đang tắt'} • ${media.camOn ? 'Camera đang bật' : 'Camera đang tắt'}`
               : 'Chưa cấp quyền thiết bị — transcript vẫn ghi bình thường'}
-            {speech.supported ? ' • Giọng đọc: trình duyệt' : ' • Trình duyệt không hỗ trợ giọng đọc'}
+            {avatarLive ? ' • Giọng đọc: avatar LiveTalking'
+              : speech.supported ? ' • Giọng đọc: trình duyệt' : ' • Trình duyệt không hỗ trợ giọng đọc'}
           </div>
         </aside>
       </div>

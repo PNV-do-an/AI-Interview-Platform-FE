@@ -142,10 +142,10 @@ const MockInterviewsPage = () => {
                   ? 'bg-primary text-white' 
                   : 'bg-surface-container-lowest text-on-surface-variant'
               }`}
-              disabled={!import.env?.REACT_APP_AI_SERVICE_URL}
-              title={!import.env?.REACT_APP_AI_SERVICE_URL ? "Chưa cấu hình AI service URL" : undefined}
+              disabled={!process.env.REACT_APP_AI_SERVICE_URL}
+              title={!process.env.REACT_APP_AI_SERVICE_URL ? "Chưa cấu hình AI service URL" : undefined}
             >
-              LiveTalking Avatar {import.env?.REACT_APP_AI_SERVICE_URL && '(Real)'}
+              LiveTalking Avatar {process.env.REACT_APP_AI_SERVICE_URL && '(Real)'}
             </button>
           </div>
         </div>

@@ -1,141 +1,119 @@
 /**
- * AI Service API - Gọi Python FastAPI wrapper (port 8020) thay vì Browser TTS.
- * FastAPI gọi tiếp LiveTalking (port 8010) để:
- * - sinh câu hỏi qua LLM
- * - tổng hợp giọng nói qua EdgeTTS
- * - trả về transcript qua faster-whisper
+ * AI service (FastAPI, `AI_SERVICE_URL`, mặc định cổng 8020) — cầu nối FE ↔ LiveTalking.
+ *
+ * Hợp đồng lấy trực tiếp từ `app/main.py` + `app/sessions.py` của repo BE: thân trả về là
+ * **JSON trần**, không bọc `{success, data}` như BE Java, nên mọi chỗ đọc `res.data.data` sẽ
+ * ra `undefined`. Route khớp 1:1 với `InterviewAiEngine` phía python:
+ *   GET  /health                                      -> {status, avatarSessions, ...}
+ *   POST /api/v1/ai/avatar/offer  {sdp,type}          -> {answerSdp, answerType, avatarSessionId}
+ *   POST /api/v1/ai/session       {jobTitle,jdText,avatarSessionId} -> {sessionid,maxTurns,rubricVersion}
+ *   GET  /api/v1/ai/session/{sid}/question?speak=     -> {sessionid,index,questionText,done}
+ *   POST /api/v1/ai/session/{sid}/answer              -> {sessionid,index,answerText,confirmed,next?}
+ *   POST /api/v1/ai/session/{sid}/speak  {text}       -> {sessionid,chars}
+ *   GET  /api/v1/ai/session/{sid}/speaking            -> {speaking}
+ *   POST /api/v1/ai/session/{sid}/interrupt           -> {sessionid,interrupted}
+ *   DELETE /api/v1/ai/session/{sid}                   -> {sessionid,deleted}
  */
 import httpService from './http.service';
-import { ApiResponse } from '../models/Api.model';
 
-const AI_SERVICE_URL = process.env.REACT_APP_AI_SERVICE_URL || 'http://localhost:8020';
+const AI_SERVICE_URL = process.env.REACT_APP_AI_SERVICE_URL || '';
 
-interface AvatarOfferInput {
-  sdp: string;
-  type: string;
+/** `avatarSessions === -1` nghĩa là AI service sống nhưng không với tới tiến trình avatar. */
+export interface AiHealth {
+  status: string;
+  avatarServer: string;
+  avatarId: string;
+  /** Có giá trị = avatar được publish qua HTTPS (HLS), FE không cần bắt tay WebRTC. */
+  mediaUrl: string;
+  avatarSessions: number;
+  sttModel: string;
+  llmProvider: string;
+  openSessions: number;
+  maxTurns: number;
+  rubricVersion: string;
 }
 
-interface OfferResponse {
+export interface AvatarOffer {
   answerSdp: string;
   answerType: string;
   avatarSessionId: string;
 }
 
-interface SessionCreateInput {
-  jobTitle: string;
-  jdText: string;
-  avatarSessionId: string;
+export interface AiSession {
+  sessionid: string;
+  maxTurns: number;
+  rubricVersion: string;
 }
 
-interface QuestionResponse {
+export interface AiQuestion {
   sessionid: string;
   index: number;
-  questionText: string;
-  done?: boolean;
-  next?: {
-    sessionid: string;
-    index: number;
-    questionText: string;
-    done?: boolean;
-  };
+  /** `null` kèm `done=true` khi LLM báo hết bộ câu hỏi. */
+  questionText: string | null;
+  done: boolean;
 }
 
-interface AnswerInput {
-  questionText: string;
-  answerText: string;
-  questionIndex: number;
-  durationSec?: number;
-  confirm?: boolean;
-}
-
-export interface AiTranscriptEntry {
+export interface AiAnswer {
   sessionid: string;
   index: number;
-  questionText: string;
   answerText: string;
   confirmed: boolean;
-  durationSec?: number;
+  durationSec?: number | null;
+  /** Câu hỏi lượt kế, chỉ có khi `confirm=true` (python `ask_next`). */
+  next?: AiQuestion;
 }
 
 const AIService = {
-  /** Tạo phiên WebRTC với LiveTalking */
-  offerAvatar: async (sdpOffer: string): Promise<OfferResponse> => {
-    const res = await httpService.post<ApiResponse<OfferResponse>>(
+  /** Có URL cấu hình nghĩa là FE sẽ thử nối avatar; chưa có là đi thẳng luồng browser TTS. */
+  isConfigured: () => AI_SERVICE_URL.trim() !== '',
+
+  health: async (signal?: AbortSignal) =>
+    (await httpService.get<AiHealth>(`${AI_SERVICE_URL}/health`, { baseURL: '', signal })).data,
+
+  /** Đổi SDP của trình duyệt lấy answer SDP + sessionid của LiveTalking. */
+  offerAvatar: async (sdpOffer: string, signal?: AbortSignal) =>
+    (await httpService.post<AvatarOffer>(
       `${AI_SERVICE_URL}/api/v1/ai/avatar/offer`,
-      { sdp: sdpOffer, type: 'offer' } as AvatarOfferInput,
-      { baseURL: '' } // không có BASE, gọi thẳng AI service URL
-    );
-    return res.data.data!;
-  },
+      { sdp: sdpOffer, type: 'offer' },
+      { baseURL: '', signal },
+    )).data,
 
-  /** Tạo phiên phỏng vấn trên BE + liên kết với avatar session */
-  createSession: async (input: SessionCreateInput) => {
-    const res = await httpService.post<ApiResponse<{ sessionid: string; maxTurns: number; rubricVersion: string }>>(
-      `${AI_SERVICE_URL}/api/v1/ai/session`,
-      input
-    );
-    return res.data.data!;
-  },
+  createSession: async (input: { jobTitle: string; jdText: string; avatarSessionId: string }) =>
+    (await httpService.post<AiSession>(`${AI_SERVICE_URL}/api/v1/ai/session`, input, { baseURL: '' })).data,
 
-  /** Lấy câu hỏi của lượt hiện tại */
-  getQuestion: async (sessionId: string, speak = true): Promise<QuestionResponse> => {
-    const params = new URLSearchParams({ speak: String(speak) });
-    const res = await httpService.get<ApiResponse<QuestionResponse>>(
-      `${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}/question?${params}`
-    );
-    return res.data.data!;
-  },
+  getQuestion: async (sessionId: string, speak = true) =>
+    (await httpService.get<AiQuestion>(
+      `${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}/question?speak=${speak}`,
+      { baseURL: '' },
+    )).data,
 
-  /** Gửi câu trả lời (text hoặc audio) */
-  submitAnswer: async (sessionId: string, input: AnswerInput) => {
-    const res = await httpService.post<ApiResponse<{ sessionid: string; index: number; answerText: string; confirmed: boolean }>>(
-      `${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}/answer`,
-      input
-    );
-    return res.data.data!;
-  },
+  /** Gõ chữ — đường lùi khi micro bị từ chối hoặc STT hỏng. */
+  submitAnswer: async (sessionId: string, input: {
+    questionIndex?: number; answerText: string; durationSec?: number; confirm?: boolean;
+  }) =>
+    (await httpService.post<AiAnswer>(
+      `${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}/answer`, input, { baseURL: '' },
+    )).data,
 
-  /** Gửi âm thanh (multipart form-data) */
-  submitAudio: async (sessionId: string, audioFile: File, durationSec?: number) => {
-    const formData = new FormData();
-    formData.append('file', audioFile, audioFile.name);
-    if (durationSec) formData.append('durationSec', durationSec.toString());
-    
-    const res = await httpService.post<ApiResponse<{ sessionid: string; index: number; answerText: string; confirmed: boolean }>>(
-      `${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}/answer/audio`,
-      formData,
-      { headers: { 'Content-Type': 'multipart/form-data' } }
-    );
-    return res.data.data!;
-  },
+  /** Cho avatar nhắc lại một câu cố định (nút "Nghe lại"). */
+  speak: async (sessionId: string, text: string) =>
+    (await httpService.post<{ sessionid: string; chars: number }>(
+      `${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}/speak`, { text }, { baseURL: '' },
+    )).data,
 
-  /** Đọc trạng thái đang nói hay không */
-  isSpeaking: async (sessionId: string): Promise<boolean> => {
-    const res = await httpService.get<ApiResponse<{ speaking: boolean }>>(
-      `${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}/speaking`
-    );
-    return res.data.data?.speaking ?? false;
-  },
+  isSpeaking: async (sessionId: string) =>
+    (await httpService.get<{ speaking: boolean }>(
+      `${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}/speaking`, { baseURL: '' },
+    )).data.speaking,
 
-  /** Chốt transcript và chấm rubric */
-  evaluate: async (sessionId: string) => {
-    const res = await httpService.post<ApiResponse<any>>(
-      `${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}/evaluate`
-    );
-    return res.data.data!;
-  },
+  interrupt: async (sessionId: string) =>
+    (await httpService.post<{ sessionid: string; interrupted: boolean }>(
+      `${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}/interrupt`, {}, { baseURL: '' },
+    )).data,
 
-  /** Lấy toàn bộ transcript */
-  getTranscript: async (sessionId: string): Promise<AiTranscriptEntry[]> => {
-    const res = await httpService.get<ApiResponse<{ sessionid: string; transcript: AiTranscriptEntry[] }>>(
-      `${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}/transcript`
-    );
-    return res.data.data?.transcript ?? [];
-  },
-
-  /** Xóa phiên */
+  /** Xóa transcript trong bộ nhớ python khi FE đóng phiên; điểm vẫn nằm ở BE. */
   deleteSession: async (sessionId: string) => {
-    await httpService.delete(`${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}`);
+    await httpService.delete(`${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}`, { baseURL: '' });
   },
 };
 
