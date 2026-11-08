@@ -51,6 +51,8 @@ export const useLiveTalkingController = () => {
   const [mediaSource, setMediaSource] = useState<'webrtc' | 'hls' | null>(null);
   /** HLS bị Chrome chặn tự phát có tiếng cho tới khi người dùng tương tác — UI phải cho nút bật tiếng. */
   const [needsPlayGesture, setNeedsPlayGesture] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [soundError, setSoundError] = useState('');
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
@@ -71,6 +73,8 @@ export const useLiveTalkingController = () => {
     pcRef.current = null;
     setMediaSource(null);
     setNeedsPlayGesture(false);
+    setSoundEnabled(false);
+    setSoundError('');
     const sid = sessionIdRef.current;
     if (sid) { sessionIdRef.current = ''; setAiSessionId(''); void AIService.deleteSession(sid).catch(() => undefined); }
   }, [stopPolling]);
@@ -115,7 +119,10 @@ export const useLiveTalkingController = () => {
       hls.loadSource(mediaUrl);
       hls.attachMedia(el);
     }
-    el.muted = true; // Chrome chỉ tự phát khi tiếng bị tắt; bật tiếng cần một cú click của ứng viên
+    el.muted = true;
+    el.volume = 1;
+    setSoundEnabled(false);
+    setSoundError('');
     void el.play().catch(() => undefined);
     setNeedsPlayGesture(true);
   }, [failMedia]);
@@ -213,15 +220,36 @@ export const useLiveTalkingController = () => {
     try { await AIService.speak(sessionIdRef.current, text); } catch { /* bỏ qua, đã có phụ đề */ }
   }, []);
 
+  const toggleSound = useCallback(async () => {
+    const el = videoRef.current;
+    if (!el) return;
+    if (!el.muted) {
+      el.muted = true;
+      setSoundEnabled(false);
+      setSoundError('');
+      return;
+    }
+
+    el.volume = 1;
+    el.muted = false;
+    setSoundError('');
+    try {
+      await el.play();
+      setSoundEnabled(true);
+      setNeedsPlayGesture(false);
+    } catch (error) {
+      el.muted = true;
+      setSoundEnabled(false);
+      setNeedsPlayGesture(true);
+      setSoundError(error instanceof Error && error.name === 'NotAllowedError'
+        ? 'Chrome vẫn chặn phát tiếng. Hãy kiểm tra quyền âm thanh của trang và thử lại.'
+        : 'Không phát được âm thanh avatar. Kiểm tra loa/tab Chrome hoặc kết nối HLS rồi thử lại.');
+    }
+  }, []);
+
   return {
-    link, reason, speaking, aiSessionId, mediaSource, needsPlayGesture, videoRef,
+    link, reason, speaking, aiSessionId, mediaSource, needsPlayGesture, soundEnabled, soundError, videoRef,
     connect, takeQuestion, sendAnswer, repeat, interruptSpeaking, teardown,
-    /** Nút "Bật tiếng": Chrome chặn tự phát có tiếng tới khi người dùng tương tác. */
-    enableSound: () => {
-      const el = videoRef.current;
-      if (!el) return;
-      el.muted = false;
-      void el.play().then(() => setNeedsPlayGesture(false), () => setNeedsPlayGesture(true));
-    },
+    toggleSound,
   };
 };

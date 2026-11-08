@@ -7,11 +7,12 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import httpService from '../../services/http.service';
+import AIService from '../../services/ai.service';
 import ProgramService from '../../services/program.service';
 import { useLiveTalkingController } from '../../controllers/useLiveTalkingController';
 import { useMockInterviewController } from '../../controllers/useMockInterviewController';
 import { useAuth } from '../../context/AuthContext';
+import { useSpeechInput } from '../../hooks/useSpeechInput';
 import { InterviewTranscriptEntry } from '../../models/Interview.model';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { ICON } from '../components/candidateKit';
@@ -182,21 +183,31 @@ const useLatency = () => {
   const [rtt, setRtt] = useState<number | null>(null);
   useEffect(() => {
     let alive = true;
+    let activeRequest: AbortController | null = null;
+    if (!AIService.isConfigured()) return () => { alive = false; };
     const probe = async () => {
+      if (activeRequest) return;
+      const controller = new AbortController();
+      activeRequest = controller;
       const t0 = performance.now();
       try {
-        await httpService.get('/api/v1/packages');
+        await AIService.healthAtUrl(AIService.getServiceUrl(), controller.signal);
         if (alive) setRtt(Math.round(performance.now() - t0));
       } catch {
         if (alive) setRtt(null);
+      } finally {
+        if (activeRequest === controller) activeRequest = null;
       }
     };
     void probe();
     const id = setInterval(probe, 15000);
-    return () => { alive = false; clearInterval(id); };
+    return () => {
+      alive = false;
+      clearInterval(id);
+      activeRequest?.abort();
+    };
   }, []);
-  const label = rtt == null ? null : rtt < 100 ? 'Rất ổn định' : rtt < 300 ? 'Ổn định' : 'Kém ổn định';
-  return { rtt, label };
+  return { rtt };
 };
 
 /* ----------------------------------- page ----------------------------------- */
@@ -240,7 +251,8 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
 
   const speech = useSpeech();
   const media = useLocalMedia();
-  const { rtt, label: rttLabel } = useLatency();
+  const voiceInput = useSpeechInput(setDraft);
+  const { rtt } = useLatency();
   const rtc = useLiveTalkingController();
 
   /** Lý do phòng đang chạy browser TTS thay vì avatar — rỗng khi kênh avatar còn sống. */
@@ -342,8 +354,14 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
     clearMessages();
   };
 
+  const toggleMediaMic = () => {
+    if (media.micOn && voiceInput.listening) voiceInput.stop();
+    media.toggleMic();
+  };
+
   const nextTurn = async () => {
     if (!draft.trim() || !question || busy || atCap) return;
+    voiceInput.stop();
     setBusy(true);
     const answerText = draft.trim();
     // BE 012 mới là nơi lưu transcript; đồng bộ sang avatar chỉ để nó giữ hội thoại + sinh câu kế.
@@ -372,6 +390,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
   const runFinish = async () => {
     setConfirmFinish(false);
     speech.stop();
+    voiceInput.stop();
     rtc.teardown();
     const res = await finishSession(sessionId);
     if (res) navigate(`/mock-interviews/${sessionId}/result`);
@@ -395,7 +414,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
           </span>
           {rtt != null && (
             <Pill tone={rtt < 300 ? 'success' : 'warning'} icon="wifi">
-              {rtt}ms {rttLabel ? `(${rttLabel})` : ''}
+              AI {rtt}ms
             </Pill>
           )}
         </div>
@@ -539,16 +558,21 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
             </div>
             <p className="mt-1 text-ds-body-md leading-relaxed">“{question || 'Đang chuẩn bị câu hỏi...'}”</p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              {rtc.needsPlayGesture && (
+              {avatarLive && rtc.mediaSource === 'hls' && (
                 <button
                   type="button"
-                  onClick={rtc.enableSound}
-                  className={adminButton('primary', 'h-9')}
-                  title="Trình duyệt chặn tiếng tự động, bấm để avatar nói"
+                  onClick={() => void rtc.toggleSound()}
+                  className={adminButton(rtc.soundEnabled ? 'soft' : 'primary', 'h-9')}
+                  title={rtc.soundEnabled ? 'Tắt tiếng video avatar' : 'Bật tiếng video avatar'}
                 >
-                  <span className={`${ICON} text-[16px]`}>volume_up</span>
-                  Bật tiếng avatar
+                  <span className={`${ICON} text-[16px]`}>{rtc.soundEnabled ? 'volume_off' : 'volume_up'}</span>
+                  {rtc.soundEnabled ? 'Tắt tiếng avatar' : 'Bật tiếng avatar'}
                 </button>
+              )}
+              {rtc.soundError && (
+                <span role="status" className="text-ds-label-sm text-error-container">
+                  {rtc.soundError}
+                </span>
               )}
               <button
                 type="button"
@@ -574,12 +598,12 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
             </div>
           </div>
 
-          {/* Ô trả lời (thay cho STT — gõ transcript) */}
+          {/* Ô trả lời; Chrome nhận dạng tiếng nói và chèn transcript để ứng viên kiểm tra trước khi gửi. */}
           <div className="rounded-xl bg-surface-container-lowest p-space-md shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="flex items-center gap-1.5 text-ds-label-lg font-bold text-secondary-teal">
                 <span className={`${ICON} text-[18px]`}>edit_note</span>
-                Bạn đang trả lời (bản ghi chữ)
+                Câu trả lời của bạn
               </span>
               <span className="flex items-center gap-2 text-ds-label-sm text-outline tabular-nums">
                 {savingDraft ? 'Đang lưu nháp...' : draft.trim() ? 'Nháp đã lưu lên phiên' : ''}
@@ -592,13 +616,30 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
               onChange={e => setDraft(e.target.value)}
               onBlur={() => void saveDraft()}
               disabled={finished || atCap}
-              placeholder="Gõ câu trả lời của bạn cho câu hỏi ở khung Phụ đề AI..."
+              placeholder="Gõ hoặc bấm “Bắt đầu nói” để trả lời. Transcript sẽ hiện ở đây để bạn kiểm tra trước khi gửi..."
               className="mt-2 min-h-[120px] w-full resize-y rounded-lg border border-outline-variant bg-surface-container-lowest p-3 text-ds-body-md text-on-surface placeholder:text-outline focus:border-primary focus:outline-none disabled:opacity-50"
             />
+            {(voiceInput.listening || voiceInput.interimTranscript || voiceInput.error) && (
+              <p aria-live="polite" className={`mt-2 text-ds-label-sm ${voiceInput.error ? 'text-error' : 'text-secondary-teal'}`}>
+                {voiceInput.error || (voiceInput.listening
+                  ? `Đang nghe tiếng Việt...${voiceInput.interimTranscript ? ` ${voiceInput.interimTranscript}` : ''}`
+                  : voiceInput.interimTranscript)}
+              </p>
+            )}
             <div ref={devicesRef} className="mt-3 flex flex-wrap items-center gap-2">
-              <button type="button" onClick={media.toggleMic} disabled={media.state !== 'granted'} title={media.state === 'granted' ? 'Tắt/bật micro trong phiên' : 'Bấm "Bật mic và camera" ở khung video để cấp quyền trước'} className={adminButton('ghost', 'h-11 disabled:opacity-40')}>
+              <button
+                type="button"
+                onClick={voiceInput.listening ? voiceInput.stop : voiceInput.start}
+                disabled={!voiceInput.supported || finished || atCap || (media.state === 'granted' && !media.micOn)}
+                title={voiceInput.supported ? 'Nhận dạng tiếng Việt bằng Chrome; bản ghi sẽ chèn vào ô trả lời' : 'Trình duyệt không hỗ trợ nhận dạng giọng nói'}
+                className={adminButton(voiceInput.listening ? 'danger' : 'soft', 'h-11 disabled:opacity-40')}
+              >
+                <span className={`${ICON} text-[18px]`}>{voiceInput.listening ? 'stop_circle' : 'keyboard_voice'}</span>
+                {voiceInput.listening ? 'Dừng nói' : 'Bắt đầu nói'}
+              </button>
+              <button type="button" onClick={toggleMediaMic} disabled={media.state !== 'granted'} title={media.state === 'granted' ? 'Tắt/bật track micro của thiết bị' : 'Bấm "Bật mic và camera" ở khung video để cấp quyền trước'} className={adminButton('ghost', 'h-11 disabled:opacity-40')}>
                 <span className={`${ICON} text-[18px]`}>{media.micOn ? 'mic' : 'mic_off'}</span>
-                {media.micOn ? 'Bật mic' : 'Tắt mic'}
+                {media.micOn ? 'Tắt mic thiết bị' : 'Bật mic thiết bị'}
               </button>
               <button type="button" onClick={media.toggleCam} disabled={media.state !== 'granted'} title={media.state === 'granted' ? 'Tắt/bật camera trong phiên' : 'Bấm "Bật mic và camera" ở khung video để cấp quyền trước'} className={adminButton('ghost', 'h-11 disabled:opacity-40')}>
                 <span className={`${ICON} text-[18px]`}>{media.camOn ? 'videocam' : 'videocam_off'}</span>

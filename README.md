@@ -34,7 +34,8 @@ Browser TTS mode works immediately on production. For full LiveTalking Avatar wi
 4. **Test Production:**
    - Hard refresh (Ctrl+Shift+R)
    - Toggle "LiveTalking Avatar" mode.
-   - Start interview to verify WebRTC connection ✅
+   - Start interview and click **Bật tiếng avatar** in the subtitle panel; the HLS stream starts muted to satisfy browser autoplay rules.
+   - If the button switches to **Tắt tiếng avatar** but audio is still inaudible, check the Chrome tab mute state and the selected Windows output device.
 
 ---
 
@@ -59,6 +60,18 @@ Colab thay đổi sau mỗi lần khởi động. Chỉ nhập origin của AI s
 Để trình duyệt cho phép kết nối, AI service cần cấu hình CORS với origin của frontend
 (production: `https://aiinterview-vn.vercel.app`; local: `http://localhost:3000`).
 Không lưu API key ở URL này.
+
+### Trả lời bằng giọng nói trên Chrome
+
+Trong phòng phỏng vấn, bấm **Bắt đầu nói** để Chrome nhận dạng tiếng Việt và chèn transcript
+vào ô trả lời. Có thể sửa transcript rồi bấm **Trả lời & Tiếp** để lưu câu trả lời. Bấm
+**Dừng nói** để kết thúc nhận dạng. Nếu Chrome hỏi quyền, hãy cho phép micro cho trang web.
+Nhận dạng giọng nói phụ thuộc Web Speech API và kết nối mạng của trình duyệt; audio không được
+gửi tới AI service trên Colab. Nếu trình duyệt hoặc dịch vụ nhận dạng không hỗ trợ, có thể gõ
+câu trả lời như trước.
+
+Chỉ số **AI ... ms** trong phòng đo thời gian phản hồi của endpoint `/health` trên AI service,
+không đo thời gian sinh câu hỏi hay toàn bộ độ trễ của cuộc hội thoại.
 
 ## Kiểm tra trước khi push
 
