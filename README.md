@@ -2,9 +2,9 @@
 
 React 18 + TypeScript (Create React App) + Tailwind. Giao diện cho ứng viên, nhà tuyển dụng và admin.
 
-## 🚀 Deploy LiveTalking AI Interview Mode
+## LiveTalking AI interview
 
-### Status: ✅ READY TO DEPLOY (Awaiting Colab Setup)
+The LiveTalking avatar connects to the AI service URL configured at runtime in the browser.
 
 Browser TTS mode works immediately on production. For full LiveTalking Avatar with video call + lip-sync:
 
@@ -24,23 +24,16 @@ Browser TTS mode works immediately on production. For full LiveTalking Avatar wi
    - Cell 6-7: Verify health & get info
    ```
 
-2. **Configure Vercel Environment Variable:**
-   ```
-   Dashboard: https://vercel.com/dashboard/projects/ai-interview9/settings/environment-variables
-   Add NEW variable:
-     Key: REACT_APP_AI_SERVICE_URL
-     Value: [ngrok-url-from-cell-5] 
-     Example: https://deforest-unmoved-emphases.ngrok-free.dev
-   ```
+2. **Configure the frontend:** Open `/mock-interviews`, select **LiveTalking Avatar**, paste the AI URL printed by Colab, then select **Kiểm tra & lưu**. The URL is stored in this browser; no Vercel environment variable or rebuild is needed when a Colab tunnel changes.
 
 3. **Trigger Redeploy:**
-   - This commit will automatically bump submodule in superrepo
+   - Merge the frontend change into `dev`; a successful push automatically bumps the frontend submodule in the superrepo.
    - Wait 5-10 minutes for full CI/CD pipeline to complete
    - Check https://aiinterview-vn.vercel.app/mock-interviews
 
 4. **Test Production:**
    - Hard refresh (Ctrl+Shift+R)
-   - Toggle "LiveTalking Avatar" mode ← Now active!
+   - Toggle "LiveTalking Avatar" mode.
    - Start interview to verify WebRTC connection ✅
 
 ---
