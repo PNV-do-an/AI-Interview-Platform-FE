@@ -14,9 +14,35 @@
  *   POST /api/v1/ai/session/{sid}/interrupt           -> {sessionid,interrupted}
  *   DELETE /api/v1/ai/session/{sid}                   -> {sessionid,deleted}
  */
-import httpService from './http.service';
+import axios from 'axios';
 
-const AI_SERVICE_URL = process.env.REACT_APP_AI_SERVICE_URL || '';
+const AI_SERVICE_URL_KEY = 'ai_service_url';
+const BUILD_AI_SERVICE_URL = (process.env.REACT_APP_AI_SERVICE_URL || '').trim();
+const aiHttp = axios.create();
+
+const normalizeServiceUrl = (value: string): string => {
+  let url: URL;
+  try {
+    url = new URL(value.trim());
+  } catch {
+    throw new Error('Nhập URL đầy đủ, ví dụ https://ten-tunnel.trycloudflare.com.');
+  }
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password ||
+      url.search || url.hash || value.includes('?') || value.includes('#')) {
+    throw new Error('URL AI service phải dùng HTTP/HTTPS và không chứa tài khoản, query hoặc fragment.');
+  }
+  return url.toString().replace(/\/+$/, '');
+};
+
+const serviceUrl = (): string => {
+  const saved = window.localStorage.getItem(AI_SERVICE_URL_KEY);
+  return (saved ?? BUILD_AI_SERVICE_URL).trim().replace(/\/+$/, '');
+};
+
+const serviceEndpoint = (path: string, baseUrl = serviceUrl()): string => {
+  if (!baseUrl) throw new Error('Chưa cấu hình URL của AI service.');
+  return `${baseUrl}${path}`;
+};
 
 /** `avatarSessions === -1` nghĩa là AI service sống nhưng không với tới tiến trình avatar. */
 export interface AiHealth {
@@ -64,26 +90,49 @@ export interface AiAnswer {
 }
 
 const AIService = {
+  /** URL runtime lưu trên trình duyệt được ưu tiên hơn cấu hình lúc build. */
+  getServiceUrl: serviceUrl,
+
+  setServiceUrl: (value: string): string => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      window.localStorage.removeItem(AI_SERVICE_URL_KEY);
+      return serviceUrl();
+    }
+    const normalized = normalizeServiceUrl(trimmed);
+    window.localStorage.setItem(AI_SERVICE_URL_KEY, normalized);
+    return normalized;
+  },
+
+  normalizeServiceUrl,
+
   /** Có URL cấu hình nghĩa là FE sẽ thử nối avatar; chưa có là đi thẳng luồng browser TTS. */
-  isConfigured: () => AI_SERVICE_URL.trim() !== '',
+  isConfigured: () => serviceUrl() !== '',
 
   health: async (signal?: AbortSignal) =>
-    (await httpService.get<AiHealth>(`${AI_SERVICE_URL}/health`, { baseURL: '', signal })).data,
+    (await aiHttp.get<AiHealth>(serviceEndpoint('/health'), { baseURL: '', signal })).data,
+
+  healthAtUrl: async (url: string, signal?: AbortSignal) => {
+    const baseUrl = normalizeServiceUrl(url);
+    return (await aiHttp.get<AiHealth>(serviceEndpoint('/health', baseUrl),
+      { baseURL: '', signal, timeout: 6000 })).data;
+  },
 
   /** Đổi SDP của trình duyệt lấy answer SDP + sessionid của LiveTalking. */
   offerAvatar: async (sdpOffer: string, signal?: AbortSignal) =>
-    (await httpService.post<AvatarOffer>(
-      `${AI_SERVICE_URL}/api/v1/ai/avatar/offer`,
+    (await aiHttp.post<AvatarOffer>(
+      serviceEndpoint('/api/v1/ai/avatar/offer'),
       { sdp: sdpOffer, type: 'offer' },
       { baseURL: '', signal },
     )).data,
 
   createSession: async (input: { jobTitle: string; jdText: string; avatarSessionId: string }) =>
-    (await httpService.post<AiSession>(`${AI_SERVICE_URL}/api/v1/ai/session`, input, { baseURL: '' })).data,
+    (await aiHttp.post<AiSession>(serviceEndpoint('/api/v1/ai/session'), input,
+      { baseURL: '' })).data,
 
   getQuestion: async (sessionId: string, speak = true) =>
-    (await httpService.get<AiQuestion>(
-      `${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}/question?speak=${speak}`,
+    (await aiHttp.get<AiQuestion>(
+      `${serviceEndpoint(`/api/v1/ai/session/${encodeURIComponent(sessionId)}/question`)}?speak=${speak}`,
       { baseURL: '' },
     )).data,
 
@@ -91,29 +140,36 @@ const AIService = {
   submitAnswer: async (sessionId: string, input: {
     questionIndex?: number; answerText: string; durationSec?: number; confirm?: boolean;
   }) =>
-    (await httpService.post<AiAnswer>(
-      `${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}/answer`, input, { baseURL: '' },
+    (await aiHttp.post<AiAnswer>(
+      serviceEndpoint(`/api/v1/ai/session/${encodeURIComponent(sessionId)}/answer`), input,
+      { baseURL: '' },
     )).data,
 
   /** Cho avatar nhắc lại một câu cố định (nút "Nghe lại"). */
   speak: async (sessionId: string, text: string) =>
-    (await httpService.post<{ sessionid: string; chars: number }>(
-      `${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}/speak`, { text }, { baseURL: '' },
+    (await aiHttp.post<{ sessionid: string; chars: number }>(
+      serviceEndpoint(`/api/v1/ai/session/${encodeURIComponent(sessionId)}/speak`),
+      { text }, { baseURL: '' },
     )).data,
 
   isSpeaking: async (sessionId: string) =>
-    (await httpService.get<{ speaking: boolean }>(
-      `${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}/speaking`, { baseURL: '' },
+    (await aiHttp.get<{ speaking: boolean }>(
+      serviceEndpoint(`/api/v1/ai/session/${encodeURIComponent(sessionId)}/speaking`),
+      { baseURL: '' },
     )).data.speaking,
 
   interrupt: async (sessionId: string) =>
-    (await httpService.post<{ sessionid: string; interrupted: boolean }>(
-      `${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}/interrupt`, {}, { baseURL: '' },
+    (await aiHttp.post<{ sessionid: string; interrupted: boolean }>(
+      serviceEndpoint(`/api/v1/ai/session/${encodeURIComponent(sessionId)}/interrupt`),
+      {}, { baseURL: '' },
     )).data,
 
   /** Xóa transcript trong bộ nhớ python khi FE đóng phiên; điểm vẫn nằm ở BE. */
   deleteSession: async (sessionId: string) => {
-    await httpService.delete(`${AI_SERVICE_URL}/api/v1/ai/session/${sessionId}`, { baseURL: '' });
+    await aiHttp.delete(
+      serviceEndpoint(`/api/v1/ai/session/${encodeURIComponent(sessionId)}`),
+      { baseURL: '' },
+    );
   },
 };
 

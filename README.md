@@ -55,6 +55,18 @@ npm start              # cổng 3000
 
 Không đặt `REACT_APP_API_URL` thì app tự fallback `http://localhost:8080`.
 
+## Kết nối AI interview trên production
+
+Trang `/mock-interviews` cho phép chọn **LiveTalking Avatar**, nhập URL AI service do
+`colab-avatar-hls.ipynb` in ra, rồi bấm **Kiểm tra kết nối** và **Lưu URL**. URL được lưu
+trong `localStorage` của trình duyệt và ưu tiên hơn `REACT_APP_AI_SERVICE_URL`, vì tunnel
+Colab thay đổi sau mỗi lần khởi động. Chỉ nhập origin của AI service, ví dụ
+`https://<tunnel>.trycloudflare.com`, không thêm `/health`.
+
+Để trình duyệt cho phép kết nối, AI service cần cấu hình CORS với origin của frontend
+(production: `https://aiinterview-vn.vercel.app`; local: `http://localhost:3000`).
+Không lưu API key ở URL này.
+
 ## Kiểm tra trước khi push
 
 ```bash

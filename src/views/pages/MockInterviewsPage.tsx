@@ -19,6 +19,7 @@ import { useMockInterviewController } from '../../controllers/useMockInterviewCo
 import { useJobController } from '../../controllers/useJobController';
 import { useAuth } from '../../context/AuthContext';
 import { INTERVIEW_MODE_LABELS, InterviewMode, InterviewSession } from '../../models/Interview.model';
+import AIService from '../../services/ai.service';
 import {
   EmptyBlock, ErrorBlock, ICON, LoadingBlock, Pagination, Pill, adminButton, fmtServer,
 } from '../components/adminKit';
@@ -63,17 +64,11 @@ const MockInterviewsPage = () => {
   const [group, setGroup] = useState(0);
   const [busy, setBusy] = useState(false);
   const [interviewMode, setInterviewMode] = useState<'text' | 'avatar'>('text'); // text = browser TTS, avatar = live talking
-  const [hasAiServiceUrl, setHasAiServiceUrl] = useState<boolean>(false); // Check AI service URL availability
-
+  const [aiServiceUrl, setAiServiceUrl] = useState(() => AIService.getServiceUrl());
+  const [aiServiceMessage, setAiServiceMessage] = useState('');
+  const [aiServiceMessageIsError, setAiServiceMessageIsError] = useState(false);
+  const [checkingAiService, setCheckingAiService] = useState(false);
   const scriptsRef = useRef<HTMLDivElement>(null);
-
-  // Check environment variable on mount (fixed for production)
-  useEffect(() => {
-    // Get from process.env (CRA exposes REACT_APP_* via process.env)
-    const aiUrl = process.env.REACT_APP_AI_SERVICE_URL;
-    setHasAiServiceUrl(!!aiUrl);
-    console.log('🔍 AI Service URL Status:', aiUrl ? '✅ Configured' : '❌ Not configured');
-  }, []);
 
   useEffect(() => {
     if (user?.role === 'ROLE_USER') {
@@ -109,6 +104,41 @@ const MockInterviewsPage = () => {
     if (!t.trim()) return;
     setTopic(t);
     void start('KNOWLEDGE', { topic: t });
+  };
+
+  const saveAiServiceUrl = () => {
+    try {
+      const saved = AIService.setServiceUrl(aiServiceUrl);
+      setAiServiceUrl(saved);
+      setAiServiceMessage(saved
+        ? 'Đã lưu URL AI service trên trình duyệt này.'
+        : 'Đã xóa URL runtime; ứng dụng sẽ dùng cấu hình build nếu có.');
+      setAiServiceMessageIsError(false);
+    } catch (e) {
+      setAiServiceMessage(e instanceof Error ? e.message : 'Không lưu được URL AI service.');
+      setAiServiceMessageIsError(true);
+    }
+  };
+
+  const checkAiService = async () => {
+    setCheckingAiService(true);
+    setAiServiceMessage('');
+    try {
+      const normalizedUrl = AIService.normalizeServiceUrl(aiServiceUrl);
+      const health = await AIService.healthAtUrl(normalizedUrl);
+      if (health.status !== 'ok') throw new Error('AI service chưa sẵn sàng.');
+      const saved = AIService.setServiceUrl(normalizedUrl);
+      setAiServiceUrl(saved);
+      setAiServiceMessage(health.avatarSessions < 0
+        ? 'Đã lưu URL; AI service phản hồi nhưng chưa kết nối được máy chủ avatar.'
+        : `Đã kết nối và lưu URL · ${health.llmProvider} · tối đa ${health.maxTurns} lượt.`);
+      setAiServiceMessageIsError(health.avatarSessions < 0);
+    } catch (e) {
+      setAiServiceMessage(e instanceof Error ? e.message : 'Không kết nối được AI service.');
+      setAiServiceMessageIsError(true);
+    } finally {
+      setCheckingAiService(false);
+    }
   };
 
   if (!user || user.role !== 'ROLE_USER') {
@@ -152,10 +182,8 @@ const MockInterviewsPage = () => {
                   ? 'bg-primary text-white' 
                   : 'bg-surface-container-lowest text-on-surface-variant'
               }`}
-              disabled={!hasAiServiceUrl}
-              title={!hasAiServiceUrl ? "Chưa cấu hình AI service URL (mặc định dùng Browser TTS)" : undefined}
             >
-              LiveTalking Avatar {hasAiServiceUrl && '(Real)'}
+              LiveTalking Avatar
             </button>
           </div>
         </div>
@@ -164,6 +192,47 @@ const MockInterviewsPage = () => {
             ? 'Phỏng vấn bằng text: AI đọc câu hỏi qua browser, bạn gõ trả lời. Không cần camera/mic.'
             : 'Phỏng vấn với avatar thật: Có video call + micro. Cần cấp quyền camera và microphone.'}
         </p>
+        {interviewMode === 'avatar' && (
+          <div className="mt-4 rounded-lg border border-outline-variant bg-surface-container-lowest p-space-md">
+            <label htmlFor="ai-service-url" className="block text-ds-label-lg font-semibold text-on-surface">
+              URL AI service
+            </label>
+            <p className="mt-1 text-ds-body-sm text-on-surface-variant">
+              Dán URL HTTPS được in ra từ Colab, không thêm đường dẫn <code>/health</code>.
+              Cấu hình được lưu riêng trên trình duyệt này.
+            </p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <input
+                id="ai-service-url"
+                type="url"
+                autoComplete="url"
+                value={aiServiceUrl}
+                onChange={e => setAiServiceUrl(e.target.value)}
+                placeholder="https://ten-tunnel.trycloudflare.com"
+                className="min-w-0 flex-1 rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-ds-body-md text-on-surface focus:border-primary focus:outline-none"
+              />
+              <button type="button" onClick={saveAiServiceUrl} className={adminButton('soft', 'justify-center')}>
+                Lưu URL
+              </button>
+              <button
+                type="button"
+                onClick={() => void checkAiService()}
+                disabled={checkingAiService || !aiServiceUrl.trim()}
+                className={adminButton('primary', 'justify-center disabled:opacity-40')}
+              >
+                {checkingAiService ? 'Đang kiểm tra...' : 'Kiểm tra & lưu'}
+              </button>
+            </div>
+            {aiServiceMessage && (
+              <p
+                role={aiServiceMessageIsError ? 'alert' : 'status'}
+                className={`mt-2 text-ds-label-md ${aiServiceMessageIsError ? 'text-error' : 'text-secondary-teal'}`}
+              >
+                {aiServiceMessage}
+              </p>
+            )}
+          </div>
+        )}
       </section>
 
       <CandidatePageHeader
