@@ -181,15 +181,20 @@ const useLocalMedia = () => {
 
 const useLatency = () => {
   const [rtt, setRtt] = useState<number | null>(null);
+  
   useEffect(() => {
     let alive = true;
     let activeRequest: AbortController | null = null;
+    
     if (!AIService.isConfigured()) return () => { alive = false; };
+    
     const probe = async () => {
       if (activeRequest) return;
+      
       const controller = new AbortController();
       activeRequest = controller;
       const t0 = performance.now();
+      
       try {
         await AIService.healthAtUrl(AIService.getServiceUrl(), controller.signal);
         if (alive) setRtt(Math.round(performance.now() - t0));
@@ -199,14 +204,20 @@ const useLatency = () => {
         if (activeRequest === controller) activeRequest = null;
       }
     };
+    
+    // Initial probe
     void probe();
-    const id = setInterval(probe, 15000);
+    
+    // Probe every 10 seconds (more frequent than before for better monitoring)
+    const id = setInterval(probe, 10000);
+    
     return () => {
       alive = false;
       clearInterval(id);
       activeRequest?.abort();
     };
   }, []);
+  
   return { rtt };
 };
 
@@ -413,7 +424,15 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
             REC {fmtClock(sessionElapsed)}
           </span>
           {rtt != null && (
-            <Pill tone={rtt < 300 ? 'success' : 'warning'} icon="wifi">
+            <Pill 
+              tone={rtt < 800 ? 'success' : rtt < 1500 ? 'warning' : 'error'} 
+              icon="wifi"
+              title={rtt >= 1500 
+                ? 'Ping cao — AI service chạy trên Colab free, có thể chậm' 
+                : rtt >= 800 
+                  ? 'Ping tương đối cao — thử ở mạng khác nếu có vấn đề' 
+                  : 'Kết nối tốt'}
+            >
               AI {rtt}ms
             </Pill>
           )}

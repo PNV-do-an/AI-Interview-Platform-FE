@@ -11,7 +11,7 @@
  * báo về `unavailable` kèm lý do — UI giữ quyền fallback sang luồng browser TTS cũ.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Hls from 'hls.js';
+import HLS from 'hls.js';
 import AIService, { AiAnswer, AiQuestion } from '../services/ai.service';
 
 export type AvatarLink = 'off' | 'connecting' | 'live' | 'unavailable';
@@ -56,7 +56,7 @@ export const useLiveTalkingController = () => {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
-  const hlsRef = useRef<Hls | null>(null);
+  const hlsRef = useRef<any>(null);
   const sessionIdRef = useRef('');
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -105,26 +105,82 @@ export const useLiveTalkingController = () => {
   const attachHls = useCallback((mediaUrl: string) => {
     const el = videoRef.current;
     if (!el) throw new Error('Chưa có khung video để phát avatar');
-    if (!Hls.isSupported()) {
+    
+    // Clear any previous Hls instance
+    if (hlsRef.current) {
+      hlsRef.current.destroy(true);
+      hlsRef.current = null;
+    }
+    
+    if (!HLS.isSupported()) {
       el.src = mediaUrl;
+      el.muted = false;
+      el.volume = 1;
       el.onerror = () => failMedia('Luồng video avatar bị đứt');
     } else {
-      const hls = new Hls({ lowLatencyMode: true });
-      hlsRef.current = hls;
-      // MediaMTX trả HLS dạng fMP4 nhiều variant; lỗi fatal = máy chủ avatar chết, phải fallback
-      // ngay thay vì để ứng viên nhìn khung hình đen.
-      hls.on(Hls.Events.ERROR, (_evt, data) => {
-        if (data.fatal) failMedia(`Luồng video avatar bị đứt (${data.details})`);
+      const hls = new HLS({ 
+        lowLatencyMode: true,
+        enableWorker: true,
+        backBufferLength: 90,
       });
+      hlsRef.current = hls;
+      
+      // Handle audio tracks specifically
+      hls.on(HLS.Events.MANIFEST_PARSED, (event, data) => {
+        console.log('HLS manifest parsed:', data);
+        // Ensure all audio playlists are loaded
+        if (data.levels && data.levels.length > 0) {
+          data.levels.forEach(level => {
+            console.log('Audio level:', level);
+          });
+        }
+      });
+      
+      // More detailed error handling
+      hls.on(HLS.Events.ERROR, (_evt, data) => {
+        console.error('HLS error:', data.type, data.details, data.error);
+        if (data.fatal) {
+          switch (data.type) {
+            case HLS.ErrorTypes.NETWORK_ERROR:
+              failMedia(`Mạng HLS bị lỗi (${data.details}) - kiểm tra kết nối Internet`);
+              break;
+            case HLS.ErrorTypes.MEDIA_ERROR:
+              // Try to recover by reattaching media
+              if (hlsRef.current && !hlsRef.current.media) {
+                console.warn('Trying to recover from media error...');
+                hlsRef.current.attachMedia(el);
+              } else {
+                failMedia(`HLS không phát được video (${data.details})`);
+              }
+              break;
+            default:
+              failMedia(`HLS bị lỗi nghiêm trọng (${data.details})`);
+              break;
+          }
+        }
+      });
+      
       hls.loadSource(mediaUrl);
       hls.attachMedia(el);
     }
-    el.muted = true;
-    el.volume = 1;
-    setSoundEnabled(false);
+    
+    el.muted = false;
+    el.volume = 0.8; // Set volume but respect mute state
+    setSoundEnabled(false); // Will be updated on play gesture
     setSoundError('');
-    void el.play().catch(() => undefined);
-    setNeedsPlayGesture(true);
+    
+    // Auto-play without sound first, then user can enable
+    void el.play().then(() => {
+      // Successfully playing now, ready to unmute on gesture
+      setNeedsPlayGesture(false);
+    }).catch((err) => {
+      console.warn('Autoplay failed:', err);
+      // If autoplay fails, ensure we still have the gesture button
+      if (!el.muted) {
+        el.muted = true;
+        setNeedsPlayGesture(true);
+      }
+    });
   }, [failMedia]);
 
   /** Bắt buộc phải xong trước khi mở phiên: báo rõ avatar sống hay chết để UI còn fallback. */
@@ -223,29 +279,37 @@ export const useLiveTalkingController = () => {
   const toggleSound = useCallback(async () => {
     const el = videoRef.current;
     if (!el) return;
-    if (!el.muted) {
+    
+    // If currently muted (sound disabled), try to unmute
+    if (el.muted || !soundEnabled) {
+      el.muted = false;
+      el.volume = soundEnabled ? 0.8 : 1;
+      setSoundError('');
+      
+      try {
+        // Try to play if paused to trigger audio context
+        if (el.paused) {
+          await el.play();
+        }
+        setSoundEnabled(true);
+        setNeedsPlayGesture(false);
+      } catch (error) {
+        // Chrome blocks audio - revert to muted
+        el.muted = true;
+        setSoundEnabled(false);
+        setNeedsPlayGesture(true);
+        setSoundError(error instanceof Error && error.name === 'NotAllowedError'
+          ? 'Chrome chặn phát âm thanh. Hãy kiểm tra cài đặt trình duyệt.'
+          : 'Không phát được âm thanh avatar.');
+        console.error('Toggle sound failed:', error);
+      }
+    } else {
+      // Currently enabled, so mute it
       el.muted = true;
       setSoundEnabled(false);
       setSoundError('');
-      return;
     }
-
-    el.volume = 1;
-    el.muted = false;
-    setSoundError('');
-    try {
-      await el.play();
-      setSoundEnabled(true);
-      setNeedsPlayGesture(false);
-    } catch (error) {
-      el.muted = true;
-      setSoundEnabled(false);
-      setNeedsPlayGesture(true);
-      setSoundError(error instanceof Error && error.name === 'NotAllowedError'
-        ? 'Chrome vẫn chặn phát tiếng. Hãy kiểm tra quyền âm thanh của trang và thử lại.'
-        : 'Không phát được âm thanh avatar. Kiểm tra loa/tab Chrome hoặc kết nối HLS rồi thử lại.');
-    }
-  }, []);
+  }, [soundEnabled]);
 
   return {
     link, reason, speaking, aiSessionId, mediaSource, needsPlayGesture, soundEnabled, soundError, videoRef,
