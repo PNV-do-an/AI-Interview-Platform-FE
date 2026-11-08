@@ -42,5 +42,9 @@ export const readApiErrorMessage = (err: any, fallback: string, fieldOrder: stri
   if (message || fieldMessages) return message || fieldMessages;
   const status: number | undefined = err?.response?.status;
   if (status && STATUS_FALLBACK[status]) return STATUS_FALLBACK[status];
+  const code: string | undefined = err?.code;
+  if (!err?.response && (code === 'ECONNABORTED' || code === 'ERR_NETWORK' || code === 'ERR_CANCELED' || err?.message === 'Network Error')) {
+    return 'Không kết nối được máy chủ. Backend đang không phản hồi, vui lòng thử lại sau.';
+  }
   return fallback;
 };
