@@ -2,7 +2,7 @@ import httpService from './http.service';
 import axios from 'axios';
 import { ApiResponse, AuthResponse, LoginRequest, PasswordResetResult, RegisterRequest, ResetTokenInfo, SelfProfile, SsoConfig, UserSessionInfo } from '../models/Api.model';
 
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+const BASE_URL = import.meta.env?.REACT_APP_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:8081';
 
 // Instance không có auth interceptor — dùng cho các public endpoint
 const publicHttp = axios.create({

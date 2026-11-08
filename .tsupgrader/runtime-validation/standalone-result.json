@@ -1,0 +1,111 @@
+{
+  "planHash": "6c6dea15c0df9e89896fcb51fcfd5c4a56cee9fa39261e54dc283f3938cc6f52",
+  "phase": "standalone",
+  "recordedAtUtc": "2026-11-08T07:09:48.4240564Z",
+  "retryCount": 0,
+  "resetBaseline": false,
+  "complete": true,
+  "result": {
+    "setupSucceeded": true,
+    "setupDurationMs": 41952,
+    "setupFailureOutput": null,
+    "assertions": [
+      {
+        "name": "production-build",
+        "kind": "process",
+        "verificationMethod": "exit-code",
+        "passed": false,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 1,
+        "outputSample": "\r\n\u003E ai-interview-platform@0.1.0 build\r\n\u003E react-scripts build\r\n\r\n(node:125048) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead\r\n(Use \u0060node --trace-deprecation ...\u0060 to show where the warning was created)\r\nCreating an optimized production build...\r\nFailed to compile.\r\n\r\n[eslint] \r\nsrc\\views\\layout\\AppLayout.tsx\r\nSyntax error: Unexpected token. Did you mean \u0060{\u0027}\u0027}\u0060 or \u0060\u0026rbrace;\u0060? (285:undefined)\r\n\r\nsrc\\views\\pages\\MyJobsPage.tsx\r\nSyntax error: Expected corresponding JSX closing tag for \u0027tbody\u0027 (342:12)\r\n\r\n\r\n",
+        "durationMs": 46077
+      },
+      {
+        "name": "tests-pass",
+        "kind": "process",
+        "verificationMethod": "test-results",
+        "passed": false,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": 1,
+        "outputSample": "\r\n\u003E ai-interview-platform@0.1.0 test\r\n\u003E react-scripts test --watchAll=false\r\n\r\nNo tests found, exiting with code 1\r\nRun with \u0060--passWithNoTests\u0060 to exit with code 0\r\nIn D:\\AI-Interview-Platform-FE\r\n  100 files checked.\r\n  testMatch: D:/AI-Interview-Platform-FE/src/**/__tests__/**/*.{js,jsx,ts,tsx}, D:/AI-Interview-Platform-FE/src/**/*.{spec,test}.{js,jsx,ts,tsx} - 0 matches\r\n  testPathIgnorePatterns: \\\\node_modules\\\\ - 100 matches\r\n  testRegex:  - 0 matches\r\nPattern:  - 0 matches\r\n",
+        "durationMs": 3347,
+        "testResults": {
+          "testFramework": "unknown",
+          "runnerDetectedFrom": "none",
+          "testsTotal": 0,
+          "testsPassed": 0,
+          "testsFailed": 0,
+          "testsSkipped": 0,
+          "parseFailed": true
+        }
+      },
+      {
+        "name": "frontend-serves-root",
+        "kind": "http-probe",
+        "verificationMethod": "http-status",
+        "passed": true,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": null,
+        "outputSample": "HTTP 200\n\u003C!DOCTYPE html\u003E\r\n\u003Chtml lang=\u0022vi\u0022\u003E\r\n  \u003Chead\u003E\r\n    \u003Cmeta charset=\u0022utf-8\u0022 /\u003E\r\n    \u003Cmeta name=\u0022viewport\u0022 content=\u0022width=device-width, initial-scale=1\u0022 /\u003E\r\n    \u003Cmeta name=\u0022theme-color\u0022 content=\u0022#3525cd\u0022 /\u003E\r\n    \u003Cmeta name=\u0022description\u0022 content=\u0022AI Interview Platform\u0022 /\u003E\r\n    \u003Clink rel=\u0022icon\u0022 type=\u0022image/png\u0022 href=\u0022/favicon.png\u0022 /\u003E\r\n    \u003Clink rel=\u0022preconnect\u0022 href=\u0022https://fonts.googleapis.com\u0022 /\u003E\r\n    \u003Clink rel=\u0022preconnect\u0022 href=\u0022https://fonts.gstatic.com\u0022 crossorigin /\u003E\r\n    \u003Clink href=\u0022https://fonts.googleapis.com/css2?family=Inter:wght@100..900\u0026display=swap\u0022 rel=\u0022stylesheet\u0022 /\u003E\r\n    \u003Clink href=\u0022https://fonts.googleapis.com/css2?family=JetBrains\u002BMono:wght@400;500\u0026display=swap\u0022 rel=\u0022stylesheet\u0022 /\u003E\r\n    \u003Clink href=\u0022https://fonts.googleapis.com/css2?family=Material\u002BSymbols\u002BOutlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200\u0022 rel=\u0022stylesheet\u0022 /\u003E\r\n    \u003Ctitle\u003EAI Interview Platform\u003C/title\u003E\r\n  \u003Cscript defer src=\u0022/static/js/bundle.js\u0022\u003E\u003C/script\u003E\u003C/head\u003E\r\n  \u003Cbody\u003E\r\n    \u003Cnoscript\u003EYou need to enable JavaScript to run this app.\u003C/noscript\u003E\r\n    \u003Cdiv id=\u0022root\u0022\u003E\u003C/div\u003E\r\n  \u003C/body\u003E\r\n\u003C/html\u003E\r\n\n--- server output ---\n\r\n\u003E ai-interview-platform@0.1.0 start\r\n\u003E react-scripts start\r\n\r\n(node:123512) [DEP0176] DeprecationWarning: fs.F_OK is deprecated, use fs.constants.F_OK instead\r\n(Use \u0060node --trace-deprecation ...\u0060 to show where the warning was created)\r\n(node:123512) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: \u0027onAfterSetupMiddleware\u0027 option is deprecated. Please use the \u0027setupMiddlewares\u0027 option.\r\n(node:123512) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: \u0027onBeforeSetupMiddleware\u0027 option is deprecated. Please use the \u0027setupMiddlewares\u0027 option.\r\nStarting the development server...\r\n\r\nFailed to compile.\r\n\r\n[eslint] \r\nsrc\\views\\layout\\AppLayout.tsx\r\nSyntax error: Unexpected token. Did you mean \u0060{\u0027}\u0027}\u0060 or \u0060\u0026rbrace;\u0060? (285:undefined)\r\n\r\nsrc\\views\\pages\\MyJobsPage.tsx\r\nSyntax error: Expected corresponding JSX closing tag for \u0027tbody\u0027 (342:12)\r\n\u001B[1m\u001B[33mWARNING\u001B[39m\u001B[22m in \u001B[1m[eslint] \r\nsrc\\controllers\\useCvController.ts\r\n  Line 10:19:  \u0027setLoading\u0027 is assigned a value but never used  @typescript-eslint/no-unused-vars\r\n\r\nsrc\\views\\components\\AuthShell.tsx\r\n  Line 32:9:  The href attribute requires a valid value to be accessible. Provide a valid, navigable address as the href value. If you cannot provide a valid href, but still need the element to resemble a link, use a button and change it with appropriate styles. Learn more: https://github.com/jsx-eslint/eslint-plugin-jsx-a11y/blob/HEAD/docs/rules/anchor-is-valid.md  jsx-a11y/anchor-is-valid\r\n  Line 34:9:  The href attribute requires a valid value to be accessible. Provide a valid, navigable address as the href value. If you cannot provide a valid href, but still need the element to resemble a link, use a button and change it with appropriate styles. Learn more: https://github.com/jsx-eslint/eslint-plugin-jsx-a11y/blob/HEAD/docs/rules/anchor-is-valid.md  jsx-a11y/anchor-is-valid\r\n\r\nsrc\\views\\pages\\AdminUserManagementPage.tsx\r\n  Line 142:9:  The \u0027baseRows\u0027 conditional could make the dependencies of useMemo Hook (at line 153) change on every render. To fix this, wrap the initialization of \u0027baseRows\u0027 in its own useMemo() Hook  react-hooks/exhaustive-deps\r\n\r\nsrc\\views\\pages\\AvatarInterviewSessionPage.tsx\r\n  Line 12:8:    \u0027AIService\u0027 is defined but never used                                                                           @typescript-eslint/no-unused-vars\r\n  Line 181:10:  \u0027interviewMode\u0027 is assigned a value but never used                                                              @typescript-eslint/no-unused-vars\r\n  Line 207:6:   React Hook useEffect has a missing dependency: \u0027fetchResult\u0027. Either include it or remove the dependency array  react-hooks/exhaustive-deps\r\n\r\nsrc\\views\\pages\\CandidateAccountPage.tsx\r\n  Line 294:6:  React Hook useCallback has an unnecessary dependency: \u0027confirmPwd\u0027. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps\r\n\r\nsrc\\views\\pages\\CoverLettersPage.tsx\r\n  Line 46:6:  React \n\u2026[truncated]",
+        "durationMs": 29335
+      }
+    ],
+    "executions": [
+      {
+        "source": "setup[0]",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "ci"
+        ],
+        "cwd": "D:\\AI-Interview-Platform-FE",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "production-build",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "run",
+          "build"
+        ],
+        "cwd": "D:\\AI-Interview-Platform-FE",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "tests-pass",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "test",
+          "--",
+          "--watchAll=false"
+        ],
+        "cwd": "D:\\AI-Interview-Platform-FE",
+        "env": {
+          "CI": "true"
+        },
+        "prependPath": [],
+        "platform": "win32"
+      },
+      {
+        "source": "frontend-serves-root",
+        "resolvedExecutable": "C:\\Program Files\\nodejs\\npm.CMD",
+        "args": [
+          "start"
+        ],
+        "cwd": "D:\\AI-Interview-Platform-FE",
+        "env": {},
+        "prependPath": [],
+        "platform": "win32"
+      }
+    ]
+  }
+}
