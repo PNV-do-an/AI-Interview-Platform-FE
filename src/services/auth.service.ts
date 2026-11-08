@@ -8,7 +8,12 @@ const BASE_URL = import.meta.env?.REACT_APP_API_URL || process.env.REACT_APP_API
 const publicHttp = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 15000,
 });
+
+if (process.env.NODE_ENV === 'development') {
+  console.log('[AuthService] Base URL:', BASE_URL);
+}
 
 const AuthService = {
   // login/register đi publicHttp: 401 của chúng KHÔNG được rơi vào interceptor

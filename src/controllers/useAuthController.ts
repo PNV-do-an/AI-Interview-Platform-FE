@@ -79,11 +79,14 @@ export const useAuthController = () => {
       setErrorStatus(null);
       setLoading(true);
       try {
+        console.log('[AuthController] Attempting login with:', data.email);
         const res = await AuthService.login(data);
+        console.log('[AuthController] Login response:', res.data);
         const { accessToken, refreshToken, user } = res.data.data!;
         persistSession(accessToken, refreshToken, user as User, rememberMe);
 
         const role = user?.role;
+        console.log('[AuthController] User role:', role);
         if (role === 'ROLE_ADMIN') {
           navigate('/admin/users');
         } else if (role === 'ROLE_STAFF' || role === 'ROLE_INTERVIEWER') {
@@ -92,6 +95,7 @@ export const useAuthController = () => {
           navigate('/dashboard');
         }
       } catch (err: any) {
+        console.error('[AuthController] Login failed:', err);
         const status = err.response?.status;
         setErrorStatus(typeof status === 'number' ? status : null);
         const msg = readApiErrorMessage(err, 'Đăng nhập thất bại. Vui lòng thử lại.', LOGIN_FIELD_ORDER);
