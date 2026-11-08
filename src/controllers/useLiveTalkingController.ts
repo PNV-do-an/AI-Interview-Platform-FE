@@ -125,7 +125,7 @@ export const useLiveTalkingController = () => {
     if (pcRef.current || hlsRef.current) return;
     if (!AIService.isConfigured()) {
       setLink('unavailable');
-      setReason('Chưa cấu hình REACT_APP_AI_SERVICE_URL nên phòng chỉ chạy giọng đọc trình duyệt.');
+      setReason('Chưa cấu hình URL AI service trên trang Luyện phỏng vấn; phòng chuyển sang giọng đọc trình duyệt.');
       return;
     }
     setLink('connecting');

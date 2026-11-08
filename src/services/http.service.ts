@@ -1,6 +1,14 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+const AUTH_STORAGE_KEYS = ['accessToken', 'refreshToken', 'user', 'rememberMe'];
+
+const clearAuthStorage = () => {
+  AUTH_STORAGE_KEYS.forEach((key) => {
+    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
+  });
+};
 
 const httpService = axios.create({
   baseURL: BASE_URL,
@@ -58,8 +66,7 @@ httpService.interceptors.response.use(
       const refreshToken = storage.getItem('refreshToken') || localStorage.getItem('refreshToken');
 
       if (!refreshToken) {
-        localStorage.clear();
-        sessionStorage.clear();
+        clearAuthStorage();
         window.location.href = '/login';
         return Promise.reject(error);
       }
@@ -79,8 +86,7 @@ httpService.interceptors.response.use(
         return httpService(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        localStorage.clear();
-        sessionStorage.clear();
+        clearAuthStorage();
         window.location.href = '/login';
         return Promise.reject(refreshError);
       } finally {
