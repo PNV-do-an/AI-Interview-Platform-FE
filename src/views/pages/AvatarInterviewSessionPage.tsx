@@ -424,14 +424,10 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
             REC {fmtClock(sessionElapsed)}
           </span>
           {rtt != null && (
-            <Pill 
-              tone={rtt < 800 ? 'success' : rtt < 1500 ? 'warning' : 'danger'} 
+            <Pill
+              tone={rtt < 300 ? 'success' : rtt < 1000 ? 'warning' : 'danger'}
               icon="wifi"
-              title={rtt >= 1500 
-                ? 'Ping cao — AI service chạy trên Colab free, có thể chậm' 
-                : rtt >= 800 
-                  ? 'Ping tương đối cao — thử ở mạng khác nếu có vấn đề' 
-                  : 'Kết nối tốt'}
+              title="RTT thật tới AI service (endpoint /ping)"
             >
               AI {rtt}ms
             </Pill>
