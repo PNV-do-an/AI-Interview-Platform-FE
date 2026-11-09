@@ -1,6 +1,6 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const BASE_URL = import.meta.env?.REACT_APP_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:8081';
+const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8081';
 const AUTH_STORAGE_KEYS = ['accessToken', 'refreshToken', 'user', 'rememberMe'];
 
 const clearAuthStorage = () => {

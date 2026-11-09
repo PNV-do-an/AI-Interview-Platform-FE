@@ -160,8 +160,8 @@ export const adminTdClass = 'px-4 py-3 text-ds-body-md text-on-surface border-b 
 export const adminTableClass = 'w-full border-collapse';
 
 export const Pill: React.FC<{
-  tone?: 'neutral' | 'primary' | 'success' | 'danger' | 'warning' | 'info'; children: React.ReactNode; icon?: string;
-}> = ({ tone = 'neutral', children, icon }) => {
+  tone?: 'neutral' | 'primary' | 'success' | 'danger' | 'warning' | 'info'; children: React.ReactNode; icon?: string; title?: string;
+}> = ({ tone = 'neutral', children, icon, title }) => {
   const map: Record<string, string> = {
     neutral: 'bg-surface-container-high text-on-surface-variant',
     primary: 'bg-primary-fixed text-on-primary-fixed-variant',
@@ -171,7 +171,7 @@ export const Pill: React.FC<{
     info: 'bg-surface-container text-on-surface-variant',
   };
   return (
-    <span className={`inline-flex items-center gap-1 whitespace-nowrap px-2 py-0.5 rounded-full text-ds-label-sm font-bold ${map[tone]}`}>
+    <span title={title} className={`inline-flex items-center gap-1 whitespace-nowrap px-2 py-0.5 rounded-full text-ds-label-sm font-bold ${map[tone]}`}>
       {icon && <span className={`${ICON} text-[14px]`}>{icon}</span>}
       {children}
     </span>

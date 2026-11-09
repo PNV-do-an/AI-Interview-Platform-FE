@@ -425,7 +425,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
           </span>
           {rtt != null && (
             <Pill 
-              tone={rtt < 800 ? 'success' : rtt < 1500 ? 'warning' : 'error'} 
+              tone={rtt < 800 ? 'success' : rtt < 1500 ? 'warning' : 'danger'} 
               icon="wifi"
               title={rtt >= 1500 
                 ? 'Ping cao — AI service chạy trên Colab free, có thể chậm' 
