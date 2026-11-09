@@ -182,51 +182,64 @@ const useLocalMedia = () => {
 
 /* --------------------------------- RTT probe -------------------------------- */
 
+/** RTT thật tới edge Vercel gần người dùng; /health của AI chạy nền chỉ để ẩn badge khi AI chết. */
 const useLatency = () => {
   const [rtt, setRtt] = useState<number | null>(null);
-  
+
   useEffect(() => {
     let alive = true;
-    let activeRequest: AbortController | null = null;
-    
-    if (!AIService.isConfigured()) return () => { alive = false; };
-    
-    const probe = async () => {
-      if (activeRequest) return;
-      
+    let aiUp = false;
+    let pingReq: AbortController | null = null;
+    let healthReq: AbortController | null = null;
+
+    const ping = async () => {
+      if (pingReq || !aiUp) return;
       const controller = new AbortController();
-      activeRequest = controller;
+      pingReq = controller;
       const t0 = performance.now();
-      
       try {
-        try {
-          await AIService.pingAtUrl(AIService.getServiceUrl(), controller.signal);
-        } catch (e) {
-          // Bản Colab cũ chưa có /ping: đo tạm /health (cộng cả hop avatar).
-          if ((e as { response?: { status?: number } })?.response?.status !== 404) throw e;
-          await AIService.healthAtUrl(AIService.getServiceUrl(), controller.signal);
-        }
-        if (alive) setRtt(Math.round(performance.now() - t0));
+        const res = await fetch('/api/ping', { signal: controller.signal, cache: 'no-store' });
+        const body = await res.json().catch(() => null);
+        if (!res.ok || body?.status !== 'ok') throw new Error('ping không hợp lệ');
+        if (alive && aiUp) setRtt(Math.round(performance.now() - t0));
       } catch {
         if (alive) setRtt(null);
       } finally {
-        if (activeRequest === controller) activeRequest = null;
+        if (pingReq === controller) pingReq = null;
       }
     };
-    
-    // Initial probe
-    void probe();
-    
-    // Probe every 10 seconds (more frequent than before for better monitoring)
-    const id = setInterval(probe, 10000);
-    
+
+    const health = async () => {
+      if (healthReq || !AIService.isConfigured()) return;
+      const controller = new AbortController();
+      healthReq = controller;
+      try {
+        await AIService.healthAtUrl(AIService.getServiceUrl(), controller.signal);
+        if (!alive) return;
+        const wasUp = aiUp;
+        aiUp = true;
+        if (!wasUp) void ping();
+      } catch {
+        aiUp = false;
+        if (alive) setRtt(null);
+      } finally {
+        if (healthReq === controller) healthReq = null;
+      }
+    };
+
+    void health();
+    const pingId = setInterval(ping, 10000);
+    const healthId = setInterval(health, 30000);
+
     return () => {
       alive = false;
-      clearInterval(id);
-      activeRequest?.abort();
+      clearInterval(pingId);
+      clearInterval(healthId);
+      pingReq?.abort();
+      healthReq?.abort();
     };
   }, []);
-  
+
   return { rtt };
 };
 
@@ -469,9 +482,9 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
           </span>
           {rtt != null && (
             <Pill
-              tone={rtt < 300 ? 'success' : rtt < 1000 ? 'warning' : 'danger'}
+              tone={rtt < 100 ? 'success' : rtt < 300 ? 'warning' : 'danger'}
               icon="wifi"
-              title="RTT thật tới AI service (endpoint /ping)"
+              title="RTT thật tới edge Vercel gần nhất"
             >
               AI {rtt}ms
             </Pill>
