@@ -276,6 +276,12 @@ export const useLiveTalkingController = () => {
     try { await AIService.speak(sessionIdRef.current, text); } catch { /* bỏ qua, đã có phụ đề */ }
   }, []);
 
+  /** Hết gói câu hỏi: AI tự chấm rubric trước khi FE đóng phiên. */
+  const evaluate = useCallback(async () => {
+    if (!sessionIdRef.current) return null;
+    return AIService.evaluate(sessionIdRef.current);
+  }, []);
+
   const toggleSound = useCallback(async () => {
     const el = videoRef.current;
     if (!el) return;
@@ -314,6 +320,6 @@ export const useLiveTalkingController = () => {
   return {
     link, reason, speaking, aiSessionId, mediaSource, needsPlayGesture, soundEnabled, soundError, videoRef,
     connect, takeQuestion, sendAnswer, repeat, interruptSpeaking, teardown,
-    toggleSound,
+    toggleSound, evaluate,
   };
 };

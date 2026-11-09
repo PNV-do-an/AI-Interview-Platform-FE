@@ -118,6 +118,13 @@ const AIService = {
       { baseURL: '', signal, timeout: 6000 })).data;
   },
 
+  /** Probe RTT thuần: /ping không gọi avatar nên số đo không cộng hop tới máy chủ avatar. */
+  pingAtUrl: async (url: string, signal?: AbortSignal) => {
+    const baseUrl = normalizeServiceUrl(url);
+    return (await aiHttp.get<{ status: string }>(serviceEndpoint('/ping', baseUrl),
+      { baseURL: '', signal, timeout: 6000 })).data;
+  },
+
   /** Đổi SDP của trình duyệt lấy answer SDP + sessionid của LiveTalking. */
   offerAvatar: async (sdpOffer: string, signal?: AbortSignal) =>
     (await aiHttp.post<AvatarOffer>(
@@ -171,6 +178,13 @@ const AIService = {
       { baseURL: '' },
     );
   },
+
+  /** AI tự chấm rubric khi hết gói câu hỏi. */
+  evaluate: async (sessionId: string) =>
+    (await aiHttp.post<Record<string, unknown>>(
+      serviceEndpoint(`/api/v1/ai/session/${encodeURIComponent(sessionId)}/evaluate`),
+      {}, { baseURL: '' },
+    )).data,
 };
 
 export default AIService;

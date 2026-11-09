@@ -129,7 +129,10 @@ const useLocalMedia = () => {
     }
     setState('requesting');
     try {
-      const next = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const next = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: { echoCancellation: true, noiseSuppression: true },
+      });
       if (!aliveRef.current) {
         next.getTracks().forEach(t => t.stop());
         return;
@@ -196,7 +199,13 @@ const useLatency = () => {
       const t0 = performance.now();
       
       try {
-        await AIService.healthAtUrl(AIService.getServiceUrl(), controller.signal);
+        try {
+          await AIService.pingAtUrl(AIService.getServiceUrl(), controller.signal);
+        } catch (e) {
+          // Bản Colab cũ chưa có /ping: đo tạm /health (cộng cả hop avatar).
+          if ((e as { response?: { status?: number } })?.response?.status !== 404) throw e;
+          await AIService.healthAtUrl(AIService.getServiceUrl(), controller.signal);
+        }
         if (alive) setRtt(Math.round(performance.now() - t0));
       } catch {
         if (alive) setRtt(null);
@@ -237,7 +246,7 @@ interface TurnView {
 const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { result, session, loading, error, fetchResult, submitAnswer, finishSession, clearMessages } =
+  const { result, session, loading, error, fetchResult, submitAnswer, finishSession } =
     useMockInterviewController();
 
   const [interviewMode, setInterviewMode] = useState<'text' | 'avatar'>('text'); // mặc định text mode
@@ -251,7 +260,6 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
   const [showStar, setShowStar] = useState(false);
   const [notes, setNotes] = useState('');
   const [tab, setTab] = useState<'live' | 'notes'>('live');
-  const [savingDraft, setSavingDraft] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
   const devicesRef = useRef<HTMLDivElement>(null);
 
@@ -269,6 +277,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
   /** Lý do phòng đang chạy browser TTS thay vì avatar — rỗng khi kênh avatar còn sống. */
   const [fallbackNote, setFallbackNote] = useState('');
   const avatarLive = interviewMode === 'avatar' && rtc.link === 'live' && !fallbackNote;
+  const aiSpeaking = avatarLive ? rtc.speaking : speech.speaking;
   const briefRef = useRef<{ skills: string[]; jdText: string }>({ skills: [], jdText: '' });
 
   useEffect(() => {
@@ -322,6 +331,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
     void (async () => {
       if (avatarLive) {
         const ai = await rtc.takeQuestion(true).catch(() => null);
+        if (ai?.done) { void autoFinish(); return; }
         if (ai?.questionText) { setQuestion(ai.questionText); return; }
         setFallbackNote('AI service không trả về câu hỏi — phòng chuyển về giọng đọc trình duyệt.');
       }
@@ -346,24 +356,8 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
   }, [turns, draft]);
 
-  if (!user || user.role !== 'ROLE_USER') {
-    return <div className="p-10 text-ds-body-md text-on-surface-variant">Vui lòng đăng nhập bằng tài khoản ứng viên.</div>;
-  }
-  if (!session) {
-    return loading ? <LoadingBlock label="Đang tải phòng phỏng vấn..." />
-      : <ErrorBlock message={error || 'Không tìm thấy phiên phỏng vấn.'} onRetry={() => void fetchResult(sessionId)} />;
-  }
-
   const atCap = turn >= MAX_TURNS;
-  const finished = session.status === 'COMPLETED';
-
-  const saveDraft = async () => {
-    if (!draft.trim() || !question || busy) return;
-    setSavingDraft(true);
-    await submitAnswer(sessionId, { questionText: question, answerText: draft.trim(), durationSec: turnElapsed, confirm: false });
-    setSavingDraft(false);
-    clearMessages();
-  };
+  const finished = session?.status === 'COMPLETED';
 
   const toggleMediaMic = () => {
     if (media.micOn && voiceInput.listening) voiceInput.stop();
@@ -371,7 +365,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
   };
 
   const nextTurn = async () => {
-    if (!draft.trim() || !question || busy || atCap) return;
+    if (!session || !draft.trim() || !question || busy || atCap) return;
     voiceInput.stop();
     setBusy(true);
     const answerText = draft.trim();
@@ -382,11 +376,22 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
       setTurn(nextIdx);
       setDraft('');
       let next = '';
+      let done = nextIdx >= MAX_TURNS;
       if (avatarLive) {
         const synced = await rtc.sendAnswer({ answerText, questionIndex: turn, durationSec: turnElapsed, confirm: true }).catch(() => null);
+        done = done || Boolean(synced?.next?.done);
         next = synced?.next?.questionText ?? '';
-        if (!next && synced) next = (await rtc.takeQuestion(true).catch(() => null))?.questionText ?? '';
-        if (!next) setFallbackNote('Không đồng bộ được lượt trả lời với avatar — phòng chuyển về giọng đọc trình duyệt.');
+        if (!next && synced && !done) {
+          const q = await rtc.takeQuestion(true).catch(() => null);
+          done = done || Boolean(q?.done);
+          next = q?.questionText ?? '';
+        }
+        if (!next && !done) setFallbackNote('Không đồng bộ được lượt trả lời với avatar — phòng chuyển về giọng đọc trình duyệt.');
+      }
+      if (done) {
+        setBusy(false);
+        void autoFinish();
+        return;
       }
       if (!next) {
         next = buildAvatarQuestion(nextIdx, session.jobTitle ?? 'lập trình viên', briefRef.current.skills);
@@ -407,8 +412,47 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
     if (res) navigate(`/mock-interviews/${sessionId}/result`);
   };
 
+  /** Hết gói câu hỏi: AI tự chấm rubric rồi đóng phiên, không cần ứng viên bấm nộp. */
+  const autoFinish = async () => {
+    setConfirmFinish(false);
+    speech.stop();
+    voiceInput.stop();
+    await rtc.evaluate().catch(() => null);
+    rtc.teardown();
+    const res = await finishSession(sessionId);
+    if (res) navigate(`/mock-interviews/${sessionId}/result`);
+  };
+
+  /* Voice-first: AI đọc xong tự mở micro; STT ngầm điền draft, ngừng nói ~2.5s tự nộp lượt. */
+  const lastVoiceRef = useRef(Date.now());
+  useEffect(() => {
+    lastVoiceRef.current = Date.now();
+  }, [draft, voiceInput.interimTranscript]);
+
+  useEffect(() => {
+    if (!voiceInput.supported || finished || atCap || busy || confirmFinish) return;
+    if (!question || aiSpeaking || voiceInput.listening) return;
+    const t = setTimeout(() => voiceInput.start(), 1200);
+    return () => clearTimeout(t);
+  }, [question, aiSpeaking, busy, finished, atCap, confirmFinish, voiceInput.listening, voiceInput.supported]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!voiceInput.listening) return;
+    const id = setInterval(() => {
+      if (draft.trim() && !busy && !aiSpeaking && Date.now() - lastVoiceRef.current > 2500) void nextTurn();
+    }, 500);
+    return () => clearInterval(id);
+  }, [voiceInput.listening, draft, busy, aiSpeaking]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!user || user.role !== 'ROLE_USER') {
+    return <div className="p-10 text-ds-body-md text-on-surface-variant">Vui lòng đăng nhập bằng tài khoản ứng viên.</div>;
+  }
+  if (!session) {
+    return loading ? <LoadingBlock label="Đang tải phòng phỏng vấn..." />
+      : <ErrorBlock message={error || 'Không tìm thấy phiên phỏng vấn.'} onRetry={() => void fetchResult(sessionId)} />;
+  }
+
   const contextLabel = session.jobTitle ?? 'Phòng phỏng vấn AVATAR';
-  const aiSpeaking = avatarLive ? rtc.speaking : speech.speaking;
 
   return (
     <div className="flex flex-col gap-space-md">
@@ -613,45 +657,55 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
             </div>
           </div>
 
-          {/* Ô trả lời; Chrome nhận dạng tiếng nói và chèn transcript để ứng viên kiểm tra trước khi gửi. */}
+          {/* Trả lời bằng giọng nói: STT ngầm tự nộp khi ngừng nói; ô gõ chỉ là đường lùi khi trình duyệt không hỗ trợ. */}
           <div className="rounded-xl bg-surface-container-lowest p-space-md shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="flex items-center gap-1.5 text-ds-label-lg font-bold text-secondary-teal">
-                <span className={`${ICON} text-[18px]`}>edit_note</span>
-                Câu trả lời của bạn
+                <span className={`${ICON} text-[18px]`}>keyboard_voice</span>
+                Trả lời bằng giọng nói
               </span>
               <span className="flex items-center gap-2 text-ds-label-sm text-outline tabular-nums">
-                {savingDraft ? 'Đang lưu nháp...' : draft.trim() ? 'Nháp đã lưu lên phiên' : ''}
                 <span className={`${ICON} text-[16px]`}>timer</span>
                 {fmtClock(turnElapsed)}
               </span>
             </div>
-            <textarea
-              value={draft}
-              onChange={e => setDraft(e.target.value)}
-              onBlur={() => void saveDraft()}
-              disabled={finished || atCap}
-              placeholder="Gõ hoặc bấm “Bắt đầu nói” để trả lời. Transcript sẽ hiện ở đây để bạn kiểm tra trước khi gửi..."
-              className="mt-2 min-h-[120px] w-full resize-y rounded-lg border border-outline-variant bg-surface-container-lowest p-3 text-ds-body-md text-on-surface placeholder:text-outline focus:border-primary focus:outline-none disabled:opacity-50"
-            />
-            {(voiceInput.listening || voiceInput.interimTranscript || voiceInput.error) && (
-              <p aria-live="polite" className={`mt-2 text-ds-label-sm ${voiceInput.error ? 'text-error' : 'text-secondary-teal'}`}>
-                {voiceInput.error || (voiceInput.listening
-                  ? `Đang nghe tiếng Việt...${voiceInput.interimTranscript ? ` ${voiceInput.interimTranscript}` : ''}`
-                  : voiceInput.interimTranscript)}
+            <p aria-live="polite" className="mt-2 min-h-[48px] whitespace-pre-wrap text-ds-body-md text-on-surface">
+              {voiceInput.listening
+                ? (draft.trim() || voiceInput.interimTranscript || 'Đang nghe câu trả lời của bạn...')
+                : aiSpeaking
+                  ? 'AI đang đọc câu hỏi — đọc xong micro sẽ tự mở.'
+                  : busy ? 'Đang gửi câu trả lời...' : 'Chờ mở micro...'}
+            </p>
+            {voiceInput.listening && (
+              <p className="mt-1 text-ds-label-sm text-secondary-teal">Ngừng nói khoảng 2 giây để tự gửi câu trả lời.</p>
+            )}
+            {voiceInput.error && (
+              <p className="mt-1 text-ds-label-sm text-error">
+                {voiceInput.error}
+                {voiceInput.supported && (
+                  <button type="button" onClick={voiceInput.start} className={`${adminButton('soft', 'h-8')} ml-2`}>
+                    <span className={`${ICON} text-[14px]`}>mic</span>
+                    Mở lại micro
+                  </button>
+                )}
               </p>
             )}
+            {!voiceInput.supported && (
+              <div className="mt-2">
+                <textarea
+                  value={draft}
+                  onChange={e => setDraft(e.target.value)}
+                  disabled={finished || atCap}
+                  placeholder="Trình duyệt không hỗ trợ nhận dạng giọng nói — gõ câu trả lời rồi bấm gửi."
+                  className="min-h-[120px] w-full resize-y rounded-lg border border-outline-variant bg-surface-container-lowest p-3 text-ds-body-md text-on-surface placeholder:text-outline focus:border-primary focus:outline-none disabled:opacity-50"
+                />
+                <button type="button" onClick={() => void nextTurn()} disabled={!draft.trim() || busy || finished || atCap} className={adminButton('primary', 'h-11 mt-2 disabled:opacity-40')}>
+                  Trả lời &amp; Tiếp
+                  <span className={`${ICON} text-[18px]`}>arrow_forward</span>
+                </button>
+              </div>
+            )}
             <div ref={devicesRef} className="mt-3 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={voiceInput.listening ? voiceInput.stop : voiceInput.start}
-                disabled={!voiceInput.supported || finished || atCap || (media.state === 'granted' && !media.micOn)}
-                title={voiceInput.supported ? 'Nhận dạng tiếng Việt bằng Chrome; bản ghi sẽ chèn vào ô trả lời' : 'Trình duyệt không hỗ trợ nhận dạng giọng nói'}
-                className={adminButton(voiceInput.listening ? 'danger' : 'soft', 'h-11 disabled:opacity-40')}
-              >
-                <span className={`${ICON} text-[18px]`}>{voiceInput.listening ? 'stop_circle' : 'keyboard_voice'}</span>
-                {voiceInput.listening ? 'Dừng nói' : 'Bắt đầu nói'}
-              </button>
               <button type="button" onClick={toggleMediaMic} disabled={media.state !== 'granted'} title={media.state === 'granted' ? 'Tắt/bật track micro của thiết bị' : 'Bấm "Bật mic và camera" ở khung video để cấp quyền trước'} className={adminButton('ghost', 'h-11 disabled:opacity-40')}>
                 <span className={`${ICON} text-[18px]`}>{media.micOn ? 'mic' : 'mic_off'}</span>
                 {media.micOn ? 'Tắt mic thiết bị' : 'Bật mic thiết bị'}
@@ -664,15 +718,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
                 <span className={`${ICON} text-[18px]`}>lightbulb</span>
                 Gợi ý STAR
               </button>
-              <button type="button" onClick={() => void saveDraft()} disabled={!draft.trim() || busy || finished} className={adminButton('ghost', 'h-11 disabled:opacity-40')}>
-                <span className={`${ICON} text-[18px]`}>save</span>
-                Lưu nháp
-              </button>
               <div className="ml-auto flex items-center gap-2">
-                <button type="button" onClick={() => void nextTurn()} disabled={!draft.trim() || busy || finished || atCap} className={adminButton('primary', 'h-11 disabled:opacity-40')}>
-                  Trả lời &amp; Tiếp
-                  <span className={`${ICON} text-[18px]`}>arrow_forward</span>
-                </button>
                 <button type="button" onClick={() => setConfirmFinish(true)} disabled={busy || finished} className={adminButton('danger', 'h-11 disabled:opacity-40')}>
                   <span className={`${ICON} text-[18px]`}>assignment_turned_in</span>
                   Nộp bài
@@ -722,7 +768,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
                         {t.answerText || draft}
                         {!t.confirmed && (
                           <span className="mt-0.5 block text-ds-label-sm text-outline">
-                            Nháp — chưa chốt lượt {savingDraft ? '· đang lưu' : ''}
+                            Nháp — chưa chốt lượt
                           </span>
                         )}
                         {t.confirmed && t.answeredAt && (
