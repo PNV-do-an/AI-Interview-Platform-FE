@@ -37,6 +37,14 @@ export interface InterviewAnswer {
   questionIndex: number;
   question: string;
   answerText?: string;
+  /** Danh sách lựa chọn của câu trắc nghiệm (rỗng với phiên tự luận cũ). */
+  options?: string[];
+  /** Nội dung đáp án đúng do BE trả về cùng kết quả. */
+  correctAnswer?: string;
+  /** 0-based; vị trí ứng viên đã chọn. */
+  selectedOptionIndex?: number;
+  /** BE chấm sẵn: true = đúng, false = sai, null/undefined = chưa chấm. */
+  correct?: boolean;
   durationSec?: number;
   score?: number;
   feedback?: string;
@@ -47,6 +55,10 @@ export interface InterviewResult {
   answers: InterviewAnswer[];
   /** Mỗi lượt một dòng, cùng thứ tự `answers`; phiên AVATAR dùng mảng này làm transcript. */
   transcript?: InterviewTranscriptEntry[];
+  /** Trắc nghiệm: tổng số câu, số câu đúng và điểm tổng do BE tính. */
+  totalQuestions?: number;
+  correctCount?: number;
+  score?: number;
 }
 
 export interface StartInterviewRequest {

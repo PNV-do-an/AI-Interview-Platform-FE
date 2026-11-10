@@ -23,7 +23,7 @@ import {
   AVATAR_RUBRIC_VERSION, InterviewAnswer, InterviewRubric, RUBRIC_DIMENSIONS,
 } from '../../models/Interview.model';
 import {
-  DemoTag, EmptyBlock, ErrorBlock, ICON, LoadingBlock, Pill, adminButton, fmtServer,
+  EmptyBlock, ErrorBlock, ICON, LoadingBlock, Pill, adminButton, fmtServer,
 } from '../components/adminKit';
 import { CARD, SOFT, ScoreRing } from '../components/candidateKit';
 
@@ -36,12 +36,16 @@ const scoreTone = (score: number): 'success' | 'primary' | 'warning' | 'danger' 
 
 const fmtDuration = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 
-const COMPETENCIES = [
-  { icon: 'terminal', label: 'Kiến thức chuyên môn', score: 90, bar: 'w-[90%] bg-primary', note: 'Khả năng nắm bắt sâu kiến trúc, cấu trúc dữ liệu và cơ chế render.' },
-  { icon: 'psychology', label: 'Tư duy giải quyết vấn đề', score: 82, bar: 'w-[82%] bg-primary-container', note: 'Phương pháp bẻ nhỏ vấn đề logic, giải pháp quản lý trạng thái tinh gọn.' },
-  { icon: 'groups', label: 'Giao tiếp & Trình bày', score: 88, bar: 'w-[88%] bg-secondary-teal', note: 'Cấu trúc câu trả lời mạch lạc, đúng trọng tâm giám khảo cần.' },
-  { icon: 'speed', label: 'Tốc độ phản hồi', score: 79, bar: 'w-[79%] bg-tertiary', note: 'Nhịp trả lời và thời gian suy nghĩ trước mỗi câu hỏi mở.' },
-];
+const OPTION_LETTER = (i: number) => String.fromCharCode(65 + i);
+
+/** Đáp án đúng lấy từ `correctAnswer`; fallback theo chỉ số nếu BE chỉ trả options. */
+const isCorrectOption = (answer: InterviewAnswer, option: string, index: number) =>
+  answer.correctAnswer != null
+    ? option === answer.correctAnswer
+    : answer.correct === true && answer.selectedOptionIndex === index;
+
+const isChosenOption = (answer: InterviewAnswer, option: string, index: number) =>
+  answer.selectedOptionIndex != null ? answer.selectedOptionIndex === index : answer.answerText === option;
 
 /** Một item trong cột Điểm mạnh / Cần cải thiện — dựng từ answer thật. */
 const InsightItem: React.FC<{ icon: string; iconClass: string; title: string; body: string; meta?: string }> = ({
@@ -58,6 +62,17 @@ const InsightItem: React.FC<{ icon: string; iconClass: string; title: string; bo
 );
 
 const clampScore = (n: number) => Math.max(0, Math.min(100, Math.round(n || 0)));
+
+/** Ô số liệu nhỏ trong phần tổng kết trắc nghiệm. */
+const Stat: React.FC<{ icon: string; label: string; value: string; tone: string }> = ({ icon, label, value, tone }) => (
+  <div className="flex flex-col gap-1 rounded-lg bg-surface-container-low p-space-md">
+    <span className={`flex items-center gap-1.5 text-ds-label-sm font-medium ${tone}`}>
+      <span className={`${ICON} text-[18px]`}>{icon}</span>
+      {label}
+    </span>
+    <span className="text-ds-headline-md font-bold text-on-surface tabular-nums">{value}</span>
+  </div>
+);
 
 /**
  * Báo cáo phiên AVATAR (mockup 2 + BE 012): finish xong BE chưa có điểm -> `GET /report` 404,
@@ -324,11 +339,14 @@ const MockInterviewResultPage = () => {
 
   const insights = useMemo(() => {
     const scored = answers.filter((a): a is InterviewAnswer & { score: number } => typeof a.score === 'number');
-    const byScore = [...scored].sort((a, b) => b.score - a.score);
+    const correct = answers.filter(a =>
+      a.correct === true || (a.correct == null && typeof a.score === 'number' && a.score >= 100));
+    const wrong = answers.filter(a =>
+      a.correct === false || (a.correct == null && typeof a.score === 'number' && a.score < 100));
     return {
-      strengths: byScore.filter(a => a.score >= 80).slice(0, 3),
-      improvements: byScore.filter(a => a.score < 80).reverse().slice(0, 3),
-      avg: byScore.length ? byScore.reduce((sum, a) => sum + a.score, 0) / byScore.length : null,
+      strengths: correct.slice(0, 3),
+      improvements: [...wrong].reverse().slice(0, 3),
+      avg: scored.length ? scored.reduce((sum, a) => sum + a.score, 0) / scored.length : null,
     };
   }, [answers]);
 
@@ -353,9 +371,17 @@ const MockInterviewResultPage = () => {
     return <AvatarReportView sessionId={session.id} />;
   }
 
-  const answered = answers.filter(a => a.answerText);
-  const overall = session.overallScore ?? 0;
-  const total = session.questions?.length ?? answers.length;
+  const total = result.totalQuestions ?? session.questions?.length ?? answers.length;
+  const answeredCount = answers.length;
+  const correctCount = result.correctCount
+    ?? answers.filter(a => a.correct === true || (a.correct == null && typeof a.score === 'number' && a.score >= 100)).length;
+  const wrongCount = answers.filter(
+    a => a.correct === false || (a.correct == null && typeof a.score === 'number' && a.score < 100),
+  ).length;
+  const unansweredCount = Math.max(total - answeredCount, 0);
+  const accuracy = answeredCount ? Math.round((correctCount / answeredCount) * 100) : 0;
+  const overall = result.score ?? session.overallScore ?? 0;
+  const pctOfTotal = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
   const roleLabel = session.mode === 'MOCK' ? (session.jobTitle || 'Phiên luyện tập') : (session.topic || 'Luyện tập kiến thức');
   const totalSec = answers.reduce((sum, a) => sum + (a.durationSec ?? 0), 0);
 
@@ -406,8 +432,14 @@ const MockInterviewResultPage = () => {
               <span className="font-medium text-on-surface">Thời lượng:</span>
               <span>
                 {totalSec > 0 ? `${Math.round(totalSec / 60)} phút` : 'chưa ghi nhận'}
-                {` (Trả lời ${answered.length}/${total} câu hỏi)`}
+                {` (Trả lời ${answeredCount}/${total} câu)`}
               </span>
+            </span>
+            <span className="h-1 w-1 rounded-full bg-outline-variant" />
+            <span className="flex items-center gap-space-xs">
+              <span className={`${ICON} text-[18px] text-secondary-teal`}>task_alt</span>
+              <span className="font-medium text-on-surface">Số câu đúng:</span>
+              <span className="font-semibold text-on-surface tabular-nums">{correctCount}/{total}</span>
             </span>
             {session.companyName && (
               <>
@@ -433,60 +465,62 @@ const MockInterviewResultPage = () => {
         </div>
       </div>
 
-      {/* 2. Điểm tổng hợp + năng lực cốt lõi */}
+      {/* 2. Điểm tổng hợp + thống kê trắc nghiệm thật từ API */}
       <div className={`${CARD} relative flex flex-col gap-space-xl overflow-hidden p-space-lg xl:flex-row xl:items-stretch`}>
         <span className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-primary-fixed/30 blur-3xl" />
         <div className={`relative z-10 flex min-w-[280px] flex-col items-center justify-center gap-space-sm rounded-xl p-space-md text-center ${SOFT}`}>
-          <span className="text-ds-label-sm font-semibold uppercase tracking-wider text-primary">Điểm số Tổng hợp</span>
+          <span className="text-ds-label-sm font-semibold uppercase tracking-wider text-primary">Điểm số tổng hợp</span>
           <ScoreRing value={overall} caption={scoreBand(overall)} size={176} />
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-container-lowest px-space-md py-1 text-ds-body-sm shadow-sm">
-            <span className={`${ICON} text-[16px] text-secondary-teal`}>trending_up</span>
-            <span className="font-semibold text-on-surface">Cao hơn 78%</span>
-            <span className="text-on-surface-variant">ứng viên cùng vị trí</span>
+          <Pill tone={scoreTone(overall)} icon="verified">Đúng {correctCount}/{total} câu</Pill>
+          <span className="text-ds-label-sm text-on-surface-variant">
+            Điểm tổng do BE tính từ điểm các câu đã trả lời
           </span>
-          <DemoTag>Khối demo — chưa có mức so sánh</DemoTag>
         </div>
 
         <div className="relative z-10 flex flex-1 flex-col justify-between gap-space-lg">
           <div>
             <div className="mb-space-md flex flex-wrap items-center justify-between gap-2 border-b border-surface-container-high pb-space-sm">
-              <h2 className="flex flex-wrap items-center gap-2 text-ds-headline-sm font-bold text-on-surface">
-                Phân tích Năng lực Cốt lõi
-                <DemoTag>Khối demo</DemoTag>
-              </h2>
-              <span className="text-ds-label-sm uppercase tracking-wider text-outline">Hệ thống trọng số chuẩn (bản mẫu)</span>
+              <h2 className="text-ds-headline-sm font-bold text-on-surface">Kết quả trắc nghiệm</h2>
+              <span className="text-ds-label-sm uppercase tracking-wider text-outline">
+                {answeredCount}/{total} câu đã trả lời
+              </span>
             </div>
-            <div className="grid grid-cols-1 gap-x-space-xl gap-y-space-md md:grid-cols-2">
-              {COMPETENCIES.map(m => (
-                <div key={m.label} className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between text-ds-body-sm">
-                    <span className="flex items-center gap-1.5 font-medium text-on-surface">
-                      <span className={`${ICON} text-[18px] text-primary`}>{m.icon}</span>
-                      {m.label}
-                    </span>
-                    <span className="font-bold text-on-surface tabular-nums">
-                      {m.score}
-                      <span className="text-ds-label-sm text-outline">/100</span>
-                    </span>
-                  </div>
-                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-container">
-                    <div className={`h-full rounded-full ${m.bar}`} />
-                  </div>
-                  <span className="text-ds-label-sm text-on-surface-variant">{m.note}</span>
-                </div>
-              ))}
+
+            <div className="grid grid-cols-2 gap-space-md md:grid-cols-4">
+              <Stat icon="task_alt" label="Câu đúng" value={`${correctCount}`} tone="text-secondary-teal" />
+              <Stat icon="cancel" label="Câu sai" value={`${wrongCount}`} tone="text-error" />
+              <Stat icon="help" label="Chưa trả lời" value={`${unansweredCount}`} tone="text-outline-strong" />
+              <Stat icon="percent" label="Tỷ lệ đúng" value={`${accuracy}%`} tone="text-primary" />
+            </div>
+
+            <div className="mt-space-lg">
+              <div className="mb-1.5 flex items-center justify-between text-ds-label-sm text-on-surface-variant">
+                <span>Phân bố kết quả</span>
+                <span className="tabular-nums">{total} câu</span>
+              </div>
+              <div className="flex h-3 w-full overflow-hidden rounded-full bg-surface-container">
+                <div className="h-full bg-secondary-teal transition-all" style={{ width: `${pctOfTotal(correctCount)}%` }} title={`Đúng ${correctCount}`} />
+                <div className="h-full bg-error transition-all" style={{ width: `${pctOfTotal(wrongCount)}%` }} title={`Sai ${wrongCount}`} />
+                <div className="h-full bg-surface-container-high transition-all" style={{ width: `${pctOfTotal(unansweredCount)}%` }} title={`Chưa trả lời ${unansweredCount}`} />
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-space-md text-ds-label-sm text-on-surface-variant">
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-secondary-teal" /> Đúng {correctCount}</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-error" /> Sai {wrongCount}</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-surface-container-high" /> Chưa trả lời {unansweredCount}</span>
+              </div>
             </div>
           </div>
+
           <div className="flex flex-wrap items-center gap-space-md pt-space-sm text-ds-body-sm text-on-surface-variant">
             <span className="flex items-center gap-1.5">
               <span className={`${ICON} text-[16px] text-primary`}>info</span>
-              Điểm thật của phiên: {overall}/100 • câu trả lời có điểm: {insights.avg == null ? 0 : answers.filter(a => typeof a.score === 'number').length}
+              Điểm tổng: {overall}/100 • Thời gian làm bài: {totalSec > 0 ? fmtDuration(totalSec) : 'chưa ghi nhận'}
             </span>
           </div>
         </div>
       </div>
 
-      {/* 3. Điểm mạnh / Cần cải thiện / Gợi ý */}
+      {/* 3. Câu đúng / Câu sai / Tổng kết */}
       <div className="grid grid-cols-1 gap-space-lg lg:grid-cols-3">
         <div className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
           <div className="flex items-center gap-space-sm">
@@ -494,15 +528,15 @@ const MockInterviewResultPage = () => {
               <span className={`${ICON} text-[24px]`}>task_alt</span>
             </span>
             <div className="flex flex-col">
-              <h3 className="text-ds-headline-sm font-bold text-on-surface">Điểm mạnh nổi bật</h3>
+              <h3 className="text-ds-headline-sm font-bold text-on-surface">Câu trả lời đúng</h3>
               <span className="text-ds-label-sm text-secondary-teal">
-                {insights.strengths.length} câu đạt từ 80/100
+                {correctCount} câu chọn đúng đáp án
               </span>
             </div>
           </div>
           {insights.strengths.length === 0 ? (
             <p className="m-0 rounded-lg bg-surface-container-low p-space-md text-ds-body-sm text-on-surface-variant">
-              Chưa có câu nào đạt từ 80/100 trong phiên này.
+              Chưa có câu trả lời đúng trong phiên này.
             </p>
           ) : insights.strengths.map(a => (
             <InsightItem
@@ -510,34 +544,34 @@ const MockInterviewResultPage = () => {
               icon="check_circle"
               iconClass="text-secondary-teal"
               title={`Câu ${a.questionIndex + 1}: ${a.question}`}
-              body={a.feedback ?? 'AI ghi nhận nội dung trả lời đủ ý.'}
-              meta={`${a.score}/100${a.durationSec != null ? ` • trả lời ${fmtDuration(a.durationSec)}` : ''}`}
+              body={a.feedback ?? 'Chọn đúng đáp án.'}
+              meta={`${a.score ?? 100}/100${a.durationSec != null ? ` • trả lời ${fmtDuration(a.durationSec)}` : ''}`}
             />
           ))}
         </div>
 
         <div className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
           <div className="flex items-center gap-space-sm">
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-container-highest text-primary">
-              <span className={`${ICON} text-[24px]`}>troubleshoot</span>
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-error-container text-on-error-container">
+              <span className={`${ICON} text-[24px]`}>cancel</span>
             </span>
             <div className="flex flex-col">
-              <h3 className="text-ds-headline-sm font-bold text-on-surface">Cần cải thiện</h3>
-              <span className="text-ds-label-sm text-primary">Các câu còn dưới mức 80/100</span>
+              <h3 className="text-ds-headline-sm font-bold text-on-surface">Câu trả lời sai</h3>
+              <span className="text-ds-label-sm text-error">{wrongCount} câu cần xem lại</span>
             </div>
           </div>
           {insights.improvements.length === 0 ? (
             <p className="m-0 rounded-lg bg-surface-container-low p-space-md text-ds-body-sm text-on-surface-variant">
-              Mọi câu đã trả lời đều đạt từ 80/100 — không có câu cần sửa ưu tiên.
+              Không có câu trả lời sai trong phiên này.
             </p>
           ) : insights.improvements.map(a => (
             <InsightItem
               key={a.id}
               icon="report_problem"
-              iconClass="text-outline-strong"
+              iconClass="text-error"
               title={`Câu ${a.questionIndex + 1}: ${a.question}`}
-              body={a.feedback ?? 'Chưa có nhận xét kèm theo câu này.'}
-              meta={`${a.score}/100${a.durationSec != null ? ` • trả lời ${fmtDuration(a.durationSec)}` : ''}`}
+              body={a.feedback ?? (a.correctAnswer ? `Đáp án đúng: ${a.correctAnswer}` : 'Chưa có nhận xét kèm theo câu này.')}
+              meta={`${a.score ?? 0}/100${a.durationSec != null ? ` • trả lời ${fmtDuration(a.durationSec)}` : ''}`}
             />
           ))}
         </div>
@@ -545,19 +579,39 @@ const MockInterviewResultPage = () => {
         <div className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
           <div className="flex items-center gap-space-sm">
             <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-fixed text-primary">
-              <span className={`${ICON} text-[24px]`}>auto_awesome</span>
+              <span className={`${ICON} text-[24px]`}>summarize</span>
             </span>
             <div className="flex flex-col">
-              <h3 className="flex flex-wrap items-center gap-2 text-ds-headline-sm font-bold text-on-surface">
-                Gợi ý từ AI Mentor
-                <DemoTag>Khối demo</DemoTag>
-              </h3>
-              <span className="text-ds-label-sm text-primary">Lộ trình rèn luyện cá nhân hóa (bản mẫu)</span>
+              <h3 className="text-ds-headline-sm font-bold text-on-surface">Tổng kết phiên</h3>
+              <span className="text-ds-label-sm text-primary">Số liệu thật từ bài làm</span>
             </div>
           </div>
-          <InsightItem icon="school" iconClass="text-primary" title="Khóa học đề xuất cho bạn" body='Tập trung tối ưu quy mô lớn và Micro-Frontends.' />
-          <InsightItem icon="code_blocks" iconClass="text-primary" title="Bài tập thử thách thực hành" body="Thử dựng kiến trúc Micro-frontend cho hệ sinh thái Thương mại điện tử đa domain." />
-          <InsightItem icon="lightbulb" iconClass="text-primary" title="Mẹo phỏng vấn vòng kế tiếp" body="Hãy dành 15 giây tóm tắt lại bài toán để đồng bộ hóa góc nhìn với giám khảo trước khi đưa ra kiến trúc giải pháp." />
+          <InsightItem
+            icon="percent"
+            iconClass="text-primary"
+            title={`Tỷ lệ trả lời đúng: ${accuracy}%`}
+            body={`Bạn chọn đúng ${correctCount}/${answeredCount} câu đã trả lời, trên tổng ${total} câu của phiên.`}
+          />
+          <InsightItem
+            icon="pending_actions"
+            iconClass="text-outline-strong"
+            title={`Còn ${unansweredCount} câu chưa trả lời`}
+            body={unansweredCount === 0
+              ? 'Bạn đã hoàn thành toàn bộ câu hỏi của phiên.'
+              : 'Các câu bỏ trống không được tính đúng; hãy luyện lại để hoàn thành đủ bộ câu hỏi.'}
+          />
+          <InsightItem
+            icon="lightbulb"
+            iconClass="text-primary"
+            title={accuracy >= 80 ? 'Bạn đang nắm rất tốt' : 'Ưu tiên ôn lại câu sai'}
+            body={accuracy >= 80
+              ? 'Tiếp tục luyện với chủ đề khó hơn để duy trì phong độ.'
+              : 'Mở chi tiết từng câu bên dưới để xem đáp án đúng và ghi chú lại kiến thức còn thiếu.'}
+          />
+          <Link to="/mock-interviews" className={adminButton('primary', 'mt-auto h-10 justify-center no-underline')}>
+            <span className={`${ICON} text-[18px]`}>replay</span>
+            Luyện phiên mới
+          </Link>
         </div>
       </div>
 
@@ -566,10 +620,10 @@ const MockInterviewResultPage = () => {
         <div className="flex flex-col gap-space-sm border-b border-surface-container-high pb-space-md md:flex-row md:items-center md:justify-between">
           <div>
             <h2 className="text-ds-headline-sm font-bold text-on-surface">
-              Chi tiết Đánh giá Từng câu hỏi ({answered.length}/{total} Questions)
+              Chi tiết từng câu hỏi ({answeredCount}/{total} câu)
             </h2>
             <p className="text-ds-body-sm text-on-surface-variant">
-              Nội dung trả lời đã ghi nhận và nhận xét kèm theo từng câu
+              Đáp án bạn đã chọn, đáp án đúng và nhận xét chấm điểm của hệ thống
             </p>
           </div>
           <div className="flex items-center gap-space-sm">
@@ -593,6 +647,12 @@ const MockInterviewResultPage = () => {
           <div className="flex flex-col gap-space-sm">
             {answers.map(a => {
               const open = openIds.has(a.id);
+              const options = a.options ?? [];
+              const hasOptions = options.length > 0;
+              const isCorrect = a.correct === true
+                || (a.correct == null && typeof a.score === 'number' && a.score >= 100);
+              const isWrong = a.correct === false
+                || (a.correct == null && typeof a.score === 'number' && a.score < 100);
               return (
                 <div key={a.id} className={`rounded-lg ${SOFT}`}>
                   <button
@@ -602,18 +662,26 @@ const MockInterviewResultPage = () => {
                     className="flex w-full items-center justify-between gap-space-md rounded-lg px-space-lg py-space-md text-left transition-colors hover:bg-surface-container"
                   >
                     <span className="flex min-w-0 items-center gap-space-md pr-space-md">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-fixed text-ds-label-lg font-bold text-primary">
+                      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ds-label-lg font-bold ${
+                        isCorrect ? 'bg-secondary-container text-on-secondary-container'
+                          : isWrong ? 'bg-error-container text-on-error-container'
+                            : 'bg-primary-fixed text-primary'
+                      }`}>
                         {a.questionIndex + 1}
                       </span>
                       <span className="flex min-w-0 flex-col">
-                        <span className="truncate text-ds-headline-sm font-semibold text-on-surface">{a.question}</span>
+                        <span className="break-words text-ds-headline-sm font-semibold text-on-surface">{a.question}</span>
                         <span className="text-ds-body-sm text-on-surface-variant">
                           {a.durationSec != null ? `Thời lượng trả lời: ${fmtDuration(a.durationSec)}` : 'Chưa ghi nhận thời lượng'}
                         </span>
                       </span>
                     </span>
                     <span className="flex shrink-0 items-center gap-space-md">
-                      {typeof a.score === 'number' ? (
+                      {isCorrect ? (
+                        <Pill tone="success" icon="check_circle">{a.score ?? 100}/100</Pill>
+                      ) : isWrong ? (
+                        <Pill tone="danger" icon="cancel">{a.score ?? 0}/100</Pill>
+                      ) : typeof a.score === 'number' ? (
                         <Pill tone={scoreTone(a.score)}>{a.score}/100</Pill>
                       ) : (
                         <span className="text-ds-label-md text-outline">Chưa chấm</span>
@@ -624,20 +692,70 @@ const MockInterviewResultPage = () => {
 
                   {open && (
                     <div className="grid grid-cols-1 gap-space-md px-space-lg pb-space-lg lg:grid-cols-2">
-                      <div className="flex flex-col gap-1.5 rounded-lg bg-surface-container-lowest p-space-md shadow-sm">
-                        <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase text-outline">
-                          <span className={`${ICON} text-[16px]`}>transcribe</span>
-                          Nội dung câu trả lời
-                        </span>
-                        {a.answerText ? (
-                          <p className="m-0 whitespace-pre-wrap text-ds-body-sm leading-relaxed text-on-surface italic">
-                            {a.answerText}
-                          </p>
-                        ) : (
-                          <p className="m-0 text-ds-body-sm italic text-on-surface-variant">Không có bản ghi câu trả lời.</p>
-                        )}
-                      </div>
-                      <div className="flex flex-col gap-1.5 rounded-lg bg-secondary-container/40 p-space-md">
+                      {hasOptions ? (
+                        <div className="flex flex-col gap-2 rounded-lg bg-surface-container-lowest p-space-md shadow-sm lg:col-span-2">
+                          <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase tracking-wide text-outline">
+                            <span className={`${ICON} text-[16px]`}>checklist</span>
+                            Các lựa chọn của câu hỏi
+                          </span>
+                          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                            {options.map((opt, i) => {
+                              const correctOpt = isCorrectOption(a, opt, i);
+                              const chosenOpt = isChosenOption(a, opt, i);
+                              return (
+                                <li
+                                  key={`${a.id}-${i}`}
+                                  className={`flex flex-wrap items-start gap-2 rounded-lg border px-3 py-2 text-ds-body-sm ${
+                                    correctOpt
+                                      ? 'border-secondary-teal bg-secondary-container/40'
+                                      : chosenOpt
+                                        ? 'border-error bg-error-container/40'
+                                        : 'border-outline-variant bg-surface-container-lowest'
+                                  }`}
+                                >
+                                  <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-ds-label-sm font-bold ${
+                                    correctOpt ? 'bg-secondary-teal text-white'
+                                      : chosenOpt ? 'bg-error text-white'
+                                        : 'bg-surface-container-high text-on-surface-variant'
+                                  }`}>
+                                    {OPTION_LETTER(i)}
+                                  </span>
+                                  <span className={`min-w-0 flex-1 break-words ${
+                                    correctOpt || chosenOpt ? 'font-medium text-on-surface' : 'text-on-surface-variant'
+                                  }`}>
+                                    {opt}
+                                  </span>
+                                  {correctOpt && chosenOpt && <Pill tone="success" icon="check_circle">Bạn chọn · Đúng</Pill>}
+                                  {correctOpt && !chosenOpt && <Pill tone="success" icon="check_circle">Đáp án đúng</Pill>}
+                                  {chosenOpt && !correctOpt && <Pill tone="danger" icon="cancel">Bạn chọn</Pill>}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                          {a.answerText && a.selectedOptionIndex == null && (
+                            <p className="m-0 text-ds-body-sm text-on-surface-variant">
+                              Bạn chọn: <span className="font-semibold text-on-surface">{a.answerText}</span>
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-1.5 rounded-lg bg-surface-container-lowest p-space-md shadow-sm">
+                          <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase text-outline">
+                            <span className={`${ICON} text-[16px]`}>transcribe</span>
+                            Nội dung câu trả lời
+                          </span>
+                          {a.answerText ? (
+                            <p className="m-0 whitespace-pre-wrap text-ds-body-sm leading-relaxed text-on-surface italic">
+                              {a.answerText}
+                            </p>
+                          ) : (
+                            <p className="m-0 text-ds-body-sm italic text-on-surface-variant">Không có bản ghi câu trả lời.</p>
+                          )}
+                        </div>
+                      )}
+                      <div className={`flex flex-col gap-1.5 rounded-lg p-space-md ${
+                        isCorrect ? 'bg-secondary-container/40' : isWrong ? 'bg-error-container/30' : 'bg-secondary-container/40'
+                      } ${hasOptions ? 'lg:col-span-2' : ''}`}>
                         <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase text-on-secondary-container">
                           <span className={`${ICON} text-[16px]`}>psychology</span>
                           Nhận xét kèm theo
@@ -645,6 +763,11 @@ const MockInterviewResultPage = () => {
                         <p className="m-0 text-ds-body-sm leading-relaxed text-on-surface">
                           {a.feedback ?? 'Câu này chưa có nhận xét.'}
                         </p>
+                        {a.correctAnswer && (
+                          <p className="m-0 mt-1 text-ds-label-sm text-on-surface-variant">
+                            Đáp án đúng: <span className="font-semibold text-on-surface">{a.correctAnswer}</span>
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}
