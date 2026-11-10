@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AdminService from '../../services/admin.service';
-import AIService from '../../services/ai.service';
 import { AdminSettings, SettingsValidationError } from '../../models/AdminConsole.model';
 import {
   ICON,
@@ -199,10 +198,6 @@ const AdminSystemSettingsPage: React.FC = () => {
   const [savingGroup, setSavingGroup] = useState<Group | ''>('');
   const [activeNav, setActiveNav] = useState('section-general');
   const [toast, setToast] = useState('');
-  const [aiServiceUrl, setAiServiceUrl] = useState(() => AIService.getServiceUrl());
-  const [aiServiceMessage, setAiServiceMessage] = useState('');
-  const [aiServiceMessageIsError, setAiServiceMessageIsError] = useState(false);
-  const [checkingAiService, setCheckingAiService] = useState(false);
   const toastTimer = useRef<number | null>(null);
   const alive = useRef(true);
 
@@ -303,41 +298,6 @@ const AdminSystemSettingsPage: React.FC = () => {
       if (alive.current) setSavingGroup('');
     }
   }, [form, loaded]);
-
-  const saveAiServiceUrl = () => {
-    try {
-      const saved = AIService.setServiceUrl(aiServiceUrl);
-      setAiServiceUrl(saved);
-      setAiServiceMessage(saved
-        ? 'Đã lưu URL AI service.'
-        : 'Đã xóa URL runtime; ứng dụng sẽ dùng cấu hình build nếu có.');
-      setAiServiceMessageIsError(false);
-    } catch (e) {
-      setAiServiceMessage(e instanceof Error ? e.message : 'Không lưu được URL AI service.');
-      setAiServiceMessageIsError(true);
-    }
-  };
-
-  const checkAiService = async () => {
-    setCheckingAiService(true);
-    setAiServiceMessage('');
-    try {
-      const normalizedUrl = AIService.normalizeServiceUrl(aiServiceUrl);
-      const health = await AIService.healthAtUrl(normalizedUrl);
-      if (health.status !== 'ok') throw new Error('AI service chưa sẵn sàng.');
-      const saved = AIService.setServiceUrl(normalizedUrl);
-      setAiServiceUrl(saved);
-      setAiServiceMessage(health.avatarSessions < 0
-        ? 'Đã lưu URL; AI service phản hồi nhưng chưa kết nối được máy chủ avatar.'
-        : `Đã kết nối và lưu URL · ${health.llmProvider} · tối đa ${health.maxTurns} lượt.`);
-      setAiServiceMessageIsError(health.avatarSessions < 0);
-    } catch (e) {
-      setAiServiceMessage(e instanceof Error ? e.message : 'Không kết nối được AI service.');
-      setAiServiceMessageIsError(true);
-    } finally {
-      setCheckingAiService(false);
-    }
-  };
 
   const gotoSection = (id: string) => {
     setActiveNav(id);
@@ -759,44 +719,6 @@ const AdminSystemSettingsPage: React.FC = () => {
                  </div>
                </div>
 
-               <div className="flex flex-col gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-3">
-                 <label htmlFor="admin-ai-service-url" className="text-ds-label-md font-semibold text-on-surface">
-                   URL AI service (LiveTalking)
-                 </label>
-                 <p className="text-ds-body-sm text-on-surface-variant">
-                   Dan URL HTTPS duoc in ra tu Colab, khong them duong dan /health. Cau hinh luu tren trinh duyet nay.
-                 </p>
-                 <div className="flex flex-col gap-2 sm:flex-row">
-                   <input
-                     id="admin-ai-service-url"
-                     type="url"
-                     autoComplete="url"
-                     value={aiServiceUrl}
-                     onChange={e => setAiServiceUrl(e.target.value)}
-                     placeholder="https://ten-tunnel.trycloudflare.com"
-                     className="min-w-0 flex-1 rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-ds-body-md text-on-surface focus:border-primary focus:outline-none"
-                   />
-                   <button type="button" onClick={saveAiServiceUrl} className={adminButton('soft', 'justify-center')}>
-                     Luu URL
-                   </button>
-                   <button
-                     type="button"
-                     onClick={() => void checkAiService()}
-                     disabled={checkingAiService || !aiServiceUrl.trim()}
-                     className={adminButton('primary', 'justify-center disabled:opacity-40')}
-                   >
-                     {checkingAiService ? 'Dang kiem tra...' : 'Kiem tra va luu'}
-                   </button>
-                 </div>
-                 {aiServiceMessage && (
-                   <p
-                     role={aiServiceMessageIsError ? 'alert' : 'status'}
-                     className={`text-ds-label-md ${aiServiceMessageIsError ? 'text-error' : 'text-secondary-teal'}`}
-                   >
-                     {aiServiceMessage}
-                   </p>
-                 )}
-               </div>
             </SectionShell>
 
             <p className="text-ds-body-sm text-on-surface-variant">
