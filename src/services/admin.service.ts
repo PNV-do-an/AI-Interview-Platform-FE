@@ -144,13 +144,13 @@ const AdminService = {
     ),
 
   /**
-   * ADMIN-only: một nút bấm, BE tự quét danh sách việc làm IT mặc định
-   * (`app.topcv.it-listing-url`) và cào tối đa `limit` tin.
-   * POST /api/v1/admin/jobs/import/topcv/auto?limit=...
+   * ADMIN-only: một nút bấm, BE ưu tiên cào TopCV; nếu TopCV chặn (Cloudflare 403)
+   * thì tự chuyển sang ITviec và trả `sourceUrl` của nguồn thực tế.
+   * POST /api/v1/admin/jobs/import/auto?limit=...
    */
-  importTopCvAuto: (limit: number) =>
+  importAutoItJobs: (limit: number) =>
     httpService.post<ApiResponse<TopCvBatchImportResult>>(
-      `${BASE}/jobs/import/topcv/auto`, undefined, { params: { limit }, timeout: TOPCV_IMPORT_TIMEOUT },
+      `${BASE}/jobs/import/auto`, undefined, { params: { limit }, timeout: TOPCV_IMPORT_TIMEOUT },
     ),
 
   /** Param lọc quyết định tên là `decision` (không phải `action`). */

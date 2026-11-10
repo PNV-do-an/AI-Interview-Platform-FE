@@ -268,16 +268,15 @@ const JobApprovalPage: React.FC = () => {
   }, [pendingRows, loadList]);
 
   /**
-   * Một nút bấm: BE tự quét danh sách việc làm IT mặc định trên TopCV
-   * (`app.topcv.it-listing-url`) và tạo bản nháp cho từng tin.
-   * limit = 0 để BE dùng `app.topcv.default-limit` (mặc định 20).
+   * Một nút bấm: BE ưu tiên lấy JD IT trên TopCV; nếu TopCV chặn Cloudflare 403
+   * thì tự chuyển sang ITviec. limit = 0 để BE dùng `app.topcv.default-limit`.
    */
   const runAutoCrawl = async () => {
     if (crawlBusy) return;
     setCrawlBusy(true);
     setFlash(null);
     try {
-      const res = await AdminService.importTopCvAuto(0);
+      const res = await AdminService.importAutoItJobs(0);
       if (!alive.current) return;
 
       const data = res.data.data;
@@ -385,13 +384,13 @@ const JobApprovalPage: React.FC = () => {
                 type="button"
                 onClick={() => void runAutoCrawl()}
                 disabled={crawlBusy}
-                title="Tự động lấy các JD công nghệ thông tin mới trên TopCV"
+                title="Tự động lấy JD IT: ưu tiên TopCV, nếu bị chặn sẽ chuyển sang ITviec"
                 className="h-10 px-space-md rounded-xl bg-primary-fixed hover:bg-primary-fixed/80 text-on-primary-fixed text-ds-label-md transition-all flex items-center gap-2 border border-primary/20 shadow-sm cursor-pointer font-semibold disabled:opacity-60 disabled:cursor-wait"
               >
                 <span className={`${ICON} text-[18px] ${crawlBusy ? 'animate-spin' : ''}`}>
                   {crawlBusy ? 'progress_activity' : 'cloud_download'}
                 </span>
-                <span>{crawlBusy ? 'Đang lấy JD IT...' : 'Lấy JD IT từ TopCV'}</span>
+                <span>{crawlBusy ? 'Đang lấy JD IT...' : 'Lấy JD IT tự động'}</span>
               </button>
             )}
             <button type="button" onClick={exportReport} className="h-10 px-space-md rounded-xl bg-surface-container-lowest hover:bg-surface-container-low text-on-surface text-ds-label-md transition-all flex items-center gap-2 border border-surface-container-high shadow-sm cursor-pointer">
