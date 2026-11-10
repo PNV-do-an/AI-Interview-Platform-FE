@@ -59,6 +59,8 @@ export interface StartInterviewRequest {
 
 export interface SubmitAnswerRequest {
   answerText: string;
+  /** 0-based, dùng cho câu hỏi trắc nghiệm MOCK/KNOWLEDGE. */
+  selectedOptionIndex?: number;
   durationSec?: number;
   /** Chỉ dùng cho phiên AVATAR: câu hỏi AI do FE relay lên (BE 012). */
   questionText?: string;

@@ -68,12 +68,26 @@ const MockInterviewSessionPage = () => {
 
   const handleSubmit = async () => {
     clearMessages();
-    if (!answerText.trim()) return;
-    const saved = await submitAnswer(session.id, { answerText: answerText.trim(), durationSec: elapsed });
-    if (saved && session.currentQuestionIndex + 1 >= total) {
+    if (!answerText.trim() || loading) return;
+
+    // Trắc nghiệm: gửi kèm vị trí đáp án đã chọn để BE chấm đúng, không phụ thuộc việc map text.
+    const current = session.questions[index];
+    const options = typeof current === 'string' ? [] : ((current as { options?: string[] }).options ?? []);
+    const selectedOptionIndex = options.indexOf(answerText);
+    const saved = await submitAnswer(session.id, {
+      answerText: answerText.trim(),
+      durationSec: elapsed,
+      ...(selectedOptionIndex >= 0 ? { selectedOptionIndex } : {}),
+    });
+    if (!saved) return;
+
+    if (session.currentQuestionIndex + 1 >= total) {
       await finishSession(session.id);
       navigate(`/mock-interviews/${session.id}/result`);
+      return;
     }
+    // BE đã tăng currentQuestionIndex sau khi lưu đáp án; tải lại để chuyển sang câu kế tiếp.
+    await fetchResult(session.id);
   };
 
   const runFinish = async () => {
