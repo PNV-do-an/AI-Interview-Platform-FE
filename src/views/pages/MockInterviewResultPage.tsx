@@ -472,9 +472,6 @@ const MockInterviewResultPage = () => {
           <span className="text-ds-label-sm font-semibold uppercase tracking-wider text-primary">Điểm số tổng hợp</span>
           <ScoreRing value={overall} caption={scoreBand(overall)} size={176} />
           <Pill tone={scoreTone(overall)} icon="verified">Đúng {correctCount}/{total} câu</Pill>
-          <span className="text-ds-label-sm text-on-surface-variant">
-            Điểm tổng do BE tính từ điểm các câu đã trả lời
-          </span>
         </div>
 
         <div className="relative z-10 flex flex-1 flex-col justify-between gap-space-lg">
