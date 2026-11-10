@@ -86,8 +86,8 @@ export interface TopCvImportRequest {
 }
 
 /**
- * Kết quả cào JD TopCV do BE trả về (TopCvImportResult bên BE).
- * BE luôn tạo một tin DRAFT mang tên tài khoản admin đang gọi API và trả `jobId` của tin đó.
+ * Kết quả lấy JD từ TopCV/ITviec do BE trả về (TopCvImportResult bên BE).
+ * BE tạo tin với employer là tài khoản admin đang gọi API, đăng ngay (OPEN) và trả `jobId`.
  */
 export interface TopCvImportResult {
   sourceUrl?: string;

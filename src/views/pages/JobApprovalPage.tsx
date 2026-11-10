@@ -269,7 +269,8 @@ const JobApprovalPage: React.FC = () => {
 
   /**
    * Một nút bấm: BE ưu tiên lấy JD IT trên TopCV; nếu TopCV chặn Cloudflare 403
-   * thì tự chuyển sang ITviec. limit = 0 để BE dùng `app.topcv.default-limit`.
+   * thì tự chuyển sang ITviec. Các JD lấy được đăng ngay (OPEN), không qua duyệt.
+   * limit = 0 để BE dùng `app.topcv.default-limit`.
    */
   const runAutoCrawl = async () => {
     if (crawlBusy) return;
@@ -285,8 +286,8 @@ const JobApprovalPage: React.FC = () => {
       const firstFailure = data?.failures?.[0]?.message;
       const baseMessage = res.data.message
         || (imported > 0
-          ? `Đã cào ${imported} JD IT từ TopCV và tạo bản nháp.`
-          : 'Không cào được JD nào từ TopCV.');
+          ? `Đã lấy và đăng ${imported} JD IT.`
+          : 'Không lấy được JD IT nào.');
 
       setFlash({
         tone: imported > 0 ? 'ok' : 'err',
@@ -295,14 +296,14 @@ const JobApprovalPage: React.FC = () => {
           : (firstFailure || baseMessage),
       });
 
-      // BE lưu mọi tin vừa cào ở trạng thái DRAFT, nên chuyển sang tab "Bản nháp".
+      // BE đăng ngay các tin vừa lấy (OPEN), nên chuyển sang tab "Đang mở".
       if (imported > 0) {
-        const alreadyOnDraft = status === 'DRAFT' && page === 0;
-        setStatus('DRAFT');
+        const alreadyOnOpen = status === 'OPEN' && page === 0;
+        setStatus('OPEN');
         setPage(0);
         const firstJobId = data?.items?.find((item) => item.jobId)?.jobId;
         if (firstJobId) setSelectedId(firstJobId);
-        if (alreadyOnDraft) await loadList();
+        if (alreadyOnOpen) await loadList();
       }
     } catch (err) {
       if (!alive.current) return;
