@@ -306,8 +306,14 @@ const JobApprovalPage: React.FC = () => {
       if (!data) throw new Error('empty');
       setCrawlResult(data);
       setFlash({ tone: 'ok', text: res.data.message || `Đã cào JD "${data.title}" từ TopCV.` });
-      await loadList();
+
+      // BE luôn lưu kết quả thành tin DRAFT (bản nháp) nên tin không nằm trong tab "Chờ duyệt".
+      // Chuyển bộ lọc sang "Bản nháp" để dòng vừa tạo hiện ngay trong hàng đợi và được chọn sẵn.
+      const alreadyOnDraft = status === 'DRAFT' && page === 0;
+      setStatus('DRAFT');
+      setPage(0);
       if (data.jobId) setSelectedId(data.jobId);
+      if (alreadyOnDraft) await loadList();
     } catch (err) {
       const httpStatus = (err as { response?: { status?: number } })?.response?.status;
       setCrawlError(
@@ -912,6 +918,14 @@ const JobApprovalPage: React.FC = () => {
                     <span className={`${ICON} text-[18px]`}>check_circle</span>
                     Đã trích xuất JD
                   </span>
+                  <p className="m-0 flex items-start gap-1.5 rounded-lg bg-surface-container-low px-space-sm py-2 text-ds-body-sm text-on-surface-variant">
+                    <span className={`${ICON} text-[16px] shrink-0 mt-0.5`}>info</span>
+                    <span>
+                      Tin được lưu ở trạng thái <strong className="text-on-surface">Bản nháp</strong>
+                      {crawlResult.jobId ? <> (#JD-{crawlResult.jobId})</> : null} và đã chuyển bộ lọc sang tab
+                      “Bản nháp”. Cần gửi duyệt tin để đưa vào hàng chờ phê duyệt.
+                    </span>
+                  </p>
                   <div className="grid grid-cols-1 gap-space-xs sm:grid-cols-2">
                     <SpecCell label="Tiêu đề" value={crawlResult.title} strong />
                     <SpecCell label="Công ty" value={crawlResult.companyName} />
@@ -937,13 +951,22 @@ const JobApprovalPage: React.FC = () => {
                     </div>
                   )}
                   {crawlResult.jobId && (
-                    <Link
-                      to={`/admin/job-approvals/${crawlResult.jobId}`}
-                      className={adminButton('soft', 'h-9 w-fit no-underline')}
-                    >
-                      <span className={`${ICON} text-[18px]`}>open_in_new</span>
-                      Mở tin #JD-{crawlResult.jobId}
-                    </Link>
+                    <div className="flex flex-wrap items-center gap-space-sm">
+                      <Link
+                        to={`/jobs/${crawlResult.jobId}/edit`}
+                        className={adminButton('primary', 'h-9 w-fit no-underline')}
+                      >
+                        <span className={`${ICON} text-[18px]`}>send</span>
+                        Mở bản nháp để gửi duyệt
+                      </Link>
+                      <Link
+                        to={`/admin/job-approvals/${crawlResult.jobId}`}
+                        className={adminButton('soft', 'h-9 w-fit no-underline')}
+                      >
+                        <span className={`${ICON} text-[18px]`}>open_in_new</span>
+                        Xem trong kiểm duyệt
+                      </Link>
+                    </div>
                   )}
                 </div>
               )}

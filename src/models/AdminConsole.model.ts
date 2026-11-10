@@ -86,8 +86,8 @@ export interface TopCvImportRequest {
 }
 
 /**
- * Kết quả cào JD TopCV do BE trả về. Hợp đồng tối thiểu: các field nội dung JD.
- * `jobId` có khi BE đã tạo bản nháp từ dữ liệu cào được.
+ * Kết quả cào JD TopCV do BE trả về (TopCvImportResult bên BE).
+ * BE luôn tạo một tin DRAFT mang tên tài khoản admin đang gọi API và trả `jobId` của tin đó.
  */
 export interface TopCvImportResult {
   sourceUrl?: string;
