@@ -13,7 +13,7 @@ import { useLiveTalkingController } from '../../controllers/useLiveTalkingContro
 import { useMockInterviewController } from '../../controllers/useMockInterviewController';
 import { useAuth } from '../../context/AuthContext';
 import { useSpeechInput } from '../../hooks/useSpeechInput';
-import { InterviewTranscriptEntry } from '../../models/Interview.model';
+import { InterviewTranscriptEntry, AVATAR_RUBRIC_VERSION } from '../../models/Interview.model';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { ICON } from '../components/candidateKit';
 import { adminButton, ErrorBlock, LoadingBlock, Pill, fmtServer } from '../components/adminKit';
@@ -131,7 +131,7 @@ const useLocalMedia = () => {
     try {
       const next = await navigator.mediaDevices.getUserMedia({
         video: true,
-        audio: { echoCancellation: true, noiseSuppression: true },
+        audio: true,
       });
       if (!aliveRef.current) {
         next.getTracks().forEach(t => t.stop());
@@ -259,7 +259,7 @@ interface TurnView {
 const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { result, session, loading, error, fetchResult, submitAnswer, finishSession } =
+  const { result, session, loading, error, fetchResult, submitAnswer, finishSession, submitEvaluation } =
     useMockInterviewController();
 
   const [interviewMode, setInterviewMode] = useState<'text' | 'avatar'>('text'); // mặc định text mode
@@ -416,10 +416,30 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
     setBusy(false);
   };
 
+  const applyAiEvaluation = async () => {
+    const evaluation = await rtc.evaluate().catch(() => null);
+    const rubric = (evaluation as { rubric?: Record<string, number> } | null)?.rubric;
+    if (rubric) {
+      await submitEvaluation(sessionId, {
+        rubric: {
+          chuyenMon: rubric.chuyenMon ?? 70,
+          duAn: rubric.duAn ?? 70,
+          tuDuy: rubric.tuDuy ?? 70,
+          truyenDat: rubric.truyenDat ?? 70,
+          mucKhop: rubric.mucKhop ?? 70,
+        },
+        rubricVersion: (evaluation as { rubricVersion?: string })?.rubricVersion ?? AVATAR_RUBRIC_VERSION,
+        strengths: (evaluation as { strengths?: string })?.strengths,
+        improvements: (evaluation as { improvements?: string })?.improvements,
+      }).catch(() => null);
+    }
+  };
+
   const runFinish = async () => {
     setConfirmFinish(false);
     speech.stop();
     voiceInput.stop();
+    await applyAiEvaluation();
     rtc.teardown();
     const res = await finishSession(sessionId);
     if (res) navigate(`/mock-interviews/${sessionId}/result`);
@@ -430,7 +450,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
     setConfirmFinish(false);
     speech.stop();
     voiceInput.stop();
-    await rtc.evaluate().catch(() => null);
+    await applyAiEvaluation();
     rtc.teardown();
     const res = await finishSession(sessionId);
     if (res) navigate(`/mock-interviews/${sessionId}/result`);
@@ -445,7 +465,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
   useEffect(() => {
     if (!voiceInput.supported || finished || atCap || busy || confirmFinish) return;
     if (!question || aiSpeaking || voiceInput.listening) return;
-    const t = setTimeout(() => voiceInput.start(), 1200);
+    const t = setTimeout(() => voiceInput.start(), 300);
     return () => clearTimeout(t);
   }, [question, aiSpeaking, busy, finished, atCap, confirmFinish, voiceInput.listening, voiceInput.supported]); // eslint-disable-line react-hooks/exhaustive-deps
 
