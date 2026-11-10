@@ -69,8 +69,24 @@ export const useMockInterviewController = () => {
   const submitAnswer = useCallback(async (id: number, body: SubmitAnswerRequest) => {
     try {
       const res = await InterviewService.submitAnswer(id, body);
-      setLastAnswer(res.data.data!);
-      return res.data.data!;
+      const answer = res.data.data!;
+      setLastAnswer(answer);
+      // BE chỉ trả về answer; phiên MOCK/KNOWLEDGE đã tăng currentQuestionIndex trong DB.
+      // Cập nhật session tại chỗ để sang câu kế ngay, tránh gọi GET lại và tránh dữ liệu cache/stale
+      // làm câu hỏi bị lặp. Bản nháp AVATAR (confirm=false) thì không tăng lượt.
+      if (body.confirm !== false) {
+        setSession(prev => {
+          if (!prev || prev.id !== id || prev.mode === 'AVATAR' || prev.questions.length === 0) return prev;
+          const answeredIndex = answer.questionIndex ?? prev.currentQuestionIndex;
+          const nextIndex = Math.min(Math.max(prev.currentQuestionIndex, answeredIndex + 1), prev.questions.length);
+          return {
+            ...prev,
+            currentQuestionIndex: nextIndex,
+            answeredCount: Math.max(prev.answeredCount, answeredIndex + 1),
+          };
+        });
+      }
+      return answer;
     } catch (e: any) {
       setError(e.response?.data?.message || 'Không gửi được câu trả lời');
       return null;

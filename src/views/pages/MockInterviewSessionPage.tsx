@@ -20,8 +20,10 @@ const MockInterviewSessionPage = () => {
 
   const [answerText, setAnswerText] = useState('');
   const [elapsed, setElapsed] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
   const [confirmFinish, setConfirmFinish] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const submitLockRef = useRef(false);
 
   useEffect(() => {
     if (user?.role === 'ROLE_USER' && id) fetchResult(Number(id));
@@ -65,29 +67,51 @@ const MockInterviewSessionPage = () => {
   const index = Math.min(session.currentQuestionIndex, total - 1);
   const isDone = session.currentQuestionIndex >= total;
   const pending = Math.max(total - session.answeredCount, 0);
+  const currentQuestion = session.questions[index];
+  const currentOptions = typeof currentQuestion === 'string'
+    ? []
+    : ((currentQuestion as { options?: string[] }).options ?? []);
+  const questionText = typeof currentQuestion === 'string'
+    ? currentQuestion
+    : (currentQuestion as { question: string }).question;
 
   const handleSubmit = async () => {
     clearMessages();
-    if (!answerText.trim() || loading) return;
+    if (!answerText.trim() || loading || submitting || submitLockRef.current) return;
 
     // Trắc nghiệm: gửi kèm vị trí đáp án đã chọn để BE chấm đúng, không phụ thuộc việc map text.
     const current = session.questions[index];
     const options = typeof current === 'string' ? [] : ((current as { options?: string[] }).options ?? []);
     const selectedOptionIndex = options.indexOf(answerText);
+    const isLast = session.currentQuestionIndex + 1 >= total;
+
+    submitLockRef.current = true;
+    setSubmitting(true);
     const saved = await submitAnswer(session.id, {
       answerText: answerText.trim(),
       durationSec: elapsed,
       ...(selectedOptionIndex >= 0 ? { selectedOptionIndex } : {}),
     });
-    if (!saved) return;
-
-    if (session.currentQuestionIndex + 1 >= total) {
-      await finishSession(session.id);
-      navigate(`/mock-interviews/${session.id}/result`);
+    if (!saved) {
+      submitLockRef.current = false;
+      setSubmitting(false);
       return;
     }
-    // BE đã tăng currentQuestionIndex sau khi lưu đáp án; tải lại để chuyển sang câu kế tiếp.
-    await fetchResult(session.id);
+
+    if (isLast) {
+      const res = await finishSession(session.id);
+      if (res) {
+        navigate(`/mock-interviews/${session.id}/result`);
+        return;
+      }
+      submitLockRef.current = false;
+      setSubmitting(false);
+      return;
+    }
+    // Controller đã tăng currentQuestionIndex tại chỗ từ response của BE;
+    // effect theo index sẽ xoá câu trả lời cũ và bật lại đồng hồ.
+    submitLockRef.current = false;
+    setSubmitting(false);
   };
 
   const runFinish = async () => {
@@ -171,59 +195,56 @@ const MockInterviewSessionPage = () => {
           {!isDone ? (
             <>
               <Card className="bg-card">
-                <p className="m-0 text-headline-md leading-relaxed text-ink">
-                  {typeof session.questions[index] === 'string'
-                    ? (session.questions[index] as string)
-                    : (session.questions[index] as { question: string }).question}
-                </p>
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-label-sm text-ink-variant">
+                  <span className="rounded-full bg-surface-low px-2 py-0.5 font-semibold text-ink">
+                    Câu {index + 1} / {total}
+                  </span>
+                  {currentOptions.length > 0 && <span>Chọn 1 đáp án đúng</span>}
+                </div>
+                <p className="m-0 text-headline-md leading-relaxed text-ink">{questionText}</p>
               </Card>
 
-              {(() => {
-                const q = session.questions[index];
-                const options = typeof q === 'string' ? [] : ((q as { options?: string[] }).options ?? []);
-                if (!options.length) {
-                  return (
-                    <textarea
-                      className={textareaClass}
-                      value={answerText}
-                      onChange={(e) => setAnswerText(e.target.value)}
-                      placeholder="Nhập câu trả lời của bạn..."
-                    />
-                  );
-                }
-                return (
-                  <div className="flex flex-col gap-2">
-                    {options.map((opt, i) => (
-                      <label key={i} className="flex items-center gap-2 rounded-lg border border-outline-variant bg-surface-low px-3 py-2 text-body-md text-ink">
-                        <input
-                          type="radio"
-                          name="answer"
-                          value={opt}
-                          checked={answerText === opt}
-                          onChange={() => setAnswerText(opt)}
-                        />
-                        <span>{opt}</span>
-                      </label>
-                    ))}
-                  </div>
-                );
-              })()}
+              {currentOptions.length === 0 ? (
+                <textarea
+                  className={textareaClass}
+                  value={answerText}
+                  onChange={(e) => setAnswerText(e.target.value)}
+                  placeholder="Nhập câu trả lời của bạn..."
+                />
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {currentOptions.map((opt, i) => (
+                    <label
+                      key={`${index}-${i}`}
+                      className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-body-md transition-colors ${
+                        answerText === opt
+                          ? 'border-primary bg-primary-container/15 text-ink'
+                          : 'border-outline-variant bg-surface-low text-ink hover:bg-surface-container'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="answer"
+                        value={opt}
+                        checked={answerText === opt}
+                        onChange={() => setAnswerText(opt)}
+                      />
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-container-high text-label-sm font-bold text-ink-variant">
+                        {String.fromCharCode(65 + i)}
+                      </span>
+                      <span>{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
 
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <button
-                  onClick={() => { setAnswerText(''); setElapsed(0); }}
-                  disabled={!answerText}
-                  className={buttonClass('secondary', 'gap-1')}
-                >
-                  <span className="material-symbols-outlined text-[18px]">refresh</span>
-                  <span>Viết lại câu trả lời</span>
-                </button>
+              <div className="flex items-center justify-end">
                 <button
                   onClick={handleSubmit}
-                  disabled={!answerText.trim() || loading}
+                  disabled={!answerText.trim() || loading || submitting}
                   className={buttonClass('primary', 'gap-1')}
                 >
-                  <span>Gửi câu trả lời &amp; tiếp tục</span>
+                  <span>{submitting ? 'Đang gửi...' : 'Gửi câu trả lời & tiếp tục'}</span>
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>
               </div>
