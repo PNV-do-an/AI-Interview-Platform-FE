@@ -159,14 +159,14 @@ const MockInterviewSessionPage = () => {
               <Card className="bg-card">
                 <p className="m-0 text-headline-md leading-relaxed text-ink">
                   {typeof session.questions[index] === 'string'
-                    ? session.questions[index]
-                    : session.questions[index].question}
+                    ? (session.questions[index] as string)
+                    : (session.questions[index] as { question: string }).question}
                 </p>
               </Card>
 
               {(() => {
                 const q = session.questions[index];
-                const options = typeof q === 'string' ? [] : (q.options ?? []);
+                const options = typeof q === 'string' ? [] : ((q as { options?: string[] }).options ?? []);
                 if (!options.length) {
                   return (
                     <textarea
