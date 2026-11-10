@@ -102,6 +102,31 @@ export interface TopCvImportResult {
   requiredSkills?: string;
 }
 
+/**
+ * POST /admin/jobs/import/topcv/batch — `url` là link bài đăng hoặc link trang danh sách,
+ * `urls` là danh sách link bài đăng cụ thể; `limit` 1..50 (BE mặc định 10 khi bỏ trống).
+ */
+export interface TopCvBatchImportRequest {
+  url?: string;
+  urls?: string[];
+  limit?: number;
+}
+
+export interface TopCvBatchImportFailure {
+  url: string;
+  message: string;
+}
+
+/** POST /admin/jobs/import/topcv/batch và /topcv/auto. */
+export interface TopCvBatchImportResult {
+  sourceUrl?: string | null;
+  requested: number;
+  imported: number;
+  failed: number;
+  items: TopCvImportResult[];
+  failures: TopCvBatchImportFailure[];
+}
+
 export interface ModerationRecord {
   id: number;
   actorId: number;

@@ -7,10 +7,13 @@ import {
   AdminSettings, BulkRoleChangeRequest, BulkUserActionResult, CategoryGroupsResponse, DashboardRange, DashboardResponse,
   JobReviewRequest, JobStatusCode, LockAccountRequest, ModerationAction, ModerationHistoryRow,
   ModerationHistoryStats, ModerationJob, ModerationJobDetail, ModerationQueueStats, PermissionMatrix,
-  TopCvImportRequest, TopCvImportResult,
+  TopCvBatchImportRequest, TopCvBatchImportResult, TopCvImportRequest, TopCvImportResult,
 } from '../models/AdminConsole.model';
 
 const BASE = '/api/v1/admin';
+
+/** Cào TopCV chạy tuần tự ở BE nên có thể lâu hơn timeout 15s mặc định của httpService. */
+const TOPCV_IMPORT_TIMEOUT = 300_000;
 
 const AdminService = {
   getUsers: (params: {
@@ -123,10 +126,32 @@ const AdminService = {
 
   /**
    * ADMIN-only: gửi URL TopCV để BE cào và trích xuất nội dung JD.
-   * Endpoint dự kiến: POST /api/v1/admin/jobs/import/topcv — body `{ url }`.
+   * POST /api/v1/admin/jobs/import/topcv — body `{ url }`.
    */
   importTopCvJob: (body: TopCvImportRequest) =>
-    httpService.post<ApiResponse<TopCvImportResult>>(`${BASE}/jobs/import/topcv`, body),
+    httpService.post<ApiResponse<TopCvImportResult>>(
+      `${BASE}/jobs/import/topcv`, body, { timeout: TOPCV_IMPORT_TIMEOUT },
+    ),
+
+  /**
+   * ADMIN-only: cào nhiều JD. `url` nhận link bài đăng hoặc link trang danh sách,
+   * `urls` là danh sách link bài đăng cụ thể, `limit` 1..50.
+   * POST /api/v1/admin/jobs/import/topcv/batch
+   */
+  importTopCvJobs: (body: TopCvBatchImportRequest) =>
+    httpService.post<ApiResponse<TopCvBatchImportResult>>(
+      `${BASE}/jobs/import/topcv/batch`, body, { timeout: TOPCV_IMPORT_TIMEOUT },
+    ),
+
+  /**
+   * ADMIN-only: một nút bấm, BE tự quét danh sách việc làm IT mặc định
+   * (`app.topcv.it-listing-url`) và cào tối đa `limit` tin.
+   * POST /api/v1/admin/jobs/import/topcv/auto?limit=...
+   */
+  importTopCvAuto: (limit: number) =>
+    httpService.post<ApiResponse<TopCvBatchImportResult>>(
+      `${BASE}/jobs/import/topcv/auto`, undefined, { params: { limit }, timeout: TOPCV_IMPORT_TIMEOUT },
+    ),
 
   /** Param lọc quyết định tên là `decision` (không phải `action`). */
   getModerationHistory: (params: {
