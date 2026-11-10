@@ -11,6 +11,11 @@ export interface InterviewTranscriptEntry {
   answeredAt?: string;
 }
 
+export interface InterviewQuestion {
+  question: string;
+  options: string[];
+}
+
 export interface InterviewSession {
   id: number;
   mode: InterviewMode;
@@ -19,7 +24,7 @@ export interface InterviewSession {
   jobTitle?: string;
   companyName?: string;
   status: InterviewSessionStatus;
-  questions: string[];
+  questions: InterviewQuestion[];
   currentQuestionIndex: number;
   answeredCount: number;
   overallScore?: number;
