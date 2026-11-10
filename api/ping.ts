@@ -1,4 +1,4 @@
-export const config = { runtime: 'edge' };
+export const config = { runtime: 'edge', regions: ['hkg1'] };
 
 export default function handler(): Response {
   return new Response(JSON.stringify({
