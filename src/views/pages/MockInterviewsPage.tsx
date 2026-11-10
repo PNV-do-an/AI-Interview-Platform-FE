@@ -62,7 +62,7 @@ const MockInterviewsPage = () => {
   const [questionCount, setQuestionCount] = useState(5);
   const [group, setGroup] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [interviewMode, setInterviewMode] = useState<'text' | 'avatar'>('text'); // text = browser TTS, avatar = live talking
+  const [interviewMode, setInterviewMode] = useState<'text' | 'avatar'>('avatar'); // text = browser TTS, avatar = live talking
   const scriptsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -118,41 +118,6 @@ const MockInterviewsPage = () => {
 
   return (
     <div className="flex flex-col gap-space-xl">
-      {/* Toggle chế độ phỏng vấn */}
-      <section className={`${CARD} p-space-lg`}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-ds-headline-sm font-bold text-on-surface">Chế độ phỏng vấn</h3>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setInterviewMode('text')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                interviewMode === 'text' 
-                  ? 'bg-primary text-white' 
-                  : 'bg-surface-container-lowest text-on-surface-variant'
-              }`}
-            >
-              Text Interview (Browser TTS)
-            </button>
-            <button
-              type="button"
-              onClick={() => setInterviewMode('avatar')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                interviewMode === 'avatar' 
-                  ? 'bg-primary text-white' 
-                  : 'bg-surface-container-lowest text-on-surface-variant'
-              }`}
-            >
-              LiveTalking Avatar
-            </button>
-          </div>
-        </div>
-        <p className="text-ds-body-sm text-on-surface-variant">
-          {interviewMode === 'text' 
-            ? 'Phỏng vấn bằng text: AI đọc câu hỏi qua browser, bạn gõ trả lời. Không cần camera/mic.'
-            : 'Phỏng vấn với avatar thật: Có video call + micro. Cần cấp quyền camera và microphone.'}
-        </p>
-      </section>
 
       <CandidatePageHeader
         crumbs={[
