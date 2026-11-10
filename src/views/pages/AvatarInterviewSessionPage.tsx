@@ -762,7 +762,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
         </div>
 
         {/* Panel phải: Bản ghi Live / Ghi chú */}
-        <aside className="flex w-full flex-col rounded-xl bg-surface-container-lowest shadow-sm xl:sticky xl:top-4">
+        <aside className="flex w-full flex-col rounded-xl bg-surface-container-lowest shadow-sm xl:sticky xl:top-20">
           <div className="flex border-b border-surface-container-high text-ds-label-lg">
             {([['live', 'Bản ghi Live'], ['notes', 'Ghi chú cá nhân']] as const).map(([key, label]) => (
               <button

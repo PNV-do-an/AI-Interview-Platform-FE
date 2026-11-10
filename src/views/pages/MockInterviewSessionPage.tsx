@@ -225,7 +225,8 @@ const MockInterviewSessionPage = () => {
         </div>
 
         {/* Cột phụ: telemetry đã có (counter, pending, timer) + phản hồi câu trước từ API */}
-        <aside className="flex w-full flex-col gap-4 lg:sticky lg:top-4">
+        {/* top-20 = header 64px + 16px khoảng thở, để cột sticky không chui dưới header */}
+        <aside className="flex w-full flex-col gap-4 lg:sticky lg:top-20">
           <Card className="bg-card">
             <div className="text-headline-sm text-primary tabular-nums">
               Câu hỏi {Math.min(session.currentQuestionIndex + (isDone ? 0 : 1), total)}/{total}

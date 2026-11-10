@@ -170,7 +170,9 @@ const CandidateLayout: React.FC = () => {
           </div>
         </header>
 
-        <main className="w-full min-h-screen bg-surface px-gutter-compact pb-space-2xl pt-16 lg:px-gutter lg:py-space-xl">
+        {/* pt-16 luôn giữ để bù đúng chiều cao header fixed (h-16); trước đây lg:py-space-xl
+            ghi đè padding-top xuống 2rem khiến nội dung bị header che. */}
+        <main className="w-full min-h-[calc(100vh-4rem)] bg-surface px-gutter-compact pb-space-2xl pt-16 lg:px-gutter lg:pb-space-xl">
           <Outlet />
         </main>
       </div>
