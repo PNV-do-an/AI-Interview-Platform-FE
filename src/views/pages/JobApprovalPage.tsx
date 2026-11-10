@@ -170,7 +170,24 @@ const JobApprovalPage: React.FC = () => {
   const [crawlBusy, setCrawlBusy] = useState(false);
 
   const alive = useRef(true);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const activeCardRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => () => { alive.current = false; }, []);
+
+  /**
+   * Giữ thẻ đang chọn nằm trọn trong khung danh sách. Nếu danh sách được cuộn
+   * hoặc đổi bộ lọc, thẻ đầu tiên có thể bị cắt mất phần trên.
+   */
+  useEffect(() => {
+    const list = listRef.current;
+    const card = activeCardRef.current;
+    if (!list || !card) return;
+    const listRect = list.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    if (cardRect.top < listRect.top || cardRect.bottom > listRect.bottom) {
+      card.scrollIntoView({ block: 'nearest' });
+    }
+  }, [selectedId, status, page]);
 
   const loadList = useCallback(async () => {
     setListLoading(true);
@@ -510,17 +527,21 @@ const JobApprovalPage: React.FC = () => {
               />
             </div>
           ) : (
-            <div className="flex flex-col gap-space-sm max-h-[calc(100vh-270px)] overflow-y-auto pr-1">
+            <div
+              ref={listRef}
+              className="flex flex-col gap-space-sm max-h-[calc(100vh-270px)] overflow-y-auto px-1 py-1 scroll-p-2"
+            >
               {sortedRows.map((row) => {
                 const active = row.id === selectedId;
                 return (
                   <div
                     key={row.id}
+                    ref={active ? activeCardRef : undefined}
                     onClick={() => setSelectedId(row.id)}
                     className={
                       active
-                        ? 'p-space-md bg-surface-container-lowest rounded-xl shadow-sm ring-2 ring-primary border border-primary/30 transition-all cursor-pointer relative overflow-hidden'
-                        : 'p-space-md bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer relative border border-surface-container'
+                        ? 'shrink-0 p-space-md bg-surface-container-lowest rounded-xl shadow-sm ring-2 ring-primary border border-primary/30 transition-all cursor-pointer relative overflow-hidden'
+                        : 'shrink-0 p-space-md bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer relative border border-surface-container'
                     }
                   >
                     {active && <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" />}
