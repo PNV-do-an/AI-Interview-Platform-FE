@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AdminService from '../../services/admin.service';
+import { useAuth } from '../../context/AuthContext';
 import { parseServerTimestamp } from '../../utils/date';
 import {
   JOB_STATUS_LABELS,
@@ -8,6 +9,7 @@ import {
   ModerationJob,
   ModerationJobDetail,
   ModerationQueueStats,
+  TopCvImportResult,
 } from '../../models/AdminConsole.model';
 import {
   EmptyBlock,
@@ -138,6 +140,8 @@ const BulletList: React.FC<{ items: string[]; dot: string }> = ({ items, dot }) 
 );
 
 const JobApprovalPage: React.FC = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'ROLE_ADMIN';
   const [status, setStatus] = useState<JobStatusCode>('PENDING_APPROVAL');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -162,6 +166,13 @@ const JobApprovalPage: React.FC = () => {
   const [checkedReasons, setCheckedReasons] = useState<string[]>([]);
   const [reasonText, setReasonText] = useState('');
   const [bulkOpen, setBulkOpen] = useState(false);
+
+  // Cào JD TopCV — chỉ ROLE_ADMIN thấy nút. Endpoint dự kiến do BE bổ sung.
+  const [crawlOpen, setCrawlOpen] = useState(false);
+  const [crawlUrl, setCrawlUrl] = useState('');
+  const [crawlBusy, setCrawlBusy] = useState(false);
+  const [crawlError, setCrawlError] = useState('');
+  const [crawlResult, setCrawlResult] = useState<TopCvImportResult | null>(null);
 
   const alive = useRef(true);
   useEffect(() => () => { alive.current = false; }, []);
@@ -261,8 +272,55 @@ const JobApprovalPage: React.FC = () => {
     }
   }, [pendingRows, loadList]);
 
-  const exportReport = useCallback(() => {
-    const header = ['Ma JD', 'Tieu de', 'Cong ty', 'Nha tuyen dung', 'Email', 'Trang thai', 'Gui duyet', 'Quyet dinh', 'Ghi chu'];
+  /** Mở modal cào JD TopCV; xoá trạng thái của lần cào trước. */
+  const openCrawl = () => {
+    setCrawlUrl('');
+    setCrawlError('');
+    setCrawlResult(null);
+    setCrawlOpen(true);
+  };
+
+  /** Chỉ nhận link bài đăng TopCV; việc tải & bóc tách HTML do BE đảm nhiệm. */
+  const runCrawl = async () => {
+    const raw = crawlUrl.trim();
+    setCrawlError('');
+    setCrawlResult(null);
+
+    let parsed: URL;
+    try {
+      parsed = new URL(raw);
+    } catch {
+      setCrawlError('URL không hợp lệ. Hãy dán link bài đăng đầy đủ, ví dụ https://www.topcv.vn/viec-lam/...');
+      return;
+    }
+    const host = parsed.hostname.toLowerCase();
+    if (host !== 'topcv.vn' && host !== 'www.topcv.vn') {
+      setCrawlError('Chỉ nhận URL thuộc tên miền topcv.vn.');
+      return;
+    }
+
+    setCrawlBusy(true);
+    try {
+      const res = await AdminService.importTopCvJob({ url: raw });
+      const data = res.data.data;
+      if (!data) throw new Error('empty');
+      setCrawlResult(data);
+      setFlash({ tone: 'ok', text: res.data.message || `Đã cào JD "${data.title}" từ TopCV.` });
+      await loadList();
+      if (data.jobId) setSelectedId(data.jobId);
+    } catch (err) {
+      const httpStatus = (err as { response?: { status?: number } })?.response?.status;
+      setCrawlError(
+        httpStatus === 404 || httpStatus === 501
+          ? 'Backend chưa bật API cào JD TopCV (POST /api/v1/admin/jobs/import/topcv).'
+          : errorText(err, 'Không cào được JD từ TopCV.'),
+      );
+    } finally {
+      setCrawlBusy(false);
+    }
+  };
+
+  const exportReport = useCallback(() => {    const header = ['Ma JD', 'Tieu de', 'Cong ty', 'Nha tuyen dung', 'Email', 'Trang thai', 'Gui duyet', 'Quyet dinh', 'Ghi chu'];
     const lines = rows.map((r) => [
       r.id, r.title, r.companyName, r.employerName, r.employerEmail,
       JOB_STATUS_LABELS[r.status], r.submittedAt ?? '', r.decidedAt ?? '', r.reviewNote ?? '',
@@ -323,6 +381,16 @@ const JobApprovalPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-space-sm shrink-0">
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={openCrawl}
+                className="h-10 px-space-md rounded-xl bg-primary-fixed hover:bg-primary-fixed/80 text-on-primary-fixed text-ds-label-md transition-all flex items-center gap-2 border border-primary/20 shadow-sm cursor-pointer font-semibold"
+              >
+                <span className={`${ICON} text-[18px]`}>cloud_download</span>
+                <span>Cào JD từ TopCV</span>
+              </button>
+            )}
             <button type="button" onClick={exportReport} className="h-10 px-space-md rounded-xl bg-surface-container-lowest hover:bg-surface-container-low text-on-surface text-ds-label-md transition-all flex items-center gap-2 border border-surface-container-high shadow-sm cursor-pointer">
               <span className={`${ICON} text-[18px] text-on-surface-variant`}>file_download</span>
               <span className="font-medium">Xuất báo cáo vi phạm</span>
@@ -774,6 +842,130 @@ const JobApprovalPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Modal cào JD TopCV — chỉ ROLE_ADMIN mở được */}
+      {crawlOpen && isAdmin && (
+        <ModalBackdrop onClose={() => !crawlBusy && setCrawlOpen(false)}>
+          <div className="w-full max-w-2xl bg-surface-container-lowest rounded-xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="px-space-xl py-space-md bg-surface-container-low flex items-center justify-between gap-space-sm">
+              <div className="flex items-center gap-space-xs min-w-0">
+                <div className="w-8 h-8 rounded-full bg-primary-fixed text-primary flex items-center justify-center shrink-0">
+                  <span className={`${ICON} text-[20px]`}>cloud_download</span>
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-ds-headline-sm text-on-surface font-bold">Cào JD từ TopCV</h3>
+                  <span className="text-ds-label-sm text-on-surface-variant block truncate">
+                    Chỉ quản trị viên • backend trích xuất nội dung rồi tạo bản nháp
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                aria-label="Đóng"
+                disabled={crawlBusy}
+                onClick={() => setCrawlOpen(false)}
+                className="p-1.5 rounded-lg text-outline-strong hover:text-on-surface hover:bg-surface-container transition-colors border-0 bg-transparent cursor-pointer disabled:opacity-40"
+              >
+                <span className={`${ICON} text-[22px]`}>close</span>
+              </button>
+            </div>
+
+            <div className="p-space-xl flex flex-col gap-space-md max-h-[75vh] overflow-y-auto">
+              <label className="flex flex-col gap-1.5" htmlFor="topcv-url">
+                <span className="text-ds-label-lg text-on-surface font-semibold">Link bài đăng TopCV</span>
+                <input
+                  id="topcv-url"
+                  type="url"
+                  autoComplete="url"
+                  value={crawlUrl}
+                  disabled={crawlBusy}
+                  onChange={(e) => {
+                    setCrawlUrl(e.target.value);
+                    if (crawlError) setCrawlError('');
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !crawlBusy && crawlUrl.trim()) {
+                      e.preventDefault();
+                      void runCrawl();
+                    }
+                  }}
+                  placeholder="https://www.topcv.vn/viec-lam/ten-vi-tri/..."
+                  className="w-full h-11 px-space-sm bg-surface-container-low rounded-lg text-ds-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/30 shadow-sm disabled:opacity-60"
+                />
+              </label>
+
+              <p className="m-0 text-ds-body-sm text-on-surface-variant leading-relaxed">
+                Dán link bài đăng cụ thể trên TopCV. Backend sẽ tải trang, bóc tách tiêu đề, công ty,
+                địa điểm, mô tả, yêu cầu và kỹ năng rồi trả kết quả về màn kiểm duyệt.
+              </p>
+
+              {crawlError && (
+                <div className="flex items-start gap-2 rounded-lg bg-error-container px-space-sm py-2 text-ds-body-sm text-on-error-container" role="alert">
+                  <span className={`${ICON} text-[18px] shrink-0`}>error</span>
+                  <span>{crawlError}</span>
+                </div>
+              )}
+
+              {crawlResult && (
+                <div className="flex flex-col gap-space-sm rounded-xl border border-secondary-teal/30 bg-secondary-container/20 p-space-md">
+                  <span className="flex items-center gap-1.5 text-ds-label-lg font-bold text-secondary-teal">
+                    <span className={`${ICON} text-[18px]`}>check_circle</span>
+                    Đã trích xuất JD
+                  </span>
+                  <div className="grid grid-cols-1 gap-space-xs sm:grid-cols-2">
+                    <SpecCell label="Tiêu đề" value={crawlResult.title} strong />
+                    <SpecCell label="Công ty" value={crawlResult.companyName} />
+                    <SpecCell label="Vị trí" value={crawlResult.position} />
+                    <SpecCell label="Địa điểm" value={crawlResult.location} />
+                    <SpecCell label="Lương" value={crawlResult.salaryRange} />
+                    <SpecCell label="Kỹ năng" value={crawlResult.requiredSkills} />
+                  </div>
+                  {crawlResult.description && (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-ds-label-sm font-semibold uppercase tracking-wide text-on-surface-variant">Mô tả</span>
+                      <p className="m-0 max-h-40 overflow-y-auto whitespace-pre-line text-ds-body-sm leading-relaxed text-on-surface">
+                        {crawlResult.description}
+                      </p>
+                    </div>
+                  )}
+                  {crawlResult.requirements && (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-ds-label-sm font-semibold uppercase tracking-wide text-on-surface-variant">Yêu cầu</span>
+                      <p className="m-0 max-h-40 overflow-y-auto whitespace-pre-line text-ds-body-sm leading-relaxed text-on-surface">
+                        {crawlResult.requirements}
+                      </p>
+                    </div>
+                  )}
+                  {crawlResult.jobId && (
+                    <Link
+                      to={`/admin/job-approvals/${crawlResult.jobId}`}
+                      className={adminButton('soft', 'h-9 w-fit no-underline')}
+                    >
+                      <span className={`${ICON} text-[18px]`}>open_in_new</span>
+                      Mở tin #JD-{crawlResult.jobId}
+                    </Link>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="px-space-xl py-space-md bg-surface-container-low flex items-center justify-end gap-space-sm">
+              <button type="button" onClick={() => setCrawlOpen(false)} disabled={crawlBusy} className={modalCancelClass}>
+                Đóng
+              </button>
+              <button
+                type="button"
+                onClick={() => void runCrawl()}
+                disabled={crawlBusy || !crawlUrl.trim()}
+                className={adminButton('primary', 'text-ds-label-lg font-semibold disabled:opacity-50')}
+              >
+                <span className={`${ICON} text-[18px]`}>{crawlBusy ? 'hourglass_top' : 'cloud_download'}</span>
+                {crawlBusy ? 'Đang cào...' : 'Cào dữ liệu'}
+              </button>
+            </div>
+          </div>
+        </ModalBackdrop>
+      )}
 
       {/* Modal từ chối duyệt */}
       {rejectOpen && (

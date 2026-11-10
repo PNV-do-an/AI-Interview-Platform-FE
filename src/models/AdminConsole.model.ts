@@ -80,6 +80,28 @@ export interface ModerationJob {
   createdAt: string;
 }
 
+/** POST /admin/jobs/import/topcv — chỉ ROLE_ADMIN. */
+export interface TopCvImportRequest {
+  url: string;
+}
+
+/**
+ * Kết quả cào JD TopCV do BE trả về. Hợp đồng tối thiểu: các field nội dung JD.
+ * `jobId` có khi BE đã tạo bản nháp từ dữ liệu cào được.
+ */
+export interface TopCvImportResult {
+  sourceUrl?: string;
+  jobId?: number;
+  title: string;
+  companyName?: string;
+  position?: string | null;
+  location?: string | null;
+  salaryRange?: string | null;
+  description?: string;
+  requirements?: string;
+  requiredSkills?: string;
+}
+
 export interface ModerationRecord {
   id: number;
   actorId: number;

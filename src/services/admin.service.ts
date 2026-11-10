@@ -7,6 +7,7 @@ import {
   AdminSettings, BulkRoleChangeRequest, BulkUserActionResult, CategoryGroupsResponse, DashboardRange, DashboardResponse,
   JobReviewRequest, JobStatusCode, LockAccountRequest, ModerationAction, ModerationHistoryRow,
   ModerationHistoryStats, ModerationJob, ModerationJobDetail, ModerationQueueStats, PermissionMatrix,
+  TopCvImportRequest, TopCvImportResult,
 } from '../models/AdminConsole.model';
 
 const BASE = '/api/v1/admin';
@@ -119,6 +120,13 @@ const AdminService = {
   /** 009 FR-004: 4 chip thống kê hàng chờ. `rejected` giao với `draft` nên 4 chip không phải một phép chia tổng. */
   getModerationStats: () =>
     httpService.get<ApiResponse<ModerationQueueStats>>(`${BASE}/jobs/moderation/stats`),
+
+  /**
+   * ADMIN-only: gửi URL TopCV để BE cào và trích xuất nội dung JD.
+   * Endpoint dự kiến: POST /api/v1/admin/jobs/import/topcv — body `{ url }`.
+   */
+  importTopCvJob: (body: TopCvImportRequest) =>
+    httpService.post<ApiResponse<TopCvImportResult>>(`${BASE}/jobs/import/topcv`, body),
 
   /** Param lọc quyết định tên là `decision` (không phải `action`). */
   getModerationHistory: (params: {
