@@ -24,7 +24,7 @@ export interface InterviewSession {
   jobTitle?: string;
   companyName?: string;
   status: InterviewSessionStatus;
-  questions: InterviewQuestion[];
+  questions: Array<string | InterviewQuestion>;
   currentQuestionIndex: number;
   answeredCount: number;
   overallScore?: number;

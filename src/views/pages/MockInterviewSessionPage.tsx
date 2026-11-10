@@ -157,23 +157,43 @@ const MockInterviewSessionPage = () => {
           {!isDone ? (
             <>
               <Card className="bg-card">
-                <p className="m-0 text-headline-md leading-relaxed text-ink">{session.questions[index].question}</p>
+                <p className="m-0 text-headline-md leading-relaxed text-ink">
+                  {typeof session.questions[index] === 'string'
+                    ? session.questions[index]
+                    : session.questions[index].question}
+                </p>
               </Card>
 
-              <div className="flex flex-col gap-2">
-                {session.questions[index].options.map((opt, i) => (
-                  <label key={i} className="flex items-center gap-2 rounded-lg border border-outline-variant bg-surface-low px-3 py-2 text-body-md text-ink">
-                    <input
-                      type="radio"
-                      name="answer"
-                      value={opt}
-                      checked={answerText === opt}
-                      onChange={() => setAnswerText(opt)}
+              {(() => {
+                const q = session.questions[index];
+                const options = typeof q === 'string' ? [] : (q.options ?? []);
+                if (!options.length) {
+                  return (
+                    <textarea
+                      className={textareaClass}
+                      value={answerText}
+                      onChange={(e) => setAnswerText(e.target.value)}
+                      placeholder="Nhập câu trả lời của bạn..."
                     />
-                    <span>{opt}</span>
-                  </label>
-                ))}
-              </div>
+                  );
+                }
+                return (
+                  <div className="flex flex-col gap-2">
+                    {options.map((opt, i) => (
+                      <label key={i} className="flex items-center gap-2 rounded-lg border border-outline-variant bg-surface-low px-3 py-2 text-body-md text-ink">
+                        <input
+                          type="radio"
+                          name="answer"
+                          value={opt}
+                          checked={answerText === opt}
+                          onChange={() => setAnswerText(opt)}
+                        />
+                        <span>{opt}</span>
+                      </label>
+                    ))}
+                  </div>
+                );
+              })()}
 
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <button
