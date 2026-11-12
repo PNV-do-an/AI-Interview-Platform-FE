@@ -82,14 +82,18 @@ const Stat: React.FC<{ icon: string; label: string; value: string; tone: string 
 const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
   const { user } = useAuth();
   const {
-    result, report, reportMissing, loading, error,
-    fetchResult, loadReport, submitEvaluation,
+    result, report, reportMissing, loading, error, sessions,
+    fetchResult, loadReport, submitEvaluation, fetchMySessions,
   } = useMockInterviewController();
   const autoEvalTried = useRef(false);
 
   useEffect(() => {
     if (user?.role === 'ROLE_USER') void fetchResult(sessionId);
   }, [user, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (user?.role === 'ROLE_USER') void fetchMySessions(0);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (result?.session.mode === 'AVATAR' && result.session.status === 'COMPLETED') {
@@ -143,16 +147,21 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
             <span>{confirmed.length} lượt đã chốt</span>
             {totalSec > 0 && <span>~{Math.round(totalSec / 60)} phút trả lời</span>}
             <span>Bắt đầu {fmtServer(session.createdAt, 'datetime')}</span>
+            <span>Hệ thống AI Model: TalentNexus Core v4.2</span>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-space-sm">
           <Link to={`/mock-interviews/${session.id}`} className={adminButton('ghost', 'h-10 no-underline')}>
             <span className={`${ICON} text-[18px]`}>subtitles</span>
-            Xem lại transcript
+            Luyện tập lại phiên này
           </Link>
+          <button type="button" onClick={() => window.print()} className={adminButton('ghost', 'h-10')}>
+            <span className={`${ICON} text-[18px] text-outline`}>download</span>
+            Xuất báo cáo PDF
+          </button>
           <Link to="/mock-interviews" className={adminButton('primary', 'h-10 no-underline')}>
             <span className={`${ICON} text-[18px]`}>add_circle</span>
-            Luyện phiên mới
+            Luyện tập phiên mới
           </Link>
         </div>
       </div>
@@ -175,7 +184,7 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
           <div className="flex flex-col items-center gap-space-lg md:flex-row md:items-start">
             <ScoreRing value={report.overallScore} caption={scoreBand(report.overallScore)} size={176} />
             <div className="flex min-w-0 flex-1 flex-col gap-space-md">
-              <h2 className="text-ds-headline-sm font-bold text-on-surface">Rubric 5 chiều do hệ thống đánh giá</h2>
+              <h2 className="text-ds-headline-sm font-bold text-on-surface">Phân tích Năng lực Cốt lõi (Core Competencies)</h2>
               {RUBRIC_DIMENSIONS.map(d => {
                 const v = report[d.key];
                 return (
@@ -197,7 +206,7 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
               {report.strengths && (
                 <div className="rounded-lg bg-secondary-container/40 p-space-lg">
                   <span className="flex items-center gap-1.5 text-ds-label-lg font-bold text-secondary-teal">
-                    <span className={`${ICON} text-[18px]`}>verified</span> Điểm mạnh
+                    <span className={`${ICON} text-[18px]`}>verified</span> Điểm mạnh nổi bật
                   </span>
                   <p className="m-0 mt-2 whitespace-pre-line text-ds-body-md text-on-surface">{report.strengths}</p>
                 </div>
@@ -256,6 +265,41 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
                 </div>
               </div>
             ))}
+          </div>
+        </section>
+      )}
+
+      {sessions && sessions.content.length > 0 && (
+        <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
+          <h2 className="flex items-center gap-2 text-ds-headline-sm font-bold text-on-surface">
+            <span className={`${ICON} text-primary`}>history</span>
+            Lịch sử phỏng vấn AI &amp; Quá trình tiến bộ
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-ds-body-sm">
+              <thead>
+                <tr className="text-ds-label-sm text-on-surface-variant border-b border-surface-container-high">
+                  <th className="text-left py-space-sm">Ngày thực hiện</th>
+                  <th className="text-left py-space-sm">Vị trí / Chủ đề</th>
+                  <th className="text-left py-space-sm">Thời lượng</th>
+                  <th className="text-left py-space-sm">Điểm tổng</th>
+                  <th className="text-left py-space-sm">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sessions.content.slice(0, 4).map(s => (
+                  <tr key={s.id} className="border-b border-surface-container-low last:border-b-0">
+                    <td className="py-space-sm">{fmtServer(s.createdAt, 'datetime')}</td>
+                    <td className="py-space-sm">{s.jobTitle ?? s.topic ?? 'Phiên luyện tập'}</td>
+                    <td className="py-space-sm">{s.answeredCount} lượt</td>
+                    <td className="py-space-sm font-semibold">{s.overallScore ?? 0}/100</td>
+                    <td className="py-space-sm">
+                      <Link to={`/mock-interviews/${s.id}/result`} className={adminButton('ghost', 'h-8 no-underline')}>Xem</Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       )}
