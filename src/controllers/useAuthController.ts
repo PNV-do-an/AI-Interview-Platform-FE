@@ -82,8 +82,15 @@ export const useAuthController = () => {
         console.log('[AuthController] Attempting login with:', data.email);
         const res = await AuthService.login(data);
         console.log('[AuthController] Login response:', res.data);
-        const { accessToken, refreshToken, user } = res.data.data!;
-        persistSession(accessToken, refreshToken, user as User, rememberMe);
+        const payload = res.data.data!;
+        if (payload.mfaRequired && payload.challengeToken) {
+          const storage = rememberMe ? localStorage : sessionStorage;
+          storage.setItem('mfaChallengeToken', payload.challengeToken);
+          navigate('/two-factor');
+          return;
+        }
+        const { accessToken, refreshToken, user } = payload;
+        persistSession(accessToken!, refreshToken!, user as User, rememberMe);
 
         const role = user?.role;
         console.log('[AuthController] User role:', role);
@@ -113,6 +120,40 @@ export const useAuthController = () => {
     [navigate, persistSession]
   );
 
+  const verifyOtp = useCallback(
+    async (code: string, rememberMe = false) => {
+      setError('');
+      setErrorStatus(null);
+      setLoading(true);
+      try {
+        const storage = (localStorage.getItem(STORAGE_KEYS.REMEMBER_ME) === 'true' ? localStorage : sessionStorage);
+        const challengeToken = storage.getItem('mfaChallengeToken') || sessionStorage.getItem('mfaChallengeToken') || localStorage.getItem('mfaChallengeToken');
+        if (!challengeToken) {
+          throw new Error('Thiếu challenge token. Vui lòng đăng nhập lại.');
+        }
+        const res = await AuthService.verifyOtp({ challengeToken, code });
+        const payload = res.data.data!;
+        const { accessToken, refreshToken, user } = payload;
+        [localStorage, sessionStorage].forEach((s) => s.removeItem('mfaChallengeToken'));
+        persistSession(accessToken!, refreshToken!, user as User, rememberMe);
+        const role = user?.role;
+        if (role === 'ROLE_ADMIN') {
+          navigate('/admin/users');
+        } else {
+          navigate('/dashboard');
+        }
+      } catch (err: any) {
+        console.error('[AuthController] OTP verification failed:', err);
+        const status = err.response?.status;
+        setErrorStatus(typeof status === 'number' ? status : null);
+        setError(readApiErrorMessage(err, 'Xác thực hai yếu tố thất bại. Vui lòng thử lại.', ['code']));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [navigate, persistSession]
+  );
+
   const loginWithGoogle = useCallback(
     async (idToken: string, rememberMe: boolean) => {
       setError('');
@@ -121,7 +162,7 @@ export const useAuthController = () => {
       try {
         const res = await AuthService.googleLogin(idToken);
         const { accessToken, refreshToken, user } = res.data.data!;
-        persistSession(accessToken, refreshToken, user as User, rememberMe);
+        persistSession(accessToken!, refreshToken!, user as User, rememberMe);
         navigate(user?.role === 'ROLE_ADMIN' ? '/admin/users' : '/dashboard');
       } catch (err: any) {
         setError(readApiErrorMessage(err, 'Đăng nhập bằng Google thất bại. Vui lòng thử lại.', OAUTH_FIELD_ORDER));
@@ -140,7 +181,7 @@ export const useAuthController = () => {
       try {
         const res = await AuthService.githubLogin(code, redirectUri);
         const { accessToken, refreshToken, user } = res.data.data!;
-        persistSession(accessToken, refreshToken, user as User, rememberMe);
+        persistSession(accessToken!, refreshToken!, user as User, rememberMe);
         navigate(user?.role === 'ROLE_ADMIN' ? '/admin/users' : '/dashboard', { replace: true });
       } catch (err: any) {
         setError(readApiErrorMessage(err, 'Đăng nhập bằng GitHub thất bại. Vui lòng thử lại.', OAUTH_FIELD_ORDER));
@@ -159,7 +200,7 @@ export const useAuthController = () => {
       try {
         const res = await AuthService.ssoLogin(code, redirectUri, nonce);
         const { accessToken, refreshToken, user } = res.data.data!;
-        persistSession(accessToken, refreshToken, user as User, rememberMe);
+        persistSession(accessToken!, refreshToken!, user as User, rememberMe);
         navigate(user?.role === 'ROLE_ADMIN' ? '/admin/users' : '/dashboard', { replace: true });
       } catch (err: any) {
         setError(readApiErrorMessage(err, 'Đăng nhập SSO doanh nghiệp thất bại. Vui lòng thử lại.', OAUTH_FIELD_ORDER));
@@ -212,6 +253,7 @@ export const useAuthController = () => {
     errorStatus,
     loading,
     login,
+    verifyOtp,
     loginWithGoogle,
     loginWithGithub,
     loginWithSso,

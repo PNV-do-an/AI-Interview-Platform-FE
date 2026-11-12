@@ -5,16 +5,18 @@ export interface ApiResponse<T> {
 }
 
 export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  tokenType: string;
-  user: {
+  accessToken?: string;
+  refreshToken?: string;
+  tokenType?: string;
+  user?: {
     id: number;
     email: string;
     fullName: string;
     phone: string;
     role: string;
   };
+  mfaRequired?: boolean;
+  challengeToken?: string;
 }
 
 export interface LoginRequest {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import BrandLogo from '../components/BrandLogo';
+import { useAuthController } from '../../controllers/useAuthController';
 
 type Method = 'app' | 'key' | 'sms';
 
@@ -17,9 +18,16 @@ const ALTERNATIVES = [
 ];
 
 const TwoFactorPage: React.FC = () => {
+  const { verifyOtp, loading, error } = useAuthController();
   const [method, setMethod] = useState<Method>('app');
   // Demo code from the mockup (592...) kept as initial state; typing updates locally only.
-  const [digits, setDigits] = useState<string[]>(['5', '9', '2', '', '', '']);
+  const [digits, setDigits] = useState<string[]>(['', '', '', '', '', '']);
+
+  const handleVerify = () => {
+    const code = digits.join('');
+    if (code.length !== 6) return;
+    void verifyOtp(code, false);
+  };
 
   const setDigit = (index: number, value: string) => {
     const clean = value.replace(/[^0-9]/g, '').slice(-1);
@@ -134,11 +142,18 @@ const TwoFactorPage: React.FC = () => {
                   </div>
                 </div>
 
+                {error && (
+                  <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                    {error}
+                  </div>
+                )}
                 <button
                   type="button"
-                  className="group flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary text-headline-sm text-on-primary shadow-md transition-all hover:bg-secondary active:scale-[0.99]"
+                  onClick={handleVerify}
+                  disabled={loading || digits.join('').length !== 6}
+                  className="group flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary text-headline-sm text-on-primary shadow-md transition-all hover:bg-secondary active:scale-[0.99] disabled:opacity-60"
                 >
-                  <span>Xác thực &amp; tiếp tục</span>
+                  <span>{loading ? 'Đang xác thực...' : 'Xác thực & tiếp tục'}</span>
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>
 

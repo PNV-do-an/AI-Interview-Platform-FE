@@ -22,6 +22,9 @@ const AuthService = {
   login: (data: LoginRequest) =>
     publicHttp.post<ApiResponse<AuthResponse>>('/api/v1/auth/login', data),
 
+  verifyOtp: (data: { challengeToken: string; code: string }) =>
+    publicHttp.post<ApiResponse<AuthResponse>>('/api/v1/auth/verify-otp', data),
+
   register: (data: RegisterRequest) =>
     publicHttp.post<ApiResponse<AuthResponse>>('/api/v1/auth/register', data),
 
@@ -93,6 +96,19 @@ const AuthService = {
     httpService.put<ApiResponse<null>>('/api/user/avatar', { dataUrl }),
 
   deleteAvatar: () => httpService.delete<ApiResponse<null>>('/api/user/avatar'),
+
+  // Self-service 2FA (backend TwoFactorController, /api/v1/auth/2fa)
+  getTwoFactorStatus: () =>
+    httpService.get<ApiResponse<{ enabled: boolean }>>('/api/v1/auth/2fa'),
+
+  setupTwoFactor: () =>
+    httpService.post<ApiResponse<{ secret: string; otpauthUri: string; accountName: string; issuer: string }>>('/api/v1/auth/2fa/setup', null),
+
+  enableTwoFactor: (code: string) =>
+    httpService.post<ApiResponse<{ recoveryCodes: string[] }>>('/api/v1/auth/2fa/enable', { code }),
+
+  disableTwoFactor: (code: string) =>
+    httpService.post<ApiResponse<null>>('/api/v1/auth/2fa/disable', { code }),
 };
 
 export default AuthService;
