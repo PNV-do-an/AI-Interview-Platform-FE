@@ -190,10 +190,6 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
                   </div>
                 );
               })}
-              <p className="text-ds-label-sm text-outline">
-                Hệ thống tự chấm từ transcript ngay khi phiên kết thúc · điểm tổng = trung bình cộng 5 chiều ·
-                thang đánh giá {report.rubricVersion}
-              </p>
             </div>
           </div>
           {(report.strengths || report.improvements) && (
