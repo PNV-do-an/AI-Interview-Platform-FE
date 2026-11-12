@@ -306,7 +306,7 @@ const MockInterviewHistoryPage: React.FC = () => {
           <span className="text-ds-label-lg font-bold text-on-surface">Điểm theo từng câu mới hiện trong báo cáo</span>
           <p className="text-ds-body-sm text-on-surface-variant">
             Mở một phiên đã hoàn thành để xem điểm từng câu hỏi, nội dung trả lời và nhận xét kèm theo.
-            Phiên video call hiển thị transcript từng lượt và rubric 5 chiều bạn đã nộp.
+            Phiên video call hiển thị transcript từng lượt và điểm đánh giá 5 chiều do hệ thống tự chấm.
           </p>
         </div>
       </div>

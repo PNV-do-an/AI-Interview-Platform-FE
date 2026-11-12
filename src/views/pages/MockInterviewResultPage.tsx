@@ -15,13 +15,14 @@
  *   và bảng "Năng lực cốt lõi" (4 thanh 90/82/88/79) giữ nguyên chữ thiết kế + dán nhãn "Khối demo".
  * - Chip "#INT-8492" -> id phiên thật.
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useMockInterviewController } from '../../controllers/useMockInterviewController';
 import { useAuth } from '../../context/AuthContext';
 import {
-  AVATAR_RUBRIC_VERSION, InterviewAnswer, InterviewRubric, RUBRIC_DIMENSIONS,
+  InterviewAnswer, RUBRIC_DIMENSIONS,
 } from '../../models/Interview.model';
+import { buildFallbackEvaluation } from '../../utils/avatarEvaluation';
 import {
   EmptyBlock, ErrorBlock, ICON, LoadingBlock, Pill, adminButton, fmtServer,
 } from '../components/adminKit';
@@ -61,8 +62,6 @@ const InsightItem: React.FC<{ icon: string; iconClass: string; title: string; bo
   </div>
 );
 
-const clampScore = (n: number) => Math.max(0, Math.min(100, Math.round(n || 0)));
-
 /** Ô số liệu nhỏ trong phần tổng kết trắc nghiệm. */
 const Stat: React.FC<{ icon: string; label: string; value: string; tone: string }> = ({ icon, label, value, tone }) => (
   <div className="flex flex-col gap-1 rounded-lg bg-surface-container-low p-space-md">
@@ -75,22 +74,18 @@ const Stat: React.FC<{ icon: string; label: string; value: string; tone: string 
 );
 
 /**
- * Báo cáo phiên AVATAR (mockup 2 + BE 012): finish xong BE chưa có điểm -> `GET /report` 404,
- * màn hiện form tự đánh rubric 5 chiều (0..100) + 2 ô điểm mạnh/cần cải thiện (trần 4000 ký tự),
- * nộp qua `POST /{id}/evaluation`; overall do BE tính từ trung bình 5 chiều.
+ * Báo cáo phiên AVATAR (mockup 2 + BE 012). Khi phiên kết thúc, hệ thống tự chấm rubric 5 chiều
+ * (ưu tiên điểm AI; nếu AI không sẵn sàng thì tổng hợp từ transcript) và gửi qua
+ * `POST /{id}/evaluation`. Màn này không còn form tự đánh: nếu báo cáo còn thiếu (phiên cũ hoặc
+ * lần gửi trước lỗi), nó tự chấm lại một lần từ transcript rồi hiển thị.
  */
 const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
   const { user } = useAuth();
   const {
     result, report, reportMissing, loading, error,
-    fetchResult, loadReport, submitEvaluation, clearMessages,
+    fetchResult, loadReport, submitEvaluation,
   } = useMockInterviewController();
-  const [rubric, setRubric] = useState<InterviewRubric>({
-    chuyenMon: 70, duAn: 70, tuDuy: 70, truyenDat: 70, mucKhop: 70,
-  });
-  const [strengths, setStrengths] = useState('');
-  const [improvements, setImprovements] = useState('');
-  const [busy, setBusy] = useState(false);
+  const autoEvalTried = useRef(false);
 
   useEffect(() => {
     if (user?.role === 'ROLE_USER') void fetchResult(sessionId);
@@ -104,6 +99,19 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
 
   const session = result?.session;
   const transcript = result?.transcript ?? [];
+
+  /** Tự chấm báo cáo từ transcript — dùng được cho phiên cũ chưa từng có rubric. */
+  const autoSubmit = useCallback(async () => {
+    if (session?.status !== 'COMPLETED') return;
+    await submitEvaluation(sessionId, buildFallbackEvaluation(transcript));
+  }, [session?.status, sessionId, transcript, submitEvaluation]);
+
+  useEffect(() => {
+    if (!reportMissing || autoEvalTried.current || session?.status !== 'COMPLETED') return;
+    autoEvalTried.current = true;
+    void autoSubmit();
+  }, [reportMissing, session?.status, autoSubmit]);
+
   const confirmed = transcript.filter(t => t.confirmed);
   const totalSec = transcript.reduce((sum, t) => sum + (t.durationSec ?? 0), 0);
 
@@ -112,18 +120,6 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
       ? <div className={`${CARD} p-space-lg`}><LoadingBlock label="Đang tải báo cáo..." /></div>
       : <div className={`${CARD} p-space-lg`}><ErrorBlock message={error || 'Không tìm thấy phiên phỏng vấn.'} onRetry={() => void fetchResult(sessionId)} /></div>;
   }
-
-  const submit = async () => {
-    setBusy(true);
-    clearMessages();
-    await submitEvaluation(sessionId, {
-      rubric,
-      rubricVersion: AVATAR_RUBRIC_VERSION,
-      strengths: strengths.trim() || undefined,
-      improvements: improvements.trim() || undefined,
-    });
-    setBusy(false);
-  };
 
   return (
     <div className="flex flex-col gap-space-xl">
@@ -168,7 +164,7 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
           <span className={`${ICON} text-[34px] text-primary`}>videocam</span>
           <p className="m-0 text-ds-headline-sm font-bold text-on-surface">Phiên vẫn đang mở</p>
           <p className="m-0 max-w-md text-ds-body-sm text-on-surface-variant">
-            Kết thúc phiên trong phòng phỏng vấn để mở rubric tự đánh 5 chiều.
+            Kết thúc phiên trong phòng phỏng vấn để hệ thống tự tổng hợp báo cáo đánh giá.
           </p>
           <Link to={`/mock-interviews/${session.id}`} className={adminButton('primary', 'h-11 no-underline')}>
             Tiếp tục phiên
@@ -179,7 +175,7 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
           <div className="flex flex-col items-center gap-space-lg md:flex-row md:items-start">
             <ScoreRing value={report.overallScore} caption={scoreBand(report.overallScore)} size={176} />
             <div className="flex min-w-0 flex-1 flex-col gap-space-md">
-              <h2 className="text-ds-headline-sm font-bold text-on-surface">Rubric 5 chiều bạn đã nộp</h2>
+              <h2 className="text-ds-headline-sm font-bold text-on-surface">Rubric 5 chiều do hệ thống đánh giá</h2>
               {RUBRIC_DIMENSIONS.map(d => {
                 const v = report[d.key];
                 return (
@@ -195,7 +191,8 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
                 );
               })}
               <p className="text-ds-label-sm text-outline">
-                Điểm tổng = trung bình cộng 5 chiều do hệ thống tính · thang đánh giá {report.rubricVersion}
+                Hệ thống tự chấm từ transcript ngay khi phiên kết thúc · điểm tổng = trung bình cộng 5 chiều ·
+                thang đánh giá {report.rubricVersion}
               </p>
             </div>
           </div>
@@ -204,7 +201,7 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
               {report.strengths && (
                 <div className="rounded-lg bg-secondary-container/40 p-space-lg">
                   <span className="flex items-center gap-1.5 text-ds-label-lg font-bold text-secondary-teal">
-                    <span className={`${ICON} text-[18px]`}>verified</span> Điểm mạnh của bạn
+                    <span className={`${ICON} text-[18px]`}>verified</span> Điểm mạnh
                   </span>
                   <p className="m-0 mt-2 whitespace-pre-line text-ds-body-md text-on-surface">{report.strengths}</p>
                 </div>
@@ -221,67 +218,18 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
           )}
         </div>
       ) : reportMissing ? (
-        <div className={`${CARD} flex flex-col gap-space-lg p-space-xl`}>
-          <div>
-            <h2 className="flex items-center gap-2 text-ds-headline-sm font-bold text-on-surface">
-              <span className={`${ICON} text-primary`}>rate_review</span>
-              Tự đánh giá phiên theo rubric 5 chiều
-            </h2>
-            <p className="mt-1 text-ds-body-sm text-on-surface-variant">
-              Phiên video call không có hội đồng chấm tự động — bạn kéo thanh điểm cho từng chiều,
-              điểm tổng được tính bằng trung bình cộng 5 chiều.
-            </p>
-          </div>
-          {RUBRIC_DIMENSIONS.map(d => (
-            <div key={d.key} className="flex flex-col gap-1">
-              <div className="flex items-center justify-between text-ds-label-lg">
-                <span className="font-semibold text-on-surface">{d.label}</span>
-                <span className="tabular-nums text-primary">{rubric[d.key]}/100</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                step={1}
-                value={rubric[d.key]}
-                onChange={e => setRubric(prev => ({ ...prev, [d.key]: clampScore(Number(e.target.value)) }))}
-                className="w-full accent-[#4f46e5]"
-                aria-label={`Điểm ${d.label}`}
-              />
-              <span className="text-ds-label-sm text-outline">{d.hint}</span>
-            </div>
-          ))}
-          <div className="grid grid-cols-1 gap-space-md md:grid-cols-2">
-            <label className="flex flex-col gap-1 text-ds-label-lg font-semibold text-on-surface">
-              Điểm mạnh muốn ghi vào báo cáo
-              <textarea
-                value={strengths}
-                maxLength={4000}
-                onChange={e => setStrengths(e.target.value)}
-                placeholder="vd. Trả lời đúng trọng tâm phần kiến trúc, dẫn chứng dự án rõ ràng..."
-                className="min-h-[110px] w-full resize-y rounded-lg border border-outline-variant bg-surface-container-lowest p-3 text-ds-body-sm font-normal text-on-surface placeholder:text-outline focus:border-primary focus:outline-none"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-ds-label-lg font-semibold text-on-surface">
-              Điểm cần cải thiện
-              <textarea
-                value={improvements}
-                maxLength={4000}
-                onChange={e => setImprovements(e.target.value)}
-                placeholder="vd. Thiếu số liệu định lượng ở phần Result của STAR..."
-                className="min-h-[110px] w-full resize-y rounded-lg border border-outline-variant bg-surface-container-lowest p-3 text-ds-body-sm font-normal text-on-surface placeholder:text-outline focus:border-primary focus:outline-none"
-              />
-            </label>
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-space-md border-t border-surface-container-high pt-space-lg">
-            <span className="text-ds-label-md text-outline tabular-nums">
-              Điểm tổng dự kiến: {clampScore(Object.values(rubric).reduce((a, b) => a + b, 0) / RUBRIC_DIMENSIONS.length)}/100
-            </span>
-            <button type="button" onClick={() => void submit()} disabled={busy} className={adminButton('primary', 'h-11 disabled:opacity-40')}>
-              <span className={`${ICON} text-[18px]`}>assignment_turned_in</span>
-              Nộp rubric &amp; xem báo cáo
-            </button>
-          </div>
+        <div className={`${CARD} flex flex-col items-center gap-space-md p-space-2xl text-center`}>
+          <span className={`${ICON} animate-pulse text-[34px] text-primary`}>insights</span>
+          <p className="m-0 text-ds-headline-sm font-bold text-on-surface">
+            Hệ thống đang tổng hợp báo cáo đánh giá
+          </p>
+          <p className="m-0 max-w-md text-ds-body-sm text-on-surface-variant">
+            Điểm 5 chiều được chấm tự động từ transcript phiên phỏng vấn. Bạn không cần tự đánh giá.
+          </p>
+          <button type="button" onClick={() => void autoSubmit()} className={adminButton('soft', 'h-10')}>
+            <span className={`${ICON} text-[18px]`}>refresh</span>
+            Chấm lại báo cáo
+          </button>
         </div>
       ) : (
         <div className={`${CARD} p-space-xl`}><LoadingBlock label="Đang tải báo cáo..." /></div>

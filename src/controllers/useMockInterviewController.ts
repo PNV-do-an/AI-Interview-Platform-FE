@@ -17,7 +17,7 @@ export const useMockInterviewController = () => {
   const [result, setResult] = useState<InterviewResult | null>(null);
   const [lastAnswer, setLastAnswer] = useState<InterviewAnswer | null>(null);
   const [report, setReport] = useState<InterviewReport | null>(null);
-  /** `GET /report` trả 404 khi chưa nộp rubric — trang dùng cờ này để hiện form tự đánh. */
+  /** `GET /report` trả 404 khi phiên chưa có rubric — trang dùng cờ này để tự chấm bù từ transcript. */
   const [reportMissing, setReportMissing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

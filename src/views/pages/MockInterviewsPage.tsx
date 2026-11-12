@@ -227,7 +227,7 @@ const MockInterviewsPage = () => {
             <h4 className="text-ds-headline-sm font-bold text-on-surface">Video call với AI</h4>
             <p className="flex-1 text-ds-body-sm text-on-surface-variant">
               Phòng phỏng vấn trực tiếp: AI hỏi bằng giọng nói qua trình duyệt, bạn trả lời và transcript
-              được lưu theo từng lượt. Kết thúc phiên nộp rubric tự đánh 5 chiều.
+              được lưu theo từng lượt. Kết thúc phiên, hệ thống tự tổng hợp báo cáo và chấm điểm 5 chiều.
             </p>
             <button
               type="button"
@@ -504,7 +504,7 @@ const MockInterviewsPage = () => {
           <span className="text-ds-label-lg font-bold text-on-surface">Phòng Video Call chạy trên trình duyệt</span>
           <p className="text-ds-body-sm text-on-surface-variant">
             AI đọc câu hỏi bằng giọng nói của trình duyệt, bạn gõ câu trả lời theo từng lượt;
-            kết thúc phiên bạn tự đánh rubric 5 chiều để nhận báo cáo.
+            kết thúc phiên hệ thống tự chấm rubric 5 chiều và trả báo cáo ngay.
           </p>
         </div>
       </div>

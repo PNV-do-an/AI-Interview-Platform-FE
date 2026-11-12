@@ -14,6 +14,7 @@ import { useMockInterviewController } from '../../controllers/useMockInterviewCo
 import { useAuth } from '../../context/AuthContext';
 import { useSpeechInput } from '../../hooks/useSpeechInput';
 import { InterviewTranscriptEntry, AVATAR_RUBRIC_VERSION } from '../../models/Interview.model';
+import { buildFallbackEvaluation } from '../../utils/avatarEvaluation';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { ICON } from '../components/candidateKit';
 import { adminButton, ErrorBlock, LoadingBlock, Pill, fmtServer } from '../components/adminKit';
@@ -403,7 +404,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
       }
       if (done) {
         setBusy(false);
-        void autoFinish();
+        void autoFinish(answerText);
         return;
       }
       if (!next) {
@@ -416,44 +417,63 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
     setBusy(false);
   };
 
-  const applyAiEvaluation = async () => {
-    const evaluation = await rtc.evaluate().catch(() => null);
+  /** Đổi payload AI service trả về thành body `POST /evaluation`; null khi AI không chấm được. */
+  const toEvaluationBody = (evaluation: unknown) => {
     const rubric = (evaluation as { rubric?: Record<string, number> } | null)?.rubric;
-    if (rubric) {
-      await submitEvaluation(sessionId, {
-        rubric: {
-          chuyenMon: rubric.chuyenMon ?? 70,
-          duAn: rubric.duAn ?? 70,
-          tuDuy: rubric.tuDuy ?? 70,
-          truyenDat: rubric.truyenDat ?? 70,
-          mucKhop: rubric.mucKhop ?? 70,
-        },
-        rubricVersion: (evaluation as { rubricVersion?: string })?.rubricVersion ?? AVATAR_RUBRIC_VERSION,
-        strengths: (evaluation as { strengths?: string })?.strengths,
-        improvements: (evaluation as { improvements?: string })?.improvements,
-      }).catch(() => null);
+    if (!rubric) return null;
+    return {
+      rubric: {
+        chuyenMon: rubric.chuyenMon ?? 70,
+        duAn: rubric.duAn ?? 70,
+        tuDuy: rubric.tuDuy ?? 70,
+        truyenDat: rubric.truyenDat ?? 70,
+        mucKhop: rubric.mucKhop ?? 70,
+      },
+      rubricVersion: (evaluation as { rubricVersion?: string })?.rubricVersion ?? AVATAR_RUBRIC_VERSION,
+      strengths: (evaluation as { strengths?: string })?.strengths,
+      improvements: (evaluation as { improvements?: string })?.improvements,
+    };
+  };
+
+  /**
+   * Kết thúc phiên và tạo báo cáo tự động:
+   * 1. Hỏi điểm AI khi kênh avatar còn sống.
+   * 2. Đóng phiên trước — BE chỉ nhận rubric khi phiên đã COMPLETED.
+   * 3. Gửi rubric AI; nếu AI không chấm được thì hệ thống tự tổng hợp từ transcript.
+   */
+  const finishWithReport = async (extra?: InterviewTranscriptEntry) => {
+    setConfirmFinish(false);
+    setBusy(true);
+    speech.stop();
+    voiceInput.stop();
+    const evaluation = await rtc.evaluate().catch(() => null);
+    rtc.teardown();
+    const res = await finishSession(sessionId);
+    if (!res) {
+      setBusy(false);
+      return;
     }
+
+    const transcript = [...(res.transcript ?? result?.transcript ?? [])];
+    if (extra && !transcript.some(t => t.index === extra.index)) transcript.push(extra);
+    const body = toEvaluationBody(evaluation)
+      ?? buildFallbackEvaluation(transcript.filter(t => t.confirmed !== false));
+    await submitEvaluation(sessionId, body).catch(() => null);
+    navigate(`/mock-interviews/${sessionId}/result`);
   };
 
-  const runFinish = async () => {
-    setConfirmFinish(false);
-    speech.stop();
-    voiceInput.stop();
-    await applyAiEvaluation();
-    rtc.teardown();
-    const res = await finishSession(sessionId);
-    if (res) navigate(`/mock-interviews/${sessionId}/result`);
-  };
-
-  /** Hết gói câu hỏi: AI tự chấm rubric rồi đóng phiên, không cần ứng viên bấm nộp. */
-  const autoFinish = async () => {
-    setConfirmFinish(false);
-    speech.stop();
-    voiceInput.stop();
-    await applyAiEvaluation();
-    rtc.teardown();
-    const res = await finishSession(sessionId);
-    if (res) navigate(`/mock-interviews/${sessionId}/result`);
+  /** Hết gói câu hỏi: AI tự chấm rồi đóng phiên, không cần ứng viên bấm nộp. */
+  const autoFinish = async (lastAnswerText?: string) => {
+    const extra: InterviewTranscriptEntry | undefined = lastAnswerText && question
+      ? {
+        index: turn,
+        questionText: question,
+        answerText: lastAnswerText,
+        confirmed: true,
+        durationSec: turnElapsed,
+      }
+      : undefined;
+    await finishWithReport(extra);
   };
 
   /* Voice-first: AI đọc xong tự mở micro; STT ngầm điền draft, ngừng nói ~2.5s tự nộp lượt. */
@@ -872,12 +892,12 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
         open={confirmFinish}
         title="Kết thúc phiên và chuyển tới báo cáo?"
         message={draft.trim()
-          ? 'Lượt đang gõ dở sẽ không được chốt. Bạn vẫn có thể nộp rubric tự đánh sau khi kết thúc.'
-          : 'Bạn sẽ chuyển tới màn báo cáo để nộp rubric tự đánh 5 chiều.'}
+          ? 'Lượt đang gõ dở sẽ không được chốt. Hệ thống sẽ tự tổng hợp báo cáo đánh giá từ các lượt đã trả lời.'
+          : 'Hệ thống sẽ tự tổng hợp báo cáo đánh giá 5 chiều từ transcript ngay khi kết thúc.'}
         confirmLabel="Kết thúc & Xem kết quả"
         cancelLabel="Tiếp tục"
         danger
-        onConfirm={() => void runFinish()}
+        onConfirm={() => void finishWithReport()}
         onCancel={() => setConfirmFinish(false)}
       />
     </div>
