@@ -142,7 +142,7 @@ const CandidateLayout: React.FC = () => {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 aria-label="Tìm kiếm"
-                placeholder="Tìm kiếm cơ hội việc làm, phiên luyện AI, lịch phỏng vấn..."
+                placeholder="Tìm kiếm việc làm..."
                 className="w-full h-9 pl-8 pr-space-md bg-surface-container-lowest rounded-lg text-ds-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary/20 shadow-sm"
               />
             </form>

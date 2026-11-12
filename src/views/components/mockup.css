@@ -1,0 +1,176 @@
+/*
+ * Hiệu chỉnh riêng cho HTML xuất từ Stitch (chỉ áp trong .mockup-root).
+ *
+ * Bộ export dùng thang chữ lớn hơn scale cũ của app (`text-headline-md` 20/28 thay vì
+ * 18/24, `text-body-*` line-height 22/26/18) và có vài utility chưa có trong
+ * tailwind.config.js (`text-headline-xl`, `text-display-lg/sm`, `text-label-lg`,
+ * `shadow-xs`, `no-scrollbar`). Scope ở đây để không đổi typography của màn React sẵn có.
+ */
+
+.mockup-root .text-display-lg {
+  font-size: 48px;
+  line-height: 56px;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+}
+.mockup-root .text-display-sm {
+  font-size: 36px;
+  line-height: 44px;
+  letter-spacing: -0.025em;
+  font-weight: 700;
+}
+.mockup-root .text-headline-xl {
+  font-size: 30px;
+  line-height: 38px;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+.mockup-root .text-headline-lg {
+  font-size: 24px;
+  line-height: 32px;
+  letter-spacing: -0.015em;
+  font-weight: 600;
+}
+.mockup-root .text-headline-md {
+  font-size: 20px;
+  line-height: 28px;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+.mockup-root .text-headline-sm {
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: -0.005em;
+  font-weight: 600;
+}
+.mockup-root .text-body-lg {
+  font-size: 16px;
+  line-height: 26px;
+}
+.mockup-root .text-body-md {
+  font-size: 14px;
+  line-height: 22px;
+}
+.mockup-root .text-body-sm {
+  font-size: 12px;
+  line-height: 18px;
+}
+.mockup-root .text-label-lg {
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0.005em;
+  font-weight: 600;
+}
+
+.mockup-root .shadow-xs {
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+}
+
+/* Mobile: export chỉ có một cỡ chữ lớn cố định; hạ theo bậc mobile của app
+   (28/36) để tiêu đề không chiếm 4 dòng trên màn 390px. */
+@media (max-width: 639px) {
+  .mockup-root .text-display-lg {
+    font-size: 32px;
+    line-height: 40px;
+  }
+  .mockup-root .text-display-sm {
+    font-size: 28px;
+    line-height: 36px;
+  }
+  .mockup-root .text-headline-xl {
+    font-size: 24px;
+    line-height: 32px;
+  }
+  .mockup-root .text-headline-lg {
+    font-size: 20px;
+    line-height: 28px;
+  }
+}
+
+/* Dòng giá "1.290.000 VNĐ / tháng": flex item co lại làm "/ tháng" gãy dòng. */
+.mockup-root .flex.items-baseline > * {
+  white-space: nowrap;
+}
+
+/* Tiêu đề lớn chia dòng đẹp hơn thay vì cắt giữa cụm ("tương / lai"). */
+.mockup-root h1 {
+  text-wrap: balance;
+}
+
+.mockup-root .text-decoration-none {
+  text-decoration: none;
+}
+
+.mockup-root .no-scrollbar,
+.mockup-root .scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.mockup-root .no-scrollbar::-webkit-scrollbar,
+.mockup-root .scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Modal export dùng tailwindcss-animate (plugin không cài trong app). */
+.mockup-root .animate-in {
+  animation: mockup-enter 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes mockup-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Breadcrumb dài (Trang chủ > Tìm việc làm > Công nghệ thông tin > chức danh)
+   trên mobile chỉ giữ "Trang chủ > chức danh"; chức danh cắt bằng ellipsis. */
+@media (max-width: 639px) {
+  .mockup-root .crumb-bar > a:not(:first-child) {
+    display: none;
+  }
+  .mockup-root .crumb-bar > span.material-symbols-outlined ~ span.material-symbols-outlined {
+    display: none;
+  }
+}
+
+/* Header marketing: ở 1280px nội dung vượt ~40px nên chữ bị gãy dòng
+   ("AI / Interview", "Đăng ký miễn / phí"). Giữ một dòng và thu hẹp nav cho vừa. */
+.mockup-root header a,
+.mockup-root header span,
+.mockup-root header .cursor-pointer {
+  white-space: nowrap;
+}
+.mockup-root header nav {
+  gap: 0.125rem;
+}
+.mockup-root header nav a {
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
+}
+/* Dưới 1200px logo + 5 mục nav + cụm tài khoản không còn vừa một dòng. */
+@media (max-width: 1199px) {
+  .mockup-root header nav {
+    display: none;
+  }
+}
+
+/* Dưới 480px logo + Đăng nhập + CTA vượt viewport: thu padding, gap và cỡ chữ nút. */
+@media (max-width: 479px) {
+  .mockup-root header > div {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  .mockup-root header > div > div:last-child {
+    gap: 0.375rem;
+  }
+  .mockup-root header > div > div:last-child > a {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    font-size: 12px;
+    line-height: 1rem;
+  }
+}

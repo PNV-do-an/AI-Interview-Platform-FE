@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import './mockup.css';
 
 /**
  * Render HTML xuất từ Stitch. Mockup là prototype tĩnh nên phần tương tác (toggle giá,
@@ -17,8 +18,40 @@ const TEXT_TO_KEY: Record<string, string> = {
   'Chuyên gia Mentor': 'chuyen-gia-mentor',
   'Bảng giá': 'bang-gia',
   'Đăng nhập': 'dang-nhap',
+  'Đăng ký miễn phí': 'dang-ky',
+  'Đăng ký ngay': 'dang-ky',
+  'Tạo tài khoản miễn phí ngay': 'dang-ky',
+  'Bắt đầu miễn phí': 'dang-ky',
+  'Nâng cấp gói Pro': 'dang-ky',
+  'Đăng ký gói Mentor VIP': 'dang-ky',
+  'Đăng ký trở thành Mentor': 'dang-ky',
+  'Gia nhập AI Interview': 'dang-ky',
+  'Trở thành Mentor': 'dang-ky',
+  'Dành cho doanh nghiệp': 'dang-ky',
+  'Dùng thử miễn phí 1 buổi': 'phong-van-ai',
+  'Trải nghiệm thử AI': 'phong-van-ai',
+  'Bắt đầu luyện tập ngay': 'phong-van-ai',
+  'Thử phòng luyện tập ngay': 'phong-van-ai',
+  'Mô phỏng phỏng vấn AI': 'phong-van-ai',
+  'Phân tích giọng nói & cử chỉ': 'phong-van-ai',
+  'Báo cáo chỉ số năng lực': 'phong-van-ai',
+  'Ngân hàng câu hỏi chuẩn': 'phong-van-ai',
+  'Kết nối nhà tuyển dụng': 'phong-van-ai',
+  'Tìm cố vấn phù hợp': 'chuyen-gia-mentor',
+  'Tư vấn lộ trình cùng chuyên gia': 'chuyen-gia-mentor',
+  'Đội ngũ chuyên gia': 'chuyen-gia-mentor',
+  'Tìm hiểu chính sách & Quyền lợi': 'chuyen-gia-mentor',
+  'Khám phá việc làm': 'tim-viec-lam',
+  'Xem tất cả 500+ vị trí tuyển dụng khác': 'tim-viec-lam',
+  'Công nghệ thông tin': 'tim-viec-lam',
+  'Trung tâm trợ giúp': 'ho-tro',
+  'Giới thiệu công ty': 'trang-chu',
+  'Tin tức & Sự kiện': 'trang-chu',
+  'Liên hệ hợp tác': 'trang-chu',
+  'Chính sách bảo mật': 'trang-chu',
+  'Điều khoản dịch vụ': 'trang-chu',
+  'Tiêu chuẩn AI minh bạch': 'trang-chu',
   'Đăng ký': 'dang-ky',
-  'Đăng ký miễn phí': 'dang-ky-mien-phi',
 };
 
 const STATIC_ROUTES: Record<string, string> = {
@@ -150,8 +183,11 @@ const MockupPage: React.FC<{ html: string; scripts?: string }> = ({ html, script
         const anchor = target.closest('a');
         const href = anchor?.getAttribute('href');
         if (anchor && (href === '#' || href === '')) {
-          const mapped = TEXT_TO_KEY[norm(anchor.textContent)];
-          route = mapped ? resolve(mapped) : undefined;
+          const label = norm(anchor.textContent);
+          const matched = Object.keys(TEXT_TO_KEY)
+            .filter((text) => label.includes(text))
+            .sort((a, b) => b.length - a.length)[0];
+          route = matched ? resolve(TEXT_TO_KEY[matched]) : undefined;
         }
       }
 
@@ -165,7 +201,7 @@ const MockupPage: React.FC<{ html: string; scripts?: string }> = ({ html, script
     return () => root.removeEventListener('click', onClick);
   }, [navigate, isAuthenticated, logout]);
 
-  return <div ref={ref} dangerouslySetInnerHTML={{ __html: html }} />;
+  return <div ref={ref} className="mockup-root" dangerouslySetInnerHTML={{ __html: html }} />;
 };
 
 export default MockupPage;
