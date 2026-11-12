@@ -39,6 +39,7 @@ import EmployerReviewsPage from './views/pages/EmployerReviewsPage';
 import BugReportsPage from './views/pages/BugReportsPage';
 import AdminFeedbackPage from './views/pages/AdminFeedbackPage';
 import LandingPage from './views/pages/LandingPage';
+import MentorsPage from './views/pages/MentorsPage';
 import PublicJobBoardPage from './views/pages/PublicJobBoardPage';
 import TwoFactorPage from './views/pages/TwoFactorPage';
 import MagicLinkPage from './views/pages/MagicLinkPage';
@@ -87,6 +88,10 @@ const App: React.FC = () => {
           <Route path="/two-factor" element={<TwoFactorPage />} />
           <Route path="/magic-link" element={<MagicLinkPage />} />
           <Route path="/opportunities" element={<PublicJobBoardPage />} />
+          {/* Trang marketing công khai theo bộ mockup 2026-11-12 */}
+          <Route path="/mentors" element={<MentorsPage />} />
+          <Route path="/pricing" element={<PackagesPage />} />
+          <Route path="/ai-interview" element={<MockInterviewsPage />} />
 
           {/* Protected routes — any authenticated user */}
           <Route element={<ProtectedRoute />}>
