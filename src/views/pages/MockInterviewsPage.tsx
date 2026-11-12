@@ -222,7 +222,7 @@ const MockInterviewsPage = () => {
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-tertiary-fixed text-on-tertiary-fixed-variant">
                 <span className={`${ICON} text-[22px]`}>videocam</span>
               </span>
-              <Pill tone="warning">AVATAR · BE 012</Pill>
+              <Pill tone="warning">VIDEO CALL</Pill>
             </div>
             <h4 className="text-ds-headline-sm font-bold text-on-surface">Video call với AI</h4>
             <p className="flex-1 text-ds-body-sm text-on-surface-variant">
