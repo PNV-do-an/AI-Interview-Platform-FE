@@ -128,10 +128,6 @@ const LoginPage: React.FC = () => {
   const loginWithGoogleRef = useRef(loginWithGoogle);
   loginWithGoogleRef.current = loginWithGoogle;
 
-  const handleGoogleUnavailable = () => {
-    setNotice('Đăng nhập với Google hiện không khả dụng. Vui lòng dùng email và mật khẩu.');
-  };
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -308,8 +304,8 @@ const LoginPage: React.FC = () => {
                   <button
                     type="button"
                     aria-label="Đăng nhập với Google"
-                    className="absolute inset-0 h-11 w-full cursor-pointer rounded-xl border-0 bg-transparent text-[1px] text-transparent"
-                    onClick={handleGoogleUnavailable}
+                    className="w-full h-11 rounded-xl border-2 border-outline bg-primary text-body-md font-semibold text-white shadow-md transition-colors cursor-pointer"
+                    onClick={() => loginWithGoogleRef.current && loginWithGoogleRef.current('', false)}
                   >
                     Đăng nhập với Google
                   </button>
