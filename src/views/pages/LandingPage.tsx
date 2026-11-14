@@ -1,5 +1,6 @@
 import React from 'react';
 import MockupPage from '../components/MockupPage';
+import PublicShell from '../layout/PublicShell';
 
 // Bản dựng 1:1 từ mockup Stitch "landing_page_ai_interview_platform_high_fidelity_crisp".
 // Tương tác (toggle, modal, filter, accordion) chạy qua <MockupPage scripts>.
@@ -8,7 +9,11 @@ const PAGE_HTML = "<header class=\"fixed top-0 left-0 w-full z-50 bg-white/90 ba
 const PAGE_SCRIPTS = "";
 
 const LandingPage: React.FC = () => {
-  return <MockupPage html={PAGE_HTML} scripts={PAGE_SCRIPTS} />;
+  return (
+    <PublicShell>
+      <MockupPage html={PAGE_HTML} scripts={PAGE_SCRIPTS} />
+    </PublicShell>
+  );
 };
 
 export default LandingPage;

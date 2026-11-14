@@ -174,3 +174,18 @@
     line-height: 1rem;
   }
 }
+
+/*
+ * Khi mockup được render bên trong PublicShell (header/footer strip đã chạy),
+ * <main> gốc trong HTML mockup đã bị unwrap, nhưng lớp pt-20/pt-16 vẫn còn
+ * trên wrapper đầu tiên. Reset để không double-pad với shell.
+ */
+.mockup-root > .w-full.pt-20,
+.mockup-root > main.pt-20,
+.mockup-root > main.pt-16,
+.mockup-root > .w-full.pt-16 {
+  padding-top: 0 !important;
+}
+
+/* Mockup inner <main> được unwrap thành children trực tiếp của mockup-root.
+   Các trang có cấu trúc <div class="flex flex-col w-full"> ngay sau main – giữ nguyên. */
