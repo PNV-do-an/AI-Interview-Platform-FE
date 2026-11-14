@@ -1,5 +1,6 @@
 import React from 'react';
 import MockupPage from '../components/MockupPage';
+import PublicShell from '../layout/PublicShell';
 
 // Bản dựng 1:1 từ mockup Stitch "luy_n_ph_ng_v_n_ai_ai_interview_platform".
 // Tương tác (toggle, modal, filter, accordion) chạy qua <MockupPage scripts>.
@@ -8,7 +9,11 @@ const PAGE_HTML = "<header class=\"fixed top-0 left-0 w-full z-50 bg-white/95 ba
 const PAGE_SCRIPTS = "// Simple micro-interaction for quick role selector pills\n  document.querySelectorAll('.role-btn').forEach(btn => {\n    btn.addEventListener('click', function() {\n      document.querySelectorAll('.role-btn').forEach(b => {\n        b.classList.remove('bg-primary-container', 'text-on-primary', 'shadow-md');\n        b.classList.add('bg-surface-container', 'text-on-surface');\n        const title = b.querySelector('.font-label-md');\n        if (title) title.classList.remove('text-on-primary');\n        const sub = b.querySelector('.font-body-sm');\n        if (sub) {\n          sub.classList.remove('text-on-primary-container');\n          sub.classList.add('text-on-surface-variant');\n        }\n        const icon = b.querySelector('.material-symbols-outlined');\n        if (icon) {\n          icon.classList.remove('text-on-primary');\n          icon.classList.add('text-primary');\n        }\n      });\n\n      this.classList.remove('bg-surface-container', 'text-on-surface');\n      this.classList.add('bg-primary-container', 'text-on-primary', 'shadow-md');\n      const activeTitle = this.querySelector('.font-label-md');\n      if (activeTitle) activeTitle.classList.add('text-on-primary');\n      const activeSub = this.querySelector('.font-body-sm');\n      if (activeSub) {\n        activeSub.classList.remove('text-on-surface-variant');\n        activeSub.classList.add('text-on-primary-container');\n      }\n      const activeIcon = this.querySelector('.material-symbols-outlined');\n      if (activeIcon) {\n        activeIcon.classList.remove('text-primary');\n        activeIcon.classList.add('text-on-primary');\n      }\n    });\n  });";
 
 const MockInterviewsPage: React.FC = () => {
-  return <MockupPage html={PAGE_HTML} scripts={PAGE_SCRIPTS} />;
+  return (
+    <PublicShell>
+      <MockupPage html={PAGE_HTML} scripts={PAGE_SCRIPTS} />
+    </PublicShell>
+  );
 };
 
 export default MockInterviewsPage;

@@ -1,5 +1,6 @@
 import React from 'react';
 import MockupPage from '../components/MockupPage';
+import PublicShell from '../layout/PublicShell';
 
 // Bản dựng 1:1 từ mockup Stitch "screen_5_danh_s_ch_vi_c_l_m_ai_interview_platform".
 // Tương tác (toggle, modal, filter, accordion) chạy qua <MockupPage scripts>.
@@ -8,7 +9,11 @@ const PAGE_HTML = "<header class=\"fixed top-0 left-0 right-0 z-50 bg-surface-co
 const PAGE_SCRIPTS = "// Simple micro-interaction for quick filter buttons and bookmark hearts\n  document.addEventListener('DOMContentLoaded', () => {\n    // Bookmark buttons toggle\n    const favoriteButtons = document.querySelectorAll('button[title=\"Lưu tin tuyển dụng\"]');\n    favoriteButtons.forEach(btn => {\n      btn.addEventListener('click', (e) => {\n        e.preventDefault();\n        const icon = btn.querySelector('.material-symbols-outlined');\n        if (icon) {\n          const isFilled = icon.style.fontVariationSettings && icon.style.fontVariationSettings.includes(\"'FILL' 1\");\n          if (isFilled) {\n            icon.style.fontVariationSettings = \"'FILL' 0\";\n            btn.classList.remove('text-error', 'border-error');\n            btn.classList.add('text-outline');\n          } else {\n            icon.style.fontVariationSettings = \"'FILL' 1\";\n            btn.classList.add('text-error', 'border-error');\n            btn.classList.remove('text-outline');\n          }\n        }\n      });\n    });\n  });";
 
 const PublicJobBoardPage: React.FC = () => {
-  return <MockupPage html={PAGE_HTML} scripts={PAGE_SCRIPTS} />;
+  return (
+    <PublicShell>
+      <MockupPage html={PAGE_HTML} scripts={PAGE_SCRIPTS} />
+    </PublicShell>
+  );
 };
 
 export default PublicJobBoardPage;

@@ -1,5 +1,6 @@
 import React from 'react';
 import MockupPage from '../components/MockupPage';
+import PublicShell from '../layout/PublicShell';
 
 // Bản dựng 1:1 từ mockup Stitch "b_ng_gi_d_ch_v_ai_interview_platform".
 // Tương tác (toggle, modal, filter, accordion) chạy qua <MockupPage scripts>.
@@ -8,7 +9,11 @@ const PAGE_HTML = "<header class=\"fixed top-0 left-0 w-full z-50 bg-white/95 ba
 const PAGE_SCRIPTS = "let currentBilling = 'monthly';\n\n  function setBillingCycle(cycle) {\n    currentBilling = cycle;\n    const monthlyBtn = document.getElementById('billing-monthly-btn');\n    const yearlyBtn = document.getElementById('billing-yearly-btn');\n    const proPrice = document.getElementById('pro-price-display');\n    const proCycle = document.getElementById('pro-price-cycle');\n    const proNote = document.getElementById('pro-price-note');\n    const mentorPrice = document.getElementById('mentor-price-display');\n    const mentorCycle = document.getElementById('mentor-price-cycle');\n    const mentorNote = document.getElementById('mentor-price-note');\n\n    if (cycle === 'yearly') {\n      monthlyBtn.className = 'px-space-lg py-2.5 rounded-xl font-label-lg text-label-lg transition-all text-on-surface-variant hover:text-on-surface';\n      yearlyBtn.className = 'flex items-center gap-2 px-space-lg py-2.5 rounded-xl font-label-lg text-label-lg transition-all text-on-surface bg-surface-container-lowest shadow-sm';\n      \n      proPrice.innerText = '224.000';\n      proCycle.innerText = '/ tháng';\n      proNote.innerText = 'Thanh toán 2.690.000 VNĐ / năm (Tiết kiệm 25%)';\n\n      mentorPrice.innerText = '967.000';\n      mentorCycle.innerText = '/ tháng';\n      mentorNote.innerText = 'Thanh toán 11.600.000 VNĐ / năm + Tặng thêm 4 buổi 1:1';\n    } else {\n      monthlyBtn.className = 'px-space-lg py-2.5 rounded-xl font-label-lg text-label-lg transition-all text-on-surface bg-surface-container-lowest shadow-sm';\n      yearlyBtn.className = 'flex items-center gap-2 px-space-lg py-2.5 rounded-xl font-label-lg text-label-lg transition-all text-on-surface-variant hover:text-on-surface';\n\n      proPrice.innerText = '299.000';\n      proCycle.innerText = '/ tháng';\n      proNote.innerText = 'Linh hoạt gia hạn mỗi tháng';\n\n      mentorPrice.innerText = '1.290.000';\n      mentorCycle.innerText = '/ tháng';\n      mentorNote.innerText = 'Kèm 2 buổi Mock Interview 1-on-1 hàng tháng';\n    }\n  }\n\n  function toggleFaq(index) {\n    const answer = document.getElementById(`faq-answer-${index}`);\n    const icon = document.getElementById(`faq-icon-${index}`);\n    \n    if (answer.classList.contains('hidden')) {\n      answer.classList.remove('hidden');\n      icon.innerText = 'expand_less';\n    } else {\n      answer.classList.add('hidden');\n      icon.innerText = 'expand_more';\n    }\n  }";
 
 const PackagesPage: React.FC = () => {
-  return <MockupPage html={PAGE_HTML} scripts={PAGE_SCRIPTS} />;
+  return (
+    <PublicShell>
+      <MockupPage html={PAGE_HTML} scripts={PAGE_SCRIPTS} />
+    </PublicShell>
+  );
 };
 
 export default PackagesPage;
