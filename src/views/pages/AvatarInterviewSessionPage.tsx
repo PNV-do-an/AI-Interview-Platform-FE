@@ -207,8 +207,8 @@ const useLocalMedia = () => {
 
   // Khung tự-view chỉ được render sau khi cấp quyền, nên srcObject phải gắn ở effect chứ không gắn trong request.
   useEffect(() => {
-    if (videoRef.current) videoRef.current.srcObject = stream;
-  }, [stream]);
+    if (videoRef.current && stream) videoRef.current.srcObject = stream;
+  }, [stream, state]);
 
   const toggleMic = () => {
     const track = streamRef.current?.getAudioTracks()[0];
