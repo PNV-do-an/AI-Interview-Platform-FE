@@ -206,9 +206,16 @@ const useLocalMedia = () => {
   }, [request]);
 
   // Khung tự-view chỉ được render sau khi cấp quyền, nên srcObject phải gắn ở effect chứ không gắn trong request.
+  // Phải có hasVideo trong deps: <video> chỉ render khi state==='granted' && hasVideo,
+  // nên effect phải chạy lại khi hasVideo đổi để videoRef.current không bị null.
   useEffect(() => {
-    if (videoRef.current && stream) videoRef.current.srcObject = stream;
-  }, [stream, state]);
+    if (videoRef.current && stream) {
+      videoRef.current.srcObject = stream;
+      // Một số trình duyệt (Chrome) không tự play khi srcObject gán qua effect,
+      // kể cả khi có autoPlay — phải gọi play() thủ công.
+      void videoRef.current.play().catch(() => {});
+    }
+  }, [stream, state, hasVideo]);
 
   const toggleMic = () => {
     const track = streamRef.current?.getAudioTracks()[0];
