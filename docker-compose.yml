@@ -66,6 +66,13 @@ services:
       GMAIL_TOKEN_URI: ${GMAIL_TOKEN_URI:-https://oauth2.googleapis.com/token}
       GMAIL_API_BASE_URL: ${GMAIL_API_BASE_URL:-https://gmail.googleapis.com}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      # AI (CV/study): key lay tu file .env (gitignored). Default khớp application.yml của BE.
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
+      AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
+      AI_EVAL_MODEL: ${AI_EVAL_MODEL:-gpt-4o-mini}
+      AI_MAX_TOKENS: ${AI_MAX_TOKENS:-4096}
     ports:
       - "8081:8080"
     depends_on:

@@ -16,6 +16,8 @@ import BrandLogo from '../components/BrandLogo';
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Tổng quan', end: true },
   { to: '/my-profile', label: 'Hồ sơ & CV' },
+  { to: '/cv-analyzer', label: 'Phân tích CV' },
+  { to: '/study', label: 'Lộ trình ôn tập' },
   { to: '/jobs', label: 'Tìm việc làm' },
   { to: '/my-applications', label: 'Đơn ứng tuyển' },
   { to: '/my-interviews', label: 'Lịch phỏng vấn' },
