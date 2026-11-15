@@ -101,16 +101,22 @@ const useSpeech = () => {
 /* ------------------------------ media (cam/mic) ------------------------------ */
 
 /** Lý do getUserMedia thất bại, kèm cách mở khoá để ứng viên tự xử lý mà không phải tải lại trang. */
+const isEmbeddedPreview = typeof navigator !== 'undefined' && /OpenCode|Electron/i.test(navigator.userAgent);
+
 const mediaFailureReason = (err: unknown): string => {
   const name = (err as { name?: string })?.name || '';
   if (name === 'NotAllowedError' || name === 'SecurityError') {
-    return 'Trình duyệt đang chặn camera và micro. Bấm biểu tượng quyền ở thanh địa chỉ, chọn Cho phép, rồi bấm "Xin lại quyền".';
+    return isEmbeddedPreview
+      ? 'Khung xem trước của OpenCode/Electron đang chặn camera và micro. Hãy mở trang này bằng Chrome hoặc Edge.'
+      : 'Trình duyệt đang chặn quyền camera/micro. Mở khoá trong Cài đặt trang rồi bấm "Xin lại quyền".';
   }
   if (name === 'NotFoundError' || name === 'NotReadableError' || name === 'OverconstrainedError') {
-    return 'Không có thiết bị sẵn dùng, hoặc ứng dụng khác đang giữ webcam/mic. Cắm thiết bị hoặc tắt ứng dụng đó rồi bấm "Xin lại quyền".';
+    return 'Không tìm thấy camera/micro, hoặc ứng dụng khác đang giữ thiết bị. Kiểm tra lại rồi bấm "Xin lại quyền".';
   }
-  return `Không mở được camera/micro${name ? ` (${name})` : ''}. Bấm "Xin lại quyền" để thử lần nữa.`;
+  return `Không mở được camera/micro${name ? ` (${name})` : ''}. Bấm "Xin lại quyền" để thử lại.`;
 };
+
+const stopTracks = (stream: MediaStream | null) => stream?.getTracks().forEach(t => t.stop());
 
 const useLocalMedia = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -118,11 +124,16 @@ const useLocalMedia = () => {
   const aliveRef = useRef(true);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [state, setState] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
+  const [hasVideo, setHasVideo] = useState(false);
+  const [hasAudio, setHasAudio] = useState(false);
   const [reason, setReason] = useState('');
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
 
-  /** Xin quyền thiết bị. Chạy lúc vào phòng và chạy lại được khi người dùng vừa mở khoá trong trình duyệt. */
+  /**
+   * Xin quyền thiết bị. Chạy lúc vào phòng và chạy lại được khi người dùng vừa mở khoá trong trình duyệt.
+   * Camera và micro được xin riêng: một thiết bị bị chặn/không có vẫn không kéo theo thiết bị còn lại.
+   */
   const request = useCallback(async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
       setState('denied');
@@ -130,26 +141,58 @@ const useLocalMedia = () => {
       return;
     }
     setState('requesting');
+    setReason('');
+    let videoTracks: MediaStreamTrack[] = [];
+    let audioTracks: MediaStreamTrack[] = [];
+    let failure: unknown;
+
+    // Một prompt duy nhất khi cả camera lẫn micro đều dùng được.
     try {
-      const next = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
+      const combined = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       if (!aliveRef.current) {
-        next.getTracks().forEach(t => t.stop());
+        stopTracks(combined);
         return;
       }
-      streamRef.current?.getTracks().forEach(t => t.stop());
-      streamRef.current = next;
-      setStream(next);
-      setReason('');
-      setState('granted');
-      setMicOn(true);
-      setCamOn(true);
+      videoTracks = combined.getVideoTracks();
+      audioTracks = combined.getAudioTracks();
     } catch (err) {
-      if (!aliveRef.current) return;
-      setState('denied');
-      setReason(mediaFailureReason(err));
+      failure = err;
+      // Thiếu hoặc bị chặn một thiết bị: xin riêng để giữ được thiết bị còn lại.
+      const [videoReq, audioReq] = await Promise.allSettled([
+        navigator.mediaDevices.getUserMedia({ video: true }),
+        navigator.mediaDevices.getUserMedia({ audio: true }),
+      ]);
+      if (!aliveRef.current) {
+        stopTracks(videoReq.status === 'fulfilled' ? videoReq.value : null);
+        stopTracks(audioReq.status === 'fulfilled' ? audioReq.value : null);
+        return;
+      }
+      videoTracks = videoReq.status === 'fulfilled' ? videoReq.value.getVideoTracks() : [];
+      audioTracks = audioReq.status === 'fulfilled' ? audioReq.value.getAudioTracks() : [];
+      if (videoTracks.length === 0 && audioTracks.length === 0) {
+        const reasonErr = videoReq.status === 'rejected' ? videoReq.reason
+          : audioReq.status === 'rejected' ? audioReq.reason : failure;
+        setHasVideo(false);
+        setHasAudio(false);
+        setState('denied');
+        setReason(mediaFailureReason(reasonErr));
+        return;
+      }
+      const failed = videoTracks.length === 0 ? videoReq : audioReq;
+      failure = failed.status === 'rejected' ? failed.reason : failure;
+    }
+
+    const next = new MediaStream([...videoTracks, ...audioTracks]);
+    stopTracks(streamRef.current);
+    streamRef.current = next;
+    setStream(next);
+    setHasVideo(videoTracks.length > 0);
+    setHasAudio(audioTracks.length > 0);
+    setState('granted');
+    setMicOn(true);
+    setCamOn(true);
+    if (videoTracks.length === 0 || audioTracks.length === 0) {
+      setReason(`${mediaFailureReason(failure)} ${videoTracks.length ? 'Camera' : 'Micro'} vẫn dùng được.`);
     }
   }, []);
 
@@ -158,7 +201,7 @@ const useLocalMedia = () => {
     void request();
     return () => {
       aliveRef.current = false;
-      streamRef.current?.getTracks().forEach(t => t.stop());
+      stopTracks(streamRef.current);
     };
   }, [request]);
 
@@ -179,7 +222,7 @@ const useLocalMedia = () => {
     track.enabled = !track.enabled;
     setCamOn(track.enabled);
   };
-  return { videoRef, state, reason, micOn, camOn, request, toggleMic, toggleCam };
+  return { videoRef, state, hasVideo, hasAudio, reason, micOn, camOn, request, toggleMic, toggleCam };
 };
 
 /* --------------------------------- RTT probe -------------------------------- */
@@ -645,7 +688,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
 
             {/* Camera ứng viên */}
             <div className="relative flex h-[280px] items-center justify-center overflow-hidden rounded-xl bg-inverse-surface shadow-md">
-              {media.state === 'granted' ? (
+              {media.state === 'granted' && media.hasVideo ? (
                 <video
                   ref={media.videoRef}
                   autoPlay
@@ -654,10 +697,14 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
                   className={`h-full w-full object-cover ${media.camOn ? '' : 'opacity-0'}`}
                 />
               ) : (
-                <div className="flex flex-col items-center gap-2 p-space-lg text-center text-inverse-on-surface/80">
-                  <span className={`${ICON} text-[34px]`}>{media.state === 'requesting' ? 'hourglass_top' : 'videocam_off'}</span>
+                <div className="flex max-h-full w-full flex-col items-center gap-2 overflow-y-auto p-space-md text-center text-inverse-on-surface/80">
+                  <span className={`${ICON} text-[30px]`}>{media.state === 'requesting' ? 'hourglass_top' : 'videocam_off'}</span>
                   <p className="m-0 text-ds-label-lg font-semibold">
-                    {media.state === 'requesting' ? 'Đang mở camera...' : 'Chưa bật được mic và camera'}
+                    {media.state === 'requesting'
+                      ? 'Đang mở camera...'
+                      : media.state === 'granted'
+                        ? 'Chưa mở được camera'
+                        : 'Chưa bật được mic và camera'}
                   </p>
                   <p className="m-0 max-w-[44ch] text-ds-body-sm">
                     {media.reason || 'Bấm nút dưới để trình duyệt hỏi quyền dùng camera và micro.'}
@@ -666,11 +713,28 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
                     type="button"
                     onClick={() => void media.request()}
                     disabled={media.state === 'requesting'}
-                    className={adminButton('primary', 'h-9 mt-1 disabled:opacity-40')}
+                    className={adminButton('primary', 'h-9 mt-1 shrink-0 disabled:opacity-40')}
                   >
                     <span className={`${ICON} text-[16px]`}>videocam</span>
-                    {media.state === 'denied' ? 'Xin lại quyền' : 'Bật mic và camera'}
+                    {media.state === 'denied' ? 'Xin lại quyền' : media.state === 'granted' ? 'Thử lại camera' : 'Bật mic và camera'}
                   </button>
+                  {media.state !== 'requesting' && (
+                    <details className="w-full text-left text-ds-label-sm text-inverse-on-surface/70">
+                      <summary className="cursor-pointer text-center">Cách cấp quyền</summary>
+                      <ol className="mt-1 list-decimal space-y-1 pl-4">
+                        <li>Bấm biểu tượng khoá/gạt cạnh địa chỉ.</li>
+                        <li>Chọn “Cài đặt trang” → Camera &amp; Microphone → “Cho phép”.</li>
+                        <li>Tải lại trang rồi bấm “Xin lại quyền”.</li>
+                        <li>Nếu đang mở trong khung xem trước của OpenCode, hãy mở bằng Chrome/Edge.</li>
+                      </ol>
+                    </details>
+                  )}
+                </div>
+              )}
+              {media.state === 'granted' && media.hasVideo && !media.camOn && (
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 text-inverse-on-surface/60">
+                  <span className={`${ICON} text-[32px]`}>videocam_off</span>
+                  <span className="text-ds-label-md">Camera đang tắt</span>
                 </div>
               )}
               <span className="absolute left-3 top-3 flex items-center gap-1.5 rounded-lg bg-black/40 px-3 py-1.5 text-ds-label-md text-inverse-on-surface">
@@ -679,8 +743,8 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
               </span>
               {media.state === 'granted' && (
                 <span className="absolute right-3 top-3 flex items-center gap-1.5 rounded-lg bg-black/40 px-3 py-1.5 text-ds-label-sm text-inverse-on-surface">
-                  <span className={`${ICON} text-[14px]`}>{media.micOn ? 'mic' : 'mic_off'}</span>
-                  {media.micOn ? 'Mic bật' : 'Mic tắt'}
+                  <span className={`${ICON} text-[14px]`}>{media.hasAudio ? (media.micOn ? 'mic' : 'mic_off') : 'mic_off'}</span>
+                  {media.hasAudio ? (media.micOn ? 'Mic bật' : 'Mic tắt') : 'Mic không khả dụng'}
                 </span>
               )}
             </div>
@@ -785,11 +849,11 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
               </div>
             )}
             <div ref={devicesRef} className="mt-3 flex flex-wrap items-center gap-2">
-              <button type="button" onClick={toggleMediaMic} disabled={media.state !== 'granted'} title={media.state === 'granted' ? 'Tắt/bật track micro của thiết bị' : 'Bấm "Bật mic và camera" ở khung video để cấp quyền trước'} className={adminButton('ghost', 'h-11 disabled:opacity-40')}>
+              <button type="button" onClick={toggleMediaMic} disabled={media.state !== 'granted' || !media.hasAudio} title={media.state !== 'granted' ? 'Bấm "Bật mic và camera" ở khung video để cấp quyền trước' : !media.hasAudio ? 'Chưa mở được micro của thiết bị' : 'Tắt/bật track micro của thiết bị'} className={adminButton('ghost', 'h-11 disabled:opacity-40')}>
                 <span className={`${ICON} text-[18px]`}>{media.micOn ? 'mic' : 'mic_off'}</span>
                 {media.micOn ? 'Tắt mic thiết bị' : 'Bật mic thiết bị'}
               </button>
-              <button type="button" onClick={media.toggleCam} disabled={media.state !== 'granted'} title={media.state === 'granted' ? 'Tắt/bật camera trong phiên' : 'Bấm "Bật mic và camera" ở khung video để cấp quyền trước'} className={adminButton('ghost', 'h-11 disabled:opacity-40')}>
+              <button type="button" onClick={media.toggleCam} disabled={media.state !== 'granted' || !media.hasVideo} title={media.state !== 'granted' ? 'Bấm "Bật mic và camera" ở khung video để cấp quyền trước' : !media.hasVideo ? 'Chưa mở được camera của thiết bị' : 'Tắt/bật camera trong phiên'} className={adminButton('ghost', 'h-11 disabled:opacity-40')}>
                 <span className={`${ICON} text-[18px]`}>{media.camOn ? 'videocam' : 'videocam_off'}</span>
                 Camera
               </button>
@@ -876,7 +940,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
           )}
           <div className="border-t border-surface-container-high px-space-md py-2.5 text-ds-label-sm text-on-surface-variant">
             {media.state === 'granted'
-              ? `${media.micOn ? 'Micro đang bật' : 'Micro đang tắt'} • ${media.camOn ? 'Camera đang bật' : 'Camera đang tắt'}`
+              ? `${media.hasAudio ? (media.micOn ? 'Micro đang bật' : 'Micro đang tắt') : 'Micro không khả dụng'} • ${media.hasVideo ? (media.camOn ? 'Camera đang bật' : 'Camera đang tắt') : 'Camera không khả dụng'}`
               : 'Chưa cấp quyền thiết bị — transcript vẫn ghi bình thường'}
             {avatarLive ? ' • Giọng đọc: avatar LiveTalking'
               : speech.supported ? ' • Giọng đọc: trình duyệt' : ' • Trình duyệt không hỗ trợ giọng đọc'}
