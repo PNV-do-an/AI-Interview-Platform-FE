@@ -28,6 +28,7 @@ import MyInterviewsPage from './views/pages/MyInterviewsPage';
 import CandidateAccountPage from './views/pages/CandidateAccountPage';
 import MockInterviewHistoryPage from './views/pages/MockInterviewHistoryPage';
 import MockInterviewsPage from './views/pages/MockInterviewsPage';
+import MockInterviewsPublicPage from './views/pages/MockInterviewsPublicPage';
 import MockInterviewSessionPage from './views/pages/MockInterviewSessionPage';
 import MockInterviewResultPage from './views/pages/MockInterviewResultPage';
 import CvAnalyzerPage from './views/pages/CvAnalyzerPage';
@@ -91,7 +92,7 @@ const App: React.FC = () => {
           {/* Trang marketing công khai theo bộ mockup 2026-11-12 */}
           <Route path="/mentors" element={<MentorsPage />} />
           <Route path="/pricing" element={<PackagesPage />} />
-          <Route path="/ai-interview" element={<MockInterviewsPage />} />
+          <Route path="/ai-interview" element={<MockInterviewsPublicPage />} />
 
           {/* Protected routes — any authenticated user */}
           <Route element={<ProtectedRoute />}>
