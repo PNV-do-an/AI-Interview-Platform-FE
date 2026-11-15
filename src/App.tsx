@@ -27,7 +27,7 @@ import CandidateProfilePage from './views/pages/CandidateProfilePage';
 import MyInterviewsPage from './views/pages/MyInterviewsPage';
 import CandidateAccountPage from './views/pages/CandidateAccountPage';
 import MockInterviewHistoryPage from './views/pages/MockInterviewHistoryPage';
-import MockInterviewStartPage from './views/pages/MockInterviewStartPage';
+import MockInterviewsPage from './views/pages/MockInterviewsPage';
 import MockInterviewsPublicPage from './views/pages/MockInterviewsPublicPage';
 import MockInterviewSessionPage from './views/pages/MockInterviewSessionPage';
 import MockInterviewResultPage from './views/pages/MockInterviewResultPage';
@@ -121,7 +121,7 @@ const App: React.FC = () => {
                 <Route path="/my-interviews" element={<MyInterviewsPage />} />
                 <Route path="/my-profile" element={<CandidateProfilePage />} />
                 <Route path="/account" element={<CandidateAccountPage />} />
-                <Route path="/mock-interviews" element={<MockInterviewStartPage />} />
+                <Route path="/mock-interviews" element={<MockInterviewsPage />} />
                 {/* Route tĩnh xếp trên `:id` để "history" không bị màn session nuốt. */}
                 <Route path="/mock-interviews/history" element={<MockInterviewHistoryPage />} />
                 <Route path="/mock-interviews/:id" element={<MockInterviewSessionPage />} />
