@@ -122,7 +122,6 @@ const useLocalMedia = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const aliveRef = useRef(true);
-  const [stream, setStream] = useState<MediaStream | null>(null);
   const [state, setState] = useState<'idle' | 'requesting' | 'granted' | 'denied'>('idle');
   const [hasVideo, setHasVideo] = useState(false);
   const [hasAudio, setHasAudio] = useState(false);
@@ -185,7 +184,6 @@ const useLocalMedia = () => {
     const next = new MediaStream([...videoTracks, ...audioTracks]);
     stopTracks(streamRef.current);
     streamRef.current = next;
-    setStream(next);
     setHasVideo(videoTracks.length > 0);
     setHasAudio(audioTracks.length > 0);
     setState('granted');
@@ -366,7 +364,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
 
   useEffect(() => {
     if (user?.role === 'ROLE_USER') void fetchResult(sessionId);
-  }, [user, sessionId]);
+  }, [user, sessionId, fetchResult]);
 
   const turns: TurnView[] = useMemo(() => {
     const list: TurnView[] = (result?.transcript ?? []).map(e => ({
