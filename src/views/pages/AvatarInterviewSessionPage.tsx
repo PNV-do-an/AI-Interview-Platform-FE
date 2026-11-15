@@ -16,7 +16,6 @@ import { useSpeechInput } from '../../hooks/useSpeechInput';
 import { InterviewTranscriptEntry, AVATAR_RUBRIC_VERSION } from '../../models/Interview.model';
 import { buildFallbackEvaluation } from '../../utils/avatarEvaluation';
 import ConfirmDialog from '../components/ConfirmDialog';
-import AiServiceConfig from '../components/AiServiceConfig';
 import { ICON } from '../components/candidateKit';
 import { adminButton, ErrorBlock, LoadingBlock, Pill, fmtServer } from '../components/adminKit';
 
@@ -648,14 +647,6 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
               Thử kết nối lại
             </button>
           </div>
-          <details className="mt-2">
-            <summary className="cursor-pointer text-ds-label-md font-semibold">
-              Cấu hình AI service / dán URL tunnel mới
-            </summary>
-            <div className="mt-2">
-              <AiServiceConfig compact onConnected={() => window.location.reload()} />
-            </div>
-          </details>
         </div>
       )}
       {atCap && !finished && (
