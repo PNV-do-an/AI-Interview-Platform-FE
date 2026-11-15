@@ -82,12 +82,12 @@ const MockInterviewsPage = () => {
   const start = useCallback(async (mode: InterviewMode, overrides?: { jobId?: number; topic?: string }) => {
     if (busy) return;
     setBusy(true);
-    // Lưu interviewMode vào session.state để AvatarInterviewSessionPage đọc được
+    // questionCount đi cùng mọi mode; AVATAR dùng nó làm trần lượt hội thoại.
     const session = await startSession({
       mode,
       jobId: mode === 'KNOWLEDGE' ? overrides?.jobId : (overrides?.jobId ?? (jobId !== '' ? jobId : undefined)),
       topic: mode === 'KNOWLEDGE' ? (overrides?.topic ?? topic) : overrides?.topic,
-      questionCount: mode === 'AVATAR' ? undefined : questionCount,
+      questionCount,
     });
     setBusy(false);
     if (session) {

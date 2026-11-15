@@ -24,6 +24,8 @@ export interface InterviewSession {
   jobTitle?: string;
   companyName?: string;
   status: InterviewSessionStatus;
+  /** Số câu ứng viên đã chọn khi tạo phiên; AVATAR dùng để dừng đúng số câu này. */
+  questionCount: number;
   questions: Array<string | InterviewQuestion>;
   currentQuestionIndex: number;
   answeredCount: number;
@@ -65,7 +67,7 @@ export interface StartInterviewRequest {
   mode: InterviewMode;
   jobId?: number;
   topic?: string;
-  /** Bị BE bỏ qua ở mode AVATAR (số lượt do hội thoại quyết định). */
+  /** 3..10 câu; AVATAR dùng làm trần lượt hội thoại và tự kết thúc đúng số câu này. */
   questionCount?: number;
 }
 
@@ -100,11 +102,20 @@ export const RUBRIC_DIMENSIONS: { key: keyof InterviewRubric; label: string; hin
 /** Hằng số FE khai theo yêu cầu `rubricVersion` của BE 012; đổi thang chấm phải tăng version. */
 export const AVATAR_RUBRIC_VERSION = 'v1-self-fe-2026-10';
 
+/** Nhận xét từng câu do AI service/BE chấm từ chính câu trả lời của ứng viên. */
+export interface InterviewAnswerEvaluation {
+  /** 0-based, khớp `questionIndex` của interview_answers. */
+  index: number;
+  score?: number;
+  feedback?: string;
+}
+
 export interface InterviewEvaluationRequest {
   rubric: InterviewRubric;
   rubricVersion: string;
   strengths?: string;
   improvements?: string;
+  answers?: InterviewAnswerEvaluation[];
 }
 
 export interface InterviewReport {

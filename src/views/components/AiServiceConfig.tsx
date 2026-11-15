@@ -2,8 +2,8 @@
  * Ô cấu hình URL AI service (FastAPI + LiveTalking) ngay trên trình duyệt.
  *
  * AI service chạy ngoài (Colab/cloudflared/ngrok) nên URL đổi mỗi lần khởi động lại.
- * URL được lưu ở `localStorage['ai_service_url']` và ưu tiên hơn `REACT_APP_AI_SERVICE_URL`
- * lúc build — nhờ vậy ứng viên sửa được tunnel mà không cần deploy lại Vercel.
+ * URL build (`REACT_APP_AI_SERVICE_URL` trên Vercel) luôn được nhận; URL lưu tay chỉ đè lên
+ * trong cùng một bản build, nên deploy mới không bị localStorage cũ che mất.
  *
  * Dùng ở 2 chỗ: trang /mock-interviews (trước khi vào phòng) và banner fallback của
  * phòng AVATAR (khi kênh avatar đã rớt về giọng đọc trình duyệt).
@@ -23,9 +23,20 @@ const AiServiceConfig: React.FC<AiServiceConfigProps> = ({ compact = false, onCo
   const inputId = useId();
   const [url, setUrl] = useState(() => AIService.getServiceUrl());
   const [savedUrl, setSavedUrl] = useState(() => AIService.getServiceUrl());
+  const [buildUrl] = useState(() => AIService.getBuildServiceUrl());
+  const [usingBuild, setUsingBuild] = useState(() => AIService.isUsingBuildUrl());
   const [message, setMessage] = useState('');
   const [messageIsError, setMessageIsError] = useState(false);
   const [checking, setChecking] = useState(false);
+
+  const useBuildUrl = () => {
+    const next = AIService.resetToBuildUrl();
+    setUrl(next);
+    setSavedUrl(next);
+    setUsingBuild(AIService.isUsingBuildUrl());
+    setMessageIsError(false);
+    setMessage(next ? 'Đã quay lại URL cấu hình sẵn của bản triển khai.' : '');
+  };
 
   const checkAndSave = async () => {
     setChecking(true);
@@ -37,6 +48,7 @@ const AiServiceConfig: React.FC<AiServiceConfigProps> = ({ compact = false, onCo
       const saved = AIService.setServiceUrl(normalizedUrl);
       setUrl(saved);
       setSavedUrl(saved);
+      setUsingBuild(AIService.isUsingBuildUrl());
       const avatarDown = health.avatarSessions < 0;
       setMessage(avatarDown
         ? 'Đã lưu URL; AI service phản hồi nhưng chưa kết nối được máy chủ avatar.'
@@ -72,14 +84,27 @@ const AiServiceConfig: React.FC<AiServiceConfigProps> = ({ compact = false, onCo
           </label>
           <p className="mt-0.5 text-ds-body-sm text-on-surface-variant">
             Dán URL HTTPS in ra từ Colab/cloudflared, không thêm <code className="rounded bg-surface-container px-1">/health</code>.
-            URL được lưu riêng trên trình duyệt này.
+            {buildUrl
+              ? ' Đang dùng URL cấu hình sẵn của bản triển khai; chỉ nhập khi cần đổi tunnel.'
+              : ' URL được lưu riêng trên trình duyệt này.'}
           </p>
         </div>
         <span className={`flex shrink-0 items-center gap-1.5 text-ds-label-sm ${savedUrl ? 'text-secondary-teal' : 'text-on-surface-variant'}`}>
           <span className={`h-2 w-2 rounded-full ${savedUrl ? 'bg-secondary-teal' : 'bg-outline'}`} />
-          {savedUrl ? 'Đã cấu hình' : 'Chưa cấu hình'}
+          {savedUrl ? (usingBuild ? 'URL bản triển khai' : 'Đã lưu trên trình duyệt') : 'Chưa cấu hình'}
         </span>
       </div>
+
+      {buildUrl && !usingBuild && (
+        <button
+          type="button"
+          onClick={useBuildUrl}
+          className="mt-2 inline-flex items-center gap-1 rounded px-1 py-0.5 text-ds-label-md text-primary hover:underline"
+        >
+          <span className={`${ICON} text-[16px]`}>settings_backup_restore</span>
+          Dùng lại URL cấu hình sẵn của bản triển khai
+        </button>
+      )}
 
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         <input

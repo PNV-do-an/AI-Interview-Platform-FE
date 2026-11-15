@@ -20,7 +20,7 @@ import AiServiceConfig from '../components/AiServiceConfig';
 import { ICON } from '../components/candidateKit';
 import { adminButton, ErrorBlock, LoadingBlock, Pill, fmtServer } from '../components/adminKit';
 
-const MAX_TURNS = 40; // trần lượt của BE 012
+const HARD_MAX_TURNS = 40; // trần an toàn của BE 012; số câu thật lấy từ session.questionCount
 
 /** Đọc interview mode từ localStorage (text hoặc avatar) */
 const getInterviewMode = (): 'text' | 'avatar' => {
@@ -313,6 +313,9 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
   const { result, session, loading, error, fetchResult, submitAnswer, finishSession, submitEvaluation } =
     useMockInterviewController();
 
+  /** Số câu ứng viên đã chọn lúc tạo phiên (3/5/8/10); phiên cũ thiếu field thì giữ mặc định 5. */
+  const questionCap = Math.max(1, Math.min(session?.questionCount ?? 5, HARD_MAX_TURNS));
+
   const [interviewMode, setInterviewMode] = useState<'text' | 'avatar'>('text'); // mặc định text mode
   const [draft, setDraft] = useState('');
   const [question, setQuestion] = useState('');
@@ -353,7 +356,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
         briefRef.current = { skills: session.topic.split(/[,/&]+/).map(s => s.trim()).filter(Boolean), jdText: session.topic };
       }
       const contextTitle = session.jobTitle ?? session.topic ?? 'Phỏng vấn kỹ thuật';
-      await rtc.connect(contextTitle, briefRef.current.jdText);
+      await rtc.connect(contextTitle, briefRef.current.jdText, questionCap);
     })();
   }, [interviewMode, session, rtc.link]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -391,6 +394,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
     const idx = session.currentQuestionIndex;
     // resume giữa phiên: `turn` phải khớp chỉ số lượt BE đã lưu, nếu không lượt kế lặp câu hỏi
     setTurn(idx);
+    if (idx >= questionCap) { void autoFinish(); return; }
     if (last && last.index === idx && !last.confirmed) {
       setQuestion(last.questionText);
       setDraft(last.answerText ?? '');
@@ -426,7 +430,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
   }, [turns, draft]);
 
-  const atCap = turn >= MAX_TURNS;
+  const atCap = turn >= questionCap;
   const finished = session?.status === 'COMPLETED';
 
   const toggleMediaMic = () => {
@@ -446,7 +450,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
       setTurn(nextIdx);
       setDraft('');
       let next = '';
-      let done = nextIdx >= MAX_TURNS;
+      let done = nextIdx >= questionCap;
       if (avatarLive) {
         const synced = await rtc.sendAnswer({ answerText, questionIndex: turn, durationSec: turnElapsed, confirm: true }).catch(() => null);
         done = done || Boolean(synced?.next?.done);
@@ -478,6 +482,16 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
   const toEvaluationBody = (evaluation: unknown) => {
     const rubric = (evaluation as { rubric?: Record<string, number> } | null)?.rubric;
     if (!rubric) return null;
+    const rawAnswers = (evaluation as {
+      answers?: Array<{ index?: number; score?: number; feedback?: string }>;
+    } | null)?.answers;
+    const answers = (rawAnswers ?? [])
+      .filter(a => typeof a.index === 'number')
+      .map(a => ({
+        index: a.index as number,
+        score: typeof a.score === 'number' ? a.score : undefined,
+        feedback: typeof a.feedback === 'string' && a.feedback.trim() ? a.feedback.trim() : undefined,
+      }));
     return {
       rubric: {
         chuyenMon: rubric.chuyenMon ?? 70,
@@ -489,6 +503,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
       rubricVersion: (evaluation as { rubricVersion?: string })?.rubricVersion ?? AVATAR_RUBRIC_VERSION,
       strengths: (evaluation as { strengths?: string })?.strengths,
       improvements: (evaluation as { improvements?: string })?.improvements,
+      answers: answers.length ? answers : undefined,
     };
   };
 
@@ -599,9 +614,9 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
         </div>
       </div>
 
-      {/* Stepper lượt hội thoại thật (trần 40 của BE 012) */}
+      {/* Stepper số câu thật của phiên (3/5/8/10 do ứng viên chọn) */}
       <div className="flex items-center gap-2 overflow-x-auto rounded-xl bg-surface-container-low px-space-md py-2.5 text-ds-label-md">
-        {Array.from({ length: Math.min(turn + 2, 6) }, (_, i) => {
+        {Array.from({ length: Math.min(turn + 2, questionCap) }, (_, i) => {
           const state = i < turn ? 'done' : i === turn ? 'current' : 'todo';
           return (
             <React.Fragment key={i}>
@@ -617,7 +632,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
           );
         })}
         <span className="ml-auto shrink-0 text-on-surface-variant tabular-nums">
-          {turn + 1}/{MAX_TURNS} lượt tối đa
+          {Math.min(turn + 1, questionCap)}/{questionCap} câu
         </span>
       </div>
 
@@ -646,7 +661,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
         </div>
       )}
       {atCap && !finished && (
-        <ErrorBlock message="Phiên đã đạt số lượt tối đa, hãy kết thúc để nhận báo cáo." />
+        <ErrorBlock message={`Phiên đã đủ ${questionCap} câu, hãy kết thúc để nhận báo cáo.`} />
       )}
 
       <div className="grid grid-cols-1 items-start gap-space-md xl:grid-cols-[minmax(0,1fr)_360px]">

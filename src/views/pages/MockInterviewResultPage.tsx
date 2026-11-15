@@ -1,14 +1,1222 @@
-import React from 'react';
-import MockupPage from '../components/MockupPage';
+/**
+ * Màn "Báo cáo Đánh giá Phỏng vấn AI" (mockup Stitch `screen_10`) —
+ * route /mock-interviews/:id/result, shell WorkspaceLayout.
+ *
+ * Số thật: GET /mock-interviews/{id} -> session, transcript từng lượt đã chốt, answers
+ * (question, answerText, durationSec, score, feedback) và GET /{id}/report -> rubric 5 chiều.
+ * Không có form tự đánh giá: phiên AVATAR kết thúc là BE tự tạo báo cáo; trang chỉ đọc lại.
+ *
+ * Nội dung từng câu lấy đúng transcript ứng viên đã nói. Nhận xét ưu tiên feedback do AI
+ * service/BE chấm; nếu bản ghi cũ chưa có, `evaluateAnswerText` chấm tất định từ chính câu
+ * trả lời đó (độ dài, dẫn chứng dự án, lập luận, số liệu) — không bịa nội dung.
+ *
+ * Sao đổi so với mockup:
+ * - Bỏ máy nghe + sóng âm từng câu (FE không nhận bản ghi âm nào) -> chỉ còn "Nội dung trả lời"
+ *   + "Nhận xét chuyên sâu từ AI".
+ * - Bỏ "Hệ thống AI Model: TalentNexus Core v4.2" và dòng ghi chú rubric version vì dữ liệu
+ *   không có.
+ * - "Cao hơn 78% ứng viên" và khóa học/mẹo viết sẵn của mockup -> thay bằng chỉ số và gợi ý
+ *   suy ra từ chính câu trả lời (số câu, số từ, số liệu, câu điểm thấp nhất).
+ */
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { useMockInterviewController } from '../../controllers/useMockInterviewController';
+import { useAuth } from '../../context/AuthContext';
+import {
+  INTERVIEW_MODE_LABELS, InterviewAnswer, InterviewRubric, InterviewSession, RUBRIC_DIMENSIONS,
+} from '../../models/Interview.model';
+import { buildFallbackEvaluation, evaluateAnswerText } from '../../utils/avatarEvaluation';
+import {
+  EmptyBlock, ErrorBlock, ICON, LoadingBlock, Pill, adminButton, adminTableClass,
+  adminTdClass, adminThClass, fmtServer,
+} from '../components/adminKit';
+import { CARD, SOFT, ScoreRing } from '../components/candidateKit';
 
-// Bản dựng 1:1 từ mockup Stitch "screen_10_k_t_qu_ph_ng_v_n_ai_l_ch_s_luy_n_t_p".
-// Tương tác (toggle, modal, filter, accordion) chạy qua <MockupPage scripts>.
-const PAGE_HTML = "<div class=\"flex flex-col w-full\">\n<!-- Main Canvas Container -->\n<div class=\"py-space-xl flex flex-col gap-space-xl max-w-[1520px] mx-auto w-full\">\n<!-- Top Navigation & Action Header -->\n<div class=\"flex flex-col lg:flex-row lg:items-center justify-between gap-space-lg pb-space-lg\">\n<div class=\"flex flex-col gap-space-xs\">\n<div class=\"flex items-center gap-space-xs font-label-md text-label-md text-on-surface-variant\">\n<span class=\"flex items-center gap-1 text-primary hover:underline cursor-pointer\">\n<span class=\"material-symbols-outlined text-[16px]\">psychology</span>\n            AI Interview\n          </span>\n<span class=\"text-outline-variant font-normal\">/</span>\n<span class=\"text-on-surface font-semibold flex items-center gap-1\">\n<span class=\"\">Báo cáo kết quả phiên phỏng vấn</span>\n<span class=\"px-space-xs py-0.5 rounded bg-surface-container-high text-on-surface text-label-sm font-label-sm\">#INT-8492</span>\n</span>\n</div>\n<div class=\"flex flex-wrap items-center gap-space-md pt-space-xs\">\n<h1 class=\"font-headline-xl text-headline-xl text-on-surface font-bold tracking-tight\">\n            Báo cáo Đánh giá Phỏng vấn AI\n          </h1>\n<span class=\"inline-flex items-center gap-1 px-space-md py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md\">\n<span class=\"w-1.5 h-1.5 rounded-full bg-secondary animate-pulse\"></span>\n            Hoàn thành: 24/05/2024 - 15:45\n          </span>\n</div>\n<div class=\"flex flex-wrap items-center gap-space-lg text-body-sm font-body-sm text-on-surface-variant pt-1\">\n<div class=\"flex items-center gap-space-xs\">\n<span class=\"material-symbols-outlined text-[18px] text-primary\">badge</span>\n<span class=\"text-on-surface font-medium\">Vị trí:</span>\n<span class=\"\">Senior Frontend Engineer (React/TypeScript)</span>\n</div>\n<span class=\"w-1 h-1 rounded-full bg-outline-variant\"></span>\n<div class=\"flex items-center gap-space-xs\">\n<span class=\"material-symbols-outlined text-[18px] text-outline\">timelapse</span>\n<span class=\"text-on-surface font-medium\">Thời lượng:</span>\n<span class=\"\">28 phút (Hoàn thành 5/5 câu hỏi)</span>\n</div>\n<span class=\"w-1 h-1 rounded-full bg-outline-variant\"></span>\n<div class=\"flex items-center gap-space-xs\">\n<span class=\"material-symbols-outlined text-[18px] text-secondary\">verified_user</span>\n<span class=\"text-on-surface font-medium\">Hệ thống AI Model:</span>\n<span class=\"\">TalentNexus Core v4.2</span>\n</div>\n</div>\n</div>\n<!-- Header Action Buttons -->\n<div class=\"flex items-center flex-wrap gap-space-sm self-start lg:self-center\">\n<button class=\"inline-flex items-center gap-space-xs px-space-md h-10 rounded-lg bg-surface-container-lowest hover:bg-surface-container text-on-surface font-label-lg text-label-lg shadow-sm transition-all hover:shadow\" type=\"button\">\n<span class=\"material-symbols-outlined text-[18px] text-outline\">autorenew</span>\n<span class=\"\">Luyện tập lại phiên này</span>\n</button>\n<button class=\"inline-flex items-center gap-space-xs px-space-md h-10 rounded-lg bg-surface-container-lowest hover:bg-surface-container text-on-surface font-label-lg text-label-lg shadow-sm transition-all hover:shadow\" type=\"button\">\n<span class=\"material-symbols-outlined text-[18px] text-outline\">download</span>\n<span class=\"\">Xuất báo cáo PDF</span>\n</button>\n<button class=\"inline-flex items-center gap-space-xs px-space-lg h-10 rounded-lg bg-primary-container text-on-primary font-label-lg text-label-lg shadow-md hover:bg-primary transition-all shadow-primary-container/20\" type=\"button\">\n<span class=\"material-symbols-outlined text-[18px]\">add_circle</span>\n<span class=\"\">Luyện tập phiên mới</span>\n</button>\n</div>\n</div>\n<!-- Top Highlight: Overall Score & Metric Breakdown Card -->\n<div class=\"relative bg-surface-container-lowest rounded-xl p-space-lg shadow-sm overflow-hidden flex flex-col xl:flex-row gap-space-xl items-stretch\">\n<div class=\"absolute -right-20 -top-20 w-80 h-80 rounded-full bg-primary-fixed/30 blur-3xl pointer-events-none\"></div>\n<!-- Left Column: Circular Gauge -->\n<div class=\"flex flex-col items-center justify-center min-w-[280px] p-space-md rounded-xl bg-surface-container-low text-center relative z-10\">\n<span class=\"font-label-sm text-label-sm text-primary uppercase tracking-wider mb-space-sm font-semibold\">Điểm số Tổng hợp</span>\n<!-- Circular Score Indicator SVG -->\n<div class=\"relative w-44 h-44 flex items-center justify-center my-space-xs\">\n<svg class=\"w-full h-full transform -rotate-90\" viewBox=\"0 0 160 160\">\n<!-- Background Track -->\n<circle class=\"text-surface-container-high\" cx=\"80\" cy=\"80\" fill=\"transparent\" r=\"68\" stroke=\"currentColor\" stroke-width=\"12\"></circle>\n<!-- Progress Stroke (85%) -> perimeter ~ 427.25 -> offset = 427.25 * (1 - 0.85) = 64.08 -->\n<circle class=\"transition-all duration-1000 ease-out\" cx=\"80\" cy=\"80\" fill=\"transparent\" r=\"68\" stroke=\"url(#score-gradient)\" stroke-dasharray=\"427.25\" stroke-dashoffset=\"64\" stroke-linecap=\"round\" stroke-width=\"12\"></circle>\n<defs>\n<linearGradient id=\"score-gradient\" x1=\"0%\" x2=\"100%\" y1=\"0%\" y2=\"100%\">\n<stop offset=\"0%\" stop-color=\"#3525cd\"></stop>\n<stop offset=\"100%\" stop-color=\"#006b5f\"></stop>\n</linearGradient>\n</defs>\n</svg>\n<div class=\"absolute flex flex-col items-center justify-center text-center\">\n<span class=\"font-display-sm text-display-sm text-on-surface font-extrabold tracking-tight\">85<span class=\"text-body-md font-semibold text-outline\">/100</span></span>\n<span class=\"font-label-md text-label-md text-secondary font-bold uppercase tracking-wider mt-0.5\">Xuất Sắc</span>\n</div>\n</div>\n<div class=\"inline-flex items-center gap-1.5 px-space-md py-1 rounded-full bg-surface-container-lowest shadow-sm mt-space-xs\">\n<span class=\"material-symbols-outlined text-[16px] text-secondary\">trending_up</span>\n<span class=\"font-body-sm text-body-sm text-on-surface font-semibold\">Cao hơn 78%</span>\n<span class=\"font-body-sm text-body-sm text-on-surface-variant\">ứng viên cùng vị trí</span>\n</div>\n</div>\n<!-- Right & Center: Breakdown Sliders & Highlights -->\n<div class=\"flex-1 flex flex-col justify-between gap-space-lg relative z-10\">\n<div>\n<div class=\"flex items-center justify-between pb-space-sm mb-space-md\">\n<h2 class=\"font-headline-sm text-headline-sm text-on-surface font-bold\">Phân tích Năng lực Cốt lõi (Core Competencies)</h2>\n<span class=\"font-label-sm text-label-sm text-outline uppercase tracking-wider\">Hệ thống trọng số chuẩn</span>\n</div>\n<div class=\"grid grid-cols-1 md:grid-cols-2 gap-x-space-xl gap-y-space-md\">\n<!-- Metric 1 -->\n<div class=\"flex flex-col gap-1.5\">\n<div class=\"flex items-center justify-between text-body-sm font-body-sm\">\n<span class=\"font-medium text-on-surface flex items-center gap-1.5\">\n<span class=\"material-symbols-outlined text-[18px] text-primary\">terminal</span>\n                  Kiến thức chuyên môn (Technical Knowledge)\n                </span>\n<span class=\"font-bold text-on-surface\">90<span class=\"text-outline text-label-sm\">/100</span></span>\n</div>\n<div class=\"w-full h-2.5 rounded-full bg-surface-container overflow-hidden\">\n<div class=\"h-full rounded-full bg-primary transition-all duration-700\" style=\"width: 90%;\"></div>\n</div>\n<span class=\"text-label-sm font-label-sm text-on-surface-variant\">Khả năng nắm bắt sâu kiến trúc Virtual DOM, Fiber Tree, SSR.</span>\n</div>\n<!-- Metric 2 -->\n<div class=\"flex flex-col gap-1.5\">\n<div class=\"flex items-center justify-between text-body-sm font-body-sm\">\n<span class=\"font-medium text-on-surface flex items-center gap-1.5\">\n<span class=\"material-symbols-outlined text-[18px] text-primary-container\">psychology</span>\n                  Tư duy giải quyết vấn đề (Problem Solving)\n                </span>\n<span class=\"font-bold text-on-surface\">82<span class=\"text-outline text-label-sm\">/100</span></span>\n</div>\n<div class=\"w-full h-2.5 rounded-full bg-surface-container overflow-hidden\">\n<div class=\"h-full rounded-full bg-primary-container transition-all duration-700\" style=\"width: 82%;\"></div>\n</div>\n<span class=\"text-label-sm font-label-sm text-on-surface-variant\">Phương pháp bẻ nhỏ vấn đề logic, giải pháp State Management tinh gọn.</span>\n</div>\n<!-- Metric 3 -->\n<div class=\"flex flex-col gap-1.5\">\n<div class=\"flex items-center justify-between text-body-sm font-body-sm\">\n<span class=\"font-medium text-on-surface flex items-center gap-1.5\">\n<span class=\"material-symbols-outlined text-[18px] text-secondary\">forum</span>\n                  Giao tiếp &amp; Truyền đạt (Communication &amp; Clarity)\n                </span>\n<span class=\"font-bold text-on-surface\">86<span class=\"text-outline text-label-sm\">/100</span></span>\n</div>\n<div class=\"w-full h-2.5 rounded-full bg-surface-container overflow-hidden\">\n<div class=\"h-full rounded-full bg-secondary transition-all duration-700\" style=\"width: 86%;\"></div>\n</div>\n<span class=\"text-label-sm font-label-sm text-on-surface-variant\">Lập luận có cấu trúc STAR, định hình rành mạch các case study quá khứ.</span>\n</div>\n<!-- Metric 4 -->\n<div class=\"flex flex-col gap-1.5\">\n<div class=\"flex items-center justify-between text-body-sm font-body-sm\">\n<span class=\"font-medium text-on-surface flex items-center gap-1.5\">\n<span class=\"material-symbols-outlined text-[18px] text-tertiary\">speed</span>\n                  Tự tin &amp; Phản xạ nhịp điệu (Confidence &amp; Pace)\n                </span>\n<span class=\"font-bold text-on-surface\">80<span class=\"text-outline text-label-sm\">/100</span></span>\n</div>\n<div class=\"w-full h-2.5 rounded-full bg-surface-container overflow-hidden\">\n<div class=\"h-full rounded-full bg-tertiary transition-all duration-700\" style=\"width: 80%;\"></div>\n</div>\n<span class=\"text-label-sm font-label-sm text-on-surface-variant\">Phản hồi không bị ngập ngừng, tuy vậy có vài đoạn phát âm hơi nhanh.</span>\n</div>\n</div>\n</div>\n<!-- Quick AI Tags -->\n<div class=\"pt-space-sm flex flex-wrap items-center gap-space-sm\">\n<span class=\"font-label-sm text-label-sm text-outline uppercase font-semibold\">Tín hiệu AI tích cực:</span>\n<span class=\"inline-flex items-center gap-1 px-space-md py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md font-medium\">\n<span class=\"material-symbols-outlined text-[16px]\">record_voice_over</span>\n            Phát âm rõ ràng (95%)\n          </span>\n<span class=\"inline-flex items-center gap-1 px-space-md py-1 rounded-full bg-surface-container text-primary font-label-md text-label-md font-medium\">\n<span class=\"material-symbols-outlined text-[16px]\">verified</span>\n            Độ sâu kỹ thuật tốt\n          </span>\n<span class=\"inline-flex items-center gap-1 px-space-md py-1 rounded-full bg-surface-container text-primary font-label-md text-label-md font-medium\">\n<span class=\"material-symbols-outlined text-[16px]\">spellcheck</span>\n            Dùng thuật ngữ chuẩn xác\n          </span>\n<span class=\"inline-flex items-center gap-1 px-space-md py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md\">\n<span class=\"material-symbols-outlined text-[16px]\">timer</span>\n            Độ trễ phản hồi: 1.4s\n          </span>\n</div>\n</div>\n</div>\n<!-- Detailed Feedback & Insights (3 Distinct Visual Columns) -->\n<div class=\"grid grid-cols-1 md:grid-cols-3 gap-space-lg\">\n<!-- Column 1: Strengths -->\n<div class=\"flex flex-col bg-surface-container-lowest rounded-xl p-space-lg shadow-sm\">\n<div class=\"flex items-center gap-space-sm mb-space-md\">\n<div class=\"w-10 h-10 rounded-lg bg-secondary-container flex items-center justify-center text-secondary\">\n<span class=\"material-symbols-outlined text-[24px]\">task_alt</span>\n</div>\n<div class=\"flex flex-col\">\n<h3 class=\"font-headline-sm text-headline-sm text-on-surface font-bold\">Điểm mạnh nổi bật</h3>\n<span class=\"font-label-sm text-label-sm text-secondary font-medium\">3 chỉ số vượt ngưỡng kỳ vọng</span>\n</div>\n</div>\n<div class=\"flex flex-col gap-space-md text-body-md font-body-md flex-1\">\n<div class=\"p-space-md rounded-lg bg-surface-container-low flex items-start gap-space-sm\">\n<span class=\"material-symbols-outlined text-secondary text-[20px] mt-0.5 shrink-0\">check_circle</span>\n<div class=\"flex flex-col gap-0.5\">\n<span class=\"font-semibold text-on-surface\">Kiến trúc React 18 vững chắc</span>\n<p class=\"text-on-surface-variant text-body-sm font-body-sm\">\n                Nắm rất vững các khái niệm React 18, Concurrent Features, Suspense boundaries và React Server Components (RSC).\n              </p>\n</div>\n</div>\n<div class=\"p-space-md rounded-lg bg-surface-container-low flex items-start gap-space-sm\">\n<span class=\"material-symbols-outlined text-secondary text-[20px] mt-0.5 shrink-0\">check_circle</span>\n<div class=\"flex flex-col gap-0.5\">\n<span class=\"font-semibold text-on-surface\">Tối ưu hiệu năng thực chiến</span>\n<p class=\"text-on-surface-variant text-body-sm font-body-sm\">\n                Giải thích logic tối ưu hiệu năng web (Core Web Vitals LCP/CLS/INP, useMemo, custom hooks) rõ ràng, có số liệu minh chứng.\n              </p>\n</div>\n</div>\n<div class=\"p-space-md rounded-lg bg-surface-container-low flex items-start gap-space-sm\">\n<span class=\"material-symbols-outlined text-secondary text-[20px] mt-0.5 shrink-0\">check_circle</span>\n<div class=\"flex flex-col gap-0.5\">\n<span class=\"font-semibold text-on-surface\">Cấu trúc trả lời STAR mạch lạc</span>\n<p class=\"text-on-surface-variant text-body-sm font-body-sm\">\n                Ứng dụng nhuần nhuyễn mô hình STAR (Situation, Task, Action, Result), giúp người phỏng vấn nắm bắt đúng trọng tâm giải pháp.\n              </p>\n</div>\n</div>\n</div>\n</div>\n<!-- Column 2: Areas for Improvement -->\n<div class=\"flex flex-col bg-surface-container-lowest rounded-xl p-space-lg shadow-sm\">\n<div class=\"flex items-center gap-space-sm mb-space-md\">\n<div class=\"w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary\">\n<span class=\"material-symbols-outlined text-[24px]\">troubleshoot</span>\n</div>\n<div class=\"flex flex-col\">\n<h3 class=\"font-headline-sm text-headline-sm text-on-surface font-bold\">Cần cải thiện</h3>\n<span class=\"font-label-sm text-label-sm text-primary font-medium\">Lưu ý để đạt mức điểm hoàn hảo</span>\n</div>\n</div>\n<div class=\"flex flex-col gap-space-md text-body-md font-body-md flex-1\">\n<div class=\"p-space-md rounded-lg bg-surface-container-low flex items-start gap-space-sm\">\n<span class=\"material-symbols-outlined text-outline text-[20px] mt-0.5 shrink-0\">report_problem</span>\n<div class=\"flex flex-col gap-0.5\">\n<span class=\"font-semibold text-on-surface\">Phân tích bài toán Đánh đổi (Trade-offs)</span>\n<p class=\"text-on-surface-variant text-body-sm font-body-sm\">\n                Cần phân tích sâu hơn về Trade-offs khi chọn giữa SSR và SSG/ISR trong bài toán đánh đổi giữa hiệu quả SEO và tải trọng Caching Server.\n              </p>\n</div>\n</div>\n<div class=\"p-space-md rounded-lg bg-surface-container-low flex items-start gap-space-sm\">\n<span class=\"material-symbols-outlined text-outline text-[20px] mt-0.5 shrink-0\">speed</span>\n<div class=\"flex flex-col gap-0.5\">\n<span class=\"font-semibold text-on-surface\">Tốc độ diễn đạt chưa đồng đều</span>\n<p class=\"text-on-surface-variant text-body-sm font-body-sm\">\n                Tốc độ nói ở câu hỏi số 3 hơi dồn dập (xấp xỉ 175 từ/phút). Cần giữ nhịp thở ổn định và ngắt nghỉ tự tin khi triển khai câu hỏi mở.\n              </p>\n</div>\n</div>\n<div class=\"p-space-md rounded-lg bg-surface-container-low flex items-start gap-space-sm\">\n<span class=\"material-symbols-outlined text-outline text-[20px] mt-0.5 shrink-0\">fact_check</span>\n<div class=\"flex flex-col gap-0.5\">\n<span class=\"font-semibold text-on-surface\">Khía cạnh Kiểm thử tự động (Testing)</span>\n<p class=\"text-on-surface-variant text-body-sm font-body-sm\">\n                Chưa nhấn mạnh nhiều về Unit Test (Jest/Vitest), Integration Test (Playwright) và chiến lược Automation Testing trong các dự án trước.\n              </p>\n</div>\n</div>\n</div>\n</div>\n<!-- Column 3: Recommendations from AI Mentor -->\n<div class=\"flex flex-col bg-surface-container-lowest rounded-xl p-space-lg shadow-sm\">\n<div class=\"flex items-center gap-space-sm mb-space-md\">\n<div class=\"w-10 h-10 rounded-lg bg-primary-fixed flex items-center justify-center text-primary\">\n<span class=\"material-symbols-outlined text-[24px]\">auto_awesome</span>\n</div>\n<div class=\"flex flex-col\">\n<h3 class=\"font-headline-sm text-headline-sm text-on-surface font-bold\">Gợi ý từ AI Mentor</h3>\n<span class=\"font-label-sm text-label-sm text-primary font-medium\">Lộ trình rèn luyện cá nhân hóa</span>\n</div>\n</div>\n<div class=\"flex flex-col gap-space-md text-body-md font-body-md flex-1\">\n<div class=\"p-space-md rounded-lg bg-surface-container flex items-start gap-space-sm\">\n<span class=\"material-symbols-outlined text-primary text-[20px] mt-0.5 shrink-0\">school</span>\n<div class=\"flex flex-col gap-0.5\">\n<span class=\"font-semibold text-on-surface\">Khóa học đề xuất cho bạn</span>\n<p class=\"text-on-surface-variant text-body-sm font-body-sm\">\n<span class=\"font-medium text-primary\">\"Advanced System Design for Frontend Architects\"</span> - Tập trung tối ưu quy mô lớn và Micro-Frontends.\n              </p>\n</div>\n</div>\n<div class=\"p-space-md rounded-lg bg-surface-container flex items-start gap-space-sm\">\n<span class=\"material-symbols-outlined text-primary text-[20px] mt-0.5 shrink-0\">code_blocks</span>\n<div class=\"flex flex-col gap-0.5\">\n<span class=\"font-semibold text-on-surface\">Bài tập thử thách thực hành</span>\n<p class=\"text-on-surface-variant text-body-sm font-body-sm\">\n                Thử dựng kiến trúc Micro-frontend dùng Module Federation cho hệ sinh thái Thương mại điện tử đa domain.\n              </p>\n</div>\n</div>\n<div class=\"p-space-md rounded-lg bg-surface-container flex items-start gap-space-sm\">\n<span class=\"material-symbols-outlined text-primary text-[20px] mt-0.5 shrink-0\">lightbulb</span>\n<div class=\"flex flex-col gap-0.5\">\n<span class=\"font-semibold text-on-surface\">Mẹo phỏng vấn vòng kế tiếp</span>\n<p class=\"text-on-surface-variant text-body-sm font-body-sm\">\n                Hãy dành 15 giây tóm tắt lại bài toán để đồng bộ hóa góc nhìn với giám khảo trước khi đưa ra kiến trúc giải pháp.\n              </p>\n</div>\n</div>\n</div>\n</div>\n</div>\n<!-- Question-by-Question Accordion Review Preview -->\n<div class=\"flex flex-col bg-surface-container-lowest rounded-xl p-space-lg shadow-sm\">\n<div class=\"flex flex-col md:flex-row md:items-center justify-between pb-space-md gap-space-sm\">\n<div>\n<h2 class=\"font-headline-sm text-headline-sm text-on-surface font-bold\">Chi tiết Đánh giá Từng câu hỏi (5/5 Questions)</h2>\n<p class=\"font-body-sm text-body-sm text-on-surface-variant\">Bao gồm bản ghi âm AI, phân tích ngữ nghĩa và gợi ý tối ưu câu trả lời</p>\n</div>\n<div class=\"flex items-center gap-space-sm\">\n<span class=\"font-label-md text-label-md text-secondary bg-secondary-container px-space-md py-1 rounded-full\">\n            Trung bình: 8.5/10\n          </span>\n<button class=\"font-label-md text-label-md text-primary hover:underline px-2 py-1\" id=\"toggle-all-btn\" type=\"button\">\n            Mở rộng tất cả\n          </button>\n</div>\n</div>\n<!-- Accordion List -->\n<div class=\"flex flex-col gap-space-sm pt-space-sm\">\n<!-- Question 1: Open by default -->\n<div class=\"accordion-item rounded-lg bg-surface-container-low transition-all\">\n<button class=\"accordion-trigger w-full px-space-lg py-space-md flex items-center justify-between text-left hover:bg-surface-container transition-colors rounded-lg\" type=\"button\">\n<div class=\"flex items-center gap-space-md min-w-0 pr-space-md\">\n<span class=\"w-8 h-8 rounded-full bg-primary-fixed text-primary font-bold flex items-center justify-center shrink-0 text-label-lg font-label-lg\">1</span>\n<div class=\"flex flex-col min-w-0\">\n<span class=\"font-headline-sm text-headline-sm text-on-surface font-semibold truncate\">\n                  Câu 1: Giải thích cơ chế Reconciliation &amp; Fiber Tree trong React 18\n                </span>\n<span class=\"font-body-sm text-body-sm text-on-surface-variant\">Chủ đề: Core React Architecture • Thời lượng: 4 phút 15 giây</span>\n</div>\n</div>\n<div class=\"flex items-center gap-space-md shrink-0\">\n<span class=\"px-space-md py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md font-bold\">\n                9.0 / 10\n              </span>\n<span class=\"material-symbols-outlined text-outline transform transition-transform duration-200 rotate-180 accordion-icon\">expand_more</span>\n</div>\n</button>\n<div class=\"accordion-content px-space-lg pb-space-lg flex flex-col gap-space-md\">\n<!-- Audio Player Mockup -->\n<div class=\"flex items-center gap-space-md p-space-sm rounded-lg bg-surface-container-lowest shadow-sm\">\n<button class=\"w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center hover:bg-primary/90 transition-colors shrink-0\" type=\"button\">\n<span class=\"material-symbols-outlined text-[20px]\">play_arrow</span>\n</button>\n<!-- Waveform visualization -->\n<div class=\"flex-1 flex items-center gap-1 h-8 px-2 overflow-hidden\">\n<span class=\"w-1 bg-secondary rounded-full h-3\"></span>\n<span class=\"w-1 bg-secondary rounded-full h-5\"></span>\n<span class=\"w-1 bg-secondary rounded-full h-7\"></span>\n<span class=\"w-1 bg-secondary rounded-full h-4\"></span>\n<span class=\"w-1 bg-secondary rounded-full h-6\"></span>\n<span class=\"w-1 bg-primary rounded-full h-8\"></span>\n<span class=\"w-1 bg-primary rounded-full h-7\"></span>\n<span class=\"w-1 bg-primary rounded-full h-5\"></span>\n<span class=\"w-1 bg-outline-variant rounded-full h-3\"></span>\n<span class=\"w-1 bg-outline-variant rounded-full h-4\"></span>\n<span class=\"w-1 bg-outline-variant rounded-full h-6\"></span>\n<span class=\"w-1 bg-outline-variant rounded-full h-2\"></span>\n<span class=\"w-1 bg-outline-variant rounded-full h-5\"></span>\n<span class=\"w-1 bg-outline-variant rounded-full h-7\"></span>\n<span class=\"w-1 bg-outline-variant rounded-full h-4\"></span>\n<span class=\"w-1 bg-outline-variant rounded-full h-6\"></span>\n<span class=\"w-1 bg-outline-variant rounded-full h-3\"></span>\n</div>\n<span class=\"font-label-md text-label-md text-outline shrink-0\">01:45 / 04:15</span>\n<div class=\"flex items-center gap-1 text-outline\">\n<span class=\"material-symbols-outlined text-[20px] cursor-pointer hover:text-on-surface\">volume_up</span>\n</div>\n</div>\n<!-- Transcript & AI Feedback Split -->\n<div class=\"grid grid-cols-1 lg:grid-cols-2 gap-space-md pt-space-xs\">\n<div class=\"p-space-md rounded-lg bg-surface-container-lowest shadow-sm flex flex-col gap-1.5\">\n<span class=\"font-label-sm text-label-sm text-outline uppercase font-semibold flex items-center gap-1\">\n<span class=\"material-symbols-outlined text-[16px]\">transcribe</span>\n                  Trích xuất câu trả lời của ứng viên\n                </span>\n<p class=\"font-body-sm text-body-sm text-on-surface leading-relaxed italic\">\n                  \"...Fiber là một kiến trúc data structure dạng linked-list giúp React có thể tạm dừng (pause), phân bổ độ ưu tiên (priority) và tiếp tục công việc reconciliation mà không làm nghẽn Main Thread. Điểm mấu chốt so với Stack Reconciler cũ là cơ chế double buffering với workInProgress tree và current tree...\"\n                </p>\n</div>\n<div class=\"p-space-md rounded-lg bg-secondary-container/40 flex flex-col gap-1.5\">\n<span class=\"font-label-sm text-label-sm text-secondary uppercase font-semibold flex items-center gap-1\">\n<span class=\"material-symbols-outlined text-[16px]\">smart_toy</span>\n                  Nhận xét chuyên sâu từ AI\n                </span>\n<p class=\"font-body-sm text-body-sm text-on-surface leading-relaxed\">\n                  Ứng viên giải thích chuẩn xác thuật toán Diffing và cách Fiber tổ chức công việc thông qua Scheduler &amp; Lane model. Gợi ý: Có thể bổ sung thêm ví dụ về `useDeferredValue` hoặc `startTransition` để chứng minh sự hiểu biết trong thực tế.\n                </p>\n</div>\n</div>\n</div>\n</div>\n<!-- Question 2 -->\n<div class=\"accordion-item rounded-lg bg-surface-container-low transition-all\">\n<button class=\"accordion-trigger w-full px-space-lg py-space-md flex items-center justify-between text-left hover:bg-surface-container transition-colors rounded-lg\" type=\"button\">\n<div class=\"flex items-center gap-space-md min-w-0 pr-space-md\">\n<span class=\"w-8 h-8 rounded-full bg-primary-fixed text-primary font-bold flex items-center justify-center shrink-0 text-label-lg font-label-lg\">2</span>\n<div class=\"flex flex-col min-w-0\">\n<span class=\"font-headline-sm text-headline-sm text-on-surface font-semibold truncate\">\n                  Câu 2: Xử lý State Management phức tạp với Redux Toolkit so với Zustand &amp; Server Cache (React Query)\n                </span>\n<span class=\"font-body-sm text-body-sm text-on-surface-variant\">Chủ đề: State &amp; Architecture • Thời lượng: 5 phút 30 giây</span>\n</div>\n</div>\n<div class=\"flex items-center gap-space-md shrink-0\">\n<span class=\"px-space-md py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md font-bold\">\n                8.5 / 10\n              </span>\n<span class=\"material-symbols-outlined text-outline transform transition-transform duration-200 accordion-icon\">expand_more</span>\n</div>\n</button>\n<div class=\"accordion-content hidden px-space-lg pb-space-lg flex flex-col gap-space-md\">\n<div class=\"p-space-md rounded-lg bg-surface-container-lowest shadow-sm text-body-sm font-body-sm text-on-surface\">\n              Nội dung chi tiết phân tích của Câu hỏi 2. AI đánh giá cao khả năng tách bạch rõ ràng giữa Server State (TanStack Query) và Client UI State (Zustand).\n            </div>\n</div>\n</div>\n<!-- Question 3 -->\n<div class=\"accordion-item rounded-lg bg-surface-container-low transition-all\">\n<button class=\"accordion-trigger w-full px-space-lg py-space-md flex items-center justify-between text-left hover:bg-surface-container transition-colors rounded-lg\" type=\"button\">\n<div class=\"flex items-center gap-space-md min-w-0 pr-space-md\">\n<span class=\"w-8 h-8 rounded-full bg-primary-fixed text-primary font-bold flex items-center justify-center shrink-0 text-label-lg font-label-lg\">3</span>\n<div class=\"flex flex-col min-w-0\">\n<span class=\"font-headline-sm text-headline-sm text-on-surface font-semibold truncate\">\n                  Câu 3: Chiến lược tối ưu Web Performance và cải thiện chỉ số Core Web Vitals (LCP, INP, CLS)\n                </span>\n<span class=\"font-body-sm text-body-sm text-on-surface-variant\">Chủ đề: Web Performance • Thời lượng: 6 phút 10 giây</span>\n</div>\n</div>\n<div class=\"flex items-center gap-space-md shrink-0\">\n<span class=\"px-space-md py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md font-bold\">\n                8.0 / 10\n              </span>\n<span class=\"material-symbols-outlined text-outline transform transition-transform duration-200 accordion-icon\">expand_more</span>\n</div>\n</button>\n<div class=\"accordion-content hidden px-space-lg pb-space-lg flex flex-col gap-space-md\">\n<div class=\"p-space-md rounded-lg bg-surface-container-lowest shadow-sm text-body-sm font-body-sm text-on-surface\">\n              Nhịp độ phát âm ở câu này hơi nhanh (175 từ/phút). Tuy nhiên các giải pháp code splitting, dynamic import, CDN caching và font optimization được diễn giải rất thuyết phục.\n            </div>\n</div>\n</div>\n<!-- Question 4 -->\n<div class=\"accordion-item rounded-lg bg-surface-container-low transition-all\">\n<button class=\"accordion-trigger w-full px-space-lg py-space-md flex items-center justify-between text-left hover:bg-surface-container transition-colors rounded-lg\" type=\"button\">\n<div class=\"flex items-center gap-space-md min-w-0 pr-space-md\">\n<span class=\"w-8 h-8 rounded-full bg-primary-fixed text-primary font-bold flex items-center justify-center shrink-0 text-label-lg font-label-lg\">4</span>\n<div class=\"flex flex-col min-w-0\">\n<span class=\"font-headline-sm text-headline-sm text-on-surface font-semibold truncate\">\n                  Câu 4: Xây dựng Custom Hooks và Quản trị Memory Leaks với AbortController\n                </span>\n<span class=\"font-body-sm text-body-sm text-on-surface-variant\">Chủ đề: TypeScript &amp; Memory Safety • Thời lượng: 4 phút 50 giây</span>\n</div>\n</div>\n<div class=\"flex items-center gap-space-md shrink-0\">\n<span class=\"px-space-md py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md font-bold\">\n                8.8 / 10\n              </span>\n<span class=\"material-symbols-outlined text-outline transform transition-transform duration-200 accordion-icon\">expand_more</span>\n</div>\n</button>\n<div class=\"accordion-content hidden px-space-lg pb-space-lg flex flex-col gap-space-md\">\n<div class=\"p-space-md rounded-lg bg-surface-container-lowest shadow-sm text-body-sm font-body-sm text-on-surface\">\n              Trình bày chính xác cách cleanup listener, hủy request với signal trong AbortController khi component unmount.\n            </div>\n</div>\n</div>\n<!-- Question 5 -->\n<div class=\"accordion-item rounded-lg bg-surface-container-low transition-all\">\n<button class=\"accordion-trigger w-full px-space-lg py-space-md flex items-center justify-between text-left hover:bg-surface-container transition-colors rounded-lg\" type=\"button\">\n<div class=\"flex items-center gap-space-md min-w-0 pr-space-md\">\n<span class=\"w-8 h-8 rounded-full bg-primary-fixed text-primary font-bold flex items-center justify-center shrink-0 text-label-lg font-label-lg\">5</span>\n<div class=\"flex flex-col min-w-0\">\n<span class=\"font-headline-sm text-headline-sm text-on-surface font-semibold truncate\">\n                  Câu 5: Tình huống giải quyết bất đồng quan điểm kỹ thuật trong nội bộ Frontend Team\n                </span>\n<span class=\"font-body-sm text-body-sm text-on-surface-variant\">Chủ đề: Behavioral &amp; Conflict Management • Thời lượng: 5 phút 10 giây</span>\n</div>\n</div>\n<div class=\"flex items-center gap-space-md shrink-0\">\n<span class=\"px-space-md py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md font-bold\">\n                8.2 / 10\n              </span>\n<span class=\"material-symbols-outlined text-outline transform transition-transform duration-200 accordion-icon\">expand_more</span>\n</div>\n</button>\n<div class=\"accordion-content hidden px-space-lg pb-space-lg flex flex-col gap-space-md\">\n<div class=\"p-space-md rounded-lg bg-surface-container-lowest shadow-sm text-body-sm font-body-sm text-on-surface\">\n              Thái độ cầu thị, giải quyết dựa trên benchmark và PoC thực tế thay vì tranh cãi quan điểm chủ quan.\n            </div>\n</div>\n</div>\n</div>\n</div>\n<!-- Below Section: Practice History & Progression Table -->\n<div class=\"flex flex-col bg-surface-container-lowest rounded-xl p-space-lg shadow-sm\">\n<div class=\"flex flex-col md:flex-row md:items-center justify-between gap-space-md pb-space-md\">\n<div>\n<h2 class=\"font-headline-sm text-headline-sm text-on-surface font-bold\">\n            Lịch sử phỏng vấn AI &amp; Quá trình tiến bộ\n          </h2>\n<p class=\"font-body-sm text-body-sm text-on-surface-variant\">\n            Theo dõi sự cải thiện điểm số qua các phiên luyện tập mô phỏng\n          </p>\n</div>\n<!-- Filter Tabs -->\n<div class=\"flex items-center flex-wrap gap-1 p-1 bg-surface-container-low rounded-lg text-label-md font-label-md\">\n<button class=\"px-space-md py-1.5 rounded bg-surface-container-lowest text-primary font-bold shadow-sm\" type=\"button\">\n            Tất cả phiên (12)\n          </button>\n<button class=\"px-space-md py-1.5 rounded text-on-surface-variant hover:text-on-surface transition-colors\" type=\"button\">\n            Frontend Dev (8)\n          </button>\n<button class=\"px-space-md py-1.5 rounded text-on-surface-variant hover:text-on-surface transition-colors\" type=\"button\">\n            System Design (3)\n          </button>\n<button class=\"px-space-md py-1.5 rounded text-on-surface-variant hover:text-on-surface transition-colors\" type=\"button\">\n            Phỏng vấn HR (1)\n          </button>\n</div>\n</div>\n<!-- Table Container -->\n<div class=\"overflow-x-auto w-full\">\n<table class=\"w-full text-left font-body-sm text-body-sm\">\n<thead>\n<tr class=\"bg-surface-container-low text-outline font-label-sm text-label-sm uppercase tracking-wider\">\n<th class=\"py-space-md px-space-md rounded-l-lg\">Ngày thực hiện</th>\n<th class=\"py-space-md px-space-md\">Vị trí / Chủ đề</th>\n<th class=\"py-space-md px-space-md\">Thời lượng</th>\n<th class=\"py-space-md px-space-md\">Điểm tổng</th>\n<th class=\"py-space-md px-space-md\">Đánh giá chính</th>\n<th class=\"py-space-md px-space-md text-right rounded-r-lg\">Hành động</th>\n</tr>\n</thead>\n<tbody class=\"divide-y-0 text-on-surface\">\n<!-- Row 1: Just completed -->\n<tr class=\"hover:bg-surface-container-low/60 transition-colors\">\n<td class=\"py-space-md px-space-md\">\n<div class=\"flex flex-col\">\n<span class=\"font-semibold text-on-surface\">24/05/2024</span>\n<span class=\"text-label-sm font-label-sm text-outline\">15:15 - 15:45 (Vừa xong)</span>\n</div>\n</td>\n<td class=\"py-space-md px-space-md\">\n<div class=\"flex items-center gap-space-xs\">\n<span class=\"w-2 h-2 rounded-full bg-secondary\"></span>\n<span class=\"font-medium text-on-surface\">Senior Frontend Engineer</span>\n</div>\n<span class=\"text-label-sm font-label-sm text-outline-variant\">React 18, TypeScript, System Architecture</span>\n</td>\n<td class=\"py-space-md px-space-md font-medium\">28 phút</td>\n<td class=\"py-space-md px-space-md\">\n<span class=\"inline-flex items-center gap-1 px-space-sm py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md font-bold\">\n                  85/100\n                </span>\n</td>\n<td class=\"py-space-md px-space-md\">\n<span class=\"inline-flex items-center gap-1 text-secondary font-medium\">\n<span class=\"material-symbols-outlined text-[16px]\">stars</span>\n                  Xuất sắc\n                </span>\n</td>\n<td class=\"py-space-md px-space-md text-right\">\n<div class=\"inline-flex items-center gap-space-xs justify-end\">\n<button class=\"inline-flex items-center gap-1 px-space-sm py-1 rounded bg-surface-container text-primary hover:bg-surface-container-high font-label-md text-label-md transition-colors\" type=\"button\">\n<span class=\"material-symbols-outlined text-[16px]\">visibility</span>\n                    Xem\n                  </button>\n<button class=\"p-1 rounded text-outline hover:text-on-surface hover:bg-surface-container transition-colors\" title=\"Luyện tập lại\" type=\"button\">\n<span class=\"material-symbols-outlined text-[18px]\">replay</span>\n</button>\n</div>\n</td>\n</tr>\n<!-- Row 2 -->\n<tr class=\"hover:bg-surface-container-low/60 transition-colors\">\n<td class=\"py-space-md px-space-md\">\n<div class=\"flex flex-col\">\n<span class=\"font-semibold text-on-surface\">20/05/2024</span>\n<span class=\"text-label-sm font-label-sm text-outline\">09:30 - 09:55</span>\n</div>\n</td>\n<td class=\"py-space-md px-space-md\">\n<div class=\"flex items-center gap-space-xs\">\n<span class=\"w-2 h-2 rounded-full bg-primary\"></span>\n<span class=\"font-medium text-on-surface\">React &amp; TypeScript Deep Dive</span>\n</div>\n<span class=\"text-label-sm font-label-sm text-outline-variant\">State Management, Custom Hooks</span>\n</td>\n<td class=\"py-space-md px-space-md font-medium\">25 phút</td>\n<td class=\"py-space-md px-space-md\">\n<span class=\"inline-flex items-center gap-1 px-space-sm py-0.5 rounded-full bg-surface-container text-primary font-label-md text-label-md font-bold\">\n                  78/100\n                </span>\n</td>\n<td class=\"py-space-md px-space-md\">\n<span class=\"inline-flex items-center gap-1 text-primary font-medium\">\n<span class=\"material-symbols-outlined text-[16px]\">check_circle</span>\n                  Khá\n                </span>\n</td>\n<td class=\"py-space-md px-space-md text-right\">\n<div class=\"inline-flex items-center gap-space-xs justify-end\">\n<button class=\"inline-flex items-center gap-1 px-space-sm py-1 rounded bg-surface-container text-primary hover:bg-surface-container-high font-label-md text-label-md transition-colors\" type=\"button\">\n<span class=\"material-symbols-outlined text-[16px]\">visibility</span>\n                    Xem\n                  </button>\n<button class=\"p-1 rounded text-outline hover:text-on-surface hover:bg-surface-container transition-colors\" title=\"Luyện tập lại\" type=\"button\">\n<span class=\"material-symbols-outlined text-[18px]\">replay</span>\n</button>\n</div>\n</td>\n</tr>\n<!-- Row 3 -->\n<tr class=\"hover:bg-surface-container-low/60 transition-colors\">\n<td class=\"py-space-md px-space-md\">\n<div class=\"flex flex-col\">\n<span class=\"font-semibold text-on-surface\">15/05/2024</span>\n<span class=\"text-label-sm font-label-sm text-outline\">14:00 - 14:35</span>\n</div>\n</td>\n<td class=\"py-space-md px-space-md\">\n<div class=\"flex items-center gap-space-xs\">\n<span class=\"w-2 h-2 rounded-full bg-tertiary\"></span>\n<span class=\"font-medium text-on-surface\">System Design Frontend</span>\n</div>\n<span class=\"text-label-sm font-label-sm text-outline-variant\">Micro-frontend, Caching Layer, CDN</span>\n</td>\n<td class=\"py-space-md px-space-md font-medium\">35 phút</td>\n<td class=\"py-space-md px-space-md\">\n<span class=\"inline-flex items-center gap-1 px-space-sm py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md font-bold\">\n                  72/100\n                </span>\n</td>\n<td class=\"py-space-md px-space-md\">\n<span class=\"inline-flex items-center gap-1 text-on-surface-variant font-medium\">\n<span class=\"material-symbols-outlined text-[16px]\">trending_flat</span>\n                  Cần luyện thêm\n                </span>\n</td>\n<td class=\"py-space-md px-space-md text-right\">\n<div class=\"inline-flex items-center gap-space-xs justify-end\">\n<button class=\"inline-flex items-center gap-1 px-space-sm py-1 rounded bg-surface-container text-primary hover:bg-surface-container-high font-label-md text-label-md transition-colors\" type=\"button\">\n<span class=\"material-symbols-outlined text-[16px]\">visibility</span>\n                    Xem\n                  </button>\n<button class=\"p-1 rounded text-outline hover:text-on-surface hover:bg-surface-container transition-colors\" title=\"Luyện tập lại\" type=\"button\">\n<span class=\"material-symbols-outlined text-[18px]\">replay</span>\n</button>\n</div>\n</td>\n</tr>\n<!-- Row 4 -->\n<tr class=\"hover:bg-surface-container-low/60 transition-colors\">\n<td class=\"py-space-md px-space-md\">\n<div class=\"flex flex-col\">\n<span class=\"font-semibold text-on-surface\">10/05/2024</span>\n<span class=\"text-label-sm font-label-sm text-outline\">16:45 - 17:05</span>\n</div>\n</td>\n<td class=\"py-space-md px-space-md\">\n<div class=\"flex items-center gap-space-xs\">\n<span class=\"w-2 h-2 rounded-full bg-outline\"></span>\n<span class=\"font-medium text-on-surface\">Behavioral &amp; STAR Method</span>\n</div>\n<span class=\"text-label-sm font-label-sm text-outline-variant\">Giao tiếp, Xử lý áp lực, Teamwork</span>\n</td>\n<td class=\"py-space-md px-space-md font-medium\">20 phút</td>\n<td class=\"py-space-md px-space-md\">\n<span class=\"inline-flex items-center gap-1 px-space-sm py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md font-bold\">\n                  68/100\n                </span>\n</td>\n<td class=\"py-space-md px-space-md\">\n<span class=\"inline-flex items-center gap-1 text-outline font-medium\">\n<span class=\"material-symbols-outlined text-[16px]\">info</span>\n                  Trung bình\n                </span>\n</td>\n<td class=\"py-space-md px-space-md text-right\">\n<div class=\"inline-flex items-center gap-space-xs justify-end\">\n<button class=\"inline-flex items-center gap-1 px-space-sm py-1 rounded bg-surface-container text-primary hover:bg-surface-container-high font-label-md text-label-md transition-colors\" type=\"button\">\n<span class=\"material-symbols-outlined text-[16px]\">visibility</span>\n                    Xem\n                  </button>\n<button class=\"p-1 rounded text-outline hover:text-on-surface hover:bg-surface-container transition-colors\" title=\"Luyện tập lại\" type=\"button\">\n<span class=\"material-symbols-outlined text-[18px]\">replay</span>\n</button>\n</div>\n</td>\n</tr>\n</tbody>\n</table>\n</div>\n<!-- Pagination Footer -->\n<div class=\"flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-md mt-space-sm\">\n<span class=\"text-body-sm font-body-sm text-on-surface-variant\">\n          Hiển thị 1 - 4 trên tổng số 12 phiên luyện tập\n        </span>\n<div class=\"flex items-center gap-space-xs\">\n<button class=\"px-space-md py-1.5 rounded-lg bg-surface-container-low text-outline font-label-md text-label-md cursor-not-allowed\" disabled=\"\" type=\"button\">\n            Trước\n          </button>\n<button class=\"w-8 h-8 rounded-lg bg-primary-container text-on-primary font-bold text-label-md flex items-center justify-center\" type=\"button\">\n            1\n          </button>\n<button class=\"w-8 h-8 rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container font-label-md flex items-center justify-center transition-colors\" type=\"button\">\n            2\n          </button>\n<button class=\"w-8 h-8 rounded-lg bg-surface-container-low text-on-surface hover:bg-surface-container font-label-md flex items-center justify-center transition-colors\" type=\"button\">\n            3\n          </button>\n<button class=\"px-space-md py-1.5 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md text-label-md transition-colors\" type=\"button\">\n            Sau\n          </button>\n</div>\n</div>\n</div>\n</div>\n</div>";
+/** Nhãn dải điểm — dẫn xuất từ điểm thật, không phải nhận định mới. */
+const scoreBand = (score: number) =>
+  score >= 90 ? 'Xuất sắc' : score >= 80 ? 'Tốt' : score >= 70 ? 'Khá tốt' : score >= 50 ? 'Cần cải thiện' : 'Cần cố gắng';
 
-const PAGE_SCRIPTS = "// Simple vanilla interaction for accordions\n  document.addEventListener('DOMContentLoaded', () => {\n    const items = document.querySelectorAll('.accordion-item');\n    const toggleAllBtn = document.getElementById('toggle-all-btn');\n    let allExpanded = false;\n\n    items.forEach(item => {\n      const trigger = item.querySelector('.accordion-trigger');\n      const content = item.querySelector('.accordion-content');\n      const icon = item.querySelector('.accordion-icon');\n\n      trigger.addEventListener('click', () => {\n        const isHidden = content.classList.contains('hidden');\n        if (isHidden) {\n          content.classList.remove('hidden');\n          icon.classList.add('rotate-180');\n        } else {\n          content.classList.add('hidden');\n          icon.classList.remove('rotate-180');\n        }\n      });\n    });\n\n    if (toggleAllBtn) {\n      toggleAllBtn.addEventListener('click', () => {\n        allExpanded = !allExpanded;\n        items.forEach(item => {\n          const content = item.querySelector('.accordion-content');\n          const icon = item.querySelector('.accordion-icon');\n          if (allExpanded) {\n            content.classList.remove('hidden');\n            icon.classList.add('rotate-180');\n          } else {\n            content.classList.add('hidden');\n            icon.classList.remove('rotate-180');\n          }\n        });\n        toggleAllBtn.textContent = allExpanded ? 'Thu gọn tất cả' : 'Mở rộng tất cả';\n      });\n    }\n  });";
+const scoreTone = (score: number): 'success' | 'primary' | 'warning' | 'danger' =>
+  score >= 80 ? 'success' : score >= 70 ? 'primary' : score >= 50 ? 'warning' : 'danger';
 
-const MockInterviewResultPage: React.FC = () => {
-  return <MockupPage html={PAGE_HTML} scripts={PAGE_SCRIPTS} />;
+const fmtDuration = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+
+const OPTION_LETTER = (i: number) => String.fromCharCode(65 + i);
+
+const splitLines = (value?: string) =>
+  (value ?? '').split('\n').map(line => line.trim()).filter(Boolean);
+
+const clipText = (value: string, max: number) =>
+  value.length > max ? `${value.slice(0, max - 1)}…` : value;
+
+/** Đáp án đúng lấy từ `correctAnswer`; fallback theo chỉ số nếu BE chỉ trả options. */
+const isCorrectOption = (answer: InterviewAnswer, option: string, index: number) =>
+  answer.correctAnswer != null
+    ? option === answer.correctAnswer
+    : answer.correct === true && answer.selectedOptionIndex === index;
+
+const isChosenOption = (answer: InterviewAnswer, option: string, index: number) =>
+  answer.selectedOptionIndex != null ? answer.selectedOptionIndex === index : answer.answerText === option;
+
+/** Một item trong cột Điểm mạnh / Cần cải thiện — dựng từ answer thật. */
+const InsightItem: React.FC<{ icon: string; iconClass: string; title: string; body: string; meta?: string }> = ({
+  icon, iconClass, title, body, meta,
+}) => (
+  <div className={`flex items-start gap-space-sm rounded-lg p-space-md ${SOFT}`}>
+    <span className={`${ICON} mt-0.5 shrink-0 text-[20px] ${iconClass}`}>{icon}</span>
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <span className="break-words font-semibold text-on-surface">{title}</span>
+      <p className="m-0 whitespace-pre-line text-ds-body-sm text-on-surface-variant">{body}</p>
+      {meta && <span className="text-ds-label-sm text-outline">{meta}</span>}
+    </div>
+  </div>
+);
+
+/** Ô số liệu nhỏ trong phần tổng kết trắc nghiệm. */
+const Stat: React.FC<{ icon: string; label: string; value: string; tone: string }> = ({ icon, label, value, tone }) => (
+  <div className="flex flex-col gap-1 rounded-lg bg-surface-container-low p-space-md">
+    <span className={`flex items-center gap-1.5 text-ds-label-sm font-medium ${tone}`}>
+      <span className={`${ICON} text-[18px]`}>{icon}</span>
+      {label}
+    </span>
+    <span className="text-ds-headline-md font-bold text-on-surface tabular-nums">{value}</span>
+  </div>
+);
+
+/** Một dòng câu hỏi trong báo cáo AVATAR, đã ghép transcript + điểm/nhận xét của BE. */
+interface QuestionRow {
+  index: number;
+  question: string;
+  answerText?: string;
+  durationSec?: number;
+  score: number;
+  feedback: string;
+}
+
+const titleOfSession = (s: InterviewSession) =>
+  s.jobTitle ?? s.topic ?? INTERVIEW_MODE_LABELS[s.mode];
+
+const progressOfSession = (s: InterviewSession) =>
+  s.mode === 'AVATAR'
+    ? `${s.answeredCount ?? 0} lượt`
+    : `${s.answeredCount ?? 0}/${s.questionCount || s.questions?.length || 0} câu`;
+
+/** Icon cho từng chiều rubric — chỉ để trình bày, nhãn lấy từ model. */
+const dimIcon = (key: keyof InterviewRubric) => {
+  switch (key) {
+    case 'chuyenMon': return 'terminal';
+    case 'duAn': return 'work';
+    case 'tuDuy': return 'psychology';
+    case 'truyenDat': return 'forum';
+    default: return 'speed';
+  }
+};
+
+/**
+ * Báo cáo phiên AVATAR (BE 012). Khi phiên kết thúc, BE tự chấm rubric 5 chiều và ghi nhận
+ * xét từng câu vào interview_answers; màn này chỉ đọc lại, không có form tự đánh.
+ */
+const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
+  const { user } = useAuth();
+  const {
+    result, report, reportMissing, loading, error, sessions,
+    fetchResult, loadReport, submitEvaluation, fetchMySessions,
+  } = useMockInterviewController();
+  const autoEvalTried = useRef(false);
+  const [openIds, setOpenIds] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    if (user?.role === 'ROLE_USER') void fetchResult(sessionId);
+  }, [user, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (user?.role === 'ROLE_USER') void fetchMySessions(0);
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (result?.session.mode === 'AVATAR' && result.session.status === 'COMPLETED') {
+      void loadReport(sessionId);
+    }
+  }, [result, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const session = result?.session;
+  const transcript = useMemo(() => result?.transcript ?? [], [result?.transcript]);
+  const answers = useMemo(() => result?.answers ?? [], [result?.answers]);
+
+  const confirmed = useMemo(() => transcript.filter(t => t.confirmed), [transcript]);
+
+  const answerByIndex = useMemo(() => {
+    const map = new Map<number, InterviewAnswer>();
+    answers.forEach(a => map.set(a.questionIndex, a));
+    return map;
+  }, [answers]);
+
+  const rows = useMemo<QuestionRow[]>(() => confirmed.map(t => {
+    const answer = answerByIndex.get(t.index);
+    const fallback = evaluateAnswerText(t.answerText, t.durationSec);
+    return {
+      index: t.index,
+      question: t.questionText || answer?.question || `Câu ${t.index + 1}`,
+      answerText: t.answerText ?? answer?.answerText,
+      durationSec: t.durationSec ?? answer?.durationSec,
+      score: typeof answer?.score === 'number' ? answer.score : fallback.score,
+      feedback: answer?.feedback?.trim() ? answer.feedback : fallback.feedback,
+    };
+  }).sort((a, b) => a.index - b.index), [confirmed, answerByIndex]);
+
+  const totalSec = rows.reduce((sum, row) => sum + (row.durationSec ?? 0), 0);
+  const totalWords = rows.reduce((sum, row) => sum + (row.answerText ?? '').trim().split(/\s+/).filter(Boolean).length, 0);
+  const avgWords = rows.length ? Math.round(totalWords / rows.length) : 0;
+  const avgScore = rows.length
+    ? Math.round(rows.reduce((sum, row) => sum + row.score, 0) / rows.length)
+    : 0;
+
+  const strongest = useMemo(
+    () => [...rows].sort((a, b) => b.score - a.score).slice(0, 3),
+    [rows],
+  );
+  const weakest = useMemo(() => {
+    const sorted = [...rows].sort((a, b) => a.score - b.score);
+    const onlyWeak = rows.length >= 3 ? sorted.slice(0, 3) : sorted.filter(row => row.score < 60);
+    return onlyWeak.slice(0, 3);
+  }, [rows]);
+
+  const reportStrengths = useMemo(() => splitLines(report?.strengths), [report?.strengths]);
+  const reportImprovements = useMemo(() => splitLines(report?.improvements), [report?.improvements]);
+
+  const hasEvidence = useMemo(() => {
+    const joined = rows.map(row => (row.answerText ?? '').toLowerCase()).join(' ');
+    return {
+      project: /dự án|project|triển khai|hệ thống|sản phẩm|team|nhóm|khách hàng/.test(joined),
+      numbers: /\d/.test(joined),
+    };
+  }, [rows]);
+
+  const mentorTips = useMemo(() => {
+    const lowest = weakest[0];
+    const tips: { icon: string; title: string; body: string }[] = [];
+    if (lowest) {
+      tips.push({
+        icon: 'school',
+        title: `Ôn lại câu ${lowest.index + 1}`,
+        body: `Đọc lại nhận xét của câu này, sau đó trả lời lại trong 2 phút với đủ bối cảnh, hành động và kết quả.`,
+      });
+    }
+    if (rows.length > 0) {
+      tips.push({
+        icon: 'code_blocks',
+        title: 'Bài tập thử thách thực hành',
+        body: avgWords < 25
+          ? `Câu trả lời đang ngắn (trung bình ${avgWords} từ). Thử ghi âm lại một câu theo STAR, mục tiêu 60–90 từ.`
+          : !hasEvidence.numbers
+            ? 'Thêm ít nhất một con số vào mỗi câu: thời gian xử lý, quy mô dữ liệu, số người dùng hoặc mức cải thiện.'
+            : 'Chọn câu khó nhất và trình bày thêm phần đánh đổi: phương án thay thế, rủi ro và lý do chọn.',
+      });
+    }
+    tips.push({
+      icon: 'lightbulb',
+      title: 'Mẹo cho vòng phỏng vấn kế tiếp',
+      body: rows.length === 0
+        ? 'Bắt đầu phiên mới và trả lời ít nhất 3 câu để báo cáo có đủ dữ liệu chấm điểm.'
+        : 'Dành 10–15 giây tóm tắt lại câu hỏi trước khi trả lời để đồng bộ góc nhìn với người phỏng vấn.',
+    });
+    return tips;
+  }, [avgWords, hasEvidence.numbers, rows.length, weakest]);
+
+  const firstIndex = rows[0]?.index;
+  const loadedSessionId = result?.session.id;
+  useEffect(() => {
+    if (firstIndex != null) setOpenIds(new Set([firstIndex]));
+  }, [loadedSessionId, firstIndex]);
+
+  /** Tự chấm báo cáo từ transcript — dùng cho phiên cũ chưa từng có rubric. */
+  const autoSubmit = useCallback(async () => {
+    if (session?.status !== 'COMPLETED') return;
+    await submitEvaluation(sessionId, buildFallbackEvaluation(transcript));
+  }, [session?.status, sessionId, transcript, submitEvaluation]);
+
+  useEffect(() => {
+    if (!reportMissing || autoEvalTried.current || session?.status !== 'COMPLETED') return;
+    autoEvalTried.current = true;
+    void autoSubmit();
+  }, [reportMissing, session?.status, autoSubmit]);
+
+  if (!session) {
+    return loading
+      ? <div className={`${CARD} p-space-lg`}><LoadingBlock label="Đang tải báo cáo..." /></div>
+      : <div className={`${CARD} p-space-lg`}><ErrorBlock message={error || 'Không tìm thấy phiên phỏng vấn.'} onRetry={() => void fetchResult(sessionId)} /></div>;
+  }
+
+  const toggle = (index: number) =>
+    setOpenIds(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index); else next.add(index);
+      return next;
+    });
+
+  const expandAll = () => setOpenIds(new Set(rows.map(row => row.index)));
+  const collapseAll = () => setOpenIds(new Set());
+
+  const rowScore = (row: QuestionRow) => Math.max(0, Math.min(100, Math.round(row.score)));
+  const historyRows = sessions?.content?.slice(0, 5) ?? [];
+  const currentScore = report?.overallScore ?? null;
+
+  return (
+    <div className="flex flex-col gap-space-xl">
+      {/* 1. Đầu trang: breadcrumb + chip id + tiêu đề + meta thật + action */}
+      <div className="flex flex-col gap-space-lg lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0 flex-1">
+          <nav className="flex flex-wrap items-center gap-space-xs text-ds-label-md text-on-surface-variant">
+            <Link to="/mock-interviews" className="no-underline text-on-surface-variant hover:text-primary">
+              <span className="flex items-center gap-1">
+                <span className={`${ICON} text-[16px] text-primary`}>psychology</span>
+                AI Interview
+              </span>
+            </Link>
+            <span className="text-outline-variant">/</span>
+            <Link to="/mock-interviews/history" className="no-underline text-on-surface-variant hover:text-primary">
+              Lịch sử &amp; Báo cáo
+            </Link>
+            <span className="text-outline-variant">/</span>
+            <span className="flex items-center gap-1.5 font-semibold text-on-surface">
+              Báo cáo kết quả phiên phỏng vấn
+              <span className="rounded bg-surface-container-high px-space-xs py-0.5 text-ds-label-sm text-on-surface">
+                #AV-{session.id}
+              </span>
+            </span>
+          </nav>
+
+          <div className="flex flex-wrap items-center gap-space-md pt-space-xs">
+            <h1 className="text-ds-headline-xl font-bold tracking-tight text-on-surface">
+              Báo cáo Đánh giá Phỏng vấn AI
+            </h1>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary-container px-space-md py-1 text-ds-label-md text-on-secondary-container">
+              <span className="h-1.5 w-1.5 rounded-full bg-secondary-teal" />
+              {session.status === 'COMPLETED'
+                ? `Hoàn thành: ${fmtServer(session.completedAt ?? session.createdAt, 'datetime')}`
+                : 'Phiên chưa kết thúc'}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-space-lg pt-1 text-ds-body-sm text-on-surface-variant">
+            <span className="flex items-center gap-space-xs">
+              <span className={`${ICON} text-[18px] text-primary`}>badge</span>
+              <span className="font-medium text-on-surface">Vị trí:</span>
+              <span>{titleOfSession(session)}</span>
+            </span>
+            <span className="h-1 w-1 rounded-full bg-outline-variant" />
+            <span className="flex items-center gap-space-xs">
+              <span className={`${ICON} text-[18px] text-outline`}>timelapse</span>
+              <span className="font-medium text-on-surface">Thời lượng:</span>
+              <span>
+                {totalSec > 0 ? `${Math.max(1, Math.round(totalSec / 60))} phút` : 'chưa ghi nhận'}
+                {` (Hoàn thành ${rows.length}/${session.questionCount || rows.length} câu)`}
+              </span>
+            </span>
+            {session.companyName && (
+              <>
+                <span className="h-1 w-1 rounded-full bg-outline-variant" />
+                <span className="flex items-center gap-space-xs">
+                  <span className={`${ICON} text-[18px] text-outline`}>business</span>
+                  <span>{session.companyName}</span>
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-space-sm self-start lg:self-center">
+          <Link to={`/mock-interviews/${session.id}`} className={adminButton('ghost', 'h-10 no-underline')}>
+            <span className={`${ICON} text-[18px]`}>autorenew</span>
+            Luyện tập lại phiên này
+          </Link>
+          <button type="button" onClick={() => window.print()} className={adminButton('ghost', 'h-10')}>
+            <span className={`${ICON} text-[18px] text-outline`}>download</span>
+            Xuất báo cáo PDF
+          </button>
+          <Link to="/mock-interviews" className={adminButton('primary', 'h-10 no-underline')}>
+            <span className={`${ICON} text-[18px]`}>add_circle</span>
+            Luyện tập phiên mới
+          </Link>
+        </div>
+      </div>
+
+      {error && <ErrorBlock message={error} />}
+
+      {session.status !== 'COMPLETED' ? (
+        <div className={`${CARD} flex flex-col items-center gap-space-md p-space-2xl text-center`}>
+          <span className={`${ICON} text-[34px] text-primary`}>videocam</span>
+          <p className="m-0 text-ds-headline-sm font-bold text-on-surface">Phiên vẫn đang mở</p>
+          <p className="m-0 max-w-md text-ds-body-sm text-on-surface-variant">
+            Kết thúc phiên trong phòng phỏng vấn để hệ thống tự tổng hợp báo cáo đánh giá.
+          </p>
+          <Link to={`/mock-interviews/${session.id}`} className={adminButton('primary', 'h-11 no-underline')}>
+            Tiếp tục phiên
+          </Link>
+        </div>
+      ) : report ? (
+        <>
+          {/* 2. Điểm tổng hợp + 5 năng lực + tín hiệu thật từ transcript */}
+          <div className={`${CARD} relative flex flex-col gap-space-xl overflow-hidden p-space-lg xl:flex-row xl:items-stretch`}>
+            <span className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-primary-fixed/30 blur-3xl" />
+            <div className={`relative z-10 flex min-w-[280px] flex-col items-center justify-center gap-space-sm rounded-xl p-space-md text-center ${SOFT}`}>
+              <span className="text-ds-label-sm font-semibold uppercase tracking-wider text-primary">
+                Điểm số tổng hợp
+              </span>
+              <ScoreRing value={report.overallScore} caption={scoreBand(report.overallScore)} size={176} />
+              <Pill tone={scoreTone(report.overallScore)} icon="verified">
+                Điểm trung bình 5 chiều
+              </Pill>
+            </div>
+
+            <div className="relative z-10 flex flex-1 flex-col justify-between gap-space-lg">
+              <div>
+                <div className="mb-space-md flex flex-wrap items-center justify-between gap-2 border-b border-surface-container-high pb-space-sm">
+                  <h2 className="text-ds-headline-sm font-bold text-on-surface">
+                    Phân tích Năng lực Cốt lõi (Core Competencies)
+                  </h2>
+                  <span className="text-ds-label-sm uppercase tracking-wider text-outline">
+                    Chấm từ {rows.length} câu đã chốt
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-space-md">
+                  {RUBRIC_DIMENSIONS.map(dim => {
+                    const value = Math.max(0, Math.min(100, report[dim.key]));
+                    return (
+                      <div key={dim.key} className="flex flex-col gap-1">
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-ds-label-md">
+                          <span className="flex items-center gap-1.5 font-semibold text-on-surface">
+                            <span className={`${ICON} text-[18px] text-primary`}>{dimIcon(dim.key)}</span>
+                            {dim.label}
+                          </span>
+                          <span className="tabular-nums text-on-surface-variant">{value}/100</span>
+                        </div>
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container">
+                          <div className="h-full rounded-full bg-primary" style={{ width: `${value}%` }} />
+                        </div>
+                        <span className="text-ds-label-sm text-on-surface-variant">{dim.hint}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-space-md border-t border-surface-container-high pt-space-md">
+                <span className="flex items-center gap-1.5 rounded-full bg-surface-container-low px-space-md py-1 text-ds-label-sm text-on-surface-variant">
+                  <span className={`${ICON} text-[16px] text-secondary-teal`}>task_alt</span>
+                  Đã chốt {rows.length} câu
+                </span>
+                <span className="flex items-center gap-1.5 rounded-full bg-surface-container-low px-space-md py-1 text-ds-label-sm text-on-surface-variant">
+                  <span className={`${ICON} text-[16px] text-primary`}>record_voice_over</span>
+                  Trung bình {avgWords} từ/câu
+                </span>
+                <span className="flex items-center gap-1.5 rounded-full bg-surface-container-low px-space-md py-1 text-ds-label-sm text-on-surface-variant">
+                  <span className={`${ICON} text-[16px] text-outline`}>timer</span>
+                  {totalSec > 0 ? `~${Math.max(1, Math.round(totalSec / 60))} phút trả lời` : 'Chưa ghi nhận thời lượng'}
+                </span>
+                <span className="flex items-center gap-1.5 rounded-full bg-surface-container-low px-space-md py-1 text-ds-label-sm text-on-surface-variant">
+                  <span className={`${ICON} text-[16px] text-primary`}>insights</span>
+                  Trung bình câu: {avgScore}/100
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Ba cột: điểm mạnh, cần cải thiện, gợi ý luyện tập */}
+          <div className="grid grid-cols-1 gap-space-lg xl:grid-cols-3">
+            <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
+              <div className="flex items-center justify-between gap-space-sm border-b border-surface-container-high pb-space-md">
+                <div className="flex items-center gap-space-sm">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary-container text-on-secondary-container">
+                    <span className={`${ICON} text-[24px]`}>task_alt</span>
+                  </span>
+                  <div className="flex flex-col">
+                    <h2 className="text-ds-headline-sm font-bold text-on-surface">Điểm mạnh nổi bật</h2>
+                    <span className="text-ds-label-sm text-secondary-teal">
+                      {strongest.length > 0 ? `${strongest.length} câu có điểm cao nhất` : 'Chưa đủ dữ liệu'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {strongest.length > 0 ? strongest.map(row => (
+                <InsightItem
+                  key={row.index}
+                  icon="check_circle"
+                  iconClass="text-secondary-teal"
+                  title={`Câu ${row.index + 1}: ${clipText(row.question, 70)}`}
+                  body={row.feedback}
+                  meta={`${rowScore(row)}/100${row.durationSec != null ? ` • trả lời ${fmtDuration(row.durationSec)}` : ''}`}
+                />
+              )) : reportStrengths.length > 0 ? reportStrengths.map((line, i) => (
+                <InsightItem
+                  key={`strength-${i}`}
+                  icon="check_circle"
+                  iconClass="text-secondary-teal"
+                  title={`Điểm mạnh ${i + 1}`}
+                  body={line}
+                />
+              )) : (
+                <p className="m-0 rounded-lg bg-surface-container-low p-space-md text-ds-body-sm text-on-surface-variant">
+                  Chưa ghi nhận câu trả lời nào để rút ra điểm mạnh.
+                </p>
+              )}
+            </section>
+
+            <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
+              <div className="flex items-center justify-between gap-space-sm border-b border-surface-container-high pb-space-md">
+                <div className="flex items-center gap-space-sm">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-error-container text-on-error-container">
+                    <span className={`${ICON} text-[24px]`}>troubleshoot</span>
+                  </span>
+                  <div className="flex flex-col">
+                    <h2 className="text-ds-headline-sm font-bold text-on-surface">Cần cải thiện</h2>
+                    <span className="text-ds-label-sm text-error">
+                      {weakest.length > 0 ? `${weakest.length} câu cần xem lại` : 'Không có câu điểm thấp'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {weakest.length > 0 ? weakest.map(row => (
+                <InsightItem
+                  key={row.index}
+                  icon="report_problem"
+                  iconClass="text-error"
+                  title={`Câu ${row.index + 1}: ${clipText(row.question, 70)}`}
+                  body={row.feedback}
+                  meta={`${rowScore(row)}/100${row.durationSec != null ? ` • trả lời ${fmtDuration(row.durationSec)}` : ''}`}
+                />
+              )) : reportImprovements.length > 0 ? reportImprovements.map((line, i) => (
+                <InsightItem
+                  key={`improvement-${i}`}
+                  icon="report_problem"
+                  iconClass="text-error"
+                  title={`Cần cải thiện ${i + 1}`}
+                  body={line}
+                />
+              )) : (
+                <p className="m-0 rounded-lg bg-surface-container-low p-space-md text-ds-body-sm text-on-surface-variant">
+                  Chưa có câu trả lời nào dưới ngưỡng cần cải thiện.
+                </p>
+              )}
+            </section>
+
+            <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
+              <div className="flex items-center justify-between gap-space-sm border-b border-surface-container-high pb-space-md">
+                <div className="flex items-center gap-space-sm">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-fixed text-primary">
+                    <span className={`${ICON} text-[24px]`}>auto_awesome</span>
+                  </span>
+                  <div className="flex flex-col">
+                    <h2 className="text-ds-headline-sm font-bold text-on-surface">Gợi ý từ AI Mentor</h2>
+                    <span className="text-ds-label-sm text-primary">Dựa trên chính câu trả lời của bạn</span>
+                  </div>
+                </div>
+              </div>
+
+              {mentorTips.map(tip => (
+                <InsightItem
+                  key={tip.title}
+                  icon={tip.icon}
+                  iconClass="text-primary"
+                  title={tip.title}
+                  body={tip.body}
+                />
+              ))}
+
+              <Link to="/mock-interviews" className={adminButton('primary', 'mt-auto h-10 justify-center no-underline')}>
+                <span className={`${ICON} text-[18px]`}>replay</span>
+                Luyện phiên mới
+              </Link>
+            </section>
+          </div>
+
+          {/* 4. Accordion từng câu — transcript + nhận xét thật */}
+          <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
+            <div className="flex flex-col gap-space-sm border-b border-surface-container-high pb-space-md md:flex-row md:items-center md:justify-between">
+              <div>
+                <h2 className="text-ds-headline-sm font-bold text-on-surface">
+                  Chi tiết Đánh giá Từng câu hỏi ({rows.length}/{session.questionCount || rows.length} câu)
+                </h2>
+                <p className="text-ds-body-sm text-on-surface-variant">
+                  Nội dung bạn đã trả lời và nhận xét chấm từ chính transcript của phiên
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-space-sm">
+                {rows.length > 0 && (
+                  <span className="rounded-full bg-secondary-container px-space-md py-1 text-ds-label-md font-semibold text-on-secondary-container tabular-nums">
+                    Trung bình: {(avgScore / 10).toFixed(1)}/10
+                  </span>
+                )}
+                <button type="button" onClick={expandAll} className="rounded px-2 py-1 text-ds-label-md text-primary hover:underline">
+                  Mở rộng tất cả
+                </button>
+                <button type="button" onClick={collapseAll} className="rounded px-2 py-1 text-ds-label-md text-on-surface-variant hover:text-on-surface">
+                  Thu gọn
+                </button>
+              </div>
+            </div>
+
+            {rows.length === 0 ? (
+              <EmptyBlock
+                icon="help_outline"
+                title="Phiên chưa có câu trả lời nào"
+                description="Bắt đầu phiên mới và trả lời ít nhất một câu để hệ thống lưu transcript và nhận xét."
+              />
+            ) : (
+              <div className="flex flex-col gap-space-sm">
+                {rows.map(row => {
+                  const open = openIds.has(row.index);
+                  const score = rowScore(row);
+                  return (
+                    <div key={row.index} className={`rounded-lg ${SOFT}`}>
+                      <button
+                        type="button"
+                        onClick={() => toggle(row.index)}
+                        aria-expanded={open}
+                        className="flex w-full items-center justify-between gap-space-md rounded-lg px-space-lg py-space-md text-left transition-colors hover:bg-surface-container"
+                      >
+                        <span className="flex min-w-0 items-center gap-space-md pr-space-md">
+                          <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ds-label-lg font-bold ${
+                            score >= 70 ? 'bg-secondary-container text-on-secondary-container'
+                              : score >= 50 ? 'bg-primary-fixed text-primary'
+                                : 'bg-error-container text-on-error-container'
+                          }`}>
+                            {row.index + 1}
+                          </span>
+                          <span className="flex min-w-0 flex-col">
+                            <span className="break-words text-ds-headline-sm font-semibold text-on-surface">
+                              Câu {row.index + 1}: {row.question}
+                            </span>
+                            <span className="text-ds-body-sm text-on-surface-variant">
+                              {row.durationSec != null
+                                ? `Thời lượng: ${fmtDuration(row.durationSec)}`
+                                : 'Chưa ghi nhận thời lượng'}
+                            </span>
+                          </span>
+                        </span>
+                        <span className="flex shrink-0 items-center gap-space-md">
+                          <Pill tone={scoreTone(score)} icon="stars">{score}/100</Pill>
+                          <span className={`${ICON} text-outline transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
+                            expand_more
+                          </span>
+                        </span>
+                      </button>
+
+                      {open && (
+                        <div className="grid grid-cols-1 gap-space-md px-space-lg pb-space-lg lg:grid-cols-2">
+                          <div className="flex flex-col gap-1.5 rounded-lg bg-surface-container-lowest p-space-md shadow-sm">
+                            <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase text-outline">
+                              <span className={`${ICON} text-[16px]`}>transcribe</span>
+                              Nội dung câu trả lời
+                            </span>
+                            {row.answerText ? (
+                              <p className="m-0 whitespace-pre-wrap text-ds-body-sm italic leading-relaxed text-on-surface">
+                                “{row.answerText}”
+                              </p>
+                            ) : (
+                              <p className="m-0 text-ds-body-sm italic text-on-surface-variant">
+                                Không có bản ghi câu trả lời.
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex flex-col gap-1.5 rounded-lg bg-secondary-container/40 p-space-md">
+                            <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase text-on-secondary-container">
+                              <span className={`${ICON} text-[16px]`}>smart_toy</span>
+                              Nhận xét chuyên sâu từ AI
+                            </span>
+                            <p className="m-0 text-ds-body-sm leading-relaxed text-on-surface">
+                              {row.feedback}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </>
+      ) : (
+        <div className={`${CARD} flex flex-col items-center gap-space-md p-space-2xl text-center`}>
+          <span className={`${ICON} animate-pulse text-[34px] text-primary`}>insights</span>
+          <p className="m-0 text-ds-headline-sm font-bold text-on-surface">
+            Hệ thống đang tổng hợp báo cáo đánh giá
+          </p>
+          <p className="m-0 max-w-md text-ds-body-sm text-on-surface-variant">
+            Điểm 5 chiều và nhận xét từng câu được chấm tự động từ transcript phiên phỏng vấn.
+            Bạn không cần tự đánh giá.
+          </p>
+          <button type="button" onClick={() => void autoSubmit()} className={adminButton('soft', 'h-10')}>
+            <span className={`${ICON} text-[18px]`}>refresh</span>
+            Thử tải lại báo cáo
+          </button>
+        </div>
+      )}
+
+      {/* 5. Lịch sử phỏng vấn AI & quá trình tiến bộ */}
+      <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
+        <div className="flex flex-col gap-space-sm border-b border-surface-container-high pb-space-md md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-ds-headline-sm font-bold text-on-surface">
+              Lịch sử phỏng vấn AI &amp; Quá trình tiến bộ
+            </h2>
+            <p className="text-ds-body-sm text-on-surface-variant">
+              Theo dõi sự cải thiện điểm số qua các phiên luyện tập mô phỏng
+            </p>
+          </div>
+          <Link to="/mock-interviews/history" className="text-ds-label-md font-semibold text-primary no-underline hover:underline">
+            Xem tất cả
+          </Link>
+        </div>
+
+        {historyRows.length === 0 ? (
+          <EmptyBlock
+            icon="history"
+            title="Chưa có phiên luyện tập nào"
+            description="Các phiên đã hoàn thành sẽ xuất hiện ở đây để bạn so sánh tiến bộ."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className={adminTableClass}>
+              <thead>
+                <tr>
+                  <th className={adminThClass}>Ngày thực hiện</th>
+                  <th className={adminThClass}>Vị trí / Chủ đề</th>
+                  <th className={adminThClass}>Tiến trình</th>
+                  <th className={adminThClass}>Điểm tổng</th>
+                  <th className={adminThClass}>Đánh giá</th>
+                  <th className={adminThClass}>Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {historyRows.map(item => {
+                  const isCurrent = item.id === session.id;
+                  const itemScore = isCurrent && currentScore != null ? currentScore : item.overallScore;
+                  return (
+                    <tr key={item.id} className="transition-colors hover:bg-surface-container-low/60">
+                      <td className={adminTdClass}>
+                        <span className="flex flex-col">
+                          <span>{fmtServer(item.createdAt, 'date')}</span>
+                          <span className="text-ds-label-sm text-outline">{fmtServer(item.createdAt, 'time')}</span>
+                        </span>
+                      </td>
+                      <td className={adminTdClass}>
+                        <span className="flex flex-col">
+                          <span className="font-medium text-on-surface">{titleOfSession(item)}</span>
+                          <span className="text-ds-label-sm text-outline">{INTERVIEW_MODE_LABELS[item.mode]}</span>
+                        </span>
+                      </td>
+                      <td className={adminTdClass}>{progressOfSession(item)}</td>
+                      <td className={`${adminTdClass} font-semibold tabular-nums`}>
+                        {typeof itemScore === 'number' ? `${itemScore}/100` : '—'}
+                      </td>
+                      <td className={adminTdClass}>
+                        {item.status === 'COMPLETED' && typeof itemScore === 'number' ? (
+                          <Pill tone={scoreTone(itemScore)}>{scoreBand(itemScore)}</Pill>
+                        ) : item.status === 'COMPLETED' ? (
+                          <Pill tone="neutral">Đã hoàn thành</Pill>
+                        ) : (
+                          <Pill tone="info" icon="schedule">Đang làm</Pill>
+                        )}
+                      </td>
+                      <td className={adminTdClass}>
+                        <Link
+                          to={item.status === 'COMPLETED'
+                            ? `/mock-interviews/${item.id}/result`
+                            : `/mock-interviews/${item.id}`}
+                          className={adminButton('ghost', 'h-8 no-underline')}
+                        >
+                          <span className={`${ICON} text-[16px]`}>
+                            {item.status === 'COMPLETED' ? 'visibility' : 'play_arrow'}
+                          </span>
+                          {item.status === 'COMPLETED' ? 'Xem' : 'Tiếp tục'}
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+};
+
+const MockInterviewResultPage = () => {
+  const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const { result, loading, error, fetchResult } = useMockInterviewController();
+
+  // Trạng thái accordion (UI-only): mặc định mở câu đầu tiên khi có dữ liệu.
+  const [openIds, setOpenIds] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    if (user?.role === 'ROLE_USER' && id) fetchResult(Number(id));
+  }, [fetchResult, id, user]);
+
+  useEffect(() => {
+    if (result?.answers?.length) setOpenIds(new Set([result.answers[0].id]));
+  }, [result]);
+
+  const answers = useMemo(() => result?.answers ?? [], [result?.answers]);
+
+  const insights = useMemo(() => {
+    const scored = answers.filter((a): a is InterviewAnswer & { score: number } => typeof a.score === 'number');
+    const correct = answers.filter(a =>
+      a.correct === true || (a.correct == null && typeof a.score === 'number' && a.score >= 100));
+    const wrong = answers.filter(a =>
+      a.correct === false || (a.correct == null && typeof a.score === 'number' && a.score < 100));
+    return {
+      strengths: correct.slice(0, 3),
+      improvements: [...wrong].reverse().slice(0, 3),
+      avg: scored.length ? scored.reduce((sum, a) => sum + a.score, 0) / scored.length : null,
+    };
+  }, [answers]);
+
+  if (!user || user.role !== 'ROLE_USER') {
+    return (
+      <div className="p-10 text-ds-body-md text-on-surface-variant">
+        Vui lòng đăng nhập bằng tài khoản ứng viên.
+      </div>
+    );
+  }
+  if (loading && !result) {
+    return <div className={`${CARD} p-space-lg`}><LoadingBlock label="Đang tải báo cáo..." /></div>;
+  }
+  if (!result) {
+    return <div className={`${CARD} p-space-lg`}><ErrorBlock message={error || 'Chưa có kết quả.'} onRetry={() => id && fetchResult(Number(id))} /></div>;
+  }
+
+  const { session } = result;
+
+  // Phiên AVATAR (BE 012) có luồng báo cáo rubric riêng; MOCK/KNOWLEDGE giữ màn chấm điểm cũ.
+  if (session.mode === 'AVATAR') {
+    return <AvatarReportView sessionId={session.id} />;
+  }
+
+  const total = result.totalQuestions ?? session.questions?.length ?? answers.length;
+  const answeredCount = answers.length;
+  const correctCount = result.correctCount
+    ?? answers.filter(a => a.correct === true || (a.correct == null && typeof a.score === 'number' && a.score >= 100)).length;
+  const wrongCount = answers.filter(
+    a => a.correct === false || (a.correct == null && typeof a.score === 'number' && a.score < 100),
+  ).length;
+  const unansweredCount = Math.max(total - answeredCount, 0);
+  const accuracy = answeredCount ? Math.round((correctCount / answeredCount) * 100) : 0;
+  const overall = result.score ?? session.overallScore ?? 0;
+  const pctOfTotal = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
+  const roleLabel = session.mode === 'MOCK' ? (session.jobTitle || 'Phiên luyện tập') : (session.topic || 'Luyện tập kiến thức');
+  const totalSec = answers.reduce((sum, a) => sum + (a.durationSec ?? 0), 0);
+
+  const toggle = (qid: number) =>
+    setOpenIds(prev => {
+      const next = new Set(prev);
+      if (next.has(qid)) next.delete(qid); else next.add(qid);
+      return next;
+    });
+  const expandAll = () => setOpenIds(new Set(answers.map(a => a.id)));
+  const collapseAll = () => setOpenIds(new Set());
+
+  return (
+    <div className="flex flex-col gap-space-xl">
+      {/* 1. Đầu trang: breadcrumb + chip id + tiêu đề + meta thật + action */}
+      <div className="flex flex-col gap-space-lg lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0 flex-1">
+          <nav className="flex flex-wrap items-center gap-space-xs text-ds-label-md text-on-surface-variant">
+            <Link to="/dashboard" className="no-underline text-on-surface-variant hover:text-primary">Trang chủ</Link>
+            <span className={`${ICON} text-outline text-[14px]`}>chevron_right</span>
+            <Link to="/mock-interviews/history" className="no-underline text-on-surface-variant hover:text-primary">Lịch sử &amp; Đánh giá</Link>
+            <span className={`${ICON} text-outline text-[14px]`}>chevron_right</span>
+            <span className="flex items-center gap-1.5 font-semibold text-on-surface">
+              Báo cáo kết quả phiên phỏng vấn
+              <span className="rounded bg-surface-container-high px-space-xs py-0.5 text-ds-label-sm text-on-surface">
+                #PT-{session.id}
+              </span>
+            </span>
+          </nav>
+
+          <div className="flex flex-wrap items-center gap-space-md pt-space-xs">
+            <h1 className="text-ds-headline-xl font-bold tracking-tight text-on-surface">Báo cáo Đánh giá Phỏng vấn AI</h1>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary-container px-space-md py-1 text-ds-label-md text-on-secondary-container">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-secondary-teal" />
+              {session.status === 'COMPLETED' ? `Hoàn thành: ${fmtServer(session.completedAt ?? session.createdAt, 'datetime')}` : 'Phiên chưa kết thúc'}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-space-lg pt-1 text-ds-body-sm text-on-surface-variant">
+            <span className="flex items-center gap-space-xs">
+              <span className={`${ICON} text-[18px] text-primary`}>badge</span>
+              <span className="font-medium text-on-surface">Vị trí / Chủ đề:</span>
+              <span>{roleLabel}</span>
+            </span>
+            <span className="h-1 w-1 rounded-full bg-outline-variant" />
+            <span className="flex items-center gap-space-xs">
+              <span className={`${ICON} text-[18px] text-outline`}>timelapse</span>
+              <span className="font-medium text-on-surface">Thời lượng:</span>
+              <span>
+                {totalSec > 0 ? `${Math.round(totalSec / 60)} phút` : 'chưa ghi nhận'}
+                {` (Trả lời ${answeredCount}/${total} câu)`}
+              </span>
+            </span>
+            <span className="h-1 w-1 rounded-full bg-outline-variant" />
+            <span className="flex items-center gap-space-xs">
+              <span className={`${ICON} text-[18px] text-secondary-teal`}>task_alt</span>
+              <span className="font-medium text-on-surface">Số câu đúng:</span>
+              <span className="font-semibold text-on-surface tabular-nums">{correctCount}/{total}</span>
+            </span>
+            {session.companyName && (
+              <>
+                <span className="h-1 w-1 rounded-full bg-outline-variant" />
+                <span className="flex items-center gap-space-xs">
+                  <span className={`${ICON} text-[18px] text-outline`}>business</span>
+                  <span>{session.companyName}</span>
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-space-sm self-start lg:self-center">
+          <button type="button" onClick={() => window.print()} className={adminButton('ghost', 'h-10')}>
+            <span className={`${ICON} text-[18px] text-outline`}>download</span>
+            Xuất báo cáo PDF
+          </button>
+          <Link to="/mock-interviews" className={adminButton('primary', 'h-10 no-underline')}>
+            <span className={`${ICON} text-[18px]`}>add_circle</span>
+            Luyện phiên mới
+          </Link>
+        </div>
+      </div>
+
+      {/* 2. Điểm tổng hợp + thống kê trắc nghiệm thật từ API */}
+      <div className={`${CARD} relative flex flex-col gap-space-xl overflow-hidden p-space-lg xl:flex-row xl:items-stretch`}>
+        <span className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-primary-fixed/30 blur-3xl" />
+        <div className={`relative z-10 flex min-w-[280px] flex-col items-center justify-center gap-space-sm rounded-xl p-space-md text-center ${SOFT}`}>
+          <span className="text-ds-label-sm font-semibold uppercase tracking-wider text-primary">Điểm số tổng hợp</span>
+          <ScoreRing value={overall} caption={scoreBand(overall)} size={176} />
+          <Pill tone={scoreTone(overall)} icon="verified">Đúng {correctCount}/{total} câu</Pill>
+        </div>
+
+        <div className="relative z-10 flex flex-1 flex-col justify-between gap-space-lg">
+          <div>
+            <div className="mb-space-md flex flex-wrap items-center justify-between gap-2 border-b border-surface-container-high pb-space-sm">
+              <h2 className="text-ds-headline-sm font-bold text-on-surface">Kết quả trắc nghiệm</h2>
+              <span className="text-ds-label-sm uppercase tracking-wider text-outline">
+                {answeredCount}/{total} câu đã trả lời
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-space-md md:grid-cols-4">
+              <Stat icon="task_alt" label="Câu đúng" value={`${correctCount}`} tone="text-secondary-teal" />
+              <Stat icon="cancel" label="Câu sai" value={`${wrongCount}`} tone="text-error" />
+              <Stat icon="help" label="Chưa trả lời" value={`${unansweredCount}`} tone="text-outline-strong" />
+              <Stat icon="percent" label="Tỷ lệ đúng" value={`${accuracy}%`} tone="text-primary" />
+            </div>
+
+            <div className="mt-space-lg">
+              <div className="mb-1.5 flex items-center justify-between text-ds-label-sm text-on-surface-variant">
+                <span>Phân bố kết quả</span>
+                <span className="tabular-nums">{total} câu</span>
+              </div>
+              <div className="flex h-3 w-full overflow-hidden rounded-full bg-surface-container">
+                <div className="h-full bg-secondary-teal transition-all" style={{ width: `${pctOfTotal(correctCount)}%` }} title={`Đúng ${correctCount}`} />
+                <div className="h-full bg-error transition-all" style={{ width: `${pctOfTotal(wrongCount)}%` }} title={`Sai ${wrongCount}`} />
+                <div className="h-full bg-surface-container-high transition-all" style={{ width: `${pctOfTotal(unansweredCount)}%` }} title={`Chưa trả lời ${unansweredCount}`} />
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-space-md text-ds-label-sm text-on-surface-variant">
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-secondary-teal" /> Đúng {correctCount}</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-error" /> Sai {wrongCount}</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-surface-container-high" /> Chưa trả lời {unansweredCount}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-space-md pt-space-sm text-ds-body-sm text-on-surface-variant">
+            <span className="flex items-center gap-1.5">
+              <span className={`${ICON} text-[16px] text-primary`}>info</span>
+              Điểm tổng: {overall}/100 • Thời gian làm bài: {totalSec > 0 ? fmtDuration(totalSec) : 'chưa ghi nhận'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Câu đúng / Câu sai / Tổng kết */}
+      <div className="grid grid-cols-1 gap-space-lg lg:grid-cols-3">
+        <div className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
+          <div className="flex items-center gap-space-sm">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary-container text-on-secondary-container">
+              <span className={`${ICON} text-[24px]`}>task_alt</span>
+            </span>
+            <div className="flex flex-col">
+              <h3 className="text-ds-headline-sm font-bold text-on-surface">Câu trả lời đúng</h3>
+              <span className="text-ds-label-sm text-secondary-teal">
+                {correctCount} câu chọn đúng đáp án
+              </span>
+            </div>
+          </div>
+          {insights.strengths.length === 0 ? (
+            <p className="m-0 rounded-lg bg-surface-container-low p-space-md text-ds-body-sm text-on-surface-variant">
+              Chưa có câu trả lời đúng trong phiên này.
+            </p>
+          ) : insights.strengths.map(a => (
+            <InsightItem
+              key={a.id}
+              icon="check_circle"
+              iconClass="text-secondary-teal"
+              title={`Câu ${a.questionIndex + 1}: ${a.question}`}
+              body={a.feedback ?? 'Chọn đúng đáp án.'}
+              meta={`${a.score ?? 100}/100${a.durationSec != null ? ` • trả lời ${fmtDuration(a.durationSec)}` : ''}`}
+            />
+          ))}
+        </div>
+
+        <div className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
+          <div className="flex items-center gap-space-sm">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-error-container text-on-error-container">
+              <span className={`${ICON} text-[24px]`}>cancel</span>
+            </span>
+            <div className="flex flex-col">
+              <h3 className="text-ds-headline-sm font-bold text-on-surface">Câu trả lời sai</h3>
+              <span className="text-ds-label-sm text-error">{wrongCount} câu cần xem lại</span>
+            </div>
+          </div>
+          {insights.improvements.length === 0 ? (
+            <p className="m-0 rounded-lg bg-surface-container-low p-space-md text-ds-body-sm text-on-surface-variant">
+              Không có câu trả lời sai trong phiên này.
+            </p>
+          ) : insights.improvements.map(a => (
+            <InsightItem
+              key={a.id}
+              icon="report_problem"
+              iconClass="text-error"
+              title={`Câu ${a.questionIndex + 1}: ${a.question}`}
+              body={a.feedback ?? (a.correctAnswer ? `Đáp án đúng: ${a.correctAnswer}` : 'Chưa có nhận xét kèm theo câu này.')}
+              meta={`${a.score ?? 0}/100${a.durationSec != null ? ` • trả lời ${fmtDuration(a.durationSec)}` : ''}`}
+            />
+          ))}
+        </div>
+
+        <div className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
+          <div className="flex items-center gap-space-sm">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-fixed text-primary">
+              <span className={`${ICON} text-[24px]`}>summarize</span>
+            </span>
+            <div className="flex flex-col">
+              <h3 className="text-ds-headline-sm font-bold text-on-surface">Tổng kết phiên</h3>
+              <span className="text-ds-label-sm text-primary">Số liệu thật từ bài làm</span>
+            </div>
+          </div>
+          <InsightItem
+            icon="percent"
+            iconClass="text-primary"
+            title={`Tỷ lệ trả lời đúng: ${accuracy}%`}
+            body={`Bạn chọn đúng ${correctCount}/${answeredCount} câu đã trả lời, trên tổng ${total} câu của phiên.`}
+          />
+          <InsightItem
+            icon="pending_actions"
+            iconClass="text-outline-strong"
+            title={`Còn ${unansweredCount} câu chưa trả lời`}
+            body={unansweredCount === 0
+              ? 'Bạn đã hoàn thành toàn bộ câu hỏi của phiên.'
+              : 'Các câu bỏ trống không được tính đúng; hãy luyện lại để hoàn thành đủ bộ câu hỏi.'}
+          />
+          <InsightItem
+            icon="lightbulb"
+            iconClass="text-primary"
+            title={accuracy >= 80 ? 'Bạn đang nắm rất tốt' : 'Ưu tiên ôn lại câu sai'}
+            body={accuracy >= 80
+              ? 'Tiếp tục luyện với chủ đề khó hơn để duy trì phong độ.'
+              : 'Mở chi tiết từng câu bên dưới để xem đáp án đúng và ghi chú lại kiến thức còn thiếu.'}
+          />
+          <Link to="/mock-interviews" className={adminButton('primary', 'mt-auto h-10 justify-center no-underline')}>
+            <span className={`${ICON} text-[18px]`}>replay</span>
+            Luyện phiên mới
+          </Link>
+        </div>
+      </div>
+
+      {/* 4. Accordion từng câu hỏi (dữ liệu thật) */}
+      <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
+        <div className="flex flex-col gap-space-sm border-b border-surface-container-high pb-space-md md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-ds-headline-sm font-bold text-on-surface">
+              Chi tiết từng câu hỏi ({answeredCount}/{total} câu)
+            </h2>
+            <p className="text-ds-body-sm text-on-surface-variant">
+              Đáp án bạn đã chọn, đáp án đúng và nhận xét chấm điểm của hệ thống
+            </p>
+          </div>
+          <div className="flex items-center gap-space-sm">
+            {insights.avg != null && (
+              <span className="rounded-full bg-secondary-container px-space-md py-1 text-ds-label-md font-semibold text-on-secondary-container tabular-nums">
+                Trung bình: {(insights.avg / 10).toFixed(1)}/10
+              </span>
+            )}
+            <button type="button" onClick={expandAll} className="rounded px-2 py-1 text-ds-label-md text-primary hover:underline">
+              Mở rộng tất cả
+            </button>
+            <button type="button" onClick={collapseAll} className="rounded px-2 py-1 text-ds-label-md text-on-surface-variant hover:text-on-surface">
+              Thu gọn
+            </button>
+          </div>
+        </div>
+
+        {answers.length === 0 ? (
+          <EmptyBlock icon="help_outline" title="Phiên chưa có câu hỏi nào" description="Bắt đầu một phiên luyện tập để hệ thống lưu câu hỏi và điểm từng câu." />
+        ) : (
+          <div className="flex flex-col gap-space-sm">
+            {answers.map(a => {
+              const open = openIds.has(a.id);
+              const options = a.options ?? [];
+              const hasOptions = options.length > 0;
+              const isCorrect = a.correct === true
+                || (a.correct == null && typeof a.score === 'number' && a.score >= 100);
+              const isWrong = a.correct === false
+                || (a.correct == null && typeof a.score === 'number' && a.score < 100);
+              return (
+                <div key={a.id} className={`rounded-lg ${SOFT}`}>
+                  <button
+                    type="button"
+                    onClick={() => toggle(a.id)}
+                    aria-expanded={open}
+                    className="flex w-full items-center justify-between gap-space-md rounded-lg px-space-lg py-space-md text-left transition-colors hover:bg-surface-container"
+                  >
+                    <span className="flex min-w-0 items-center gap-space-md pr-space-md">
+                      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ds-label-lg font-bold ${
+                        isCorrect ? 'bg-secondary-container text-on-secondary-container'
+                          : isWrong ? 'bg-error-container text-on-error-container'
+                            : 'bg-primary-fixed text-primary'
+                      }`}>
+                        {a.questionIndex + 1}
+                      </span>
+                      <span className="flex min-w-0 flex-col">
+                        <span className="break-words text-ds-headline-sm font-semibold text-on-surface">{a.question}</span>
+                        <span className="text-ds-body-sm text-on-surface-variant">
+                          {a.durationSec != null ? `Thời lượng trả lời: ${fmtDuration(a.durationSec)}` : 'Chưa ghi nhận thời lượng'}
+                        </span>
+                      </span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-space-md">
+                      {isCorrect ? (
+                        <Pill tone="success" icon="check_circle">{a.score ?? 100}/100</Pill>
+                      ) : isWrong ? (
+                        <Pill tone="danger" icon="cancel">{a.score ?? 0}/100</Pill>
+                      ) : typeof a.score === 'number' ? (
+                        <Pill tone={scoreTone(a.score)}>{a.score}/100</Pill>
+                      ) : (
+                        <span className="text-ds-label-md text-outline">Chưa chấm</span>
+                      )}
+                      <span className={`${ICON} text-outline transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>expand_more</span>
+                    </span>
+                  </button>
+
+                  {open && (
+                    <div className="grid grid-cols-1 gap-space-md px-space-lg pb-space-lg lg:grid-cols-2">
+                      {hasOptions ? (
+                        <div className="flex flex-col gap-2 rounded-lg bg-surface-container-lowest p-space-md shadow-sm lg:col-span-2">
+                          <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase tracking-wide text-outline">
+                            <span className={`${ICON} text-[16px]`}>checklist</span>
+                            Các lựa chọn của câu hỏi
+                          </span>
+                          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+                            {options.map((opt, i) => {
+                              const correctOpt = isCorrectOption(a, opt, i);
+                              const chosenOpt = isChosenOption(a, opt, i);
+                              return (
+                                <li
+                                  key={`${a.id}-${i}`}
+                                  className={`flex flex-wrap items-start gap-2 rounded-lg border px-3 py-2 text-ds-body-sm ${
+                                    correctOpt
+                                      ? 'border-secondary-teal bg-secondary-container/40'
+                                      : chosenOpt
+                                        ? 'border-error bg-error-container/40'
+                                        : 'border-outline-variant bg-surface-container-lowest'
+                                  }`}
+                                >
+                                  <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-ds-label-sm font-bold ${
+                                    correctOpt ? 'bg-secondary-teal text-white'
+                                      : chosenOpt ? 'bg-error text-white'
+                                        : 'bg-surface-container-high text-on-surface-variant'
+                                  }`}>
+                                    {OPTION_LETTER(i)}
+                                  </span>
+                                  <span className={`min-w-0 flex-1 break-words ${
+                                    correctOpt || chosenOpt ? 'font-medium text-on-surface' : 'text-on-surface-variant'
+                                  }`}>
+                                    {opt}
+                                  </span>
+                                  {correctOpt && chosenOpt && <Pill tone="success" icon="check_circle">Bạn chọn · Đúng</Pill>}
+                                  {correctOpt && !chosenOpt && <Pill tone="success" icon="check_circle">Đáp án đúng</Pill>}
+                                  {chosenOpt && !correctOpt && <Pill tone="danger" icon="cancel">Bạn chọn</Pill>}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                          {a.answerText && a.selectedOptionIndex == null && (
+                            <p className="m-0 text-ds-body-sm text-on-surface-variant">
+                              Bạn chọn: <span className="font-semibold text-on-surface">{a.answerText}</span>
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col gap-1.5 rounded-lg bg-surface-container-lowest p-space-md shadow-sm">
+                          <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase text-outline">
+                            <span className={`${ICON} text-[16px]`}>transcribe</span>
+                            Nội dung câu trả lời
+                          </span>
+                          {a.answerText ? (
+                            <p className="m-0 whitespace-pre-wrap text-ds-body-sm italic leading-relaxed text-on-surface">
+                              {a.answerText}
+                            </p>
+                          ) : (
+                            <p className="m-0 text-ds-body-sm italic text-on-surface-variant">Không có bản ghi câu trả lời.</p>
+                          )}
+                        </div>
+                      )}
+                      <div className={`flex flex-col gap-1.5 rounded-lg p-space-md ${
+                        isCorrect ? 'bg-secondary-container/40' : isWrong ? 'bg-error-container/30' : 'bg-secondary-container/40'
+                      } ${hasOptions ? 'lg:col-span-2' : ''}`}>
+                        <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase text-on-secondary-container">
+                          <span className={`${ICON} text-[16px]`}>psychology</span>
+                          Nhận xét kèm theo
+                        </span>
+                        <p className="m-0 text-ds-body-sm leading-relaxed text-on-surface">
+                          {a.feedback ?? 'Câu này chưa có nhận xét.'}
+                        </p>
+                        {a.correctAnswer && (
+                          <p className="m-0 mt-1 text-ds-label-sm text-on-surface-variant">
+                            Đáp án đúng: <span className="font-semibold text-on-surface">{a.correctAnswer}</span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <div className={`flex flex-wrap items-center justify-between gap-space-md rounded-xl p-space-lg ${SOFT}`}>
+        <span className="flex items-center gap-space-sm">
+          <span className={`${ICON} text-[20px] text-primary`}>history</span>
+          <span className="text-ds-body-sm text-on-surface-variant">So sánh phiên này với các phiên trước.</span>
+        </span>
+        <Link to="/mock-interviews/history" className={adminButton('ghost', 'h-10 no-underline')}>
+          Xem lịch sử luyện tập
+          <span className={`${ICON} text-[18px]`}>arrow_forward</span>
+        </Link>
+      </div>
+    </div>
+  );
 };
 
 export default MockInterviewResultPage;

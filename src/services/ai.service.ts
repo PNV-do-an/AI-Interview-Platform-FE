@@ -17,6 +17,7 @@
 import axios from 'axios';
 
 const AI_SERVICE_URL_KEY = 'ai_service_url';
+const AI_SERVICE_BUILD_KEY = 'ai_service_url_build';
 const BUILD_AI_SERVICE_URL = (process.env.REACT_APP_AI_SERVICE_URL || '').trim();
 const aiHttp = axios.create();
 
@@ -34,9 +35,31 @@ const normalizeServiceUrl = (value: string): string => {
   return url.toString().replace(/\/+$/, '');
 };
 
+/**
+ * URL của bản build mới nhất thắng URL lưu tay từ bản build cũ. URL lưu tay chỉ được ưu tiên
+ * khi nó được lưu trên đúng bản build hiện tại — nhờ vậy đặt `REACT_APP_AI_SERVICE_URL` trên
+ * Vercel là có hiệu lực ngay sau deploy, không bị localStorage cũ che mất.
+ */
 const serviceUrl = (): string => {
-  const saved = window.localStorage.getItem(AI_SERVICE_URL_KEY);
-  return (saved ?? BUILD_AI_SERVICE_URL).trim().replace(/\/+$/, '');
+  let saved = '';
+  let savedBuild = '';
+  try {
+    saved = (window.localStorage.getItem(AI_SERVICE_URL_KEY) ?? '').trim();
+    savedBuild = (window.localStorage.getItem(AI_SERVICE_BUILD_KEY) ?? '').trim();
+  } catch {
+    // Chế độ riêng tư chặn localStorage: vẫn dùng được URL build.
+  }
+  if (BUILD_AI_SERVICE_URL) {
+    if (saved && savedBuild === BUILD_AI_SERVICE_URL) return saved.replace(/\/+$/, '');
+    try {
+      if (saved) window.localStorage.removeItem(AI_SERVICE_URL_KEY);
+      window.localStorage.setItem(AI_SERVICE_BUILD_KEY, BUILD_AI_SERVICE_URL);
+    } catch {
+      // bỏ qua
+    }
+    return BUILD_AI_SERVICE_URL.replace(/\/+$/, '');
+  }
+  return saved.replace(/\/+$/, '');
 };
 
 const serviceEndpoint = (path: string, baseUrl = serviceUrl()): string => {
@@ -90,17 +113,43 @@ export interface AiAnswer {
 }
 
 const AIService = {
-  /** URL runtime lưu trên trình duyệt được ưu tiên hơn cấu hình lúc build. */
+  /** URL runtime lưu trên trình duyệt được ưu tiên trong cùng một bản build. */
   getServiceUrl: serviceUrl,
+
+  /** URL cấu hình sẵn lúc build (Vercel env); rỗng khi chưa đặt. */
+  getBuildServiceUrl: (): string => BUILD_AI_SERVICE_URL.replace(/\/+$/, ''),
+
+  /** Đang dùng URL build hay URL lưu tay — UI hiển thị đúng nguồn cấu hình. */
+  isUsingBuildUrl: (): boolean =>
+    BUILD_AI_SERVICE_URL !== '' && serviceUrl() === BUILD_AI_SERVICE_URL.replace(/\/+$/, ''),
+
+  /** Bỏ URL lưu tay để quay về URL của bản build. */
+  resetToBuildUrl: (): string => {
+    try {
+      window.localStorage.removeItem(AI_SERVICE_URL_KEY);
+    } catch {
+      // bỏ qua
+    }
+    return serviceUrl();
+  },
 
   setServiceUrl: (value: string): string => {
     const trimmed = value.trim();
     if (!trimmed) {
-      window.localStorage.removeItem(AI_SERVICE_URL_KEY);
+      try {
+        window.localStorage.removeItem(AI_SERVICE_URL_KEY);
+      } catch {
+        // bỏ qua
+      }
       return serviceUrl();
     }
     const normalized = normalizeServiceUrl(trimmed);
-    window.localStorage.setItem(AI_SERVICE_URL_KEY, normalized);
+    try {
+      window.localStorage.setItem(AI_SERVICE_URL_KEY, normalized);
+      window.localStorage.setItem(AI_SERVICE_BUILD_KEY, BUILD_AI_SERVICE_URL);
+    } catch {
+      // Chế độ riêng tư: URL vẫn dùng được trong phiên hiện tại.
+    }
     return normalized;
   },
 
@@ -133,7 +182,9 @@ const AIService = {
       { baseURL: '', signal },
     )).data,
 
-  createSession: async (input: { jobTitle: string; jdText: string; avatarSessionId: string }) =>
+  createSession: async (input: {
+    jobTitle: string; jdText: string; avatarSessionId: string; questionCount?: number;
+  }) =>
     (await aiHttp.post<AiSession>(serviceEndpoint('/api/v1/ai/session'), input,
       { baseURL: '' })).data,
 

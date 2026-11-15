@@ -19,6 +19,55 @@ const PROJECT_HINTS = [
 const REASONING_HINTS = [
   'vì', 'do đó', 'nguyên nhân', 'giải pháp', 'phân tích', 'đánh đổi', 'trade-off', 'kết quả',
 ];
+const FILLER_HINTS = ['ừm', 'ờ', 'kiểu như', 'thì là', 'à thì'];
+
+/** Nhận xét tất định cho một câu, chỉ dựa trên chính nội dung ứng viên đã trả lời. */
+export const evaluateAnswerText = (
+  answerText: string | undefined,
+  durationSec?: number,
+): { score: number; feedback: string } => {
+  const text = (answerText ?? '').trim();
+  const words = wordCount(text);
+  if (!text) {
+    return {
+      score: 0,
+      feedback: 'Chưa có bản ghi câu trả lời nên chưa thể nhận xét nội dung câu này.',
+    };
+  }
+
+  const lower = text.toLowerCase();
+  const hasProject = hasAny(lower, PROJECT_HINTS);
+  const hasReasoning = hasAny(lower, REASONING_HINTS);
+  const hasNumbers = /\d/.test(text);
+  const fillers = FILLER_HINTS.reduce((sum, hint) => sum + (lower.split(hint).length - 1), 0);
+  const score = clampScore(
+    35 + (Math.min(words, 120) / 120) * 45
+      + (hasProject ? 8 : 0) + (hasReasoning ? 6 : 0) + (hasNumbers ? 6 : 0)
+      - fillers * 3,
+  );
+
+  const excerpt = text.length > 150 ? `${text.slice(0, 147)}...` : text;
+  const parts = [
+    `Bạn đã trả lời ${words} từ${durationSec ? ` trong khoảng ${durationSec} giây` : ''}: "${excerpt}".`,
+  ];
+  if (hasProject) parts.push('Câu trả lời có dẫn chứng từ dự án/hệ thống thực tế.');
+  if (hasReasoning) parts.push('Có nêu nguyên nhân, giải pháp hoặc đánh đổi khi trình bày.');
+  if (hasNumbers) parts.push('Có số liệu/kết quả cụ thể để tăng độ tin cậy.');
+
+  if (words < 25) {
+    parts.push('Gợi ý: mở rộng theo STAR — bối cảnh, việc bạn làm, hành động cụ thể và kết quả đo được.');
+  } else if (!hasProject) {
+    parts.push('Gợi ý: thêm một ví dụ dự án thật, vai trò của bạn và kết quả đạt được.');
+  } else if (!hasNumbers) {
+    parts.push('Gợi ý: bổ sung con số cụ thể (thời gian, quy mô dữ liệu, mức cải thiện) để câu trả lời thuyết phục hơn.');
+  } else if (fillers > 0) {
+    parts.push('Gợi ý: giảm từ đệm và nói thẳng vào ý chính để giữ nhịp trình bày.');
+  } else {
+    parts.push('Gợi ý: giữ cấu trúc này và bổ sung đánh đổi để thể hiện chiều sâu hơn.');
+  }
+
+  return { score, feedback: parts.join(' ') };
+};
 
 /**
  * Chấm rubric dự phòng khi AI service không sẵn sàng (phòng chạy text mode hoặc mất kênh
@@ -101,5 +150,9 @@ export const buildFallbackEvaluation = (
     rubricVersion: AVATAR_RUBRIC_VERSION,
     strengths: strengths.join('\n'),
     improvements: improvements.join('\n'),
+    answers: answers.map(t => ({
+      index: t.index,
+      ...evaluateAnswerText(t.answerText, t.durationSec),
+    })),
   };
 };

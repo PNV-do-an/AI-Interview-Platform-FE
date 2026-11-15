@@ -85,8 +85,10 @@ export const useLiveTalkingController = () => {
   useEffect(() => teardown, [teardown]);
 
   /** Mở phiên hội thoại với AI service rồi bật polling trạng thái "avatar đang nói". */
-  const startLive = useCallback(async (jobTitle: string, jdText: string, avatarSessionId: string) => {
-    const session = await AIService.createSession({ jobTitle, jdText, avatarSessionId });
+  const startLive = useCallback(async (
+    jobTitle: string, jdText: string, avatarSessionId: string, questionCount?: number,
+  ) => {
+    const session = await AIService.createSession({ jobTitle, jdText, avatarSessionId, questionCount });
     sessionIdRef.current = session.sessionid;
     setAiSessionId(session.sessionid);
     setLink('live');
@@ -187,7 +189,7 @@ export const useLiveTalkingController = () => {
   }, [failMedia]);
 
   /** Bắt buộc phải xong trước khi mở phiên: báo rõ avatar sống hay chết để UI còn fallback. */
-  const connect = useCallback(async (jobTitle: string, jdText: string) => {
+  const connect = useCallback(async (jobTitle: string, jdText: string, questionCount?: number) => {
     if (pcRef.current || hlsRef.current) return;
     if (!AIService.isConfigured()) {
       setLink('unavailable');
@@ -207,7 +209,7 @@ export const useLiveTalkingController = () => {
         // nên browser không cần bắt tay /offer, chỉ kéo HLS.
         setMediaSource('hls');
         attachHls(mediaUrl);
-        await startLive(jobTitle, jdText, '0');
+        await startLive(jobTitle, jdText, '0', questionCount);
         return;
       }
 
@@ -247,7 +249,7 @@ export const useLiveTalkingController = () => {
         PEER_CONNECT_TIMEOUT_MS, 'Không thiết lập được kênh video với avatar',
       );
 
-      await startLive(jobTitle, jdText, answer.avatarSessionId);
+      await startLive(jobTitle, jdText, answer.avatarSessionId, questionCount);
     } catch (e) {
       teardown();
       setLink('unavailable');
