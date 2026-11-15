@@ -33,6 +33,8 @@ import MockInterviewSessionPage from './views/pages/MockInterviewSessionPage';
 import MockInterviewResultPage from './views/pages/MockInterviewResultPage';
 import CvAnalyzerPage from './views/pages/CvAnalyzerPage';
 import CoverLettersPage from './views/pages/CoverLettersPage';
+import StudyProgramsPage from './views/pages/StudyProgramsPage';
+import StudyProgramDetailPage from './views/pages/StudyProgramDetailPage';
 import PackagesPage from './views/pages/PackagesPage';
 import MyOrdersPage from './views/pages/MyOrdersPage';
 import PackageManagementPage from './views/pages/PackageManagementPage';
@@ -127,6 +129,8 @@ const App: React.FC = () => {
                 <Route path="/mock-interviews/:id" element={<MockInterviewSessionPage />} />
                 <Route path="/mock-interviews/:id/result" element={<MockInterviewResultPage />} />
                 <Route path="/cv-analyzer" element={<CvAnalyzerPage />} />
+                <Route path="/study" element={<StudyProgramsPage />} />
+                <Route path="/study/:id" element={<StudyProgramDetailPage />} />
                 <Route path="/cover-letters" element={<CoverLettersPage />} />
                 <Route path="/device-check" element={<DeviceCheckPage />} />
               </Route>

@@ -18,8 +18,8 @@ const textareaClass = inputClass.replace('h-9', 'py-2');
 const CoverLettersPage = () => {
   const { user } = useAuth();
   const {
-    cvs, letters, current, loading, error, successMsg,
-    generateLetter, fetchMyCvs, fetchMyLetters, updateLetter, deleteLetter, clearMessages,
+    cv, letters, current, loading, error, successMsg,
+    generateLetter, fetchMyCv, fetchMyLetters, updateLetter, deleteLetter, clearMessages,
   } = useCvController();
   const { jobs, fetchJobs } = useJobController();
 
@@ -39,11 +39,15 @@ const CoverLettersPage = () => {
 
   useEffect(() => {
     if (user?.role === 'ROLE_USER') {
-      fetchMyCvs();
+      fetchMyCv();
       fetchMyLetters();
       fetchJobs(0, '');
     }
   }, [user]);
+
+  useEffect(() => {
+    if (cv?.cvId && cvId === '') setCvId(cv.cvId);
+  }, [cv?.cvId]);
 
   useEffect(() => {
     if (current) setContent(current.content);
@@ -135,11 +139,11 @@ const CoverLettersPage = () => {
                 <label className={labelClass}>CV làm cơ sở (khuyến nghị)</label>
                 <select className={inputClass} value={cvId} onChange={(e) => setCvId(e.target.value ? Number(e.target.value) : '')}>
                   <option value="">— Không dùng CV —</option>
-                  {cvs.map((cv) => (
-                    <option key={cv.id} value={cv.id}>{cv.fileName} ({cv.cvScore}/100)</option>
-                  ))}
+                  {cv?.cvId != null && (
+                    <option value={cv.cvId}>{cv.fileName || 'CV đã phân tích'}</option>
+                  )}
                 </select>
-                {cvs.length === 0 && (
+                {cv?.cvId == null && (
                   <p className="mt-1 text-body-sm text-ink-variant">
                     Bạn chưa có CV nào — <Link to="/cv-analyzer" className="text-primary no-underline hover:underline">phân tích CV</Link> trước.
                   </p>
