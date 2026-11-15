@@ -78,6 +78,8 @@ const MockInterviewStartPage: React.FC = () => {
   const [jobId, setJobId] = useState<number | ''>('');
   const [questionCount, setQuestionCount] = useState(10);
   const [submitting, setSubmitting] = useState(false);
+  // AVATAR: ứng viên chọn ngữ cảnh theo JD hoặc theo chủ đề kỹ thuật
+  const [avatarContextMode, setAvatarContextMode] = useState<'job' | 'topic'>('topic');
 
   // load recent sessions + job list once
   useEffect(() => {
@@ -88,12 +90,21 @@ const MockInterviewStartPage: React.FC = () => {
   const handleStart = async () => {
     if (submitting) return;
     setSubmitting(true);
-    const body =
-      mode === 'MOCK'
-        ? { mode, jobId: Number(jobId) || undefined, questionCount }
-        : mode === 'KNOWLEDGE'
-        ? { mode, topic, questionCount }
-        : { mode }; // AVATAR — số câu do hội thoại quyết định
+
+    let body: Parameters<typeof startSession>[0];
+    if (mode === 'MOCK') {
+      body = { mode, jobId: Number(jobId) || undefined, questionCount };
+    } else if (mode === 'KNOWLEDGE') {
+      body = { mode, topic, questionCount };
+    } else {
+      // AVATAR — truyền jobId hoặc topic tuỳ chọn của ứng viên
+      if (avatarContextMode === 'job' && jobId) {
+        body = { mode, jobId: Number(jobId) };
+      } else {
+        body = { mode, topic };
+      }
+    }
+
     const session = await startSession(body);
     if (session) {
       navigate(`/mock-interviews/${session.id}`);
@@ -226,8 +237,75 @@ const MockInterviewStartPage: React.FC = () => {
           )}
 
           {mode === 'AVATAR' && (
-            <div className="flex flex-col gap-space-sm rounded-xl bg-surface-container-low p-space-md">
-              <div className="flex items-start gap-space-sm">
+            <div className="flex flex-col gap-space-md">
+              {/* Chọn ngữ cảnh phỏng vấn cho AVATAR */}
+              <div className="flex flex-col gap-space-sm">
+                <span className="text-ds-label-md font-semibold text-on-surface">Chọn vị trí phỏng vấn</span>
+                <div className="flex flex-col sm:flex-row gap-space-sm">
+                  <label className={`flex flex-1 items-center gap-space-sm rounded-xl border p-space-md cursor-pointer transition-all ${avatarContextMode === 'job' ? 'border-primary bg-primary/5' : 'border-outline-variant/50 hover:bg-surface-container'}`}>
+                    <input
+                      type="radio"
+                      name="avatarContext"
+                      value="job"
+                      checked={avatarContextMode === 'job'}
+                      onChange={() => setAvatarContextMode('job')}
+                      className="accent-primary"
+                    />
+                    <span className="material-symbols-outlined text-[20px] text-primary">work_outline</span>
+                    <span className="text-ds-label-lg font-semibold text-on-surface">Theo tin tuyển dụng</span>
+                  </label>
+                  <label className={`flex flex-1 items-center gap-space-sm rounded-xl border p-space-md cursor-pointer transition-all ${avatarContextMode === 'topic' ? 'border-primary bg-primary/5' : 'border-outline-variant/50 hover:bg-surface-container'}`}>
+                    <input
+                      type="radio"
+                      name="avatarContext"
+                      value="topic"
+                      checked={avatarContextMode === 'topic'}
+                      onChange={() => setAvatarContextMode('topic')}
+                      className="accent-primary"
+                    />
+                    <span className="material-symbols-outlined text-[20px] text-secondary-teal">psychology</span>
+                    <span className="text-ds-label-lg font-semibold text-on-surface">Theo chủ đề kỹ thuật</span>
+                  </label>
+                </div>
+
+                {avatarContextMode === 'job' && (
+                  <select
+                    value={jobId}
+                    onChange={(e) => setJobId(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="h-10 w-full max-w-sm rounded-lg border border-outline-variant/50 bg-surface-container-low px-space-md text-ds-body-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="">-- Chọn tin tuyển dụng --</option>
+                    {jobs?.content?.map((j) => (
+                      <option key={j.id} value={j.id}>
+                        {j.title} – {j.companyName ?? 'Chưa có công ty'}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {avatarContextMode === 'topic' && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-space-sm">
+                    {KNOWLEDGE_TOPICS.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setTopic(t)}
+                        className={`flex items-center gap-space-sm rounded-lg border px-space-md py-space-sm text-ds-body-sm text-left transition-all ${
+                          topic === t
+                            ? 'border-primary bg-primary/5 font-semibold text-primary'
+                            : 'border-outline-variant/40 text-on-surface hover:bg-surface-container'
+                        }`}
+                      >
+                        {topic === t && <span className="material-symbols-outlined text-[16px] text-primary shrink-0">check_circle</span>}
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Yêu cầu thiết bị */}
+              <div className="flex items-start gap-space-sm rounded-xl bg-surface-container-low p-space-md">
                 <span className="material-symbols-outlined text-tertiary text-[20px] mt-0.5 shrink-0">info</span>
                 <div className="text-ds-body-sm text-on-surface-variant leading-relaxed">
                   <p className="font-semibold text-on-surface mb-1">Yêu cầu thiết bị cho Video Call AI</p>
@@ -274,18 +352,25 @@ const MockInterviewStartPage: React.FC = () => {
         )}
 
         {/* CTA */}
-        <div className="flex items-center justify-between pt-space-sm border-t border-outline-variant/20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-md pt-space-sm border-t border-outline-variant/20">
           <p className="text-ds-body-sm text-on-surface-variant">
             Mỗi phiên luyện tập được lưu và có thể xem lại tại{' '}
             <Link to="/mock-interviews/history" className="text-primary no-underline hover:underline">
               Lịch sử & Báo cáo
             </Link>.
           </p>
+          {/* Cảnh báo khi AVATAR chọn "theo JD" nhưng chưa chọn tin */}
+          {mode === 'AVATAR' && avatarContextMode === 'job' && !jobId && (
+            <p className="text-ds-body-sm text-error flex items-center gap-space-xs sm:mr-space-md">
+              <span className="material-symbols-outlined text-[16px]">warning</span>
+              Vui lòng chọn tin tuyển dụng
+            </p>
+          )}
           <button
             type="button"
             onClick={handleStart}
-            disabled={submitting || (mode === 'MOCK' && false /* jobId optional */)}
-            className={`${buttonClass('primary')} inline-flex items-center gap-space-sm min-w-[180px] justify-center`}
+            disabled={submitting || (mode === 'AVATAR' && avatarContextMode === 'job' && !jobId)}
+            className={`${buttonClass('primary')} inline-flex items-center gap-space-sm min-w-[180px] justify-center disabled:opacity-50`}
           >
             {submitting ? (
               <>

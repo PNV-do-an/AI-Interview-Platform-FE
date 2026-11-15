@@ -298,7 +298,12 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
     if (interviewMode !== 'avatar' || !session || session.status === 'COMPLETED' || rtc.link !== 'off') return;
     void (async () => {
       briefRef.current = await fetchJobBrief(session.jobId);
-      await rtc.connect(session.jobTitle ?? '', briefRef.current.jdText);
+      // Nếu không có JD, dùng topic làm jdText dự phòng để AI service có ngữ cảnh
+      if (!briefRef.current.jdText && session.topic) {
+        briefRef.current = { skills: session.topic.split(/[,/&]+/).map(s => s.trim()).filter(Boolean), jdText: session.topic };
+      }
+      const contextTitle = session.jobTitle ?? session.topic ?? 'Phỏng vấn kỹ thuật';
+      await rtc.connect(contextTitle, briefRef.current.jdText);
     })();
   }, [interviewMode, session, rtc.link]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -349,7 +354,8 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
         if (ai?.questionText) { setQuestion(ai.questionText); return; }
         setFallbackNote('AI service không trả về câu hỏi — phòng chuyển về giọng đọc trình duyệt.');
       }
-      const q = buildAvatarQuestion(idx, session.jobTitle ?? 'lập trình viên', briefRef.current.skills);
+      const contextLabel = session.jobTitle ?? session.topic ?? 'lập trình viên';
+      const q = buildAvatarQuestion(idx, contextLabel, briefRef.current.skills);
       setQuestion(q);
       speech.speak(q);
     })();
@@ -408,7 +414,8 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
         return;
       }
       if (!next) {
-        next = buildAvatarQuestion(nextIdx, session.jobTitle ?? 'lập trình viên', briefRef.current.skills);
+        const contextLabel = session.jobTitle ?? session.topic ?? 'lập trình viên';
+        next = buildAvatarQuestion(nextIdx, contextLabel, briefRef.current.skills);
         speech.speak(next);
       }
       setQuestion(next);
@@ -505,7 +512,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
       : <ErrorBlock message={error || 'Không tìm thấy phiên phỏng vấn.'} onRetry={() => void fetchResult(sessionId)} />;
   }
 
-  const contextLabel = session.jobTitle ?? 'Phòng phỏng vấn AVATAR';
+  const contextLabel = session.jobTitle ?? session.topic ?? 'Phòng phỏng vấn AVATAR';
 
   return (
     <div className="flex flex-col gap-space-md">
