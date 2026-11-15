@@ -205,17 +205,16 @@ const useLocalMedia = () => {
     };
   }, [request]);
 
-  // Khung tự-view chỉ được render sau khi cấp quyền, nên srcObject phải gắn ở effect chứ không gắn trong request.
-  // Phải có hasVideo trong deps: <video> chỉ render khi state==='granted' && hasVideo,
-  // nên effect phải chạy lại khi hasVideo đổi để videoRef.current không bị null.
-  useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-      // Một số trình duyệt (Chrome) không tự play khi srcObject gán qua effect,
-      // kể cả khi có autoPlay — phải gọi play() thủ công.
-      void videoRef.current.play().catch(() => {});
+  // Dùng callback ref: gán srcObject + play() ngay khi <video> mount vào DOM.
+  // Đây là cách đáng tin cậy nhất — tránh race condition giữa setState batch
+  // và useEffect chạy trước khi <video> thực sự xuất hiện trong DOM.
+  const setVideoRef = useCallback((el: HTMLVideoElement | null) => {
+    (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = el;
+    if (el && streamRef.current) {
+      el.srcObject = streamRef.current;
+      void el.play().catch(() => {});
     }
-  }, [stream, state, hasVideo]);
+  }, []);
 
   const toggleMic = () => {
     const track = streamRef.current?.getAudioTracks()[0];
@@ -229,7 +228,7 @@ const useLocalMedia = () => {
     track.enabled = !track.enabled;
     setCamOn(track.enabled);
   };
-  return { videoRef, state, hasVideo, hasAudio, reason, micOn, camOn, request, toggleMic, toggleCam };
+  return { videoRef, setVideoRef, state, hasVideo, hasAudio, reason, micOn, camOn, request, toggleMic, toggleCam };
 };
 
 /* --------------------------------- RTT probe -------------------------------- */
@@ -695,23 +694,31 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
 
             {/* Camera ứng viên */}
             <div className="relative flex h-[280px] items-center justify-center overflow-hidden rounded-xl bg-inverse-surface shadow-md">
-              {media.state === 'granted' && media.hasVideo ? (
-                <video
-                  ref={media.videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className={`h-full w-full object-cover ${media.camOn ? '' : 'opacity-0'}`}
-                />
+              {/* Video luôn render khi đã cấp quyền để callback ref có thể gán srcObject
+                  ngay khi mount. hasVideo chỉ dùng để ẩn/hiện, không dùng để guard render. */}
+              {media.state === 'granted' ? (
+                <>
+                  <video
+                    ref={media.setVideoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className={`h-full w-full object-cover ${media.hasVideo && media.camOn ? '' : 'hidden'}`}
+                  />
+                  {(!media.hasVideo || !media.camOn) && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-inverse-on-surface/60">
+                      <span className={`${ICON} text-[32px]`}>videocam_off</span>
+                      <span className="text-ds-label-md">{!media.hasVideo ? 'Camera không khả dụng' : 'Camera đang tắt'}</span>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="flex max-h-full w-full flex-col items-center gap-2 overflow-y-auto p-space-md text-center text-inverse-on-surface/80">
                   <span className={`${ICON} text-[30px]`}>{media.state === 'requesting' ? 'hourglass_top' : 'videocam_off'}</span>
                   <p className="m-0 text-ds-label-lg font-semibold">
                     {media.state === 'requesting'
                       ? 'Đang mở camera...'
-                      : media.state === 'granted'
-                        ? 'Chưa mở được camera'
-                        : 'Chưa bật được mic và camera'}
+                      : 'Chưa bật được mic và camera'}
                   </p>
                   <p className="m-0 max-w-[44ch] text-ds-body-sm">
                     {media.reason || 'Bấm nút dưới để trình duyệt hỏi quyền dùng camera và micro.'}
@@ -723,7 +730,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
                     className={adminButton('primary', 'h-9 mt-1 shrink-0 disabled:opacity-40')}
                   >
                     <span className={`${ICON} text-[16px]`}>videocam</span>
-                    {media.state === 'denied' ? 'Xin lại quyền' : media.state === 'granted' ? 'Thử lại camera' : 'Bật mic và camera'}
+                    {media.state === 'denied' ? 'Xin lại quyền' : 'Bật mic và camera'}
                   </button>
                   {media.state !== 'requesting' && (
                     <details className="w-full text-left text-ds-label-sm text-inverse-on-surface/70">
@@ -736,12 +743,6 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
                       </ol>
                     </details>
                   )}
-                </div>
-              )}
-              {media.state === 'granted' && media.hasVideo && !media.camOn && (
-                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1 text-inverse-on-surface/60">
-                  <span className={`${ICON} text-[32px]`}>videocam_off</span>
-                  <span className="text-ds-label-md">Camera đang tắt</span>
                 </div>
               )}
               <span className="absolute left-3 top-3 flex items-center gap-1.5 rounded-lg bg-black/40 px-3 py-1.5 text-ds-label-md text-inverse-on-surface">
