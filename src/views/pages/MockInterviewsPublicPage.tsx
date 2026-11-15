@@ -1,7 +1,7 @@
 /**
  * Wrapper cho route public /ai-interview: bọc MockInterviewsPage trong PublicShell
  * để có header/footer marketing nhất quán. Route ứng viên /mock-interviews dùng
- * MockInterviewsPage trực tiếp (CandidateLayout đã có sidebar/header riêng).
+ * MockInterviewStartPage trực tiếp (CandidateLayout đã có sidebar/header riêng).
  */
 import React from 'react';
 import PublicShell from '../layout/PublicShell';
