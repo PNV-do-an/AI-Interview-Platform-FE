@@ -16,6 +16,7 @@ import { useSpeechInput } from '../../hooks/useSpeechInput';
 import { InterviewTranscriptEntry, AVATAR_RUBRIC_VERSION } from '../../models/Interview.model';
 import { buildFallbackEvaluation } from '../../utils/avatarEvaluation';
 import ConfirmDialog from '../components/ConfirmDialog';
+import AiServiceConfig from '../components/AiServiceConfig';
 import { ICON } from '../components/candidateKit';
 import { adminButton, ErrorBlock, LoadingBlock, Pill, fmtServer } from '../components/adminKit';
 
@@ -573,9 +574,27 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
 
       {error && <ErrorBlock message={error} />}
       {interviewMode === 'avatar' && fallbackNote && (
-        <p className="m-0 rounded-lg bg-tertiary-fixed/40 px-space-md py-2 text-ds-label-md text-on-tertiary-fixed-variant">
-          {fallbackNote}
-        </p>
+        <div className="rounded-lg bg-tertiary-fixed/40 px-space-md py-3 text-on-tertiary-fixed-variant">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="m-0 text-ds-label-md">{fallbackNote}</p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className={adminButton('soft')}
+            >
+              <span className={`${ICON} text-[16px]`}>refresh</span>
+              Thử kết nối lại
+            </button>
+          </div>
+          <details className="mt-2">
+            <summary className="cursor-pointer text-ds-label-md font-semibold">
+              Cấu hình AI service / dán URL tunnel mới
+            </summary>
+            <div className="mt-2">
+              <AiServiceConfig compact onConnected={() => window.location.reload()} />
+            </div>
+          </details>
+        </div>
       )}
       {atCap && !finished && (
         <ErrorBlock message="Phiên đã đạt số lượt tối đa, hãy kết thúc để nhận báo cáo." />

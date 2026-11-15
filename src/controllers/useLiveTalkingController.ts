@@ -34,6 +34,9 @@ const describeError = (e: any): string => {
     const detail = typeof body === 'string' ? body : body?.detail ?? body?.message ?? '';
     return `AI service trả ${e.response.status}${detail ? `: ${detail}` : ''}`;
   }
+  if (e?.code === 'ERR_NETWORK' || e?.message === 'Network Error') {
+    return 'Không kết nối được AI service — URL tunnel có thể đã hết hiệu lực hoặc chưa bật dịch vụ';
+  }
   return e?.message || 'Không kết nối được avatar';
 };
 
