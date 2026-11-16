@@ -138,6 +138,10 @@ const LoginPage: React.FC = () => {
     login(form, rememberMe);
   };
 
+  const handleGoogleUnavailable = () => {
+    setNotice('Đăng nhập với Google hiện không khả dụng. Vui lòng dùng email và mật khẩu.');
+  };
+
   // BE trả 401 + "Tài khoản chưa được kích hoạt..." khi user chưa bấm link verify.
   const needsVerification = errorStatus === 401 && /chưa được kích hoạt/i.test(error);
 
@@ -304,8 +308,8 @@ const LoginPage: React.FC = () => {
                   <button
                     type="button"
                     aria-label="Đăng nhập với Google"
-                    className="w-full h-11 rounded-xl border-2 border-outline bg-primary text-body-md font-semibold text-white shadow-md transition-colors cursor-pointer"
-                    onClick={() => loginWithGoogleRef.current && loginWithGoogleRef.current('', false)}
+                    className="absolute inset-0 h-full w-full cursor-pointer rounded-xl border-0 bg-transparent text-[1px] text-transparent"
+                    onClick={handleGoogleUnavailable}
                   >
                     Đăng nhập với Google
                   </button>
