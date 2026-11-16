@@ -1,32 +1,34 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import BrandLogo from '../components/BrandLogo';
-import { useAuthController } from '../../controllers/useAuthController';
+import { useAuth } from '../../context/AuthContext';
 
-type Method = 'app' | 'key' | 'sms';
+/** Khớp pattern BE chặn lúc ghi cho recovery code (verify-otp nhận cả OTP lẫn XXXXX-XXXXX). */
+const RECOVERY_CODE = /^[A-Za-z0-9]{5}-[A-Za-z0-9]{5}$/;
 
-const METHODS: { id: Method; icon: string; label: string }[] = [
-  { id: 'app', icon: 'smartphone', label: 'Ứng dụng xác thực' },
-  { id: 'key', icon: 'key', label: 'Khóa bảo mật' },
-  { id: 'sms', icon: 'sms', label: 'Tin nhắn dự phòng' },
-];
+type Mode = 'otp' | 'recovery';
 
-const ALTERNATIVES = [
-  { icon: 'sms', label: 'Xác thực qua tin nhắn' },
-  { icon: 'key', label: 'Khóa bảo mật' },
-  { icon: 'key_off', label: 'Mã dự phòng' },
-];
-
+/**
+ * Màn nhập mã 2FA sau đăng nhập (challenge token lưu ở storage khi login trả `mfaRequired`).
+ * BE chỉ có một kênh TOTP qua ứng dụng xác thực nên không còn tab "Khóa bảo mật"/"SMS" của
+ * mockup; ô nhập chuyển chế độ sang mã dự phòng XXXXX-XXXXX khi bấm "Dùng mã khôi phục".
+ */
 const TwoFactorPage: React.FC = () => {
-  const { verifyOtp, loading, error } = useAuthController();
-  const [method, setMethod] = useState<Method>('app');
-  // Demo code from the mockup (592...) kept as initial state; typing updates locally only.
+  const { verifyOtp, loading, error } = useAuth();
+  const [mode, setMode] = useState<Mode>('otp');
   const [digits, setDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const [recovery, setRecovery] = useState('');
 
   const handleVerify = () => {
-    const code = digits.join('');
-    if (code.length !== 6) return;
-    void verifyOtp(code, false);
+    if (mode === 'otp') {
+      const code = digits.join('');
+      if (code.length !== 6) return;
+      void verifyOtp(code, false);
+    } else {
+      const code = recovery.trim();
+      if (!RECOVERY_CODE.test(code)) return;
+      void verifyOtp(code, false);
+    }
   };
 
   const setDigit = (index: number, value: string) => {
@@ -90,57 +92,52 @@ const TwoFactorPage: React.FC = () => {
 
                 <h1 className="mb-2 text-headline-lg tracking-tight text-ink">Xác thực hai lớp</h1>
                 <p className="mb-6 text-body-md leading-relaxed text-ink-variant">
-                  Nhập mã 6 số do ứng dụng xác thực của bạn tạo ra.
+                  {mode === 'otp'
+                    ? 'Nhập mã 6 số do ứng dụng xác thực (Google Authenticator / Authy) tạo ra.'
+                    : 'Nhập một mã dự phòng (dạng XXXXX-XXXXX) đã lưu khi bật 2FA.'}
                 </p>
 
-                {/* Verification method switcher */}
-                <div className="mb-6">
-                  <div className="flex flex-col gap-1 rounded-lg bg-surface-mid p-1 sm:flex-row">
-                    {METHODS.map((m) => {
-                      const active = method === m.id;
-                      return (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => setMethod(m.id)}
-                          className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-label-md transition-colors ${
-                            active
-                              ? 'bg-card font-semibold text-ink shadow-sm'
-                              : 'text-ink-variant hover:bg-surface-high hover:text-ink'
+                {mode === 'otp' ? (
+                  /* 6-digit code inputs */
+                  <div className="mb-6">
+                    <div className="mb-2.5 flex items-center justify-between">
+                      <span className="text-label-sm font-semibold uppercase tracking-wide text-ink">Mã xác thực</span>
+                      <span className="text-[12px] text-ink-variant">Mã bảo mật 6 số</span>
+                    </div>
+                    <div className="mb-3 grid grid-cols-6 gap-2 sm:gap-3">
+                      {digits.map((d, i) => (
+                        <input
+                          key={i}
+                          className={`h-14 w-full rounded-lg text-center text-metric-stat font-bold transition-all caret-primary sm:h-16 ${
+                            i === 3 && !d
+                              ? 'bg-info/30 ring-2 ring-primary' // primary-fixed/30 active cell in mockup (info token shares that hex)
+                              : 'bg-card text-ink shadow-sm focus:outline-none focus:ring-2 focus:ring-primary'
                           }`}
-                        >
-                          <span className={`material-symbols-outlined text-[18px] ${active ? 'text-primary' : ''}`}>{m.icon}</span>
-                          <span>{m.label}</span>
-                        </button>
-                      );
-                    })}
+                          inputMode="numeric"
+                          maxLength={1}
+                          type="text"
+                          value={d}
+                          onChange={(e) => setDigit(i, e.target.value)}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
-
-                {/* 6-digit code inputs */}
-                <div className="mb-6">
-                  <div className="mb-2.5 flex items-center justify-between">
-                    <span className="text-label-sm font-semibold uppercase tracking-wide text-ink">Mã xác thực</span>
-                    <span className="text-[12px] text-ink-variant">Mã bảo mật 6 số</span>
+                ) : (
+                  <div className="mb-6">
+                    <div className="mb-2.5 flex items-center justify-between">
+                      <span className="text-label-sm font-semibold uppercase tracking-wide text-ink">Mã dự phòng</span>
+                      <span className="text-[12px] text-ink-variant">Dùng một lần</span>
+                    </div>
+                    <input
+                      className="h-16 w-full rounded-lg bg-card text-center text-headline-sm font-bold tracking-[0.2em] text-ink shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      type="text"
+                      value={recovery}
+                      onChange={(e) => setRecovery(e.target.value.replace(/[^0-9A-Za-z-]/g, '').slice(0, 11))}
+                      placeholder="XXXXX-XXXXX"
+                      autoComplete="off"
+                    />
                   </div>
-                  <div className="mb-3 grid grid-cols-6 gap-2 sm:gap-3">
-                    {digits.map((d, i) => (
-                      <input
-                        key={i}
-                        className={`h-14 w-full rounded-lg text-center text-metric-stat font-bold transition-all caret-primary sm:h-16 ${
-                          i === 3 && !d
-                            ? 'bg-info/30 ring-2 ring-primary' // primary-fixed/30 active cell in mockup (info token shares that hex)
-                            : 'bg-card text-ink shadow-sm focus:outline-none focus:ring-2 focus:ring-primary'
-                        }`}
-                        inputMode="numeric"
-                        maxLength={1}
-                        type="text"
-                        value={d}
-                        onChange={(e) => setDigit(i, e.target.value)}
-                      />
-                    ))}
-                  </div>
-                </div>
+                )}
 
                 {error && (
                   <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
@@ -150,51 +147,31 @@ const TwoFactorPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleVerify}
-                  disabled={loading || digits.join('').length !== 6}
+                  disabled={loading || (mode === 'otp' ? digits.join('').length !== 6 : !RECOVERY_CODE.test(recovery.trim()))}
                   className="group flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary text-headline-sm text-on-primary shadow-md transition-all hover:bg-secondary active:scale-[0.99] disabled:opacity-60"
                 >
                   <span>{loading ? 'Đang xác thực...' : 'Xác thực & tiếp tục'}</span>
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>
 
-                {/* Recovery & alternative options */}
-                <div className="mt-6 flex flex-col items-center justify-between gap-3 bg-card pt-5 text-center sm:flex-row sm:text-left">
-                  <button type="button" className="inline-flex items-center gap-1 text-label-md font-medium text-primary transition-colors hover:text-secondary">
-                    <span className="material-symbols-outlined text-[16px]">key_off</span>
-                    <span>Dùng mã khôi phục khẩn cấp</span>
-                  </button>
-                  <button type="button" className="inline-flex items-center gap-1 text-label-md font-medium text-ink-variant transition-colors hover:text-ink">
-                    <span className="material-symbols-outlined text-[16px]">help_outline</span>
-                    <span>Chưa nhận được mã? Thử cách khác</span>
+                {/* Chuyển chế độ nhập: ứng dụng xác thực <-> mã dự phòng */}
+                <div className="mt-6 flex items-center justify-center border-t border-outline/20 pt-5">
+                  <button
+                    type="button"
+                    onClick={() => setMode(mode === 'otp' ? 'recovery' : 'otp')}
+                    className="inline-flex items-center gap-1 text-label-md font-medium text-primary transition-colors hover:text-secondary"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">
+                      {mode === 'otp' ? 'key_off' : 'smartphone'}
+                    </span>
+                    <span>{mode === 'otp' ? 'Dùng mã khôi phục khẩn cấp' : 'Nhập mã từ ứng dụng xác thực'}</span>
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* RIGHT: alternative methods + support dock */}
+            {/* RIGHT: support dock */}
             <div className="flex flex-col gap-4 lg:col-span-5">
-              <div className="rounded-xl bg-card p-6 shadow-sm">
-                <div className="mb-4 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[20px] text-primary">security</span>
-                  <span className="text-headline-sm text-ink">Cách xác thực khác</span>
-                </div>
-                <div className="flex flex-col gap-2.5">
-                  {ALTERNATIVES.map((a) => (
-                    <button
-                      key={a.label}
-                      type="button"
-                      className="flex w-full items-center justify-between rounded-lg bg-surface-low p-3 text-left text-ink transition-colors hover:bg-surface-mid"
-                    >
-                      <span className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-[18px] text-primary">{a.icon}</span>
-                        <span className="text-label-md font-medium">{a.label}</span>
-                      </span>
-                      <span className="material-symbols-outlined text-[16px] text-ink-variant">chevron_right</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <div className="flex items-center justify-between gap-4 rounded-xl bg-surface-low p-4 shadow-sm">
                 <div className="flex items-center gap-3">
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-info text-primary">
@@ -203,13 +180,14 @@ const TwoFactorPage: React.FC = () => {
                   </span>
                   <div>
                     <p className="m-0 text-label-md font-semibold text-ink">Cần trợ giúp?</p>
-                    <p className="m-0 text-[12px] text-ink-variant">Liên hệ hỗ trợ</p>
+                    <p className="m-0 text-[12px] text-ink-variant">
+                      {mode === 'otp'
+                        ? 'Mất thiết bị? Bấm "Dùng mã khôi phục khẩn cấp" phía trên.'
+                        : 'Mã dự phòng đã hết? Liên hệ quản trị viên để tắt 2FA.'}
+                    </p>
                   </div>
                 </div>
-                <button type="button" className="inline-flex items-center gap-1 rounded-lg bg-card px-3 py-1 text-label-sm font-semibold text-ink shadow-sm transition-colors hover:text-primary">
-                  <span>Hỗ trợ</span>
-                  <span className="material-symbols-outlined text-[14px]">open_in_new</span>
-                </button>
+                <span className="text-[12px] text-ink-variant">Mỗi mã dự phòng chỉ dùng được một lần</span>
               </div>
             </div>
           </div>
