@@ -23,19 +23,20 @@
  * Khối giữ nguyên chữ mockup và dán nhãn "Khối demo" (chưa mở trong phiên bản này): điểm an toàn
  * 85%, kênh nhận thông báo, tài khoản liên kết Google/GitHub/LinkedIn, 4 công tắc thông báo,
  * Danger Zone, "Mẹo từ trợ lý AI" (số 40%).
- * Riêng thẻ 2FA KHÔNG dán nhãn (theo quyết định 24/10 ở /admin/account — BE đang làm wave 2FA/TOTP,
- * dán nhãn sẽ thành sai): giá trị hiển thị là "Đang tắt" (đúng hiện trạng, chưa có API bật) và nút
- * "Kích hoạt 2FA" đặt `disabled`, không hành động giả.
+ * 2FA (từ 15/11, BE wave 010): GET /api/v1/auth/2fa cho trạng thái; bật = POST /setup (QR từ
+ * otpauthUri) rồi POST /enable (trả 8 mã dự phòng, hiện đúng một lần); tắt = POST /disable nhận
+ * OTP 6 số HOẶC mã dự phòng XXXXX-XXXXX. Bật 2FA không thu hồi phiên đang đăng nhập.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { QRCodeSVG } from 'qrcode.react';
 import AuthService from '../../services/auth.service';
 import ProgramService from '../../services/program.service';
 import { useAuth } from '../../context/AuthContext';
 import { SelfProfile, UserSessionInfo } from '../../models/Api.model';
 import {
-  DemoTag, ICON, LoadingBlock, Pill, Toggle,
-  adminButton, adminInputClass, errorText, initialsOf, timeAgo,
+  DemoTag, ICON, LoadingBlock, ModalBackdrop, Pill, Toggle,
+  adminButton, adminInputClass, errorText, initialsOf, modalCancelClass, modalPrimaryClass, timeAgo,
 } from '../components/adminKit';
 import { CARD, CandidatePageHeader, SOFT } from '../components/candidateKit';
 
@@ -51,6 +52,11 @@ const STRENGTH_LABEL = ['Rất yếu (0/4)', 'Yếu (1/4)', 'Trung bình (2/4)',
 
 const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
 const AVATAR_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+
+/** Khớp pattern BE chặn lúc ghi: OTP 6 số hoặc recovery code XXXXX-XXXXX. */
+const TWO_FA_CODE = /^([0-9]{6}|[A-Za-z0-9]{5}-[A-Za-z0-9]{5})$/;
+
+const groupSecret = (secret: string) => (secret.replace(/\s+/g, '').match(/.{1,4}/g) ?? []).join(' ');
 
 const readFileAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
   const reader = new FileReader();
@@ -229,6 +235,16 @@ const CandidateAccountPage: React.FC = () => {
 
   const [notify, setNotify] = useState({ aiMatch: true, reminder: true, newsletter: false, visible: true });
 
+  const [twoFa, setTwoFa] = useState<{ loading: boolean; enabled: boolean; error: string }>({
+    loading: true, enabled: false, error: '',
+  });
+  const [twoFaFlow, setTwoFaFlow] = useState<'setup' | 'disable' | 'codes' | null>(null);
+  const [setupInfo, setSetupInfo] = useState<{ secret: string; otpauthUri: string; accountName: string; issuer: string } | null>(null);
+  const [twoFaCode, setTwoFaCode] = useState('');
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const [twoFaBusy, setTwoFaBusy] = useState(false);
+  const [twoFaMsg, setTwoFaMsg] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
+
   const alive = useRef(true);
   useEffect(() => () => { alive.current = false; }, []);
 
@@ -258,13 +274,24 @@ const CandidateAccountPage: React.FC = () => {
     }
   }, []);
 
+  const loadTwoFa = useCallback(async () => {
+    setTwoFa(s => ({ ...s, loading: true, error: '' }));
+    try {
+      const res = await AuthService.getTwoFactorStatus();
+      if (alive.current) setTwoFa({ loading: false, enabled: !!res.data.data?.enabled, error: '' });
+    } catch (err) {
+      if (alive.current) setTwoFa(s => ({ ...s, loading: false, error: errorText(err, 'Không tải được trạng thái 2FA.') }));
+    }
+  }, []);
+
   useEffect(() => {
     void loadSelf();
     void loadSessions();
+    void loadTwoFa();
     ProgramService.getMyProfile()
       .then(res => { if (alive.current) setProfileUpdatedAt(res.data.data?.updatedAt ?? null); })
       .catch(() => { /* hồ sơ CV không chặn được màn cài đặt */ });
-  }, [loadSelf, loadSessions]);
+  }, [loadSelf, loadSessions, loadTwoFa]);
 
   const passed = useMemo(() => RULES.filter(r => r.test(newPwd)).length, [newPwd]);
   const match = newPwd.length > 0 && newPwd === confirmPwd;
@@ -376,6 +403,66 @@ const CandidateAccountPage: React.FC = () => {
     navigate('/login');
   }, [logout, navigate]);
 
+  const openTwoFaSetup = useCallback(async () => {
+    setTwoFaFlow('setup');
+    setTwoFaMsg(null);
+    setTwoFaCode('');
+    setTwoFaBusy(true);
+    try {
+      const res = await AuthService.setupTwoFactor();
+      if (alive.current) setSetupInfo(res.data.data ?? null);
+    } catch (err) {
+      if (alive.current) setTwoFaMsg({ kind: 'error', text: errorText(err, 'Không tạo được mã QR.') });
+    } finally {
+      if (alive.current) setTwoFaBusy(false);
+    }
+  }, []);
+
+  const closeTwoFa = useCallback(() => {
+    setTwoFaFlow(null);
+    setTwoFaCode('');
+    setSetupInfo(null);
+    setRecoveryCodes([]);
+    setTwoFaMsg(null);
+  }, []);
+
+  const submitEnableTwoFa = useCallback(async () => {
+    if (twoFaCode.length !== 6) return;
+    setTwoFaBusy(true);
+    setTwoFaMsg(null);
+    try {
+      const res = await AuthService.enableTwoFactor(twoFaCode);
+      if (!alive.current) return;
+      setTwoFa({ loading: false, enabled: true, error: '' });
+      setRecoveryCodes(res.data.data?.recoveryCodes ?? []);
+      setTwoFaCode('');
+      setTwoFaFlow('codes');
+    } catch (err) {
+      if (alive.current) setTwoFaMsg({ kind: 'error', text: errorText(err, 'Không bật được 2FA.') });
+    } finally {
+      if (alive.current) setTwoFaBusy(false);
+    }
+  }, [twoFaCode]);
+
+  const submitDisableTwoFa = useCallback(async () => {
+    const code = twoFaCode.trim();
+    if (!TWO_FA_CODE.test(code)) return;
+    setTwoFaBusy(true);
+    setTwoFaMsg(null);
+    try {
+      const res = await AuthService.disableTwoFactor(code);
+      if (!alive.current) return;
+      setTwoFa({ loading: false, enabled: false, error: '' });
+      setTwoFaFlow(null);
+      setTwoFaCode('');
+      setTwoFaMsg({ kind: 'success', text: res.data.message ?? 'Đã tắt xác thực 2 yếu tố.' });
+    } catch (err) {
+      if (alive.current) setTwoFaMsg({ kind: 'error', text: errorText(err, 'Không tắt được 2FA.') });
+    } finally {
+      if (alive.current) setTwoFaBusy(false);
+    }
+  }, [twoFaCode]);
+
   const name = self?.fullName ?? user?.fullName ?? '';
   const email = self?.email ?? user?.email ?? '';
   const phone = (self?.phone ?? '').trim();
@@ -447,10 +534,22 @@ const CandidateAccountPage: React.FC = () => {
               <span className={`${ICON} text-[18px] text-outline`}>hourglass_top</span>
               {phone ? 'Đã có số điện thoại' : 'Chưa có số điện thoại'}
             </span>
-            <span className="flex items-center gap-2 rounded-lg bg-error-container/40 px-3 py-1.5 text-ds-label-md text-on-error-container">
-              <span className={`${ICON} text-[18px] text-error`}>error</span>
-              Chưa bật 2FA
-            </span>
+            {twoFa.loading ? (
+              <span className="flex items-center gap-2 rounded-lg bg-surface-container-low px-3 py-1.5 text-ds-label-md text-on-surface">
+                <span className={`${ICON} text-[18px] text-outline`}>hourglass_top</span>
+                Đang kiểm tra 2FA
+              </span>
+            ) : twoFa.enabled ? (
+              <span className="flex items-center gap-2 rounded-lg bg-secondary-container/40 px-3 py-1.5 text-ds-label-md text-on-secondary-container">
+                <span className={`${ICON} text-[18px] text-secondary-teal`}>check_circle</span>
+                Đã bật 2FA
+              </span>
+            ) : (
+              <span className="flex items-center gap-2 rounded-lg bg-error-container/40 px-3 py-1.5 text-ds-label-md text-on-error-container">
+                <span className={`${ICON} text-[18px] text-error`}>error</span>
+                Chưa bật 2FA
+              </span>
+            )}
           </div>
         </div>
 
@@ -676,19 +775,52 @@ const CandidateAccountPage: React.FC = () => {
                 <div className="flex flex-col">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="text-ds-label-lg font-semibold text-on-surface">Xác thực 2 yếu tố (2FA)</span>
-                    <Pill tone="danger">Đang tắt</Pill>
+                    {twoFa.loading ? (
+                      <Pill tone="neutral">Đang kiểm tra...</Pill>
+                    ) : twoFa.enabled ? (
+                      <Pill tone="success">Đang bật</Pill>
+                    ) : (
+                      <Pill tone="danger">Đang tắt</Pill>
+                    )}
                   </span>
                   <p className="mt-0.5 max-w-md text-ds-body-sm text-on-surface-variant">
-                    Yêu cầu mã 6 chữ số từ ứng dụng xác thực (Google Authenticator / Authy) hoặc SMS
-                    mỗi khi đăng nhập.
+                    Yêu cầu mã 6 chữ số từ ứng dụng xác thực (Google Authenticator / Authy) mỗi khi
+                    đăng nhập. Mất thiết bị thì dùng mã dự phòng.
                   </p>
                 </div>
               </div>
-              <button type="button" disabled className={`${adminButton('primary', 'h-10 shrink-0')} disabled:cursor-not-allowed disabled:opacity-60`}>
-                <span className={`${ICON} text-[18px]`}>add_moderator</span>
-                Kích hoạt 2FA
-              </button>
+              {twoFa.enabled ? (
+                <button
+                  type="button"
+                  disabled={twoFa.loading || twoFaBusy}
+                  onClick={() => { setTwoFaFlow('disable'); setTwoFaCode(''); setTwoFaMsg(null); }}
+                  className={`${adminButton('ghost', 'h-10 shrink-0')} disabled:cursor-not-allowed disabled:opacity-60`}
+                >
+                  <span className={`${ICON} text-[18px]`}>phonelink_erase</span>
+                  Tắt 2FA
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={twoFa.loading || twoFaBusy}
+                  onClick={() => void openTwoFaSetup()}
+                  className={`${adminButton('primary', 'h-10 shrink-0')} disabled:cursor-not-allowed disabled:opacity-60`}
+                >
+                  <span className={`${ICON} text-[18px]`}>add_moderator</span>
+                  Kích hoạt 2FA
+                </button>
+              )}
             </div>
+
+            {twoFa.error && (
+              <Message kind="error">
+                {twoFa.error}
+                <button type="button" onClick={() => void loadTwoFa()} className={adminButton('ghost', 'h-8')}>
+                  Thử lại
+                </button>
+              </Message>
+            )}
+            {twoFaMsg?.kind === 'success' && <Message kind="success">{twoFaMsg.text}</Message>}
 
             <div className="mt-space-xs flex flex-col gap-space-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -949,6 +1081,157 @@ const CandidateAccountPage: React.FC = () => {
           </div>
         </div>
       </div>
+      {/* Modal bật 2FA: QR + secret + OTP */}
+      {twoFaFlow === 'setup' && (
+        <ModalBackdrop onClose={closeTwoFa}>
+          <div className="flex max-h-[90vh] w-full max-w-md flex-col overflow-y-auto rounded-xl bg-surface p-space-lg shadow-xl">
+            <header className="flex items-start justify-between gap-2">
+              <div className="flex flex-col gap-1">
+                <h3 className="m-0 text-ds-headline-sm font-bold text-on-surface">Bật xác thực 2 yếu tố</h3>
+                <p className="m-0 text-ds-body-sm text-on-surface-variant">
+                  Quét mã QR bằng ứng dụng xác thực, rồi nhập mã 6 chữ số để hoàn tất.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeTwoFa}
+                aria-label="Đóng"
+                className="border-0 bg-transparent p-0 text-on-surface-variant hover:text-on-surface"
+              >
+                <span className={`${ICON} text-[22px]`}>close</span>
+              </button>
+            </header>
+
+            {twoFaBusy && !setupInfo ? (
+              <div className="py-space-lg">
+                <LoadingBlock label="Đang tạo mã QR..." />
+              </div>
+            ) : (
+              <div className="mt-space-md flex flex-col items-center gap-space-md">
+                {twoFaMsg && <Message kind="error">{twoFaMsg.text}</Message>}
+                {setupInfo && (
+                  <>
+                    <div className="rounded-xl bg-white p-3 shadow-sm">
+                      <QRCodeSVG value={setupInfo.otpauthUri} size={176} />
+                    </div>
+                    <div className="flex w-full flex-col items-center gap-1 rounded-lg bg-surface-container-low p-3 text-center">
+                      <span className="text-ds-label-sm text-on-surface-variant">Không quét được? Nhập thủ công chuỗi bí mật:</span>
+                      <code className="break-all text-ds-label-md font-semibold tracking-wider text-on-surface">
+                        {groupSecret(setupInfo.secret)}
+                      </code>
+                      <span className="text-ds-body-sm text-outline">
+                        {setupInfo.accountName} • {setupInfo.issuer}
+                      </span>
+                    </div>
+                    <div className="flex w-full flex-col gap-1.5">
+                      <label className="text-ds-label-md text-on-surface">Mã xác thực</label>
+                      <input
+                        value={twoFaCode}
+                        onChange={e => setTwoFaCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                        placeholder="Nhập mã 6 chữ số"
+                        inputMode="numeric"
+                        maxLength={6}
+                        autoComplete="one-time-code"
+                        className={`${adminInputClass} text-center text-ds-headline-sm tracking-[0.5em]`}
+                      />
+                    </div>
+                    <div className="flex w-full items-center gap-2">
+                      <button type="button" onClick={closeTwoFa} className={`${modalCancelClass} flex-1`}>
+                        Hủy
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void submitEnableTwoFa()}
+                        disabled={twoFaBusy || twoFaCode.length !== 6}
+                        className={`${modalPrimaryClass} flex-1`}
+                      >
+                        {twoFaBusy ? 'Đang xác nhận...' : 'Xác nhận & bật 2FA'}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </ModalBackdrop>
+      )}
+
+      {/* Modal mã dự phòng — hiện đúng một lần sau khi bật */}
+      {twoFaFlow === 'codes' && (
+        <ModalBackdrop onClose={closeTwoFa}>
+          <div className="flex max-h-[90vh] w-full max-w-md flex-col gap-space-md overflow-y-auto rounded-xl bg-surface p-space-lg shadow-xl">
+            <header className="flex flex-col gap-1">
+              <h3 className="m-0 text-ds-headline-sm font-bold text-on-surface">Đã bật xác thực 2 yếu tố</h3>
+              <p className="m-0 text-ds-body-sm text-on-surface-variant">
+                Lưu các mã dự phòng bên dưới — chúng chỉ hiển thị một lần này. Mỗi mã dùng được một
+                lần khi mất thiết bị xác thực.
+              </p>
+            </header>
+            <ul className="m-0 grid list-none grid-cols-2 gap-2 p-0">
+              {recoveryCodes.map(code => (
+                <li
+                  key={code}
+                  className="rounded-lg bg-surface-container-low px-2 py-1.5 text-center font-mono text-ds-label-md text-on-surface"
+                >
+                  {code}
+                </li>
+              ))}
+            </ul>
+            <div className="flex w-full items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void navigator.clipboard?.writeText(recoveryCodes.join('\n'))}
+                className={`${modalCancelClass} flex-1`}
+              >
+                <span className={`${ICON} text-[16px]`}>content_copy</span>
+                Sao chép tất cả
+              </button>
+              <button type="button" onClick={closeTwoFa} className={`${modalPrimaryClass} flex-1`}>
+                Đã lưu, đóng
+              </button>
+            </div>
+          </div>
+        </ModalBackdrop>
+      )}
+
+      {/* Modal tắt 2FA: OTP hiện tại hoặc recovery code */}
+      {twoFaFlow === 'disable' && (
+        <ModalBackdrop onClose={closeTwoFa}>
+          <div className="flex w-full max-w-md flex-col gap-space-md rounded-xl bg-surface p-space-lg shadow-xl">
+            <header className="flex flex-col gap-1">
+              <h3 className="m-0 text-ds-headline-sm font-bold text-on-surface">Tắt xác thực 2 yếu tố</h3>
+              <p className="m-0 text-ds-body-sm text-on-surface-variant">
+                Nhập mã 6 chữ số từ ứng dụng xác thực hoặc một mã dự phòng (dạng XXXXX-XXXXX) để
+                xác nhận bạn đang giữ thiết bị.
+              </p>
+            </header>
+            {twoFaMsg && <Message kind="error">{twoFaMsg.text}</Message>}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-ds-label-md text-on-surface">Mã xác thực / Mã dự phòng</label>
+              <input
+                value={twoFaCode}
+                onChange={e => setTwoFaCode(e.target.value.replace(/[^0-9A-Za-z-]/g, '').slice(0, 11))}
+                placeholder="123456 hoặc XXXXX-XXXXX"
+                autoComplete="off"
+                className={`${adminInputClass} text-center text-ds-headline-sm tracking-[0.2em]`}
+              />
+            </div>
+            <div className="flex w-full items-center gap-2">
+              <button type="button" onClick={closeTwoFa} className={`${modalCancelClass} flex-1`}>
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={() => void submitDisableTwoFa()}
+                disabled={twoFaBusy || !TWO_FA_CODE.test(twoFaCode.trim())}
+                className={`${modalPrimaryClass} flex-1`}
+              >
+                {twoFaBusy ? 'Đang tắt...' : 'Tắt 2FA'}
+              </button>
+            </div>
+          </div>
+        </ModalBackdrop>
+      )}
     </div>
   );
 };

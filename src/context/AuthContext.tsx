@@ -11,6 +11,7 @@ interface AuthContextType {
   errorStatus: number | null;
   loading: boolean;
   login: (data: LoginRequest, rememberMe?: boolean) => Promise<void>;
+  verifyOtp: (code: string, rememberMe?: boolean) => Promise<void>;
   loginWithGoogle: (idToken: string, rememberMe: boolean) => Promise<void>;
   loginWithGithub: (code: string, redirectUri: string, rememberMe: boolean) => Promise<void>;
   loginWithSso: (code: string, redirectUri: string, nonce: string, rememberMe: boolean) => Promise<void>;
