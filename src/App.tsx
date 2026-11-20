@@ -37,6 +37,12 @@ import StudyProgramsPage from './views/pages/StudyProgramsPage';
 import StudyProgramDetailPage from './views/pages/StudyProgramDetailPage';
 import PackagesPage from './views/pages/PackagesPage';
 import MyOrdersPage from './views/pages/MyOrdersPage';
+import WalletPage from './views/pages/WalletPage';
+import AiCreditsPage from './views/pages/AiCreditsPage';
+import MyBookingsPage from './views/pages/MyBookingsPage';
+import MentorPricingPage from './views/pages/MentorPricingPage';
+import WithdrawalsPage from './views/pages/WithdrawalsPage';
+import AdminPaymentMetricsPage from './views/pages/AdminPaymentMetricsPage';
 import PackageManagementPage from './views/pages/PackageManagementPage';
 import EmployerReviewsPage from './views/pages/EmployerReviewsPage';
 import BugReportsPage from './views/pages/BugReportsPage';
@@ -115,6 +121,9 @@ const App: React.FC = () => {
                 <Route path="/my-slots/calendar" element={<InterviewCalendarPage />} />
                 <Route path="/packages" element={<PackagesPage />} />
                 <Route path="/my-orders" element={<MyOrdersPage />} />
+                <Route path="/my-bookings" element={<MyBookingsPage />} />
+                <Route path="/mentor-pricing" element={<MentorPricingPage />} />
+                <Route path="/withdrawals" element={<WithdrawalsPage />} />
               </Route>
 
               {/* Candidate routes */}
@@ -123,6 +132,8 @@ const App: React.FC = () => {
                 <Route path="/my-interviews" element={<MyInterviewsPage />} />
                 <Route path="/my-profile" element={<CandidateProfilePage />} />
                 <Route path="/account" element={<CandidateAccountPage />} />
+                <Route path="/wallet" element={<WalletPage />} />
+                <Route path="/ai-credits" element={<AiCreditsPage />} />
                 <Route path="/mock-interviews" element={<MockInterviewsPage />} />
                 {/* Route tĩnh xếp trên `:id` để "history" không bị màn session nuốt. */}
                 <Route path="/mock-interviews/history" element={<MockInterviewHistoryPage />} />
@@ -162,6 +173,7 @@ const App: React.FC = () => {
 
               <Route element={<ProtectedRoute allowedRoles={['ROLE_ADMIN']} />}>
                 <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+                <Route path="/admin/payment-metrics" element={<AdminPaymentMetricsPage />} />
                 <Route path="/admin/users" element={<AdminUserManagementPage />} />
                 <Route path="/admin/users/:id" element={<AdminUserDetailPage />} />
                 <Route path="/admin/categories" element={<AdminCategoryPage />} />
