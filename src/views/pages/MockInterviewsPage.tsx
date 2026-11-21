@@ -23,8 +23,6 @@ import {
   EmptyBlock, ErrorBlock, ICON, LoadingBlock, Pagination, Pill, adminButton, fmtServer,
 } from '../components/adminKit';
 import { CARD, CandidatePageHeader, SOFT } from '../components/candidateKit';
-import AiServiceConfig from '../components/AiServiceConfig';
-
 /** Ngân hàng chủ đề luyện nhanh (KNOWLEDGE mode) — giới hạn phạm vi sinh viên IT (chốt dự án). */
 const TOPIC_GROUPS: { label: string; topics: string[] }[] = [
   { label: 'Tất cả', topics: [] },
@@ -329,16 +327,6 @@ const MockInterviewsPage = () => {
           </div>
         </div>
 
-        <div>
-          <h4 className="text-ds-label-lg font-bold text-on-surface">3. Kết nối AI service cho Video Call</h4>
-          <p className="mt-0.5 text-ds-body-sm text-on-surface-variant">
-            Avatar thật chạy trên Colab/cloudflared nên URL đổi sau mỗi lần khởi động lại.
-            Bỏ qua bước này nếu bạn chấp nhận phòng dùng giọng đọc trình duyệt.
-          </p>
-          <div className="mt-3">
-            <AiServiceConfig />
-          </div>
-        </div>
 
         <div className="flex flex-col gap-space-md border-t border-surface-container-high pt-space-lg lg:flex-row lg:items-center lg:justify-between">
           <span className="flex items-center gap-2 text-ds-body-sm text-on-surface-variant">
