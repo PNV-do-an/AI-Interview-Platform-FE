@@ -4,7 +4,11 @@ import { useAuth } from '../../context/AuthContext';
 import { useCandidateController } from '../../controllers/useCandidateController';
 import { useMockInterviewController } from '../../controllers/useMockInterviewController';
 import ProgramService from '../../services/program.service';
+import PaymentService from '../../services/payment.service';
+import OrderService from '../../services/order.service';
 import { APPLICATION_STATUS_LABELS, Application, JobSummary } from '../../models/Program.model';
+import { Wallet } from '../../models/Payment.model';
+import { Order, formatVnd } from '../../models/Order.model';
 import { InterviewSession } from '../../models/Interview.model';
 import { parseServerTimestamp } from '../../utils/date';
 import {
@@ -18,7 +22,6 @@ import {
   Step,
 } from '../components/candidateKit';
 import { LoadingBlock, Pill, ErrorBlock } from '../components/adminKit';
-import { Card } from '../components/ui';
 
 /**
  * Tổng quan ứng viên — mockup `t_ng_quan_ng_vi_n_ai_interview_platform` (2026-10-26).
@@ -93,11 +96,15 @@ const CandidateDashboard: React.FC = () => {
   const candidate = useCandidateController();
   const mock = useMockInterviewController();
   const [jobs, setJobs] = useState<JobSummary[]>([]);
+  const [wallet, setWallet] = useState<Wallet | null>(null);
 
   useEffect(() => {
     candidate.fetchMyApplications(0);
     candidate.fetchProfile();
     mock.fetchMySessions(0);
+    PaymentService.getWallet()
+      .then((res) => setWallet(res.data.data ?? null))
+      .catch(() => { /* khối ví vẫn hiển thị nút nạp/thanh toán khi API lỗi */ });
     ProgramService.searchJobs({ page: 0, size: 5 })
       .then((res) => setJobs(res.data.data?.content ?? []))
       .catch(() => { /* khối việc làm tự ẩn khi không tải được, không chặn phần còn lại */ });
@@ -159,12 +166,12 @@ const CandidateDashboard: React.FC = () => {
         }
         actions={
           <>
-            <Link to="/mock-interviews" className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-ds-label-lg font-semibold text-on-primary shadow-sm transition-colors hover:bg-on-primary-fixed-variant no-underline">
+            <Link to="/mock-interviews" className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-ds-label-lg font-semibold text-on-primary shadow-sm transition-colors hover:bg-indigo-700 no-underline">
               <span className={`${ICON} text-[18px] text-secondary-container`}>smart_toy</span>
               Luyện phỏng vấn AI ngay
             </Link>
-            <Link to="/my-profile" className="inline-flex h-10 items-center gap-2 rounded-lg bg-surface-container-high px-4 text-ds-label-lg text-on-surface transition-colors hover:bg-surface-container-highest no-underline">
-              <span className={`${ICON} text-[18px] text-on-surface-variant`}>edit_document</span>
+            <Link to="/my-profile" className="inline-flex h-10 items-center gap-2 rounded-lg bg-slate-200 px-4 text-ds-label-lg text-slate-900 transition-colors hover:bg-slate-200est no-underline">
+              <span className={`${ICON} text-[18px] text-slate-600`}>edit_document</span>
               Cập nhật CV &amp; Hồ sơ
             </Link>
           </>
@@ -185,12 +192,12 @@ const CandidateDashboard: React.FC = () => {
           sub={
             avgScore != null ? (
               <>
-                <span className="font-semibold text-secondary-teal">{scoreBand(avgScore)}</span>
-                <span className="text-outline">•</span>
-                <span className="text-on-surface-variant">{scored.length} phiên đã chấm</span>
+                <span className="font-semibold text-teal-600">{scoreBand(avgScore)}</span>
+                <span className="text-slate-400">•</span>
+                <span className="text-slate-600">{scored.length} phiên đã chấm</span>
               </>
             ) : (
-              <span className="text-on-surface-variant">Chưa có phiên nào được chấm</span>
+              <span className="text-slate-600">Chưa có phiên nào được chấm</span>
             )
           }
         />
@@ -204,8 +211,8 @@ const CandidateDashboard: React.FC = () => {
           sub={
             <>
               <span className="font-semibold text-on-tertiary-fixed-variant">{counts.pending} chờ phỏng vấn</span>
-              <span className="text-outline">•</span>
-              <span className="font-semibold text-secondary-teal">{counts.accepted} có Offer</span>
+              <span className="text-slate-400">•</span>
+              <span className="font-semibold text-teal-600">{counts.accepted} có Offer</span>
             </>
           }
         />
@@ -218,11 +225,11 @@ const CandidateDashboard: React.FC = () => {
           barPct={Math.min(100, interviews.length * 25)}
           sub={
             nextInterview ? (
-              <span className="truncate text-on-surface-variant">
+              <span className="truncate text-slate-600">
                 <span className="font-semibold text-primary">{nextInterview.app.companyName}</span> • {fmtTime.format(nextInterview.start)} {fmtShort.format(nextInterview.start)}
               </span>
             ) : (
-              <span className="text-on-surface-variant">Chưa có lịch đặt trước</span>
+              <span className="text-slate-600">Chưa có lịch đặt trước</span>
             )
           }
         />
@@ -232,7 +239,7 @@ const CandidateDashboard: React.FC = () => {
           icon="description"
           tone="neutral"
           barPct={cvFileName ? 100 : 30}
-          sub={<span className="truncate font-mono text-on-surface-variant">{cvFileName ?? 'Cập nhật CV để tăng độ khớp'}</span>}
+          sub={<span className="truncate font-mono text-slate-600">{cvFileName ?? 'Cập nhật CV để tăng độ khớp'}</span>}
         />
       </div>
 
@@ -247,12 +254,12 @@ const CandidateDashboard: React.FC = () => {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-error opacity-75" />
                   <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-error" />
                 </span>
-                <h2 className="m-0 text-ds-headline-sm font-bold tracking-tight text-on-surface">
+                <h2 className="m-0 text-ds-headline-sm font-bold tracking-tight text-slate-900">
                   Phỏng vấn sắp diễn ra trong 24h
                 </h2>
               </div>
               {nextInterview && (
-                <span className="flex items-center gap-1.5 rounded-full bg-error-container px-3 py-1 text-ds-label-md font-bold text-on-error-container">
+                <span className="flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-ds-label-md font-bold text-red-700">
                   <span className={`${ICON} text-[16px]`}>timer</span>
                   {untilLabel(nextInterview.start)}
                 </span>
@@ -263,27 +270,27 @@ const CandidateDashboard: React.FC = () => {
               <>
                 <div className={`${SOFT} flex flex-col items-start justify-between gap-space-md p-space-md md:flex-row md:items-center`}>
                   <div className="flex min-w-0 items-start gap-space-md">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-surface-container-lowest text-ds-headline-md font-bold text-primary shadow-sm">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white text-ds-headline-md font-bold text-primary shadow-sm">
                       {monogram(nextInterview.app.companyName)}
                     </div>
                     <div className="flex min-w-0 flex-col">
                       <div className="flex flex-wrap items-center gap-space-xs">
-                        <span className="text-ds-headline-sm font-bold text-on-surface">{nextInterview.app.companyName}</span>
+                        <span className="text-ds-headline-sm font-bold text-slate-900">{nextInterview.app.companyName}</span>
                         <Pill tone="primary" icon="badge">
                           {APPLICATION_STATUS_LABELS[nextInterview.app.status]}
                         </Pill>
                       </div>
                       <span className="mt-0.5 text-ds-body-md font-semibold text-primary">{nextInterview.app.jobTitle}</span>
-                      <div className="mt-2 flex flex-wrap items-center gap-x-space-md gap-y-1 text-ds-body-sm text-on-surface-variant">
+                      <div className="mt-2 flex flex-wrap items-center gap-x-space-md gap-y-1 text-ds-body-sm text-slate-600">
                         <span className="flex items-center gap-1">
-                          <span className={`${ICON} text-[16px] text-outline`}>schedule</span>
+                          <span className={`${ICON} text-[16px] text-slate-400`}>schedule</span>
                           {fmtTime.format(nextInterview.start)}
                           {nextInterview.end ? ` - ${fmtTime.format(nextInterview.end)}` : ''}, {fmtDate.format(nextInterview.start)}
                         </span>
                         {nextInterview.app.slot?.employerName && (
                           <span className="flex items-center gap-1">
-                            <span className={`${ICON} text-[16px] text-outline`}>person_outline</span>
-                            Người phỏng vấn: <strong className="font-semibold text-on-surface">{nextInterview.app.slot.employerName}</strong>
+                            <span className={`${ICON} text-[16px] text-slate-400`}>person_outline</span>
+                            Người phỏng vấn: <strong className="font-semibold text-slate-900">{nextInterview.app.slot.employerName}</strong>
                           </span>
                         )}
                       </div>
@@ -293,16 +300,16 @@ const CandidateDashboard: React.FC = () => {
 
                 <div className="mt-space-md flex flex-wrap items-center justify-between gap-space-sm pt-space-sm">
                   <div className="flex flex-wrap items-center gap-space-xs">
-                    <Link to="/device-check" className="inline-flex items-center gap-1 rounded-lg bg-surface-container px-3 py-1.5 text-ds-label-md text-on-surface transition-colors hover:bg-surface-container-high no-underline">
-                      <span className={`${ICON} text-[16px] text-secondary-teal`}>mic</span>
+                    <Link to="/device-check" className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-ds-label-md text-slate-900 transition-colors hover:bg-slate-200 no-underline">
+                      <span className={`${ICON} text-[16px] text-teal-600`}>mic</span>
                       Kiểm tra Mic &amp; Cam
                     </Link>
-                    <Link to="/my-interviews" className="inline-flex items-center gap-1 rounded-lg bg-surface-container px-3 py-1.5 text-ds-label-md text-on-surface transition-colors hover:bg-surface-container-high no-underline">
+                    <Link to="/my-interviews" className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-ds-label-md text-slate-900 transition-colors hover:bg-slate-200 no-underline">
                       <span className={`${ICON} text-[16px] text-primary`}>calendar_month</span>
                       Xem chi tiết lịch
                     </Link>
                   </div>
-                  <Link to={`/jobs/${nextInterview.app.jobId}`} className="ml-auto inline-flex items-center gap-space-xs rounded-lg bg-primary px-space-md py-2 text-ds-label-md font-semibold text-on-primary shadow-sm transition-colors hover:bg-on-primary-fixed-variant no-underline">
+                  <Link to={`/jobs/${nextInterview.app.jobId}`} className="ml-auto inline-flex items-center gap-space-xs rounded-lg bg-primary px-space-md py-2 text-ds-label-md font-semibold text-on-primary shadow-sm transition-colors hover:bg-indigo-700 no-underline">
                     <span className={`${ICON} text-[18px]`}>description</span>
                     Xem tin tuyển dụng
                   </Link>
@@ -310,11 +317,11 @@ const CandidateDashboard: React.FC = () => {
               </>
             ) : (
               <div className={`${SOFT} flex flex-col items-start gap-2 p-space-md`}>
-                <p className="m-0 text-ds-body-md text-on-surface-variant">Chưa có buổi phỏng vấn nào được đặt trước.</p>
-                <p className="m-0 text-ds-body-sm text-outline">
+                <p className="m-0 text-ds-body-md text-slate-600">Chưa có buổi phỏng vấn nào được đặt trước.</p>
+                <p className="m-0 text-ds-body-sm text-slate-400">
                   Khi nhà tuyển dụng duyệt đơn, khung giờ đã hẹn sẽ xuất hiện ở đây kèm đồng hồ đếm ngược.
                 </p>
-                <Link to="/my-applications" className="mt-1 inline-flex h-9 items-center gap-2 rounded-lg bg-surface-container-lowest px-3 text-ds-label-md font-semibold text-on-surface shadow-sm transition-colors hover:bg-surface-container-high no-underline">
+                <Link to="/my-applications" className="mt-1 inline-flex h-9 items-center gap-2 rounded-lg bg-white px-3 text-ds-label-md font-semibold text-slate-900 shadow-sm transition-colors hover:bg-slate-200 no-underline">
                   Theo dõi đơn ứng tuyển
                 </Link>
               </div>
@@ -325,8 +332,8 @@ const CandidateDashboard: React.FC = () => {
           <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
             <div className="flex items-center justify-between gap-2">
               <div className="flex flex-col">
-                <h2 className="m-0 text-ds-headline-sm font-bold tracking-tight text-on-surface">Tiến độ đơn ứng tuyển gần đây</h2>
-                <span className="text-ds-body-sm text-on-surface-variant">Theo dõi sát sao từng chặng tuyển dụng được tự động đồng bộ</span>
+                <h2 className="m-0 text-ds-headline-sm font-bold tracking-tight text-slate-900">Tiến độ đơn ứng tuyển gần đây</h2>
+                <span className="text-ds-body-sm text-slate-600">Theo dõi sát sao từng chặng tuyển dụng được tự động đồng bộ</span>
               </div>
               <Link to="/my-applications" className="flex shrink-0 items-center gap-1 text-ds-label-md text-primary hover:underline">
                 <span>Xem tất cả {counts.total} đơn</span>
@@ -335,11 +342,11 @@ const CandidateDashboard: React.FC = () => {
             </div>
 
             {apps.length === 0 && !loading ? (
-              <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-outline-variant px-6 py-10 text-center">
-                <span className={`${ICON} text-[28px] text-on-surface-variant`}>inbox</span>
-                <p className="m-0 text-ds-headline-sm font-semibold text-on-surface">Chưa có đơn ứng tuyển</p>
-                <p className="m-0 text-ds-body-sm text-on-surface-variant">Xem bảng tin tuyển dụng để gửi đơn ứng tuyển đầu tiên.</p>
-                <Link to="/jobs" className="mt-2 inline-flex h-10 items-center gap-2 rounded-lg bg-primary-container px-4 text-ds-label-md font-semibold text-on-primary no-underline">
+              <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-200 px-6 py-10 text-center">
+                <span className={`${ICON} text-[28px] text-slate-600`}>inbox</span>
+                <p className="m-0 text-ds-headline-sm font-semibold text-slate-900">Chưa có đơn ứng tuyển</p>
+                <p className="m-0 text-ds-body-sm text-slate-600">Xem bảng tin tuyển dụng để gửi đơn ứng tuyển đầu tiên.</p>
+                <Link to="/jobs" className="mt-2 inline-flex h-10 items-center gap-2 rounded-lg bg-indigo-600 px-4 text-ds-label-md font-semibold text-on-primary no-underline">
                   Xem tin tuyển dụng
                 </Link>
               </div>
@@ -349,12 +356,12 @@ const CandidateDashboard: React.FC = () => {
                   <div key={app.id} className={`${SOFT} flex flex-col gap-space-sm p-space-md`}>
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex min-w-0 items-center gap-space-sm">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-container-lowest text-ds-label-lg font-bold text-primary shadow-sm">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-ds-label-lg font-bold text-primary shadow-sm">
                           {monogram(app.companyName)}
                         </div>
                         <div className="min-w-0">
-                          <h3 className="m-0 text-ds-label-lg text-on-surface">{app.companyName}</h3>
-                          <p className="m-0 truncate text-ds-body-sm text-on-surface-variant">{app.jobTitle}</p>
+                          <h3 className="m-0 text-ds-label-lg text-slate-900">{app.companyName}</h3>
+                          <p className="m-0 truncate text-ds-body-sm text-slate-600">{app.jobTitle}</p>
                         </div>
                       </div>
                       <Pill tone={app.status === 'ACCEPTED' ? 'success' : app.status === 'REJECTED' || app.status === 'CANCELLED' ? 'danger' : 'primary'}>
@@ -373,10 +380,10 @@ const CandidateDashboard: React.FC = () => {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-space-xs">
                 <span className={`${ICON} text-[22px] text-primary`}>smart_toy</span>
-                <h2 className="m-0 text-ds-headline-sm font-bold tracking-tight text-on-surface">Lịch sử luyện tập AI gần nhất</h2>
+                <h2 className="m-0 text-ds-headline-sm font-bold tracking-tight text-slate-900">Lịch sử luyện tập AI gần nhất</h2>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-ds-label-sm text-on-surface-variant">
+                <span className="text-ds-label-sm text-slate-600">
                   Tổng số: {mock.sessions?.totalElements ?? sessions.length} phiên luyện
                 </span>
                 <Link to="/mock-interviews/history" className="text-ds-label-md text-primary hover:underline">
@@ -385,12 +392,12 @@ const CandidateDashboard: React.FC = () => {
               </div>
             </div>
             {sessions.length === 0 && !loading ? (
-              <p className="m-0 text-ds-body-md text-on-surface-variant">Chưa có phiên luyện tập nào.</p>
+              <p className="m-0 text-ds-body-md text-slate-600">Chưa có phiên luyện tập nào.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-left">
                   <thead>
-                    <tr className="bg-surface-container-low text-ds-label-sm uppercase tracking-wider text-on-surface-variant">
+                    <tr className="bg-slate-50 text-ds-label-sm uppercase tracking-wider text-slate-600">
                       <th className="rounded-l-lg px-space-md py-2.5 font-semibold">Chủ đề mô phỏng</th>
                       <th className="px-space-md py-2.5 font-semibold">Thời gian</th>
                       <th className="px-space-md py-2.5 font-semibold">Điểm số AI</th>
@@ -403,24 +410,24 @@ const CandidateDashboard: React.FC = () => {
                       const at = parseServerTimestamp(s.completedAt ?? s.createdAt);
                       const to = s.status === 'COMPLETED' ? `/mock-interviews/${s.id}/result` : `/mock-interviews/${s.id}`;
                       return (
-                        <tr key={s.id} className="border-b border-surface-container-high/40 transition-colors hover:bg-surface-container-low/50">
-                          <td className="px-space-md py-3 font-semibold text-on-surface">
+                        <tr key={s.id} className="border-b border-surface-container-high/40 transition-colors hover:bg-slate-50/50">
+                          <td className="px-space-md py-3 font-semibold text-slate-900">
                             <span className="flex items-center gap-2">
-                              <span className="h-2 w-2 shrink-0 rounded-full bg-secondary-teal" />
+                              <span className="h-2 w-2 shrink-0 rounded-full bg-teal-600" />
                               <span className="truncate">{s.jobTitle || s.topic || `Phiên ${s.mode}`}</span>
                             </span>
                           </td>
-                          <td className="px-space-md py-3 text-on-surface-variant">
+                          <td className="px-space-md py-3 text-slate-600">
                             {at ? `${fmtShort.format(at)}, ${fmtTime.format(at)}` : '—'}
                           </td>
                           <td className="px-space-md py-3">
                             {s.overallScore != null ? (
                               <>
                                 <span className="text-ds-label-lg font-bold text-primary tabular-nums">{Math.round(s.overallScore)}</span>
-                                <span className="text-outline">/100</span>
+                                <span className="text-slate-400">/100</span>
                               </>
                             ) : (
-                              <span className="text-outline">Chưa chấm</span>
+                              <span className="text-slate-400">Chưa chấm</span>
                             )}
                           </td>
                           <td className="px-space-md py-3">
@@ -451,12 +458,70 @@ const CandidateDashboard: React.FC = () => {
 
         {/* ============ CỘT PHẢI (4 cột) ============ */}
         <div className="flex flex-col gap-space-lg lg:col-span-4">
+          {/* Ví & thanh toán */}
+          <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-600 px-5 py-4 text-white">
+              <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-white/10 blur-xl" />
+              <div className="relative flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2 text-sm font-semibold">
+                  <span className="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+                  Ví &amp; thanh toán
+                </span>
+                <Link to="/payments" className="text-xs font-semibold text-indigo-100 no-underline hover:text-white">
+                  Chi tiết →
+                </Link>
+              </div>
+              <p className="relative m-0 mt-3 text-[11px] font-medium uppercase tracking-wide text-indigo-200">Số dư khả dụng</p>
+              <p className="relative m-0 text-2xl font-bold tracking-tight">
+                {wallet ? formatVnd(wallet.availableBalance) : '—'}
+              </p>
+            </div>
+            <div className="flex flex-col gap-3 p-4">
+              <Link
+                to="/packages"
+                className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm no-underline transition-colors hover:bg-indigo-50"
+              >
+                <span className="flex items-center gap-1.5 text-slate-600">
+                  <span className="material-symbols-outlined text-[18px] text-indigo-500">workspace_premium</span>
+                  Gói tài khoản
+                </span>
+                <span className="flex items-center gap-1 text-xs font-semibold text-indigo-600">
+                  Nâng cấp
+                  <span className="material-symbols-outlined text-[15px]">chevron_right</span>
+                </span>
+              </Link>
+              <div className="grid grid-cols-2 gap-2">
+                <Link
+                  to="/wallet"
+                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-sm font-semibold text-white no-underline transition-colors hover:bg-indigo-700"
+                >
+                  <span className="material-symbols-outlined text-[18px]">add_card</span>
+                  Nạp tiền
+                </Link>
+                <Link
+                  to="/payments"
+                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 no-underline transition-colors hover:border-indigo-300 hover:text-indigo-600"
+                >
+                  <span className="material-symbols-outlined text-[18px]">payments</span>
+                  Thanh toán
+                </Link>
+              </div>
+              <Link to="/my-orders" className="flex items-center justify-between text-xs font-medium text-slate-500 no-underline hover:text-indigo-600">
+                <span className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[16px]">receipt_long</span>
+                  Đơn hàng &amp; giao dịch
+                </span>
+                <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+              </Link>
+            </div>
+          </section>
+
           {/* Năng lực cốt lõi AI — khối demo */}
           <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-space-xs">
                 <span className={`${ICON} text-[20px] text-primary`}>psychology</span>
-                <h2 className="m-0 text-ds-headline-sm font-bold tracking-tight text-on-surface">Năng lực cốt lõi AI</h2>
+                <h2 className="m-0 text-ds-headline-sm font-bold tracking-tight text-slate-900">Năng lực cốt lõi AI</h2>
               </div>
               <Pill icon="hive">Khối demo</Pill>
             </div>
@@ -468,15 +533,15 @@ const CandidateDashboard: React.FC = () => {
             ].map((row) => (
               <div key={row.label} className="flex flex-col gap-1">
                 <div className="flex items-center justify-between gap-2 text-ds-label-sm">
-                  <span className="min-w-0 truncate text-on-surface">{row.label}</span>
+                  <span className="min-w-0 truncate text-slate-900">{row.label}</span>
                   <span className="shrink-0 font-bold text-primary tabular-nums">{row.pct}%</span>
                 </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                   <div className="h-full rounded-full bg-primary" style={{ width: `${row.pct}%` }} />
                 </div>
               </div>
             ))}
-            <p className="m-0 text-ds-body-sm text-outline">
+            <p className="m-0 text-ds-body-sm text-slate-400">
               Hệ thống chưa chấm điểm theo từng năng lực, chỉ có điểm tổng của mỗi phiên — xem cột "Điểm AI trung bình" ở trên.
             </p>
           </section>
@@ -486,8 +551,8 @@ const CandidateDashboard: React.FC = () => {
             <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-space-xs">
-                  <span className={`${ICON} text-[20px] text-secondary-teal`}>work</span>
-                  <h2 className="m-0 text-ds-headline-sm font-bold tracking-tight text-on-surface">Việc làm mới</h2>
+                  <span className={`${ICON} text-[20px] text-teal-600`}>work</span>
+                  <h2 className="m-0 text-ds-headline-sm font-bold tracking-tight text-slate-900">Việc làm mới</h2>
                 </div>
                 <Link to="/jobs" className="text-ds-label-sm text-primary hover:underline">
                   Bảng tin
@@ -496,17 +561,17 @@ const CandidateDashboard: React.FC = () => {
               {jobs.slice(0, 3).map((job) => (
                 <div key={job.id} className={`${SOFT} flex flex-col gap-1 p-space-md`}>
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="m-0 text-ds-label-lg font-semibold text-on-surface">{job.title}</h3>
+                    <h3 className="m-0 text-ds-label-lg font-semibold text-slate-900">{job.title}</h3>
                   </div>
-                  <p className="m-0 text-ds-body-sm text-on-surface-variant">
+                  <p className="m-0 text-ds-body-sm text-slate-600">
                     {job.companyName}
                     {job.location ? ` • ${job.location}` : ''}
                   </p>
                   <div className="mt-1 flex items-center justify-between gap-2">
-                    <span className="text-ds-label-md font-semibold text-secondary-teal">{job.salaryRange ?? 'Chưa công khai'}</span>
+                    <span className="text-ds-label-md font-semibold text-teal-600">{job.salaryRange ?? 'Chưa công khai'}</span>
                     <Link
                       to={`/jobs/${job.id}`}
-                      className="inline-flex h-8 items-center rounded-lg bg-primary-container px-3 text-ds-label-sm font-semibold text-on-primary no-underline transition-colors hover:bg-primary"
+                      className="inline-flex h-8 items-center rounded-lg bg-indigo-600 px-3 text-ds-label-sm font-semibold text-on-primary no-underline transition-colors hover:bg-primary"
                     >
                       Ứng tuyển
                     </Link>
@@ -517,7 +582,7 @@ const CandidateDashboard: React.FC = () => {
           )}
 
           {/* Mẹo vàng từ AI Copilot — khối demo */}
-          <section className="rounded-xl bg-primary-container p-space-lg text-on-primary shadow-sm">
+          <section className="rounded-xl bg-indigo-600 p-space-lg text-on-primary shadow-sm">
             <div className="flex items-center gap-space-xs">
               <span className={`${ICON} text-[18px] text-secondary-container`}>bolt</span>
               <span className="text-ds-label-sm font-bold uppercase tracking-wider text-secondary-container">Mẹo từ AI Copilot</span>
@@ -528,7 +593,7 @@ const CandidateDashboard: React.FC = () => {
             </p>
             <Link
               to="/mock-interviews"
-              className="mt-space-md inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-surface-container-lowest px-4 text-ds-label-md font-bold text-primary shadow-sm no-underline transition-transform active:scale-95"
+              className="mt-space-md inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-white px-4 text-ds-label-md font-bold text-primary shadow-sm no-underline transition-transform active:scale-95"
             >
               Tạo bài phỏng vấn thử 15 phút
             </Link>
@@ -548,6 +613,7 @@ const ROLE_LINKS: Record<string, { to: string; label: string; description: strin
     { to: '/my-jobs', label: 'Tin đã đăng', description: 'Quản lý các tin đang tuyển', icon: 'work' },
     { to: '/jobs/new', label: 'Đăng tin mới', description: 'Tạo tin tuyển dụng mới', icon: 'add' },
     { to: '/my-slots', label: 'Lịch trống', description: 'Khung giờ phỏng vấn bạn mở cho ứng viên', icon: 'event' },
+    { to: '/payments', label: 'Ví & thanh toán', description: 'Nạp tiền, mua gói và theo dõi giao dịch', icon: 'account_balance_wallet' },
     { to: '/packages', label: 'Gói dịch vụ', description: 'Mua lượt đăng tin và lượt phỏng vấn', icon: 'deployed_code' },
     { to: '/my-orders', label: 'Đơn hàng', description: 'Lịch sử thanh toán các gói dịch vụ', icon: 'receipt_long' },
   ],
@@ -562,6 +628,18 @@ const ROLE_LINKS: Record<string, { to: string; label: string; description: strin
 const WorkspaceDashboard: React.FC = () => {
   const { user } = useAuth();
   const role = user?.role ?? '';
+  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    PaymentService.getWallet()
+      .then((res) => setWallet(res.data.data ?? null))
+      .catch(() => { /* ví vẫn hiển thị nút nạp/thanh toán khi API lỗi */ });
+    OrderService.getMyOrders()
+      .then((res) => setOrders(res.data.data ?? []))
+      .catch(() => { /* danh sách đơn để trống khi chưa có dữ liệu */ });
+  }, []);
+
   const links = [
     ...(role === 'ROLE_ADMIN'
       ? [...ROLE_LINKS.admin, ...ROLE_LINKS.employer]
@@ -570,33 +648,140 @@ const WorkspaceDashboard: React.FC = () => {
         : ROLE_LINKS.employer),
   ].filter((item) => role !== 'ROLE_INTERVIEWER' || !item.to.startsWith('/admin'));
 
+  const pendingOrders = orders.filter((order) => order.status === 'PENDING');
+  const paidTotal = orders
+    .filter((order) => order.status === 'PAID')
+    .reduce((sum, order) => sum + order.amount, 0);
+
   return (
     <div className="flex flex-col gap-6">
-      <Card>
-        <h1 className="m-0 text-headline-lg tracking-tight text-ink">
-          Chào mừng {user?.fullName} trở lại!
-        </h1>
-        <p className="m-0 mt-1 text-body-md text-ink-variant">Các công cụ dành cho vai trò của bạn.</p>
-      </Card>
+      {/* Hero */}
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 px-6 py-8 text-white shadow-xl sm:px-10 sm:py-10">
+        <div className="absolute -right-16 -top-16 h-52 w-52 rounded-full bg-indigo-500/20 blur-2xl" />
+        <div className="absolute -bottom-20 right-24 h-44 w-44 rounded-full bg-teal-300/10 blur-2xl" />
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold backdrop-blur">
+              <span className="material-symbols-outlined text-[15px]">space_dashboard</span>
+              Bảng điều khiển nhà tuyển dụng
+            </span>
+            <h1 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">
+              Chào mừng {user?.fullName ?? 'bạn'} trở lại!
+            </h1>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-300">
+              Quản lý tin tuyển dụng, lịch phỏng vấn và thanh toán của bạn trong một nơi duy nhất.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              to="/jobs/new"
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 no-underline shadow-sm transition-transform hover:-translate-y-0.5"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              Đăng tin mới
+            </Link>
+            <Link
+              to="/payments"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white no-underline backdrop-blur transition-colors hover:bg-white/20"
+            >
+              <span className="material-symbols-outlined text-[18px]">account_balance_wallet</span>
+              Ví &amp; thanh toán
+            </Link>
+          </div>
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {links.map((item) => (
-          <Link
-            key={item.to}
-            to={item.to}
-            className="no-underline"
-          >
-            <Card className="flex h-full items-start gap-3 transition-colors hover:bg-surface-low">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-mid text-primary">
-                <span className={`${ICON} text-[18px]`}>{item.icon}</span>
-              </span>
-              <span className="flex min-w-0 flex-col">
-                <span className="text-headline-sm text-ink">{item.label}</span>
-                <span className="text-body-sm text-ink-variant">{item.description}</span>
-              </span>
-            </Card>
-          </Link>
+      {/* Wallet summary */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {[
+          {
+            label: 'Số dư khả dụng',
+            value: wallet ? formatVnd(wallet.availableBalance) : '—',
+            icon: 'account_balance_wallet',
+            tone: 'bg-indigo-50 text-indigo-600',
+          },
+          {
+            label: 'Đơn chờ thanh toán',
+            value: `${pendingOrders.length} đơn`,
+            icon: 'receipt_long',
+            tone: 'bg-violet-50 text-violet-600',
+          },
+        ].map((item) => (
+          <div key={item.label} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${item.tone}`}>
+              <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
+            </span>
+            <div className="min-w-0">
+              <p className="m-0 text-xs font-medium uppercase tracking-wide text-slate-500">{item.label}</p>
+              <p className="m-0 mt-1 truncate text-lg font-bold text-slate-900">{item.value}</p>
+            </div>
+          </div>
         ))}
+      </div>
+
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
+        {/* Wallet actions */}
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:col-span-4">
+          <div className="bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-600 px-5 py-4 text-white">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <span className="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+              Ví &amp; thanh toán
+            </div>
+            <p className="m-0 mt-3 text-[11px] font-medium uppercase tracking-wide text-indigo-200">Tổng đã thanh toán</p>
+            <p className="m-0 text-2xl font-bold tracking-tight">{formatVnd(paidTotal)}</p>
+          </div>
+          <div className="flex flex-col gap-2 p-4">
+            <Link
+              to="/wallet"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white no-underline transition-colors hover:bg-indigo-700"
+            >
+              <span className="material-symbols-outlined text-[18px]">add_card</span>
+              Nạp tiền vào ví
+            </Link>
+            <Link
+              to="/packages"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 no-underline transition-colors hover:border-indigo-300 hover:text-indigo-600"
+            >
+              <span className="material-symbols-outlined text-[18px]">inventory_2</span>
+              Mua gói dịch vụ
+            </Link>
+            <Link
+              to="/my-orders"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 no-underline transition-colors hover:border-indigo-300 hover:text-indigo-600"
+            >
+              <span className="material-symbols-outlined text-[18px]">receipt_long</span>
+              Đơn hàng của tôi
+            </Link>
+          </div>
+        </section>
+
+        {/* Quick links */}
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-8">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <h2 className="m-0 text-lg font-bold text-slate-900">Công cụ tuyển dụng</h2>
+              <p className="m-0 mt-0.5 text-sm text-slate-500">Các lối tắt dành cho vai trò của bạn.</p>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {links.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="group flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 no-underline transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-white hover:shadow-md"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-indigo-600 shadow-sm group-hover:bg-indigo-50">
+                  <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-slate-900 group-hover:text-indigo-600">{item.label}</span>
+                  <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">{item.description}</span>
+                </span>
+                <span className="material-symbols-outlined ml-auto text-[18px] text-slate-300 group-hover:text-indigo-500">arrow_forward</span>
+              </Link>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   );

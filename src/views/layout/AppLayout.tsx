@@ -74,7 +74,7 @@ const ROLE_CHIP: Record<string, string> = {
 
 const NAV_ITEM_CLASS =
   'flex items-center gap-2 rounded-lg px-2 py-1 text-label-md text-ink-variant no-underline transition-colors hover:bg-surface-high hover:text-ink';
-const NAV_ITEM_ACTIVE_CLASS = 'bg-primary-container font-label-md text-on-primary';
+const NAV_ITEM_ACTIVE_CLASS = 'bg-indigo-600 font-label-md text-on-primary';
 
 const AppLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -113,7 +113,7 @@ const AppLayout: React.FC = () => {
             <div className="flex h-16 items-center px-6">
               <BrandLogo
                 markClass="h-8"
-                nameClass="text-[15px] font-bold tracking-tight text-on-surface"
+                nameClass="text-[15px] font-bold tracking-tight text-slate-900"
                 sub="Nhà tuyển dụng"
               />
             </div>
@@ -122,7 +122,7 @@ const AppLayout: React.FC = () => {
               <nav className="flex flex-col gap-4">
                 {workspaces.map((section) => (
                   <div key={section.title} className="flex flex-col gap-1">
-                    <span className="px-2 text-label-sm uppercase text-outline tracking-wider text-[11px]">{section.title}</span>
+                    <span className="px-2 text-label-sm uppercase text-slate-400 tracking-wider text-[11px]">{section.title}</span>
                     {section.items.map((item) => (
                       <NavLink
                         key={item.to}
@@ -131,8 +131,8 @@ const AppLayout: React.FC = () => {
                         className={({ isActive }) =>
                           `flex items-center gap-3 px-4 py-2 rounded-lg font-label-lg text-label-lg transition-all ${
                             isActive 
-                              ? 'bg-primary-container text-on-primary shadow-sm' 
-                              : 'text-ink-variant hover:bg-surface-container hover:text-ink'
+                              ? 'bg-indigo-600 text-on-primary shadow-sm' 
+                              : 'text-ink-variant hover:bg-slate-100 hover:text-ink'
                           }`
                         }
                       >
@@ -158,14 +158,14 @@ const AppLayout: React.FC = () => {
                   <span className="h-2 w-2 rounded-full bg-primary" />
                   <span className="text-label-sm text-ink">{roleChip}</span>
                 </span>
-                <span className="material-symbols-outlined text-[16px] text-outline-strong">unfold_more</span>
+                <span className="material-symbols-outlined text-[16px] text-slate-500">unfold_more</span>
               </div>
             </div>
 
             <nav className="mt-4 flex flex-col gap-4 px-3">
               {workspaces.map((section) => (
                 <div key={section.title} className="flex flex-col gap-1">
-                  <span className="px-2 text-label-sm uppercase text-outline-strong">{section.title}</span>
+                  <span className="px-2 text-label-sm uppercase text-slate-500">{section.title}</span>
                   {section.items.map((item) => (
                     <NavLink
                       key={item.to}
@@ -202,7 +202,7 @@ const AppLayout: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-surface font-sans text-ink">
+    <div className={`min-h-screen bg-surface font-sans text-ink ${isRecruiterHub ? "theme-home" : ""}`}>
       <aside className="fixed left-0 top-0 z-50 hidden h-full w-72 flex-col justify-between overflow-y-auto bg-card shadow-header lg:flex">
         {sidebar}
       </aside>
@@ -216,7 +216,7 @@ const AppLayout: React.FC = () => {
         </div>
       )}
 
-      <header className={`fixed left-0 right-0 top-0 z-40 flex h-16 items-center justify-between px-6 shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-md lg:left-72 ${isRecruiterHub ? 'bg-surface-container-lowest/90' : 'bg-surface/80'}`}>
+      <header className={`fixed left-0 right-0 top-0 z-40 flex h-16 items-center justify-between px-6 shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-md lg:left-72 ${isRecruiterHub ? 'bg-white/90' : 'bg-surface/80'}`}>
         <div className="flex items-center gap-3 flex-1 max-w-md">
           <button
             type="button"
@@ -227,9 +227,9 @@ const AppLayout: React.FC = () => {
             <span className="material-symbols-outlined text-[20px]">menu</span>
           </button>
           <form className="relative w-full" onSubmit={onSearch}>
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
             <input
-              className="w-full h-10 pl-10 pr-3 rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              className="w-full h-10 pl-10 pr-3 rounded-lg bg-slate-50 text-slate-900 placeholder:text-slate-400 font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               placeholder="Tìm kiếm ứng viên, vị trí JD, kỹ năng..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -242,7 +242,7 @@ const AppLayout: React.FC = () => {
           <Link
             to="/notifications"
             aria-label="Thông báo"
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-on-surface-variant no-underline hover:bg-surface-container hover:text-on-surface transition-colors"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 no-underline hover:bg-slate-100 hover:text-slate-900 transition-colors"
           >
             <span className="material-symbols-outlined text-[22px]">notifications</span>
           </Link>
@@ -256,7 +256,7 @@ const AppLayout: React.FC = () => {
                 </span>
                 <div className="flex flex-col text-left">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-label-md text-label-md text-on-surface font-semibold">{user?.fullName ?? user?.email}</span>
+                    <span className="font-label-md text-label-md text-slate-900 font-semibold">{user?.fullName ?? user?.email}</span>
                     <span className="px-1.5 py-0.5 rounded bg-primary-fixed text-primary font-label-sm text-[10px] font-bold">NHÀ TUYỂN DỤNG</span>
                   </div>
                   <span className="font-body-sm text-body-sm text-ink-variant text-[11px] leading-3">{roleChip}</span>

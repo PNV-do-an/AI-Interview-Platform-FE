@@ -65,21 +65,21 @@ const InsightItem: React.FC<{ icon: string; iconClass: string; title: string; bo
   <div className={`flex items-start gap-space-sm rounded-lg p-space-md ${SOFT}`}>
     <span className={`${ICON} mt-0.5 shrink-0 text-[20px] ${iconClass}`}>{icon}</span>
     <div className="flex min-w-0 flex-col gap-0.5">
-      <span className="break-words font-semibold text-on-surface">{title}</span>
-      <p className="m-0 whitespace-pre-line text-ds-body-sm text-on-surface-variant">{body}</p>
-      {meta && <span className="text-ds-label-sm text-outline">{meta}</span>}
+      <span className="break-words font-semibold text-slate-900">{title}</span>
+      <p className="m-0 whitespace-pre-line text-ds-body-sm text-slate-600">{body}</p>
+      {meta && <span className="text-ds-label-sm text-slate-400">{meta}</span>}
     </div>
   </div>
 );
 
 /** Ô số liệu nhỏ trong phần tổng kết trắc nghiệm. */
 const Stat: React.FC<{ icon: string; label: string; value: string; tone: string }> = ({ icon, label, value, tone }) => (
-  <div className="flex flex-col gap-1 rounded-lg bg-surface-container-low p-space-md">
+  <div className="flex flex-col gap-1 rounded-lg bg-slate-50 p-space-md">
     <span className={`flex items-center gap-1.5 text-ds-label-sm font-medium ${tone}`}>
       <span className={`${ICON} text-[18px]`}>{icon}</span>
       {label}
     </span>
-    <span className="text-ds-headline-md font-bold text-on-surface tabular-nums">{value}</span>
+    <span className="text-ds-headline-md font-bold text-slate-900 tabular-nums">{value}</span>
   </div>
 );
 
@@ -266,48 +266,48 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
       {/* 1. Đầu trang: breadcrumb + chip id + tiêu đề + meta thật + action */}
       <div className="flex flex-col gap-space-lg lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0 flex-1">
-          <nav className="flex flex-wrap items-center gap-space-xs text-ds-label-md text-on-surface-variant">
-            <Link to="/mock-interviews" className="no-underline text-on-surface-variant hover:text-primary">
+          <nav className="flex flex-wrap items-center gap-space-xs text-ds-label-md text-slate-600">
+            <Link to="/mock-interviews" className="no-underline text-slate-600 hover:text-primary">
               <span className="flex items-center gap-1">
                 <span className={`${ICON} text-[16px] text-primary`}>psychology</span>
                 AI Interview
               </span>
             </Link>
-            <span className="text-outline-variant">/</span>
-            <Link to="/mock-interviews/history" className="no-underline text-on-surface-variant hover:text-primary">
+            <span className="text-slate-400-variant">/</span>
+            <Link to="/mock-interviews/history" className="no-underline text-slate-600 hover:text-primary">
               Lịch sử &amp; Báo cáo
             </Link>
-            <span className="text-outline-variant">/</span>
-            <span className="flex items-center gap-1.5 font-semibold text-on-surface">
+            <span className="text-slate-400-variant">/</span>
+            <span className="flex items-center gap-1.5 font-semibold text-slate-900">
               Báo cáo kết quả phiên phỏng vấn
-              <span className="rounded bg-surface-container-high px-space-xs py-0.5 text-ds-label-sm text-on-surface">
+              <span className="rounded bg-slate-200 px-space-xs py-0.5 text-ds-label-sm text-slate-900">
                 #AV-{session.id}
               </span>
             </span>
           </nav>
 
           <div className="flex flex-wrap items-center gap-space-md pt-space-xs">
-            <h1 className="text-ds-headline-xl font-bold tracking-tight text-on-surface">
+            <h1 className="text-ds-headline-xl font-bold tracking-tight text-slate-900">
               Báo cáo Đánh giá Phỏng vấn AI
             </h1>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary-container px-space-md py-1 text-ds-label-md text-on-secondary-container">
-              <span className="h-1.5 w-1.5 rounded-full bg-secondary-teal" />
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-100 px-space-md py-1 text-ds-label-md text-teal-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-teal-600" />
               {session.status === 'COMPLETED'
                 ? `Hoàn thành: ${fmtServer(session.completedAt ?? session.createdAt, 'datetime')}`
                 : 'Phiên chưa kết thúc'}
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-space-lg pt-1 text-ds-body-sm text-on-surface-variant">
+          <div className="flex flex-wrap items-center gap-space-lg pt-1 text-ds-body-sm text-slate-600">
             <span className="flex items-center gap-space-xs">
               <span className={`${ICON} text-[18px] text-primary`}>badge</span>
-              <span className="font-medium text-on-surface">Vị trí:</span>
+              <span className="font-medium text-slate-900">Vị trí:</span>
               <span>{titleOfSession(session)}</span>
             </span>
             <span className="h-1 w-1 rounded-full bg-outline-variant" />
             <span className="flex items-center gap-space-xs">
-              <span className={`${ICON} text-[18px] text-outline`}>timelapse</span>
-              <span className="font-medium text-on-surface">Thời lượng:</span>
+              <span className={`${ICON} text-[18px] text-slate-400`}>timelapse</span>
+              <span className="font-medium text-slate-900">Thời lượng:</span>
               <span>
                 {totalSec > 0 ? `${Math.max(1, Math.round(totalSec / 60))} phút` : 'chưa ghi nhận'}
                 {` (Hoàn thành ${rows.length}/${session.questionCount || rows.length} câu)`}
@@ -317,7 +317,7 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
               <>
                 <span className="h-1 w-1 rounded-full bg-outline-variant" />
                 <span className="flex items-center gap-space-xs">
-                  <span className={`${ICON} text-[18px] text-outline`}>business</span>
+                  <span className={`${ICON} text-[18px] text-slate-400`}>business</span>
                   <span>{session.companyName}</span>
                 </span>
               </>
@@ -331,7 +331,7 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
             Luyện tập lại phiên này
           </Link>
           <button type="button" onClick={() => window.print()} className={adminButton('ghost', 'h-10')}>
-            <span className={`${ICON} text-[18px] text-outline`}>download</span>
+            <span className={`${ICON} text-[18px] text-slate-400`}>download</span>
             Xuất báo cáo PDF
           </button>
           <Link to="/mock-interviews" className={adminButton('primary', 'h-10 no-underline')}>
@@ -346,8 +346,8 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
       {session.status !== 'COMPLETED' ? (
         <div className={`${CARD} flex flex-col items-center gap-space-md p-space-2xl text-center`}>
           <span className={`${ICON} text-[34px] text-primary`}>videocam</span>
-          <p className="m-0 text-ds-headline-sm font-bold text-on-surface">Phiên vẫn đang mở</p>
-          <p className="m-0 max-w-md text-ds-body-sm text-on-surface-variant">
+          <p className="m-0 text-ds-headline-sm font-bold text-slate-900">Phiên vẫn đang mở</p>
+          <p className="m-0 max-w-md text-ds-body-sm text-slate-600">
             Kết thúc phiên trong phòng phỏng vấn để hệ thống tự tổng hợp báo cáo đánh giá.
           </p>
           <Link to={`/mock-interviews/${session.id}`} className={adminButton('primary', 'h-11 no-underline')}>
@@ -372,10 +372,10 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
             <div className="relative z-10 flex flex-1 flex-col justify-between gap-space-lg">
               <div>
                 <div className="mb-space-md flex flex-wrap items-center justify-between gap-2 border-b border-surface-container-high pb-space-sm">
-                  <h2 className="text-ds-headline-sm font-bold text-on-surface">
+                  <h2 className="text-ds-headline-sm font-bold text-slate-900">
                     Phân tích Năng lực Cốt lõi (Core Competencies)
                   </h2>
-                  <span className="text-ds-label-sm uppercase tracking-wider text-outline">
+                  <span className="text-ds-label-sm uppercase tracking-wider text-slate-400">
                     Chấm từ {rows.length} câu đã chốt
                   </span>
                 </div>
@@ -386,16 +386,16 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
                     return (
                       <div key={dim.key} className="flex flex-col gap-1">
                         <div className="flex flex-wrap items-center justify-between gap-2 text-ds-label-md">
-                          <span className="flex items-center gap-1.5 font-semibold text-on-surface">
+                          <span className="flex items-center gap-1.5 font-semibold text-slate-900">
                             <span className={`${ICON} text-[18px] text-primary`}>{dimIcon(dim.key)}</span>
                             {dim.label}
                           </span>
-                          <span className="tabular-nums text-on-surface-variant">{value}/100</span>
+                          <span className="tabular-nums text-slate-600">{value}/100</span>
                         </div>
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container">
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
                           <div className="h-full rounded-full bg-primary" style={{ width: `${value}%` }} />
                         </div>
-                        <span className="text-ds-label-sm text-on-surface-variant">{dim.hint}</span>
+                        <span className="text-ds-label-sm text-slate-600">{dim.hint}</span>
                       </div>
                     );
                   })}
@@ -403,19 +403,19 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
               </div>
 
               <div className="flex flex-wrap items-center gap-space-md border-t border-surface-container-high pt-space-md">
-                <span className="flex items-center gap-1.5 rounded-full bg-surface-container-low px-space-md py-1 text-ds-label-sm text-on-surface-variant">
-                  <span className={`${ICON} text-[16px] text-secondary-teal`}>task_alt</span>
+                <span className="flex items-center gap-1.5 rounded-full bg-slate-50 px-space-md py-1 text-ds-label-sm text-slate-600">
+                  <span className={`${ICON} text-[16px] text-teal-600`}>task_alt</span>
                   Đã chốt {rows.length} câu
                 </span>
-                <span className="flex items-center gap-1.5 rounded-full bg-surface-container-low px-space-md py-1 text-ds-label-sm text-on-surface-variant">
+                <span className="flex items-center gap-1.5 rounded-full bg-slate-50 px-space-md py-1 text-ds-label-sm text-slate-600">
                   <span className={`${ICON} text-[16px] text-primary`}>record_voice_over</span>
                   Trung bình {avgWords} từ/câu
                 </span>
-                <span className="flex items-center gap-1.5 rounded-full bg-surface-container-low px-space-md py-1 text-ds-label-sm text-on-surface-variant">
-                  <span className={`${ICON} text-[16px] text-outline`}>timer</span>
+                <span className="flex items-center gap-1.5 rounded-full bg-slate-50 px-space-md py-1 text-ds-label-sm text-slate-600">
+                  <span className={`${ICON} text-[16px] text-slate-400`}>timer</span>
                   {totalSec > 0 ? `~${Math.max(1, Math.round(totalSec / 60))} phút trả lời` : 'Chưa ghi nhận thời lượng'}
                 </span>
-                <span className="flex items-center gap-1.5 rounded-full bg-surface-container-low px-space-md py-1 text-ds-label-sm text-on-surface-variant">
+                <span className="flex items-center gap-1.5 rounded-full bg-slate-50 px-space-md py-1 text-ds-label-sm text-slate-600">
                   <span className={`${ICON} text-[16px] text-primary`}>insights</span>
                   Trung bình câu: {avgScore}/100
                 </span>
@@ -428,12 +428,12 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
             <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
               <div className="flex items-center justify-between gap-space-sm border-b border-surface-container-high pb-space-md">
                 <div className="flex items-center gap-space-sm">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary-container text-on-secondary-container">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-100 text-teal-700">
                     <span className={`${ICON} text-[24px]`}>task_alt</span>
                   </span>
                   <div className="flex flex-col">
-                    <h2 className="text-ds-headline-sm font-bold text-on-surface">Điểm mạnh nổi bật</h2>
-                    <span className="text-ds-label-sm text-secondary-teal">
+                    <h2 className="text-ds-headline-sm font-bold text-slate-900">Điểm mạnh nổi bật</h2>
+                    <span className="text-ds-label-sm text-teal-600">
                       {strongest.length > 0 ? `${strongest.length} câu có điểm cao nhất` : 'Chưa đủ dữ liệu'}
                     </span>
                   </div>
@@ -444,7 +444,7 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
                 <InsightItem
                   key={row.index}
                   icon="check_circle"
-                  iconClass="text-secondary-teal"
+                  iconClass="text-teal-600"
                   title={`Câu ${row.index + 1}: ${clipText(row.question, 70)}`}
                   body={row.feedback}
                   meta={`${rowScore(row)}/100${row.durationSec != null ? ` • trả lời ${fmtDuration(row.durationSec)}` : ''}`}
@@ -453,12 +453,12 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
                 <InsightItem
                   key={`strength-${i}`}
                   icon="check_circle"
-                  iconClass="text-secondary-teal"
+                  iconClass="text-teal-600"
                   title={`Điểm mạnh ${i + 1}`}
                   body={line}
                 />
               )) : (
-                <p className="m-0 rounded-lg bg-surface-container-low p-space-md text-ds-body-sm text-on-surface-variant">
+                <p className="m-0 rounded-lg bg-slate-50 p-space-md text-ds-body-sm text-slate-600">
                   Chưa ghi nhận câu trả lời nào để rút ra điểm mạnh.
                 </p>
               )}
@@ -467,11 +467,11 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
             <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
               <div className="flex items-center justify-between gap-space-sm border-b border-surface-container-high pb-space-md">
                 <div className="flex items-center gap-space-sm">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-error-container text-on-error-container">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 text-red-700">
                     <span className={`${ICON} text-[24px]`}>troubleshoot</span>
                   </span>
                   <div className="flex flex-col">
-                    <h2 className="text-ds-headline-sm font-bold text-on-surface">Cần cải thiện</h2>
+                    <h2 className="text-ds-headline-sm font-bold text-slate-900">Cần cải thiện</h2>
                     <span className="text-ds-label-sm text-error">
                       {weakest.length > 0 ? `${weakest.length} câu cần xem lại` : 'Không có câu điểm thấp'}
                     </span>
@@ -497,7 +497,7 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
                   body={line}
                 />
               )) : (
-                <p className="m-0 rounded-lg bg-surface-container-low p-space-md text-ds-body-sm text-on-surface-variant">
+                <p className="m-0 rounded-lg bg-slate-50 p-space-md text-ds-body-sm text-slate-600">
                   Chưa có câu trả lời nào dưới ngưỡng cần cải thiện.
                 </p>
               )}
@@ -510,7 +510,7 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
                     <span className={`${ICON} text-[24px]`}>auto_awesome</span>
                   </span>
                   <div className="flex flex-col">
-                    <h2 className="text-ds-headline-sm font-bold text-on-surface">Gợi ý từ AI Mentor</h2>
+                    <h2 className="text-ds-headline-sm font-bold text-slate-900">Gợi ý từ AI Mentor</h2>
                     <span className="text-ds-label-sm text-primary">Dựa trên chính câu trả lời của bạn</span>
                   </div>
                 </div>
@@ -537,23 +537,23 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
           <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
             <div className="flex flex-col gap-space-sm border-b border-surface-container-high pb-space-md md:flex-row md:items-center md:justify-between">
               <div>
-                <h2 className="text-ds-headline-sm font-bold text-on-surface">
+                <h2 className="text-ds-headline-sm font-bold text-slate-900">
                   Chi tiết Đánh giá Từng câu hỏi ({rows.length}/{session.questionCount || rows.length} câu)
                 </h2>
-                <p className="text-ds-body-sm text-on-surface-variant">
+                <p className="text-ds-body-sm text-slate-600">
                   Nội dung bạn đã trả lời và nhận xét chấm từ chính transcript của phiên
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-space-sm">
                 {rows.length > 0 && (
-                  <span className="rounded-full bg-secondary-container px-space-md py-1 text-ds-label-md font-semibold text-on-secondary-container tabular-nums">
+                  <span className="rounded-full bg-teal-100 px-space-md py-1 text-ds-label-md font-semibold text-teal-700 tabular-nums">
                     Trung bình: {(avgScore / 10).toFixed(1)}/10
                   </span>
                 )}
                 <button type="button" onClick={expandAll} className="rounded px-2 py-1 text-ds-label-md text-primary hover:underline">
                   Mở rộng tất cả
                 </button>
-                <button type="button" onClick={collapseAll} className="rounded px-2 py-1 text-ds-label-md text-on-surface-variant hover:text-on-surface">
+                <button type="button" onClick={collapseAll} className="rounded px-2 py-1 text-ds-label-md text-slate-600 hover:text-slate-900">
                   Thu gọn
                 </button>
               </div>
@@ -576,21 +576,21 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
                         type="button"
                         onClick={() => toggle(row.index)}
                         aria-expanded={open}
-                        className="flex w-full items-center justify-between gap-space-md rounded-lg px-space-lg py-space-md text-left transition-colors hover:bg-surface-container"
+                        className="flex w-full items-center justify-between gap-space-md rounded-lg px-space-lg py-space-md text-left transition-colors hover:bg-slate-100"
                       >
                         <span className="flex min-w-0 items-center gap-space-md pr-space-md">
                           <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ds-label-lg font-bold ${
-                            score >= 70 ? 'bg-secondary-container text-on-secondary-container'
+                            score >= 70 ? 'bg-teal-100 text-teal-700'
                               : score >= 50 ? 'bg-primary-fixed text-primary'
-                                : 'bg-error-container text-on-error-container'
+                                : 'bg-red-100 text-red-700'
                           }`}>
                             {row.index + 1}
                           </span>
                           <span className="flex min-w-0 flex-col">
-                            <span className="break-words text-ds-headline-sm font-semibold text-on-surface">
+                            <span className="break-words text-ds-headline-sm font-semibold text-slate-900">
                               Câu {row.index + 1}: {row.question}
                             </span>
-                            <span className="text-ds-body-sm text-on-surface-variant">
+                            <span className="text-ds-body-sm text-slate-600">
                               {row.durationSec != null
                                 ? `Thời lượng: ${fmtDuration(row.durationSec)}`
                                 : 'Chưa ghi nhận thời lượng'}
@@ -599,7 +599,7 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
                         </span>
                         <span className="flex shrink-0 items-center gap-space-md">
                           <Pill tone={scoreTone(score)} icon="stars">{score}/100</Pill>
-                          <span className={`${ICON} text-outline transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
+                          <span className={`${ICON} text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
                             expand_more
                           </span>
                         </span>
@@ -607,28 +607,28 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
 
                       {open && (
                         <div className="grid grid-cols-1 gap-space-md px-space-lg pb-space-lg lg:grid-cols-2">
-                          <div className="flex flex-col gap-1.5 rounded-lg bg-surface-container-lowest p-space-md shadow-sm">
-                            <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase text-outline">
+                          <div className="flex flex-col gap-1.5 rounded-lg bg-white p-space-md shadow-sm">
+                            <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase text-slate-400">
                               <span className={`${ICON} text-[16px]`}>transcribe</span>
                               Nội dung câu trả lời
                             </span>
                             {row.answerText ? (
-                              <p className="m-0 whitespace-pre-wrap text-ds-body-sm italic leading-relaxed text-on-surface">
+                              <p className="m-0 whitespace-pre-wrap text-ds-body-sm italic leading-relaxed text-slate-900">
                                 “{row.answerText}”
                               </p>
                             ) : (
-                              <p className="m-0 text-ds-body-sm italic text-on-surface-variant">
+                              <p className="m-0 text-ds-body-sm italic text-slate-600">
                                 Không có bản ghi câu trả lời.
                               </p>
                             )}
                           </div>
 
-                          <div className="flex flex-col gap-1.5 rounded-lg bg-secondary-container/40 p-space-md">
-                            <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase text-on-secondary-container">
+                          <div className="flex flex-col gap-1.5 rounded-lg bg-teal-100/40 p-space-md">
+                            <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase text-teal-700">
                               <span className={`${ICON} text-[16px]`}>smart_toy</span>
                               Nhận xét chuyên sâu từ AI
                             </span>
-                            <p className="m-0 text-ds-body-sm leading-relaxed text-on-surface">
+                            <p className="m-0 text-ds-body-sm leading-relaxed text-slate-900">
                               {row.feedback}
                             </p>
                           </div>
@@ -644,10 +644,10 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
       ) : (
         <div className={`${CARD} flex flex-col items-center gap-space-md p-space-2xl text-center`}>
           <span className={`${ICON} animate-pulse text-[34px] text-primary`}>insights</span>
-          <p className="m-0 text-ds-headline-sm font-bold text-on-surface">
+          <p className="m-0 text-ds-headline-sm font-bold text-slate-900">
             Hệ thống đang tổng hợp báo cáo đánh giá
           </p>
-          <p className="m-0 max-w-md text-ds-body-sm text-on-surface-variant">
+          <p className="m-0 max-w-md text-ds-body-sm text-slate-600">
             Điểm 5 chiều và nhận xét từng câu được chấm tự động từ transcript phiên phỏng vấn.
             Bạn không cần tự đánh giá.
           </p>
@@ -662,10 +662,10 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
       <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
         <div className="flex flex-col gap-space-sm border-b border-surface-container-high pb-space-md md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-ds-headline-sm font-bold text-on-surface">
+            <h2 className="text-ds-headline-sm font-bold text-slate-900">
               Lịch sử phỏng vấn AI &amp; Quá trình tiến bộ
             </h2>
-            <p className="text-ds-body-sm text-on-surface-variant">
+            <p className="text-ds-body-sm text-slate-600">
               Theo dõi sự cải thiện điểm số qua các phiên luyện tập mô phỏng
             </p>
           </div>
@@ -698,17 +698,17 @@ const AvatarReportView: React.FC<{ sessionId: number }> = ({ sessionId }) => {
                   const isCurrent = item.id === session.id;
                   const itemScore = isCurrent && currentScore != null ? currentScore : item.overallScore;
                   return (
-                    <tr key={item.id} className="transition-colors hover:bg-surface-container-low/60">
+                    <tr key={item.id} className="transition-colors hover:bg-slate-50/60">
                       <td className={adminTdClass}>
                         <span className="flex flex-col">
                           <span>{fmtServer(item.createdAt, 'date')}</span>
-                          <span className="text-ds-label-sm text-outline">{fmtServer(item.createdAt, 'time')}</span>
+                          <span className="text-ds-label-sm text-slate-400">{fmtServer(item.createdAt, 'time')}</span>
                         </span>
                       </td>
                       <td className={adminTdClass}>
                         <span className="flex flex-col">
-                          <span className="font-medium text-on-surface">{titleOfSession(item)}</span>
-                          <span className="text-ds-label-sm text-outline">{INTERVIEW_MODE_LABELS[item.mode]}</span>
+                          <span className="font-medium text-slate-900">{titleOfSession(item)}</span>
+                          <span className="text-ds-label-sm text-slate-400">{INTERVIEW_MODE_LABELS[item.mode]}</span>
                         </span>
                       </td>
                       <td className={adminTdClass}>{progressOfSession(item)}</td>
@@ -782,7 +782,7 @@ const MockInterviewResultPage = () => {
 
   if (!user || user.role !== 'ROLE_USER') {
     return (
-      <div className="p-10 text-ds-body-md text-on-surface-variant">
+      <div className="p-10 text-ds-body-md text-slate-600">
         Vui lòng đăng nhập bằng tài khoản ứng viên.
       </div>
     );
@@ -829,37 +829,37 @@ const MockInterviewResultPage = () => {
       {/* 1. Đầu trang: breadcrumb + chip id + tiêu đề + meta thật + action */}
       <div className="flex flex-col gap-space-lg lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0 flex-1">
-          <nav className="flex flex-wrap items-center gap-space-xs text-ds-label-md text-on-surface-variant">
-            <Link to="/dashboard" className="no-underline text-on-surface-variant hover:text-primary">Trang chủ</Link>
-            <span className={`${ICON} text-outline text-[14px]`}>chevron_right</span>
-            <Link to="/mock-interviews/history" className="no-underline text-on-surface-variant hover:text-primary">Lịch sử &amp; Đánh giá</Link>
-            <span className={`${ICON} text-outline text-[14px]`}>chevron_right</span>
-            <span className="flex items-center gap-1.5 font-semibold text-on-surface">
+          <nav className="flex flex-wrap items-center gap-space-xs text-ds-label-md text-slate-600">
+            <Link to="/dashboard" className="no-underline text-slate-600 hover:text-primary">Trang chủ</Link>
+            <span className={`${ICON} text-slate-400 text-[14px]`}>chevron_right</span>
+            <Link to="/mock-interviews/history" className="no-underline text-slate-600 hover:text-primary">Lịch sử &amp; Đánh giá</Link>
+            <span className={`${ICON} text-slate-400 text-[14px]`}>chevron_right</span>
+            <span className="flex items-center gap-1.5 font-semibold text-slate-900">
               Báo cáo kết quả phiên phỏng vấn
-              <span className="rounded bg-surface-container-high px-space-xs py-0.5 text-ds-label-sm text-on-surface">
+              <span className="rounded bg-slate-200 px-space-xs py-0.5 text-ds-label-sm text-slate-900">
                 #PT-{session.id}
               </span>
             </span>
           </nav>
 
           <div className="flex flex-wrap items-center gap-space-md pt-space-xs">
-            <h1 className="text-ds-headline-xl font-bold tracking-tight text-on-surface">Báo cáo Đánh giá Phỏng vấn AI</h1>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary-container px-space-md py-1 text-ds-label-md text-on-secondary-container">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-secondary-teal" />
+            <h1 className="text-ds-headline-xl font-bold tracking-tight text-slate-900">Báo cáo Đánh giá Phỏng vấn AI</h1>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-100 px-space-md py-1 text-ds-label-md text-teal-700">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-teal-600" />
               {session.status === 'COMPLETED' ? `Hoàn thành: ${fmtServer(session.completedAt ?? session.createdAt, 'datetime')}` : 'Phiên chưa kết thúc'}
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-space-lg pt-1 text-ds-body-sm text-on-surface-variant">
+          <div className="flex flex-wrap items-center gap-space-lg pt-1 text-ds-body-sm text-slate-600">
             <span className="flex items-center gap-space-xs">
               <span className={`${ICON} text-[18px] text-primary`}>badge</span>
-              <span className="font-medium text-on-surface">Vị trí / Chủ đề:</span>
+              <span className="font-medium text-slate-900">Vị trí / Chủ đề:</span>
               <span>{roleLabel}</span>
             </span>
             <span className="h-1 w-1 rounded-full bg-outline-variant" />
             <span className="flex items-center gap-space-xs">
-              <span className={`${ICON} text-[18px] text-outline`}>timelapse</span>
-              <span className="font-medium text-on-surface">Thời lượng:</span>
+              <span className={`${ICON} text-[18px] text-slate-400`}>timelapse</span>
+              <span className="font-medium text-slate-900">Thời lượng:</span>
               <span>
                 {totalSec > 0 ? `${Math.round(totalSec / 60)} phút` : 'chưa ghi nhận'}
                 {` (Trả lời ${answeredCount}/${total} câu)`}
@@ -867,15 +867,15 @@ const MockInterviewResultPage = () => {
             </span>
             <span className="h-1 w-1 rounded-full bg-outline-variant" />
             <span className="flex items-center gap-space-xs">
-              <span className={`${ICON} text-[18px] text-secondary-teal`}>task_alt</span>
-              <span className="font-medium text-on-surface">Số câu đúng:</span>
-              <span className="font-semibold text-on-surface tabular-nums">{correctCount}/{total}</span>
+              <span className={`${ICON} text-[18px] text-teal-600`}>task_alt</span>
+              <span className="font-medium text-slate-900">Số câu đúng:</span>
+              <span className="font-semibold text-slate-900 tabular-nums">{correctCount}/{total}</span>
             </span>
             {session.companyName && (
               <>
                 <span className="h-1 w-1 rounded-full bg-outline-variant" />
                 <span className="flex items-center gap-space-xs">
-                  <span className={`${ICON} text-[18px] text-outline`}>business</span>
+                  <span className={`${ICON} text-[18px] text-slate-400`}>business</span>
                   <span>{session.companyName}</span>
                 </span>
               </>
@@ -885,7 +885,7 @@ const MockInterviewResultPage = () => {
 
         <div className="flex flex-wrap items-center gap-space-sm self-start lg:self-center">
           <button type="button" onClick={() => window.print()} className={adminButton('ghost', 'h-10')}>
-            <span className={`${ICON} text-[18px] text-outline`}>download</span>
+            <span className={`${ICON} text-[18px] text-slate-400`}>download</span>
             Xuất báo cáo PDF
           </button>
           <Link to="/mock-interviews" className={adminButton('primary', 'h-10 no-underline')}>
@@ -907,38 +907,38 @@ const MockInterviewResultPage = () => {
         <div className="relative z-10 flex flex-1 flex-col justify-between gap-space-lg">
           <div>
             <div className="mb-space-md flex flex-wrap items-center justify-between gap-2 border-b border-surface-container-high pb-space-sm">
-              <h2 className="text-ds-headline-sm font-bold text-on-surface">Kết quả trắc nghiệm</h2>
-              <span className="text-ds-label-sm uppercase tracking-wider text-outline">
+              <h2 className="text-ds-headline-sm font-bold text-slate-900">Kết quả trắc nghiệm</h2>
+              <span className="text-ds-label-sm uppercase tracking-wider text-slate-400">
                 {answeredCount}/{total} câu đã trả lời
               </span>
             </div>
 
             <div className="grid grid-cols-2 gap-space-md md:grid-cols-4">
-              <Stat icon="task_alt" label="Câu đúng" value={`${correctCount}`} tone="text-secondary-teal" />
+              <Stat icon="task_alt" label="Câu đúng" value={`${correctCount}`} tone="text-teal-600" />
               <Stat icon="cancel" label="Câu sai" value={`${wrongCount}`} tone="text-error" />
-              <Stat icon="help" label="Chưa trả lời" value={`${unansweredCount}`} tone="text-outline-strong" />
+              <Stat icon="help" label="Chưa trả lời" value={`${unansweredCount}`} tone="text-slate-500" />
               <Stat icon="percent" label="Tỷ lệ đúng" value={`${accuracy}%`} tone="text-primary" />
             </div>
 
             <div className="mt-space-lg">
-              <div className="mb-1.5 flex items-center justify-between text-ds-label-sm text-on-surface-variant">
+              <div className="mb-1.5 flex items-center justify-between text-ds-label-sm text-slate-600">
                 <span>Phân bố kết quả</span>
                 <span className="tabular-nums">{total} câu</span>
               </div>
-              <div className="flex h-3 w-full overflow-hidden rounded-full bg-surface-container">
-                <div className="h-full bg-secondary-teal transition-all" style={{ width: `${pctOfTotal(correctCount)}%` }} title={`Đúng ${correctCount}`} />
+              <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-100">
+                <div className="h-full bg-teal-600 transition-all" style={{ width: `${pctOfTotal(correctCount)}%` }} title={`Đúng ${correctCount}`} />
                 <div className="h-full bg-error transition-all" style={{ width: `${pctOfTotal(wrongCount)}%` }} title={`Sai ${wrongCount}`} />
-                <div className="h-full bg-surface-container-high transition-all" style={{ width: `${pctOfTotal(unansweredCount)}%` }} title={`Chưa trả lời ${unansweredCount}`} />
+                <div className="h-full bg-slate-200 transition-all" style={{ width: `${pctOfTotal(unansweredCount)}%` }} title={`Chưa trả lời ${unansweredCount}`} />
               </div>
-              <div className="mt-2 flex flex-wrap items-center gap-space-md text-ds-label-sm text-on-surface-variant">
-                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-secondary-teal" /> Đúng {correctCount}</span>
+              <div className="mt-2 flex flex-wrap items-center gap-space-md text-ds-label-sm text-slate-600">
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-teal-600" /> Đúng {correctCount}</span>
                 <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-error" /> Sai {wrongCount}</span>
-                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-surface-container-high" /> Chưa trả lời {unansweredCount}</span>
+                <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-slate-200" /> Chưa trả lời {unansweredCount}</span>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-space-md pt-space-sm text-ds-body-sm text-on-surface-variant">
+          <div className="flex flex-wrap items-center gap-space-md pt-space-sm text-ds-body-sm text-slate-600">
             <span className="flex items-center gap-1.5">
               <span className={`${ICON} text-[16px] text-primary`}>info</span>
               Điểm tổng: {overall}/100 • Thời gian làm bài: {totalSec > 0 ? fmtDuration(totalSec) : 'chưa ghi nhận'}
@@ -951,25 +951,25 @@ const MockInterviewResultPage = () => {
       <div className="grid grid-cols-1 gap-space-lg lg:grid-cols-3">
         <div className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
           <div className="flex items-center gap-space-sm">
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary-container text-on-secondary-container">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-100 text-teal-700">
               <span className={`${ICON} text-[24px]`}>task_alt</span>
             </span>
             <div className="flex flex-col">
-              <h3 className="text-ds-headline-sm font-bold text-on-surface">Câu trả lời đúng</h3>
-              <span className="text-ds-label-sm text-secondary-teal">
+              <h3 className="text-ds-headline-sm font-bold text-slate-900">Câu trả lời đúng</h3>
+              <span className="text-ds-label-sm text-teal-600">
                 {correctCount} câu chọn đúng đáp án
               </span>
             </div>
           </div>
           {insights.strengths.length === 0 ? (
-            <p className="m-0 rounded-lg bg-surface-container-low p-space-md text-ds-body-sm text-on-surface-variant">
+            <p className="m-0 rounded-lg bg-slate-50 p-space-md text-ds-body-sm text-slate-600">
               Chưa có câu trả lời đúng trong phiên này.
             </p>
           ) : insights.strengths.map(a => (
             <InsightItem
               key={a.id}
               icon="check_circle"
-              iconClass="text-secondary-teal"
+              iconClass="text-teal-600"
               title={`Câu ${a.questionIndex + 1}: ${a.question}`}
               body={a.feedback ?? 'Chọn đúng đáp án.'}
               meta={`${a.score ?? 100}/100${a.durationSec != null ? ` • trả lời ${fmtDuration(a.durationSec)}` : ''}`}
@@ -979,16 +979,16 @@ const MockInterviewResultPage = () => {
 
         <div className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
           <div className="flex items-center gap-space-sm">
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-error-container text-on-error-container">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 text-red-700">
               <span className={`${ICON} text-[24px]`}>cancel</span>
             </span>
             <div className="flex flex-col">
-              <h3 className="text-ds-headline-sm font-bold text-on-surface">Câu trả lời sai</h3>
+              <h3 className="text-ds-headline-sm font-bold text-slate-900">Câu trả lời sai</h3>
               <span className="text-ds-label-sm text-error">{wrongCount} câu cần xem lại</span>
             </div>
           </div>
           {insights.improvements.length === 0 ? (
-            <p className="m-0 rounded-lg bg-surface-container-low p-space-md text-ds-body-sm text-on-surface-variant">
+            <p className="m-0 rounded-lg bg-slate-50 p-space-md text-ds-body-sm text-slate-600">
               Không có câu trả lời sai trong phiên này.
             </p>
           ) : insights.improvements.map(a => (
@@ -1009,7 +1009,7 @@ const MockInterviewResultPage = () => {
               <span className={`${ICON} text-[24px]`}>summarize</span>
             </span>
             <div className="flex flex-col">
-              <h3 className="text-ds-headline-sm font-bold text-on-surface">Tổng kết phiên</h3>
+              <h3 className="text-ds-headline-sm font-bold text-slate-900">Tổng kết phiên</h3>
               <span className="text-ds-label-sm text-primary">Số liệu thật từ bài làm</span>
             </div>
           </div>
@@ -1021,7 +1021,7 @@ const MockInterviewResultPage = () => {
           />
           <InsightItem
             icon="pending_actions"
-            iconClass="text-outline-strong"
+            iconClass="text-slate-500"
             title={`Còn ${unansweredCount} câu chưa trả lời`}
             body={unansweredCount === 0
               ? 'Bạn đã hoàn thành toàn bộ câu hỏi của phiên.'
@@ -1046,23 +1046,23 @@ const MockInterviewResultPage = () => {
       <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
         <div className="flex flex-col gap-space-sm border-b border-surface-container-high pb-space-md md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-ds-headline-sm font-bold text-on-surface">
+            <h2 className="text-ds-headline-sm font-bold text-slate-900">
               Chi tiết từng câu hỏi ({answeredCount}/{total} câu)
             </h2>
-            <p className="text-ds-body-sm text-on-surface-variant">
+            <p className="text-ds-body-sm text-slate-600">
               Đáp án bạn đã chọn, đáp án đúng và nhận xét chấm điểm của hệ thống
             </p>
           </div>
           <div className="flex items-center gap-space-sm">
             {insights.avg != null && (
-              <span className="rounded-full bg-secondary-container px-space-md py-1 text-ds-label-md font-semibold text-on-secondary-container tabular-nums">
+              <span className="rounded-full bg-teal-100 px-space-md py-1 text-ds-label-md font-semibold text-teal-700 tabular-nums">
                 Trung bình: {(insights.avg / 10).toFixed(1)}/10
               </span>
             )}
             <button type="button" onClick={expandAll} className="rounded px-2 py-1 text-ds-label-md text-primary hover:underline">
               Mở rộng tất cả
             </button>
-            <button type="button" onClick={collapseAll} className="rounded px-2 py-1 text-ds-label-md text-on-surface-variant hover:text-on-surface">
+            <button type="button" onClick={collapseAll} className="rounded px-2 py-1 text-ds-label-md text-slate-600 hover:text-slate-900">
               Thu gọn
             </button>
           </div>
@@ -1086,19 +1086,19 @@ const MockInterviewResultPage = () => {
                     type="button"
                     onClick={() => toggle(a.id)}
                     aria-expanded={open}
-                    className="flex w-full items-center justify-between gap-space-md rounded-lg px-space-lg py-space-md text-left transition-colors hover:bg-surface-container"
+                    className="flex w-full items-center justify-between gap-space-md rounded-lg px-space-lg py-space-md text-left transition-colors hover:bg-slate-100"
                   >
                     <span className="flex min-w-0 items-center gap-space-md pr-space-md">
                       <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ds-label-lg font-bold ${
-                        isCorrect ? 'bg-secondary-container text-on-secondary-container'
-                          : isWrong ? 'bg-error-container text-on-error-container'
+                        isCorrect ? 'bg-teal-100 text-teal-700'
+                          : isWrong ? 'bg-red-100 text-red-700'
                             : 'bg-primary-fixed text-primary'
                       }`}>
                         {a.questionIndex + 1}
                       </span>
                       <span className="flex min-w-0 flex-col">
-                        <span className="break-words text-ds-headline-sm font-semibold text-on-surface">{a.question}</span>
-                        <span className="text-ds-body-sm text-on-surface-variant">
+                        <span className="break-words text-ds-headline-sm font-semibold text-slate-900">{a.question}</span>
+                        <span className="text-ds-body-sm text-slate-600">
                           {a.durationSec != null ? `Thời lượng trả lời: ${fmtDuration(a.durationSec)}` : 'Chưa ghi nhận thời lượng'}
                         </span>
                       </span>
@@ -1111,17 +1111,17 @@ const MockInterviewResultPage = () => {
                       ) : typeof a.score === 'number' ? (
                         <Pill tone={scoreTone(a.score)}>{a.score}/100</Pill>
                       ) : (
-                        <span className="text-ds-label-md text-outline">Chưa chấm</span>
+                        <span className="text-ds-label-md text-slate-400">Chưa chấm</span>
                       )}
-                      <span className={`${ICON} text-outline transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>expand_more</span>
+                      <span className={`${ICON} text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>expand_more</span>
                     </span>
                   </button>
 
                   {open && (
                     <div className="grid grid-cols-1 gap-space-md px-space-lg pb-space-lg lg:grid-cols-2">
                       {hasOptions ? (
-                        <div className="flex flex-col gap-2 rounded-lg bg-surface-container-lowest p-space-md shadow-sm lg:col-span-2">
-                          <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase tracking-wide text-outline">
+                        <div className="flex flex-col gap-2 rounded-lg bg-white p-space-md shadow-sm lg:col-span-2">
+                          <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase tracking-wide text-slate-400">
                             <span className={`${ICON} text-[16px]`}>checklist</span>
                             Các lựa chọn của câu hỏi
                           </span>
@@ -1134,21 +1134,21 @@ const MockInterviewResultPage = () => {
                                   key={`${a.id}-${i}`}
                                   className={`flex flex-wrap items-start gap-2 rounded-lg border px-3 py-2 text-ds-body-sm ${
                                     correctOpt
-                                      ? 'border-secondary-teal bg-secondary-container/40'
+                                      ? 'border-secondary-teal bg-teal-100/40'
                                       : chosenOpt
-                                        ? 'border-error bg-error-container/40'
-                                        : 'border-outline-variant bg-surface-container-lowest'
+                                        ? 'border-error bg-red-100/40'
+                                        : 'border-slate-200 bg-white'
                                   }`}
                                 >
                                   <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-ds-label-sm font-bold ${
-                                    correctOpt ? 'bg-secondary-teal text-white'
+                                    correctOpt ? 'bg-teal-600 text-white'
                                       : chosenOpt ? 'bg-error text-white'
-                                        : 'bg-surface-container-high text-on-surface-variant'
+                                        : 'bg-slate-200 text-slate-600'
                                   }`}>
                                     {OPTION_LETTER(i)}
                                   </span>
                                   <span className={`min-w-0 flex-1 break-words ${
-                                    correctOpt || chosenOpt ? 'font-medium text-on-surface' : 'text-on-surface-variant'
+                                    correctOpt || chosenOpt ? 'font-medium text-slate-900' : 'text-slate-600'
                                   }`}>
                                     {opt}
                                   </span>
@@ -1160,39 +1160,39 @@ const MockInterviewResultPage = () => {
                             })}
                           </ul>
                           {a.answerText && a.selectedOptionIndex == null && (
-                            <p className="m-0 text-ds-body-sm text-on-surface-variant">
-                              Bạn chọn: <span className="font-semibold text-on-surface">{a.answerText}</span>
+                            <p className="m-0 text-ds-body-sm text-slate-600">
+                              Bạn chọn: <span className="font-semibold text-slate-900">{a.answerText}</span>
                             </p>
                           )}
                         </div>
                       ) : (
-                        <div className="flex flex-col gap-1.5 rounded-lg bg-surface-container-lowest p-space-md shadow-sm">
-                          <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase text-outline">
+                        <div className="flex flex-col gap-1.5 rounded-lg bg-white p-space-md shadow-sm">
+                          <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase text-slate-400">
                             <span className={`${ICON} text-[16px]`}>transcribe</span>
                             Nội dung câu trả lời
                           </span>
                           {a.answerText ? (
-                            <p className="m-0 whitespace-pre-wrap text-ds-body-sm italic leading-relaxed text-on-surface">
+                            <p className="m-0 whitespace-pre-wrap text-ds-body-sm italic leading-relaxed text-slate-900">
                               {a.answerText}
                             </p>
                           ) : (
-                            <p className="m-0 text-ds-body-sm italic text-on-surface-variant">Không có bản ghi câu trả lời.</p>
+                            <p className="m-0 text-ds-body-sm italic text-slate-600">Không có bản ghi câu trả lời.</p>
                           )}
                         </div>
                       )}
                       <div className={`flex flex-col gap-1.5 rounded-lg p-space-md ${
-                        isCorrect ? 'bg-secondary-container/40' : isWrong ? 'bg-error-container/30' : 'bg-secondary-container/40'
+                        isCorrect ? 'bg-teal-100/40' : isWrong ? 'bg-red-100/30' : 'bg-teal-100/40'
                       } ${hasOptions ? 'lg:col-span-2' : ''}`}>
-                        <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase text-on-secondary-container">
+                        <span className="flex items-center gap-1 text-ds-label-sm font-semibold uppercase text-teal-700">
                           <span className={`${ICON} text-[16px]`}>psychology</span>
                           Nhận xét kèm theo
                         </span>
-                        <p className="m-0 text-ds-body-sm leading-relaxed text-on-surface">
+                        <p className="m-0 text-ds-body-sm leading-relaxed text-slate-900">
                           {a.feedback ?? 'Câu này chưa có nhận xét.'}
                         </p>
                         {a.correctAnswer && (
-                          <p className="m-0 mt-1 text-ds-label-sm text-on-surface-variant">
-                            Đáp án đúng: <span className="font-semibold text-on-surface">{a.correctAnswer}</span>
+                          <p className="m-0 mt-1 text-ds-label-sm text-slate-600">
+                            Đáp án đúng: <span className="font-semibold text-slate-900">{a.correctAnswer}</span>
                           </p>
                         )}
                       </div>
@@ -1208,7 +1208,7 @@ const MockInterviewResultPage = () => {
       <div className={`flex flex-wrap items-center justify-between gap-space-md rounded-xl p-space-lg ${SOFT}`}>
         <span className="flex items-center gap-space-sm">
           <span className={`${ICON} text-[20px] text-primary`}>history</span>
-          <span className="text-ds-body-sm text-on-surface-variant">So sánh phiên này với các phiên trước.</span>
+          <span className="text-ds-body-sm text-slate-600">So sánh phiên này với các phiên trước.</span>
         </span>
         <Link to="/mock-interviews/history" className={adminButton('ghost', 'h-10 no-underline')}>
           Xem lịch sử luyện tập

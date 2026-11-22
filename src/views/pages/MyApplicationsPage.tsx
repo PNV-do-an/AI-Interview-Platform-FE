@@ -219,8 +219,8 @@ const MyApplicationsPage: React.FC = () => {
   if (!user || user.role !== 'ROLE_USER') {
     return (
       <div className={CARD}>
-        <div className="flex flex-col items-center gap-space-sm p-space-lg text-ds-body-md text-on-surface-variant">
-          <span className={`${ICON} text-[28px] text-outline`}>account_box</span>
+        <div className="flex flex-col items-center gap-space-sm p-space-lg text-ds-body-md text-slate-600">
+          <span className={`${ICON} text-[28px] text-slate-400`}>account_box</span>
           Vui lòng đăng nhập bằng tài khoản ứng viên.
         </div>
       </div>
@@ -250,7 +250,7 @@ const MyApplicationsPage: React.FC = () => {
         <button
           type="button"
           onClick={() => withdraw(app)}
-          className={`inline-flex items-center gap-1.5 rounded-lg text-ds-label-md font-semibold text-error transition-colors hover:bg-error-container ${
+          className={`inline-flex items-center gap-1.5 rounded-lg text-ds-label-md font-semibold text-error transition-colors hover:bg-red-100 ${
             compact ? 'h-9 px-3' : 'h-10 px-4'
           }`}
         >
@@ -286,7 +286,7 @@ const MyApplicationsPage: React.FC = () => {
               onClick={() => fetchMyApplications(page)}
               className={adminButton('ghost', 'h-10')}
             >
-              <span className={`${ICON} text-[18px] text-outline`}>autorenew</span>
+              <span className={`${ICON} text-[18px] text-slate-400`}>autorenew</span>
               Làm mới
             </button>
           </>
@@ -302,7 +302,7 @@ const MyApplicationsPage: React.FC = () => {
           icon="send"
           tone="primary"
           sub={
-            <span className="text-on-surface-variant">
+            <span className="text-slate-600">
               Trang này có {content.length} đơn • trung bình điểm sàng lọc{' '}
               {pageCounts.avgScore != null ? `${pageCounts.avgScore}/100` : 'chưa có'}
             </span>
@@ -315,7 +315,7 @@ const MyApplicationsPage: React.FC = () => {
           icon="pending_actions"
           tone="neutral"
           sub={
-            <span className="text-on-surface-variant">
+            <span className="text-slate-600">
               Đếm trong trang đang xem (trang {page + 1})
             </span>
           }
@@ -332,10 +332,10 @@ const MyApplicationsPage: React.FC = () => {
                 <Pill tone="primary" icon="alarm">
                   Sắp tới: {fmtServer(nextInterview.slot.startTime, 'datetime')}
                 </Pill>
-                <span className="truncate text-on-surface-variant">{nextInterview.companyName}</span>
+                <span className="truncate text-slate-600">{nextInterview.companyName}</span>
               </>
             ) : (
-              <span className="text-on-surface-variant">Chưa có lịch kế tiếp trong trang này</span>
+              <span className="text-slate-600">Chưa có lịch kế tiếp trong trang này</span>
             )
           }
         />
@@ -348,7 +348,7 @@ const MyApplicationsPage: React.FC = () => {
           sub={
             <>
               <DemoTag>Khối demo — tỷ lệ thành công</DemoTag>
-              <span className="text-on-surface-variant">
+              <span className="text-slate-600">
                 {content.length ? `Trang này: ${Math.round((pageCounts.accepted / content.length) * 100)}% đạt` : 'Trống'}
               </span>
             </>
@@ -359,15 +359,15 @@ const MyApplicationsPage: React.FC = () => {
       {error && <ErrorBlock message={error} onRetry={() => fetchMyApplications(page)} />}
 
       {successMsg && (
-        <div className="flex items-start gap-2 rounded-xl bg-secondary-container px-4 py-3 text-ds-body-md text-on-secondary-container" role="status">
+        <div className="flex items-start gap-2 rounded-xl bg-teal-100 px-4 py-3 text-ds-body-md text-teal-700" role="status">
           <span className={`${ICON} shrink-0 text-[18px]`}>check_circle</span>
           <span>{successMsg}</span>
         </div>
       )}
 
       {profile && !profile.cvFileName && (
-        <div className={`flex flex-wrap items-center gap-space-sm px-4 py-3 text-ds-body-md text-on-surface-variant ${SOFT}`}>
-          <span className={`${ICON} text-[20px] text-tertiary`}>info</span>
+        <div className={`flex flex-wrap items-center gap-space-sm px-4 py-3 text-ds-body-md text-slate-600 ${SOFT}`}>
+          <span className={`${ICON} text-[20px] text-blue-700`}>info</span>
           <span>
             Hồ sơ của bạn chưa có CV. Hãy cập nhật ở{' '}
             <Link to="/my-profile" className="font-semibold text-primary no-underline hover:underline">
@@ -382,9 +382,9 @@ const MyApplicationsPage: React.FC = () => {
       {spotlight && (
         <section className={`relative flex flex-col gap-space-md overflow-hidden rounded-xl p-space-lg ${CARD} shadow-md`}>
           <div className="pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-primary/5 blur-3xl" />
-          <div className={`relative flex flex-col gap-space-md rounded-xl bg-surface-container-low/60 p-space-md lg:flex-row lg:items-center lg:justify-between`}>
+          <div className={`relative flex flex-col gap-space-md rounded-xl bg-slate-50/60 p-space-md lg:flex-row lg:items-center lg:justify-between`}>
             <div className="flex min-w-0 items-start gap-space-md">
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary-container text-ds-headline-md font-bold text-on-primary">
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-ds-headline-md font-bold text-on-primary">
                 {(spotlight.companyName || '?').slice(0, 3).toUpperCase()}
               </span>
               <div className="flex min-w-0 flex-col gap-1">
@@ -392,21 +392,21 @@ const MyApplicationsPage: React.FC = () => {
                   <Pill tone={STATUS_TONE[spotlight.status]} icon={STATUS_ICON[spotlight.status]}>
                     {APPLICATION_STATUS_LABELS[spotlight.status]}
                   </Pill>
-                  <span className="text-ds-label-sm text-outline">Mã đơn #{spotlight.id}</span>
+                  <span className="text-ds-label-sm text-slate-400">Mã đơn #{spotlight.id}</span>
                 </div>
-                <h2 className="m-0 text-ds-headline-md text-on-surface">{spotlight.jobTitle}</h2>
-                <div className="flex flex-wrap items-center gap-x-space-md gap-y-1 text-ds-body-sm text-on-surface-variant">
+                <h2 className="m-0 text-ds-headline-md text-slate-900">{spotlight.jobTitle}</h2>
+                <div className="flex flex-wrap items-center gap-x-space-md gap-y-1 text-ds-body-sm text-slate-600">
                   <span className="flex items-center gap-1">
-                    <span className={`${ICON} text-[16px] text-outline`}>apartment</span>
+                    <span className={`${ICON} text-[16px] text-slate-400`}>apartment</span>
                     {spotlight.companyName}
                   </span>
                   <span className="flex items-center gap-1">
-                    <span className={`${ICON} text-[16px] text-outline`}>calendar_today</span>
+                    <span className={`${ICON} text-[16px] text-slate-400`}>calendar_today</span>
                     Ngày nộp: {fmtServer(spotlight.createdAt, 'date')} ({timeAgo(spotlight.createdAt)})
                   </span>
                   {profile?.cvFileName && (
                     <span className="flex items-center gap-1">
-                      <span className={`${ICON} text-[16px] text-outline`}>description</span>
+                      <span className={`${ICON} text-[16px] text-slate-400`}>description</span>
                       {profile.cvFileName}
                     </span>
                   )}
@@ -420,7 +420,7 @@ const MyApplicationsPage: React.FC = () => {
 
           <div className="relative flex flex-col gap-space-sm">
             <div className="flex flex-wrap items-center justify-between gap-space-xs">
-              <span className="text-ds-label-md uppercase tracking-wider text-on-surface">
+              <span className="text-ds-label-md uppercase tracking-wider text-slate-900">
                 Tiến trình xét duyệt {stepsOf(spotlight).length} chặng
               </span>
               <span className="text-ds-body-sm font-semibold text-primary">
@@ -431,36 +431,36 @@ const MyApplicationsPage: React.FC = () => {
           </div>
 
           {spotlight.feedback && (
-            <div className={`relative flex items-start gap-space-sm p-space-md text-ds-body-md text-on-surface-variant ${SOFT}`}>
-              <span className={`${ICON} text-[20px] text-outline`}>chat</span>
+            <div className={`relative flex items-start gap-space-sm p-space-md text-ds-body-md text-slate-600 ${SOFT}`}>
+              <span className={`${ICON} text-[20px] text-slate-400`}>chat</span>
               <span>{spotlight.feedback}</span>
             </div>
           )}
 
           <div className="relative grid grid-cols-1 gap-space-md lg:grid-cols-3">
-            <div className="flex flex-col gap-1 rounded-xl border border-outline-variant/40 bg-surface-container-low p-space-md lg:col-span-2">
+            <div className="flex flex-col gap-1 rounded-xl border border-slate-200/40 bg-slate-50 p-space-md lg:col-span-2">
               {spotlight.slot ? (
                 <>
-                  <span className="flex items-center gap-2 text-ds-label-lg font-bold text-on-surface">
+                  <span className="flex items-center gap-2 text-ds-label-lg font-bold text-slate-900">
                     <span className={`${ICON} text-[20px] text-primary`}>schedule</span>
                     Khung giờ đã đặt
                   </span>
-                  <span className="text-ds-body-md text-on-surface-variant">
+                  <span className="text-ds-body-md text-slate-600">
                     {fmtServer(spotlight.slot.startTime, 'datetime')} — {fmtServer(spotlight.slot.endTime, 'time')}
                   </span>
                   {spotlight.slot.note && (
-                    <span className="text-ds-body-sm text-on-surface-variant">
+                    <span className="text-ds-body-sm text-slate-600">
                       Ghi chú từ doanh nghiệp: {spotlight.slot.note}
                     </span>
                   )}
                 </>
               ) : (
                 <>
-                  <span className="flex items-center gap-2 text-ds-label-lg font-bold text-on-surface">
-                    <span className={`${ICON} text-[20px] text-outline`}>event_busy</span>
+                  <span className="flex items-center gap-2 text-ds-label-lg font-bold text-slate-900">
+                    <span className={`${ICON} text-[20px] text-slate-400`}>event_busy</span>
                     Chưa có lịch phỏng vấn
                   </span>
-                  <span className="text-ds-body-sm text-on-surface-variant">
+                  <span className="text-ds-body-sm text-slate-600">
                     {spotlight.status === 'PENDING'
                       ? 'Khi hồ sơ được duyệt, bạn sẽ chọn khung giờ ở nút "Đặt lịch phỏng vấn".'
                       : 'Doanh nghiệp chưa mở khung giờ cho đơn này.'}
@@ -477,7 +477,7 @@ const MyApplicationsPage: React.FC = () => {
                     Lời khuyên từ AI Copilot
                     <DemoTag>Khối demo</DemoTag>
                   </span>
-                  <p className="m-0 text-ds-body-sm text-on-surface-variant">
+                  <p className="m-0 text-ds-body-sm text-slate-600">
                     Hãy ôn lại các kỹ năng đúng trong mô tả công việc và luyện 1–2 phiên mô phỏng
                     trước buổi phỏng vấn chính thức.
                   </p>
@@ -509,7 +509,7 @@ const MyApplicationsPage: React.FC = () => {
                   className={`whitespace-nowrap rounded-full px-space-md py-2 text-ds-label-md font-semibold transition-colors ${
                     active
                       ? 'bg-primary text-on-primary shadow-sm'
-                      : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+                      : 'bg-slate-50 text-slate-600 hover:bg-slate-200 hover:text-slate-900'
                   }`}
                 >
                   {t.label}
@@ -518,7 +518,7 @@ const MyApplicationsPage: React.FC = () => {
               );
             })}
           </div>
-          <span className="flex items-center gap-1 text-ds-body-sm text-outline">
+          <span className="flex items-center gap-1 text-ds-body-sm text-slate-400">
             <span className={`${ICON} text-[18px]`}>sync</span>
             {lastSync ? `Cập nhật ${timeAgo(lastSync)} trước` : 'Chưa có mốc cập nhật'}
           </span>
@@ -526,7 +526,7 @@ const MyApplicationsPage: React.FC = () => {
 
         <div className="flex flex-col gap-space-sm md:flex-row md:items-center">
           <div className="relative flex-1">
-            <span className={`${ICON} pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-outline`}>
+            <span className={`${ICON} pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-slate-400`}>
               search
             </span>
             <input
@@ -537,7 +537,7 @@ const MyApplicationsPage: React.FC = () => {
               aria-label="Tìm theo vị trí hoặc tên doanh nghiệp"
             />
           </div>
-          <div className="flex items-center gap-1 rounded-lg bg-surface-container-low p-1">
+          <div className="flex items-center gap-1 rounded-lg bg-slate-50 p-1">
             {(['cards', 'table'] as const).map((mode) => (
               <button
                 key={mode}
@@ -547,8 +547,8 @@ const MyApplicationsPage: React.FC = () => {
                 onClick={() => setView(mode)}
                 className={`flex h-8 w-8 items-center justify-center rounded transition-all ${
                   view === mode
-                    ? 'bg-surface-container-lowest text-primary shadow-sm'
-                    : 'text-on-surface-variant hover:text-on-surface'
+                    ? 'bg-white text-primary shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <span className={`${ICON} text-[18px]`}>{mode === 'cards' ? 'view_agenda' : 'table_rows'}</span>
@@ -557,7 +557,7 @@ const MyApplicationsPage: React.FC = () => {
           </div>
         </div>
 
-        <p className="text-ds-body-sm text-outline">
+        <p className="text-ds-body-sm text-slate-400">
           Tab và ô tìm kiếm lọc trên trang đang xem (trang {page + 1}/{totalPages}); đơn ở trang khác
           vẫn tính trong card "Tổng số đơn nộp".
         </p>
@@ -586,38 +586,38 @@ const MyApplicationsPage: React.FC = () => {
             <article key={app.id} className={`${CARD} flex flex-col gap-space-md p-space-lg transition-shadow hover:shadow-md`}>
               <div className="flex flex-col gap-space-sm md:flex-row md:items-start md:justify-between">
                 <div className="flex min-w-0 items-start gap-space-sm">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-surface-container-high text-ds-headline-md font-bold text-primary">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-200 text-ds-headline-md font-bold text-primary">
                     {(app.companyName || '?').slice(0, 2).toUpperCase()}
                   </span>
                   <div className="flex min-w-0 flex-col gap-1">
                     <div className="flex flex-wrap items-center gap-space-xs">
-                      <h2 className="m-0 text-ds-headline-sm font-semibold text-on-surface">{app.jobTitle}</h2>
+                      <h2 className="m-0 text-ds-headline-sm font-semibold text-slate-900">{app.jobTitle}</h2>
                       <Pill tone={STATUS_TONE[app.status]} icon={STATUS_ICON[app.status]}>
                         {APPLICATION_STATUS_LABELS[app.status]}
                       </Pill>
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-space-md gap-y-1 text-ds-body-sm text-on-surface-variant">
+                    <div className="flex flex-wrap items-center gap-x-space-md gap-y-1 text-ds-body-sm text-slate-600">
                       <span className="flex items-center gap-1">
-                        <span className={`${ICON} text-[16px] text-outline`}>apartment</span>
+                        <span className={`${ICON} text-[16px] text-slate-400`}>apartment</span>
                         {app.companyName}
                       </span>
                       <span className="flex items-center gap-1">
-                        <span className={`${ICON} text-[16px] text-outline`}>schedule</span>
+                        <span className={`${ICON} text-[16px] text-slate-400`}>schedule</span>
                         Đã nộp {fmtServer(app.createdAt, 'date')} • {timeAgo(app.createdAt)}
                       </span>
                       {app.score != null && (
                         <span className="flex items-center gap-1">
-                          <span className={`${ICON} text-[16px] text-outline`}>auto_awesome</span>
+                          <span className={`${ICON} text-[16px] text-slate-400`}>auto_awesome</span>
                           Điểm sàng lọc {app.score}/100
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
-                <span className="shrink-0 text-ds-label-sm text-outline">#{app.id}</span>
+                <span className="shrink-0 text-ds-label-sm text-slate-400">#{app.id}</span>
               </div>
 
-              <div className="flex flex-col gap-space-sm rounded-xl bg-surface-container-low p-space-md">
+              <div className="flex flex-col gap-space-sm rounded-xl bg-slate-50 p-space-md">
                 <Stepper steps={stepsOf(app)} />
                 {app.slot && (
                   <span className="flex flex-wrap items-center gap-1 text-ds-body-sm font-semibold text-primary">
@@ -626,18 +626,18 @@ const MyApplicationsPage: React.FC = () => {
                   </span>
                 )}
                 {app.feedback && (
-                  <p className="m-0 text-ds-body-sm text-on-surface-variant">{app.feedback}</p>
+                  <p className="m-0 text-ds-body-sm text-slate-600">{app.feedback}</p>
                 )}
               </div>
 
               <div className="flex flex-col items-stretch justify-between gap-space-sm sm:flex-row sm:items-center">
                 {profile?.cvFileName ? (
-                  <span className="text-ds-body-sm text-outline">
+                  <span className="text-ds-body-sm text-slate-400">
                     CV đã tải lên:{' '}
-                    <span className="font-mono text-ds-label-sm text-on-surface-variant">{profile.cvFileName}</span>
+                    <span className="font-mono text-ds-label-sm text-slate-600">{profile.cvFileName}</span>
                   </span>
                 ) : (
-                  <span className="text-ds-body-sm text-outline">Chưa có CV trong hồ sơ</span>
+                  <span className="text-ds-body-sm text-slate-400">Chưa có CV trong hồ sơ</span>
                 )}
                 {renderActions(app)}
               </div>
@@ -660,32 +660,32 @@ const MyApplicationsPage: React.FC = () => {
               </thead>
               <tbody>
                 {visible.map((app) => (
-                  <tr key={app.id} className="transition-colors hover:bg-surface-container-low/60">
+                  <tr key={app.id} className="transition-colors hover:bg-slate-50/60">
                     <td className={adminTdClass}>
                       <div className="flex flex-col gap-0.5">
-                        <span className="font-semibold text-on-surface">{app.jobTitle}</span>
+                        <span className="font-semibold text-slate-900">{app.jobTitle}</span>
                         {app.slot && (
                           <span className="text-ds-body-sm text-primary">
                             {fmtServer(app.slot.startTime, 'datetime')}
                           </span>
                         )}
                         {!app.slot && app.feedback && (
-                          <span className="text-ds-body-sm text-on-surface-variant">{app.feedback}</span>
+                          <span className="text-ds-body-sm text-slate-600">{app.feedback}</span>
                         )}
                       </div>
                     </td>
                     <td className={adminTdClass}>
                       <div className="flex items-center gap-space-sm">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-container-high text-ds-label-md font-bold text-primary">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-ds-label-md font-bold text-primary">
                           {(app.companyName || '?').slice(0, 2).toUpperCase()}
                         </span>
-                        <span className="text-ds-label-md text-on-surface">{app.companyName}</span>
+                        <span className="text-ds-label-md text-slate-900">{app.companyName}</span>
                       </div>
                     </td>
                     <td className={adminTdClass}>
                       <div className="flex flex-col whitespace-nowrap">
-                        <span className="text-ds-label-md text-on-surface">{fmtServer(app.createdAt, 'date')}</span>
-                        <span className="text-ds-body-sm text-outline">{timeAgo(app.createdAt)}</span>
+                        <span className="text-ds-label-md text-slate-900">{fmtServer(app.createdAt, 'date')}</span>
+                        <span className="text-ds-body-sm text-slate-400">{timeAgo(app.createdAt)}</span>
                       </div>
                     </td>
                     <td className={adminTdClass}>
@@ -695,11 +695,11 @@ const MyApplicationsPage: React.FC = () => {
                     </td>
                     <td className={`${adminTdClass} text-center`}>
                       {app.score != null ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-0.5 text-ds-label-md font-bold tabular-nums text-on-surface">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2.5 py-0.5 text-ds-label-md font-bold tabular-nums text-slate-900">
                           {app.score}/100
                         </span>
                       ) : (
-                        <span className="text-outline">—</span>
+                        <span className="text-slate-400">—</span>
                       )}
                     </td>
                     <td className={`${adminTdClass} text-right`}>{renderActions(app, true)}</td>
@@ -713,9 +713,9 @@ const MyApplicationsPage: React.FC = () => {
 
       {content.length > 0 && totalPages > 1 && (
         <div className={`${CARD} flex flex-col items-center justify-between gap-space-md p-space-md sm:flex-row`}>
-          <span className="text-ds-body-sm text-outline">
-            Hiển thị <span className="font-semibold text-on-surface">{showingFrom}–{showingTo}</span> trong tổng số{' '}
-            <span className="font-semibold text-on-surface">{total}</span> đơn ứng tuyển
+          <span className="text-ds-body-sm text-slate-400">
+            Hiển thị <span className="font-semibold text-slate-900">{showingFrom}–{showingTo}</span> trong tổng số{' '}
+            <span className="font-semibold text-slate-900">{total}</span> đơn ứng tuyển
           </span>
           <div className="flex items-center gap-space-xs">
             <button
@@ -741,7 +741,7 @@ const MyApplicationsPage: React.FC = () => {
                 className={`h-8 w-8 rounded-lg text-ds-label-md font-semibold transition-colors ${
                   i === page
                     ? 'bg-primary text-on-primary shadow-sm'
-                    : 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-high'
+                    : 'bg-white text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 {i + 1}
@@ -792,16 +792,16 @@ const MyApplicationsPage: React.FC = () => {
           <div className={`flex max-h-[80vh] w-full max-w-[520px] flex-col gap-space-md overflow-y-auto p-space-lg ${CARD}`}>
             <div className="flex items-start justify-between gap-space-sm">
               <div>
-                <h3 className="m-0 text-ds-headline-sm font-bold text-on-surface">
+                <h3 className="m-0 text-ds-headline-sm font-bold text-slate-900">
                   Chọn giờ phỏng vấn — {bookingApp.jobTitle}
                 </h3>
-                <p className="mt-0.5 text-ds-body-sm text-on-surface-variant">{bookingApp.companyName}</p>
+                <p className="mt-0.5 text-ds-body-sm text-slate-600">{bookingApp.companyName}</p>
               </div>
               <button
                 type="button"
                 aria-label="Đóng"
                 onClick={() => setBookingApp(null)}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-outline transition-colors hover:bg-surface-container-high hover:text-on-surface"
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-200 hover:text-slate-900"
               >
                 <span className={`${ICON} text-[20px]`}>close</span>
               </button>
@@ -822,8 +822,8 @@ const MyApplicationsPage: React.FC = () => {
                       key={s.id}
                       className={`flex cursor-pointer items-center gap-space-sm rounded-lg border px-space-md py-space-sm text-ds-body-md transition-colors ${
                         active
-                          ? 'border-primary bg-primary-fixed text-on-primary-fixed-variant'
-                          : 'border-outline-variant/60 bg-surface-container-lowest text-on-surface hover:bg-surface-container-low'
+                          ? 'border-primary bg-primary-fixed text-indigo-700'
+                          : 'border-slate-200/60 bg-white text-slate-900 hover:bg-slate-50'
                       }`}
                     >
                       <input
@@ -833,7 +833,7 @@ const MyApplicationsPage: React.FC = () => {
                         onChange={() => setSelectedSlot(s.id)}
                         className="mr-1 accent-[#4f46e5]"
                       />
-                      <span className={`${ICON} text-[18px] text-outline`}>schedule</span>
+                      <span className={`${ICON} text-[18px] text-slate-400`}>schedule</span>
                       <span>
                         {fmtServer(s.startTime, 'datetime')} — {fmtServer(s.endTime, 'time')}
                       </span>

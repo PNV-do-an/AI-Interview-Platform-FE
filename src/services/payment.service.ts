@@ -19,6 +19,8 @@ const PaymentService = {
   // Wallet
   getWallet: () => httpService.get<ApiResponse<Wallet>>('/api/v1/wallet/me'),
   topup: (body: TopupRequest) => httpService.post<ApiResponse<Wallet>>('/api/v1/wallet/topup', body),
+  upgradeAccount: (body: { plan: string; billingCycle: string }) =>
+    httpService.post<ApiResponse<any>>('/api/v1/wallet/upgrade', body),
   topupWebhook: (body: TopupWebhookRequest) =>
     httpService.post<ApiResponse<string>>('/api/v1/wallet/webhook/topup', body),
 

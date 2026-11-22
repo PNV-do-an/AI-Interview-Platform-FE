@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { useSlotController } from '../../controllers/useSlotController';
 import { Slot } from '../../models/Program.model';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -37,15 +37,15 @@ const slotState = (s: Slot): SlotState =>
   s.cancelled ? 'cancelled' : s.booked ? 'booked' : 'open';
 
 const CELL_TONE: Record<SlotState, string> = {
-  open: 'border border-[#e2e8f0] bg-surface-low text-ink-variant',
+  open: 'border border-slate-200 bg-slate-50 text-slate-900-variant',
   booked: 'border border-transparent bg-info text-info-text',
   cancelled: 'border border-transparent bg-danger-bg text-danger-text line-through',
 };
 
 const STATE_LABEL: Record<SlotState, string> = {
-  open: 'Trống',
-  booked: 'Đã đặt',
-  cancelled: 'Đã huỷ',
+  open: 'Trá»‘ng',
+  booked: 'ÄÃ£ Ä‘áº·t',
+  cancelled: 'ÄÃ£ huá»·',
 };
 
 const BADGE_TONE: Record<SlotState, 'neutral' | 'info' | 'danger'> = {
@@ -104,15 +104,15 @@ const InterviewCalendarPage: React.FC = () => {
     const startDate = new Date(`${formDate}T${formStart}`);
     const endDate = new Date(`${formDate}T${formEnd}`);
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-      setFormError('Vui lòng nhập ngày và giờ hợp lệ.');
+      setFormError('Vui lÃ²ng nháº­p ngÃ y vÃ  giá» há»£p lá»‡.');
       return;
     }
     if (endDate <= startDate) {
-      setFormError('Giờ kết thúc phải sau giờ bắt đầu.');
+      setFormError('Giá» káº¿t thÃºc pháº£i sau giá» báº¯t Ä‘áº§u.');
       return;
     }
     setSaving(true);
-    // Backend nhận LocalDateTime (mốc tường, không có zone); toISOString() sẽ lệch giờ.
+    // Backend nháº­n LocalDateTime (má»‘c tÆ°á»ng, khÃ´ng cÃ³ zone); toISOString() sáº½ lá»‡ch giá».
     const ok = await createSlot({
       startTime: `${formDate}T${formStart}:00`,
       endTime: `${formDate}T${formEnd}:00`,
@@ -137,7 +137,7 @@ const InterviewCalendarPage: React.FC = () => {
   const weekLabel = `${weekStart.toLocaleDateString('vi-VN', {
     month: 'numeric',
     day: 'numeric',
-  })} – ${addDays(weekStart, 6).toLocaleDateString('vi-VN', {
+  })} â€“ ${addDays(weekStart, 6).toLocaleDateString('vi-VN', {
     month: 'numeric',
     day: 'numeric',
     year: 'numeric',
@@ -146,8 +146,8 @@ const InterviewCalendarPage: React.FC = () => {
   return (
     <div className="pb-10">
       <PageHeader
-        title="Lịch trống phỏng vấn"
-        description="Công khai các khung giờ trống và xem ứng viên đã đặt buổi nào."
+        title="Lá»‹ch trá»‘ng phá»ng váº¥n"
+        description="CÃ´ng khai cÃ¡c khung giá» trá»‘ng vÃ  xem á»©ng viÃªn Ä‘Ã£ Ä‘áº·t buá»•i nÃ o."
       />
 
       <ErrorBanner message={error || formError} />
@@ -167,20 +167,20 @@ const InterviewCalendarPage: React.FC = () => {
           <Card className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-col">
-                <span className="flex items-center gap-1 text-headline-sm text-ink">
+                <span className="flex items-center gap-1 text-headline-sm text-slate-900">
                   <span className="material-symbols-outlined text-[20px] text-primary">
                     calendar_today
                   </span>
                   {weekLabel}
                 </span>
-                <span className="text-body-sm text-ink-variant">
-                  Lịch xem theo tuần của các khung giờ đã công khai. Chuyển tuần không cần tải lại dữ liệu.
+                <span className="text-body-sm text-slate-900-variant">
+                  Lá»‹ch xem theo tuáº§n cá»§a cÃ¡c khung giá» Ä‘Ã£ cÃ´ng khai. Chuyá»ƒn tuáº§n khÃ´ng cáº§n táº£i láº¡i dá»¯ liá»‡u.
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  aria-label="Tuần trước"
+                  aria-label="Tuáº§n trÆ°á»›c"
                   className={buttonClass('secondary', 'h-8 w-8 px-0')}
                   onClick={() => setWeekStart((w) => addDays(w, -7))}
                 >
@@ -191,11 +191,11 @@ const InterviewCalendarPage: React.FC = () => {
                   className={buttonClass('secondary', 'h-8 px-2 text-label-sm')}
                   onClick={() => setWeekStart(startOfWeek(new Date()))}
                 >
-                  Hôm nay
+                  HÃ´m nay
                 </button>
                 <button
                   type="button"
-                  aria-label="Tuần sau"
+                  aria-label="Tuáº§n sau"
                   className={buttonClass('secondary', 'h-8 w-8 px-0')}
                   onClick={() => setWeekStart((w) => addDays(w, 7))}
                 >
@@ -205,32 +205,32 @@ const InterviewCalendarPage: React.FC = () => {
             </div>
 
             {/* Legend (token tones only) */}
-            <div className="flex flex-wrap items-center gap-4 text-label-sm text-ink-variant">
+            <div className="flex flex-wrap items-center gap-4 text-label-sm text-slate-900-variant">
               <span className="flex items-center gap-1">
-                <span className="h-3 w-3 rounded-sm border border-[#e2e8f0] bg-surface-low" /> Trống
+                <span className="h-3 w-3 rounded-sm border border-slate-200 bg-slate-50" /> Trá»‘ng
               </span>
               <span className="flex items-center gap-1">
-                <span className="h-3 w-3 rounded-sm bg-info" /> Đã đặt
+                <span className="h-3 w-3 rounded-sm bg-info" /> ÄÃ£ Ä‘áº·t
               </span>
               <span className="flex items-center gap-1">
-                <span className="h-3 w-3 rounded-sm bg-danger-bg" /> Đã huỷ
+                <span className="h-3 w-3 rounded-sm bg-danger-bg" /> ÄÃ£ huá»·
               </span>
             </div>
 
             {loading ? (
-              <LoadingState label="Đang tải khung giờ..." />
+              <LoadingState label="Äang táº£i khung giá»..." />
             ) : mySlots.length === 0 ? (
               <EmptyState
                 icon="event"
-                title="Chưa có khung giờ nào"
-                description="Thêm khung giờ trống đầu tiên bằng form bên cạnh để bắt đầu nhận lịch đặt."
+                title="ChÆ°a cÃ³ khung giá» nÃ o"
+                description="ThÃªm khung giá» trá»‘ng Ä‘áº§u tiÃªn báº±ng form bÃªn cáº¡nh Ä‘á»ƒ báº¯t Ä‘áº§u nháº­n lá»‹ch Ä‘áº·t."
               />
             ) : (
               <div className="overflow-x-auto">
                 <div className="grid min-w-[760px] grid-cols-8">
                   {/* Header row */}
-                  <div className="border-b border-[#e2e8f0] px-2 py-2 text-label-sm uppercase tracking-[0.04em] text-outline-strong">
-                    Giờ
+                  <div className="border-b border-slate-200 px-2 py-2 text-label-sm uppercase tracking-[0.04em] text-slate-500">
+                    Giá»
                   </div>
                   {days.map((d, i) => {
                     const key = dayKey(d);
@@ -239,8 +239,8 @@ const InterviewCalendarPage: React.FC = () => {
                     return (
                       <div
                         key={key}
-                        className={`flex flex-col items-center gap-0.5 rounded-t-md border-b border-[#e2e8f0] px-1 py-2 ${
-                          isToday ? 'bg-primary-container text-on-primary' : 'bg-surface-low text-ink'
+                        className={`flex flex-col items-center gap-0.5 rounded-t-md border-b border-slate-200 px-1 py-2 ${
+                          isToday ? 'bg-indigo-600 text-on-primary' : 'bg-slate-50 text-slate-900'
                         }`}
                       >
                         <span className="text-label-sm uppercase">{WEEKDAYS[i]}</span>
@@ -248,10 +248,10 @@ const InterviewCalendarPage: React.FC = () => {
                         {count > 0 && (
                           <span
                             className={`font-mono text-[10px] ${
-                              isToday ? 'text-on-primary' : 'text-ink-variant'
+                              isToday ? 'text-on-primary' : 'text-slate-900-variant'
                             }`}
                           >
-                            {count} khung giờ
+                            {count} khung giá»
                           </span>
                         )}
                       </div>
@@ -261,7 +261,7 @@ const InterviewCalendarPage: React.FC = () => {
                   {/* Body: one row per hour in the band */}
                   {hours.map((h) => (
                     <React.Fragment key={h}>
-                      <div className="border-t border-[#e2e8f0] px-2 py-1 font-mono text-[11px] text-outline-strong">
+                      <div className="border-t border-slate-200 px-2 py-1 font-mono text-[11px] text-slate-500">
                         {pad(h)}:00
                       </div>
                       {days.map((d) => {
@@ -272,7 +272,7 @@ const InterviewCalendarPage: React.FC = () => {
                         return (
                           <div
                             key={`${key}-${h}`}
-                            className="flex min-h-[68px] flex-col gap-1 border-l border-t border-[#e2e8f0] p-1"
+                            className="flex min-h-[68px] flex-col gap-1 border-l border-t border-slate-200 p-1"
                           >
                             {cellSlots.map((s) => {
                               const st = slotState(s);
@@ -285,21 +285,21 @@ const InterviewCalendarPage: React.FC = () => {
                                 >
                                   <div className="flex items-center justify-between gap-1">
                                     <span className="font-mono">
-                                      {timeLabel(start)}–{timeLabel(end)}
+                                      {timeLabel(start)}â€“{timeLabel(end)}
                                     </span>
                                     <Badge tone={BADGE_TONE[st]}>{STATE_LABEL[st]}</Badge>
                                   </div>
                                   {st === 'booked' && s.bookedByName && (
-                                    <div className="truncate">bởi {s.bookedByName}</div>
+                                    <div className="truncate">bá»Ÿi {s.bookedByName}</div>
                                   )}
                                   {s.note && <div className="truncate opacity-80">{s.note}</div>}
                                   {st === 'open' && (
                                     <button
                                       type="button"
-                                      className="mt-0.5 text-label-sm font-medium underline underline-offset-2 hover:text-ink"
+                                      className="mt-0.5 text-label-sm font-medium underline underline-offset-2 hover:text-slate-900"
                                       onClick={() => setPendingCancel(s)}
                                     >
-                                      Huỷ khung giờ
+                                      Huá»· khung giá»
                                     </button>
                                   )}
                                 </div>
@@ -319,18 +319,18 @@ const InterviewCalendarPage: React.FC = () => {
         {/* Add availability form (replaces the mockup's fake summary panel) */}
         <div className="lg:col-span-4">
           <Card className="flex flex-col gap-3 lg:sticky lg:top-20">
-            <div className="flex items-center gap-1 text-headline-sm text-ink">
+            <div className="flex items-center gap-1 text-headline-sm text-slate-900">
               <span className="material-symbols-outlined text-[20px] text-primary">event_available</span>
-              Thêm lịch trống
+              ThÃªm lá»‹ch trá»‘ng
             </div>
-            <p className="m-0 text-body-sm text-ink-variant">
-              Công khai khung giờ mới. Ứng viên có thể đặt từ luồng lịch hẹn.
+            <p className="m-0 text-body-sm text-slate-900-variant">
+              CÃ´ng khai khung giá» má»›i. á»¨ng viÃªn cÃ³ thá»ƒ Ä‘áº·t tá»« luá»“ng lá»‹ch háº¹n.
             </p>
 
             <form onSubmit={onCreate} className="flex flex-col gap-3">
               <div>
                 <label className={labelClass} htmlFor="slot-date">
-                  Ngày
+                  NgÃ y
                 </label>
                 <input
                   id="slot-date"
@@ -345,7 +345,7 @@ const InterviewCalendarPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass} htmlFor="slot-start">
-                    Giờ bắt đầu
+                    Giá» báº¯t Ä‘áº§u
                   </label>
                   <input
                     id="slot-start"
@@ -358,7 +358,7 @@ const InterviewCalendarPage: React.FC = () => {
                 </div>
                 <div>
                   <label className={labelClass} htmlFor="slot-end">
-                    Giờ kết thúc
+                    Giá» káº¿t thÃºc
                   </label>
                   <input
                     id="slot-end"
@@ -373,9 +373,9 @@ const InterviewCalendarPage: React.FC = () => {
               <div>
                 <div className="flex items-center justify-between">
                   <label className={labelClass} htmlFor="slot-note">
-                    Ghi chú
+                    Ghi chÃº
                   </label>
-                  <span className="mb-1 font-mono text-[11px] text-outline-strong">
+                  <span className="mb-1 font-mono text-[11px] text-slate-500">
                     {formNote.length} / 400
                   </span>
                 </div>
@@ -385,7 +385,7 @@ const InterviewCalendarPage: React.FC = () => {
                   maxLength={400}
                   value={formNote}
                   onChange={(e) => setFormNote(e.target.value)}
-                  placeholder="VD: Tập trung vào thiết kế hệ thống phân tán."
+                  placeholder="VD: Táº­p trung vÃ o thiáº¿t káº¿ há»‡ thá»‘ng phÃ¢n tÃ¡n."
                   className={`${inputClass} h-auto resize-none py-2`}
                 />
               </div>
@@ -393,7 +393,7 @@ const InterviewCalendarPage: React.FC = () => {
                 <span className="material-symbols-outlined text-[18px]">
                   {saving ? 'progress_activity' : 'add'}
                 </span>
-                {saving ? 'Đang thêm...' : 'Thêm khung giờ'}
+                {saving ? 'Äang thÃªm...' : 'ThÃªm khung giá»'}
               </button>
             </form>
           </Card>
@@ -402,10 +402,10 @@ const InterviewCalendarPage: React.FC = () => {
 
       <ConfirmDialog
         open={pendingCancel !== null}
-        title="Huỷ khung giờ này?"
-        message="Khung giờ sẽ biến mất khỏi lịch và ứng viên không còn đặt được nữa. Không thể hoàn tác."
-        confirmLabel="Huỷ khung giờ"
-        cancelLabel="Giữ khung giờ"
+        title="Huá»· khung giá» nÃ y?"
+        message="Khung giá» sáº½ biáº¿n máº¥t khá»i lá»‹ch vÃ  á»©ng viÃªn khÃ´ng cÃ²n Ä‘áº·t Ä‘Æ°á»£c ná»¯a. KhÃ´ng thá»ƒ hoÃ n tÃ¡c."
+        confirmLabel="Huá»· khung giá»"
+        cancelLabel="Giá»¯ khung giá»"
         danger
         onConfirm={() => void runCancel()}
         onCancel={() => setPendingCancel(null)}
@@ -415,3 +415,4 @@ const InterviewCalendarPage: React.FC = () => {
 };
 
 export default InterviewCalendarPage;
+

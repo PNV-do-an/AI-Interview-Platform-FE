@@ -23,19 +23,19 @@ import { CARD, CandidatePageHeader, ICON, SOFT } from '../components/candidateKi
 
 const PAGE_SIZE = 10;
 
-const note = 'text-ds-body-sm text-outline';
+const note = 'text-ds-body-sm text-slate-400';
 
 const STATUS_TONE: Record<string, string> = {
-  ACTIVE: 'bg-secondary-container/40 text-secondary-teal',
-  COMPLETED: 'bg-primary-container text-on-primary',
-  ARCHIVED: 'bg-surface-container-high text-on-surface-variant',
+  ACTIVE: 'bg-teal-100/40 text-teal-600',
+  COMPLETED: 'bg-indigo-600 text-on-primary',
+  ARCHIVED: 'bg-slate-200 text-slate-600',
 };
 
 const TYPE_CHIP: Record<string, string> = {
   MCQ: 'bg-primary-fixed text-primary',
-  SHORT_ANSWER: 'bg-secondary-container/40 text-secondary-teal',
+  SHORT_ANSWER: 'bg-teal-100/40 text-teal-600',
   CODE: 'bg-tertiary-fixed text-on-tertiary-fixed',
-  AUDIO: 'bg-surface-container-high text-on-surface-variant',
+  AUDIO: 'bg-slate-200 text-slate-600',
 };
 
 const StudyProgramDetailPage = () => {
@@ -95,7 +95,7 @@ const StudyProgramDetailPage = () => {
 
   if (!user || user.role !== 'ROLE_USER') {
     return (
-      <div className={`${CARD} p-space-lg text-ds-body-md text-on-surface-variant`}>
+      <div className={`${CARD} p-space-lg text-ds-body-md text-slate-600`}>
         Vui lòng đăng nhập bằng tài khoản ứng viên.
       </div>
     );
@@ -124,7 +124,7 @@ const StudyProgramDetailPage = () => {
       />
 
       {error && (
-        <p role="alert" className="m-0 flex items-center gap-2 rounded-lg bg-error-container px-4 py-3 text-ds-body-md text-on-error-container">
+        <p role="alert" className="m-0 flex items-center gap-2 rounded-lg bg-red-100 px-4 py-3 text-ds-body-md text-red-700">
           <span className={`${ICON} text-[18px]`}>error</span>
           {error}
         </p>
@@ -132,8 +132,8 @@ const StudyProgramDetailPage = () => {
 
       {program && (
         <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
-          <div className="flex flex-wrap items-center gap-space-xs text-ds-label-md text-on-surface-variant">
-            <span className="rounded-full bg-surface-container-high px-2.5 py-0.5 text-ds-label-sm text-on-surface">
+          <div className="flex flex-wrap items-center gap-space-xs text-ds-label-md text-slate-600">
+            <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-ds-label-sm text-slate-900">
               {PROGRAM_TYPE_LABELS[program.programType] ?? program.programType}
             </span>
             {program.targetPosition && <span>Vị trí: {program.targetPosition}</span>}
@@ -143,10 +143,10 @@ const StudyProgramDetailPage = () => {
             </span>
           </div>
           <div className="flex items-center gap-space-sm">
-            <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-surface-container">
-              <div className="h-full rounded-full bg-secondary-teal" style={{ width: `${progressPct}%` }} />
+            <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-full rounded-full bg-teal-600" style={{ width: `${progressPct}%` }} />
             </div>
-            <span className="text-ds-body-sm text-on-surface-variant tabular-nums">
+            <span className="text-ds-body-sm text-slate-600 tabular-nums">
               {program.completedTopics}/{program.totalTopics} chủ đề
             </span>
           </div>
@@ -160,7 +160,7 @@ const StudyProgramDetailPage = () => {
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <span className={`${ICON} text-[18px]`}>topic</span>
             </span>
-            <h2 className="text-ds-headline-md text-on-surface">Chủ đề ({topics.length})</h2>
+            <h2 className="text-ds-headline-md text-slate-900">Chủ đề ({topics.length})</h2>
           </div>
 
           {topics.length === 0 ? (
@@ -175,22 +175,22 @@ const StudyProgramDetailPage = () => {
                     type="button"
                     onClick={() => selectTopic(topic.id)}
                     className={`flex flex-col gap-1 rounded-lg border-0 p-space-md text-left transition-colors ${
-                      active ? 'bg-primary text-on-primary' : `${SOFT} hover:bg-surface-container-high`
+                      active ? 'bg-primary text-on-primary' : `${SOFT} hover:bg-slate-200`
                     }`}
                   >
                     <span className="flex items-center justify-between gap-space-xs text-ds-label-md font-semibold">
                       <span className="truncate">{topic.topicOrder}. {topic.title}</span>
-                      <span className={`shrink-0 tabular-nums ${active ? 'text-on-primary/80' : 'text-outline'}`}>
+                      <span className={`shrink-0 tabular-nums ${active ? 'text-on-primary/80' : 'text-slate-400'}`}>
                         {topic.completedQuestions}/{topic.totalQuestions}
                       </span>
                     </span>
                     {topic.skillTag && (
-                      <span className={`inline-flex self-start rounded-full px-2.5 py-0.5 text-ds-label-sm ${active ? 'bg-on-primary/15 text-on-primary' : 'bg-surface-container-high text-on-surface'}`}>
+                      <span className={`inline-flex self-start rounded-full px-2.5 py-0.5 text-ds-label-sm ${active ? 'bg-on-primary/15 text-on-primary' : 'bg-slate-200 text-slate-900'}`}>
                         {topic.skillTag}
                       </span>
                     )}
                     {topic.description && (
-                      <span className={`line-clamp-2 text-ds-body-sm ${active ? 'text-on-primary/80' : 'text-on-surface-variant'}`}>
+                      <span className={`line-clamp-2 text-ds-body-sm ${active ? 'text-on-primary/80' : 'text-slate-600'}`}>
                         {topic.description}
                       </span>
                     )}
@@ -204,15 +204,15 @@ const StudyProgramDetailPage = () => {
         {/* Câu hỏi + trả lời */}
         <section className={`${CARD} flex flex-col gap-space-md p-space-lg lg:col-span-2`}>
           <div className="flex items-center gap-space-sm border-b border-surface-container-high pb-space-sm">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary-teal/10 text-secondary-teal">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-600/10 text-teal-600">
               <span className={`${ICON} text-[18px]`}>quiz</span>
             </span>
-            <h2 className="text-ds-headline-md text-on-surface">Câu hỏi</h2>
+            <h2 className="text-ds-headline-md text-slate-900">Câu hỏi</h2>
           </div>
 
           {activeTopicId === null ? (
             <div className="flex flex-col items-center gap-space-md py-space-lg text-center">
-              <span className={`${ICON} text-[32px] text-outline`}>touch_app</span>
+              <span className={`${ICON} text-[32px] text-slate-400`}>touch_app</span>
               <span className={note}>Chọn một chủ đề bên trái để xem câu hỏi.</span>
             </div>
           ) : questions && questions.content.length === 0 ? (
@@ -220,7 +220,7 @@ const StudyProgramDetailPage = () => {
           ) : (
             <>
               {answerError && (
-                <p role="alert" className="m-0 flex items-center gap-2 rounded-lg bg-error-container px-4 py-3 text-ds-body-md text-on-error-container">
+                <p role="alert" className="m-0 flex items-center gap-2 rounded-lg bg-red-100 px-4 py-3 text-ds-body-md text-red-700">
                   <span className={`${ICON} text-[18px]`}>error</span>
                   {answerError}
                 </p>
@@ -233,10 +233,10 @@ const StudyProgramDetailPage = () => {
                       <span className={`rounded-full px-2.5 py-0.5 text-ds-label-sm font-bold ${TYPE_CHIP[q.questionType] ?? TYPE_CHIP.SHORT_ANSWER}`}>
                         {QUESTION_TYPE_LABELS[q.questionType] ?? q.questionType}
                       </span>
-                      {q.skillTag && <span className="text-ds-label-sm text-on-surface-variant">{q.skillTag}</span>}
-                      {q.difficulty && <span className="text-ds-label-sm text-outline">{DIFFICULTY_LABELS[q.difficulty] ?? q.difficulty}</span>}
+                      {q.skillTag && <span className="text-ds-label-sm text-slate-600">{q.skillTag}</span>}
+                      {q.difficulty && <span className="text-ds-label-sm text-slate-400">{DIFFICULTY_LABELS[q.difficulty] ?? q.difficulty}</span>}
                     </div>
-                    <p className="m-0 text-ds-body-md leading-relaxed text-on-surface">{q.questionText}</p>
+                    <p className="m-0 text-ds-body-md leading-relaxed text-slate-900">{q.questionText}</p>
 
                     {q.questionType === 'MCQ' && q.options.length > 0 ? (
                       <div className="flex flex-col gap-space-xs" role="radiogroup" aria-label={`Đáp án câu ${q.id}`}>
@@ -245,8 +245,8 @@ const StudyProgramDetailPage = () => {
                             key={opt.key}
                             className={`flex cursor-pointer items-center gap-space-sm rounded-lg border p-space-sm text-ds-body-md ${
                               answers[q.id] === opt.key
-                                ? 'border-primary bg-primary/5 text-on-surface'
-                                : 'border-surface-container-high text-on-surface-variant'
+                                ? 'border-primary bg-primary/5 text-slate-900'
+                                : 'border-surface-container-high text-slate-600'
                             }`}
                           >
                             <input
@@ -288,7 +288,7 @@ const StudyProgramDetailPage = () => {
                     )}
 
                     {evaluation && (
-                      <div className="flex flex-col gap-space-sm rounded-lg bg-surface-container-low p-space-md">
+                      <div className="flex flex-col gap-space-sm rounded-lg bg-slate-50 p-space-md">
                         <div className="flex flex-wrap items-center gap-space-sm">
                           {evaluation.score != null && (
                             <span className="text-ds-headline-sm font-bold text-primary tabular-nums">
@@ -297,29 +297,29 @@ const StudyProgramDetailPage = () => {
                           )}
                           {evaluation.isCorrect != null && (
                             <span className={`rounded-full px-2.5 py-0.5 text-ds-label-sm font-bold ${
-                              evaluation.isCorrect ? 'bg-secondary-container/40 text-secondary-teal' : 'bg-error-container/50 text-error'
+                              evaluation.isCorrect ? 'bg-teal-100/40 text-teal-600' : 'bg-red-100/50 text-error'
                             }`}>
                               {evaluation.isCorrect ? 'Đúng' : 'Sai'}
                             </span>
                           )}
                         </div>
-                        {evaluation.feedback && <span className="text-ds-body-md text-on-surface">{evaluation.feedback}</span>}
+                        {evaluation.feedback && <span className="text-ds-body-md text-slate-900">{evaluation.feedback}</span>}
                         {evaluation.modelAnswer && (
                           <div className="flex flex-col gap-1">
-                            <span className="text-ds-label-sm font-semibold uppercase tracking-wider text-on-surface-variant">Đáp án mẫu</span>
-                            <span className="whitespace-pre-wrap text-ds-body-sm leading-relaxed text-on-surface-variant">{evaluation.modelAnswer}</span>
+                            <span className="text-ds-label-sm font-semibold uppercase tracking-wider text-slate-600">Đáp án mẫu</span>
+                            <span className="whitespace-pre-wrap text-ds-body-sm leading-relaxed text-slate-600">{evaluation.modelAnswer}</span>
                           </div>
                         )}
                         {evaluation.explanation && (
                           <div className="flex flex-col gap-1">
-                            <span className="text-ds-label-sm font-semibold uppercase tracking-wider text-on-surface-variant">Giải thích</span>
-                            <span className="whitespace-pre-wrap text-ds-body-sm leading-relaxed text-on-surface-variant">{evaluation.explanation}</span>
+                            <span className="text-ds-label-sm font-semibold uppercase tracking-wider text-slate-600">Giải thích</span>
+                            <span className="whitespace-pre-wrap text-ds-body-sm leading-relaxed text-slate-600">{evaluation.explanation}</span>
                           </div>
                         )}
                         {evaluation.strengths.length > 0 && (
                           <div className="flex flex-col gap-1">
-                            <span className="text-ds-label-sm font-semibold uppercase tracking-wider text-secondary-teal">Điểm mạnh</span>
-                            <ul className="m-0 list-disc pl-5 text-ds-body-sm text-on-surface-variant">
+                            <span className="text-ds-label-sm font-semibold uppercase tracking-wider text-teal-600">Điểm mạnh</span>
+                            <ul className="m-0 list-disc pl-5 text-ds-body-sm text-slate-600">
                               {evaluation.strengths.map((s, i) => (
                                 <li key={i} className="mb-0.5">{s}</li>
                               ))}
@@ -329,7 +329,7 @@ const StudyProgramDetailPage = () => {
                         {evaluation.improvements.length > 0 && (
                           <div className="flex flex-col gap-1">
                             <span className="text-ds-label-sm font-semibold uppercase tracking-wider text-error">Cần cải thiện</span>
-                            <ul className="m-0 list-disc pl-5 text-ds-body-sm text-on-surface-variant">
+                            <ul className="m-0 list-disc pl-5 text-ds-body-sm text-slate-600">
                               {evaluation.improvements.map((s, i) => (
                                 <li key={i} className="mb-0.5">{s}</li>
                               ))}

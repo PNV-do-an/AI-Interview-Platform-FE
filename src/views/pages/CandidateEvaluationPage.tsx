@@ -27,7 +27,7 @@ const VOICE_BARS: Array<{ h: string; tone: 'primary' | 'container' | 'muted' }> 
 
 const BAR_TONE: Record<'primary' | 'container' | 'muted', string> = {
   primary: 'bg-primary',
-  container: 'bg-primary-container',
+  container: 'bg-indigo-600',
   muted: 'bg-outline', // outline-variant
 };
 
@@ -127,9 +127,9 @@ const CandidateEvaluationPage: React.FC = () => {
               </div>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-ink-variant">
                 <span className="font-medium text-ink">Senior Distributed Systems Engineer</span>
-                <span className="text-outline-strong">•</span>
+                <span className="text-slate-500">•</span>
                 <span>Platform Core Infrastructure</span>
-                <span className="text-outline-strong">•</span>
+                <span className="text-slate-500">•</span>
                 <span className="inline-flex items-center gap-1">
                   <span className="material-symbols-outlined text-[15px] text-primary">schedule</span>
                   Đã đánh giá 2 giờ trước
@@ -172,17 +172,17 @@ const CandidateEvaluationPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-1">
               <button type="button" className="flex h-9 items-center gap-1.5 rounded-[0.25rem] bg-surface-low px-3 text-label-md text-ink shadow-sm transition-colors hover:bg-surface-mid">
-                <span className="material-symbols-outlined text-[17px] text-outline-strong">picture_as_pdf</span>
+                <span className="material-symbols-outlined text-[17px] text-slate-500">picture_as_pdf</span>
                 <span>Xuất hồ sơ</span>
               </button>
               <button type="button" className="flex h-9 items-center gap-1.5 rounded-[0.25rem] bg-surface-low px-3 text-label-md text-ink shadow-sm transition-colors hover:bg-surface-mid">
-                <span className="material-symbols-outlined text-[17px] text-outline-strong">share</span>
+                <span className="material-symbols-outlined text-[17px] text-slate-500">share</span>
                 <span>Chia sẻ hội đồng</span>
               </button>
               <button
                 type="button"
                 className={`flex h-9 items-center gap-2 rounded-[0.25rem] px-4 text-label-md shadow-sm transition-all ${
-                  scorecardSubmitted ? 'bg-emerald-600 text-white' : 'bg-primary-container text-on-primary hover:bg-primary'
+                  scorecardSubmitted ? 'bg-emerald-600 text-white' : 'bg-indigo-600 text-on-primary hover:bg-primary'
                 }`}
                 onClick={() => setScorecardSubmitted(true)}
               >
@@ -210,7 +210,7 @@ const CandidateEvaluationPage: React.FC = () => {
           {/* Profile Metadata Card */}
           <div className="flex flex-col gap-3 rounded-[0.5rem] bg-card p-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-label-sm font-semibold uppercase tracking-wider text-outline-strong">Hồ sơ ứng viên</span>
+              <span className="text-label-sm font-semibold uppercase tracking-wider text-slate-500">Hồ sơ ứng viên</span>
               <span className="inline-flex items-center gap-1 rounded-full bg-surface-high px-2 py-0.5 text-xs text-ink-variant">
                 Đã xác minh danh tính
               </span>
@@ -223,7 +223,7 @@ const CandidateEvaluationPage: React.FC = () => {
                 { label: 'Lương kỳ vọng', value: 'Lương cứng $185k', sub: '+ Cổ phần mục tiêu' },
               ].map((cell) => (
                 <div key={cell.label} className="flex flex-col rounded-[0.25rem] bg-surface-low p-2">
-                  <span className="text-label-sm text-outline-strong">{cell.label}</span>
+                  <span className="text-label-sm text-slate-500">{cell.label}</span>
                   <span className="text-headline-sm text-ink">{cell.value}</span>
                   <span className="truncate text-body-sm text-ink-variant">{cell.sub}</span>
                 </div>
@@ -255,7 +255,7 @@ const CandidateEvaluationPage: React.FC = () => {
                 <span className="material-symbols-outlined text-[18px] text-primary">videocam</span>
                 <h2 className="m-0 text-headline-sm text-ink">Phát lại phiên phỏng vấn</h2>
               </div>
-              <span className={`${MONO} text-outline-strong`}>00:46:18</span>
+              <span className={`${MONO} text-slate-500`}>00:46:18</span>
             </div>
             {/* Video Player Mockup with Image Placeholder */}
             <div className="group relative aspect-video w-full overflow-hidden rounded-[0.5rem] bg-surface-high shadow-inner">
@@ -287,10 +287,10 @@ const CandidateEvaluationPage: React.FC = () => {
             {/* Audio Waveform Simulation & Speaker Breakdown */}
             <div className="flex flex-col gap-1 rounded-[0.25rem] bg-surface-low p-2">
               <div className="flex items-center justify-between">
-                <span className="text-label-sm text-outline-strong">Tỷ lệ giọng nói</span>
+                <span className="text-label-sm text-slate-500">Tỷ lệ giọng nói</span>
                 <div className={`flex items-center gap-3 font-mono text-xs`}>
                   <span className="font-medium text-primary">Alex (64%)</span>
-                  <span className="text-outline-strong">vs</span>
+                  <span className="text-slate-500">vs</span>
                   <span className="text-ink-variant">AI chủ trì (36%)</span>
                 </div>
               </div>
@@ -303,14 +303,14 @@ const CandidateEvaluationPage: React.FC = () => {
             </div>
             {/* Timestamped Key Highlights */}
             <div className="flex flex-col gap-1">
-              <span className="text-label-sm font-semibold uppercase tracking-wider text-outline-strong">Mốc nổi bật</span>
+              <span className="text-label-sm font-semibold uppercase tracking-wider text-slate-500">Mốc nổi bật</span>
               {MILESTONES.map((m) => (
                 <button key={m.t} type="button" className="group flex w-full items-center justify-between rounded-[0.25rem] p-1 text-left transition-colors hover:bg-surface-mid">
                   <div className="flex min-w-0 items-center gap-1">
                     <span className={`${MONO} rounded-[0.125rem] bg-surface-mid px-1.5 py-0.5 font-medium text-primary transition-colors group-hover:bg-primary group-hover:text-on-primary`}>{m.t}</span>
                     <span className="truncate text-body-sm text-ink">{m.label}</span>
                   </div>
-                  <span className="material-symbols-outlined text-[16px] text-outline-strong opacity-0 transition-opacity group-hover:opacity-100">play_circle</span>
+                  <span className="material-symbols-outlined text-[16px] text-slate-500 opacity-0 transition-opacity group-hover:opacity-100">play_circle</span>
                 </button>
               ))}
             </div>
@@ -412,7 +412,7 @@ const CandidateEvaluationPage: React.FC = () => {
                   <span className="text-headline-sm text-ink">Văn hóa &amp; Tư duy vận hành</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className={`${MONO} rounded-[0.125rem] bg-surface-mid px-2 py-0.5 text-outline-strong`}>Chỉ mentor</span>
+                  <span className={`${MONO} rounded-[0.125rem] bg-surface-mid px-2 py-0.5 text-slate-500`}>Chỉ mentor</span>
                   <Stars score={4} />
                 </div>
               </div>
@@ -423,14 +423,14 @@ const CandidateEvaluationPage: React.FC = () => {
             <div className="flex flex-col gap-2 pt-1">
               <div className="flex items-center justify-between">
                 <label className="text-headline-sm text-ink" htmlFor="panelNotes">Tổng hợp định tính của giám khảo</label>
-                <div className="flex items-center gap-1 text-xs text-outline-strong">
+                <div className="flex items-center gap-1 text-xs text-slate-500">
                   <span className="material-symbols-outlined text-[14px]">markdown</span> Hỗ trợ Markdown
                 </div>
               </div>
               <div className="flex flex-col gap-1">
                 <div className="flex flex-col gap-2 rounded-[0.5rem] bg-surface-low p-3">
                   <div className="flex items-center justify-between border-b border-surface-high pb-2 text-xs text-ink-variant">
-                    <span className="font-semibold uppercase tracking-wider text-outline-strong">Bố cục các mục</span>
+                    <span className="font-semibold uppercase tracking-wider text-slate-500">Bố cục các mục</span>
                     <span className="cursor-pointer text-primary hover:underline">Áp dụng mẫu tiêu chí chuẩn</span>
                   </div>
                   <div>
@@ -459,7 +459,7 @@ const CandidateEvaluationPage: React.FC = () => {
                 </div>
                 {/* Notes entry area */}
                 <textarea
-                  className="w-full rounded-[0.5rem] bg-card p-3 text-body-sm text-ink shadow-sm transition-all placeholder:text-outline-strong focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  className="w-full rounded-[0.5rem] bg-card p-3 text-body-sm text-ink shadow-sm transition-all placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/40"
                   id="panelNotes"
                   placeholder="Thêm ghi chú cá nhân hoặc bổ sung quan sát cho hội đồng hiệu chỉnh..."
                   rows={3}
@@ -504,7 +504,7 @@ const CandidateEvaluationPage: React.FC = () => {
                         <span className={`text-body-sm ${selected ? opt.accentDesc : 'text-ink-variant'}`}>{opt.desc}</span>
                       </div>
                     </div>
-                    <span className={`material-symbols-outlined text-[20px] ${opt.value === 'strong_hire' && selected ? 'text-emerald-600' : 'text-outline-strong'}`}>{opt.icon}</span>
+                    <span className={`material-symbols-outlined text-[20px] ${opt.value === 'strong_hire' && selected ? 'text-emerald-600' : 'text-slate-500'}`}>{opt.icon}</span>
                   </label>
                 );
               })}
@@ -515,7 +515,7 @@ const CandidateEvaluationPage: React.FC = () => {
           <div className="flex flex-col gap-3 rounded-[0.5rem] bg-card p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <h2 className="m-0 text-headline-sm text-ink">Hiệu chỉnh hội đồng tuyển dụng</h2>
-              <span className="text-label-sm text-outline-strong">3/3 đã gửi</span>
+              <span className="text-label-sm text-slate-500">3/3 đã gửi</span>
             </div>
             <div className="flex flex-col gap-2">
               {/* Sarah Jenkins */}
@@ -559,7 +559,7 @@ const CandidateEvaluationPage: React.FC = () => {
                     <span className="text-label-sm text-primary">Mô hình dự báo v4.2</span>
                   </div>
                 </div>
-                <span className="rounded-full bg-primary-container px-2.5 py-1 text-xs font-semibold text-on-primary">Khuyến nghị tuyển (Top 6%)</span>
+                <span className="rounded-full bg-indigo-600 px-2.5 py-1 text-xs font-semibold text-on-primary">Khuyến nghị tuyển (Top 6%)</span>
               </div>
             </div>
           </div>
@@ -580,7 +580,7 @@ const CandidateEvaluationPage: React.FC = () => {
               ))}
             </div>
             <div className="flex flex-col gap-1 pt-1">
-              <label className="text-label-sm font-semibold uppercase tracking-wider text-outline-strong" htmlFor="nextStep">Hành động cho bước tiếp theo</label>
+              <label className="text-label-sm font-semibold uppercase tracking-wider text-slate-500" htmlFor="nextStep">Hành động cho bước tiếp theo</label>
               <div className="relative">
                 <select
                   className="h-10 w-full cursor-pointer appearance-none rounded-[0.25rem] bg-surface-mid px-2 pr-8 text-body-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary"
@@ -593,7 +593,7 @@ const CandidateEvaluationPage: React.FC = () => {
                   <option>Chờ hội đồng xét theo đợt</option>
                   <option>Gửi thư từ chối lịch sự</option>
                 </select>
-                <span className="material-symbols-outlined pointer-events-none absolute right-2.5 top-2.5 text-[20px] text-outline-strong">expand_more</span>
+                <span className="material-symbols-outlined pointer-events-none absolute right-2.5 top-2.5 text-[20px] text-slate-500">expand_more</span>
               </div>
             </div>
             <button type="button" className="flex w-full items-center justify-center gap-2 rounded-[0.25rem] bg-ink px-3 py-2.5 text-label-md text-card shadow-sm transition-all hover:bg-slate-800">

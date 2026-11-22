@@ -567,7 +567,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
   }, [voiceInput.listening, draft, busy, aiSpeaking]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!user || user.role !== 'ROLE_USER') {
-    return <div className="p-10 text-ds-body-md text-on-surface-variant">Vui lòng đăng nhập bằng tài khoản ứng viên.</div>;
+    return <div className="p-10 text-ds-body-md text-slate-600">Vui lòng đăng nhập bằng tài khoản ứng viên.</div>;
   }
   if (!session) {
     return loading ? <LoadingBlock label="Đang tải phòng phỏng vấn..." />
@@ -579,13 +579,13 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
   return (
     <div className="flex flex-col gap-space-md">
       {/* Header phiên: REC + RTT + Kết thúc */}
-      <div className="flex flex-wrap items-center justify-between gap-space-md rounded-xl bg-surface-container-lowest p-space-md shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-space-md rounded-xl bg-white p-space-md shadow-sm">
         <div className="flex min-w-0 flex-wrap items-center gap-space-md">
-          <span className="truncate text-ds-headline-sm font-bold text-on-surface">{contextLabel}</span>
+          <span className="truncate text-ds-headline-sm font-bold text-slate-900">{contextLabel}</span>
           {session.companyName && (
-            <span className="text-ds-label-md text-on-surface-variant">• {session.companyName}</span>
+            <span className="text-ds-label-md text-slate-600">• {session.companyName}</span>
           )}
-          <span className="flex items-center gap-1.5 rounded-full bg-error-container px-3 py-1 text-ds-label-md font-bold text-on-error-container tabular-nums">
+          <span className="flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-ds-label-md font-bold text-red-700 tabular-nums">
             <span className="h-2 w-2 animate-pulse rounded-full bg-error" />
             REC {fmtClock(sessionElapsed)}
           </span>
@@ -612,23 +612,23 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
       </div>
 
       {/* Stepper số câu thật của phiên (3/5/8/10 do ứng viên chọn) */}
-      <div className="flex items-center gap-2 overflow-x-auto rounded-xl bg-surface-container-low px-space-md py-2.5 text-ds-label-md">
+      <div className="flex items-center gap-2 overflow-x-auto rounded-xl bg-slate-50 px-space-md py-2.5 text-ds-label-md">
         {Array.from({ length: Math.min(turn + 2, questionCap) }, (_, i) => {
           const state = i < turn ? 'done' : i === turn ? 'current' : 'todo';
           return (
             <React.Fragment key={i}>
-              {i > 0 && <span className={`${ICON} shrink-0 text-[14px] text-outline`}>arrow_forward</span>}
+              {i > 0 && <span className={`${ICON} shrink-0 text-[14px] text-slate-400`}>arrow_forward</span>}
               <span className={`flex shrink-0 items-center gap-1 rounded-full px-3 py-1 ${
-                state === 'current' ? 'bg-primary-container font-bold text-on-primary'
-                  : state === 'done' ? 'bg-surface-container-lowest text-secondary-teal'
-                    : 'bg-surface-container text-outline'}`}>
+                state === 'current' ? 'bg-indigo-600 font-bold text-on-primary'
+                  : state === 'done' ? 'bg-white text-teal-600'
+                    : 'bg-slate-100 text-slate-400'}`}>
                 {state === 'done' && <span className={`${ICON} text-[14px]`}>check_circle</span>}
                 Lượt {i + 1}
               </span>
             </React.Fragment>
           );
         })}
-        <span className="ml-auto shrink-0 text-on-surface-variant tabular-nums">
+        <span className="ml-auto shrink-0 text-slate-600 tabular-nums">
           {Math.min(turn + 1, questionCap)}/{questionCap} câu
         </span>
       </div>
@@ -684,13 +684,13 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
               )}
               <div className="relative flex flex-wrap items-start justify-between gap-2">
                 <span className="flex items-center gap-2 rounded-lg bg-black/25 px-3 py-1.5">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-container">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600">
                     <span className={`${ICON} text-[18px] text-on-primary`}>smart_toy</span>
                   </span>
                   <span className="text-ds-label-md font-semibold">Trợ lý AI</span>
                 </span>
                 <span className="flex items-center gap-1.5 rounded-lg bg-black/25 px-3 py-1.5 text-ds-label-sm">
-                  <span className={`h-2 w-2 rounded-full ${aiSpeaking ? 'animate-pulse bg-secondary-teal' : 'bg-outline'}`} />
+                  <span className={`h-2 w-2 rounded-full ${aiSpeaking ? 'animate-pulse bg-teal-600' : 'bg-outline'}`} />
                   {aiSpeaking ? 'AI đang nói' : 'Đang chờ trả lời'}
                 </span>
               </div>
@@ -750,7 +750,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
                 </div>
               )}
               <span className="absolute left-3 top-3 flex items-center gap-1.5 rounded-lg bg-black/40 px-3 py-1.5 text-ds-label-md text-inverse-on-surface">
-                <span className={`h-2 w-2 rounded-full ${media.state === 'granted' ? 'bg-secondary-teal' : 'bg-outline'}`} />
+                <span className={`h-2 w-2 rounded-full ${media.state === 'granted' ? 'bg-teal-600' : 'bg-outline'}`} />
                 {user?.fullName ?? 'Bạn'}
               </span>
               {media.state === 'granted' && (
@@ -792,7 +792,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
                 type="button"
                 onClick={() => (avatarLive ? void rtc.repeat(question) : speech.speak(question))}
                 disabled={!question || (!avatarLive && !speech.supported)}
-                className={adminButton('soft', 'h-9 bg-surface-container-lowest disabled:opacity-40')}
+                className={adminButton('soft', 'h-9 bg-white disabled:opacity-40')}
                 title={avatarLive ? 'Avatar đọc lại câu hỏi' : speech.supported ? 'AI đọc lại câu hỏi bằng giọng của trình duyệt' : 'Trình duyệt không hỗ trợ đọc giọng nói'}
               >
                 <span className={`${ICON} text-[16px]`}>volume_up</span>
@@ -802,7 +802,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
                 <button
                   type="button"
                   onClick={() => void rtc.interruptSpeaking()}
-                  className={adminButton('soft', 'h-9 bg-surface-container-lowest')}
+                  className={adminButton('soft', 'h-9 bg-white')}
                   title="Avatar đang đọc, bấm để ngừng"
                 >
                   <span className={`${ICON} text-[16px]`}>stop_circle</span>
@@ -813,18 +813,18 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
           </div>
 
           {/* Trả lời bằng giọng nói: STT ngầm tự nộp khi ngừng nói; ô gõ chỉ là đường lùi khi trình duyệt không hỗ trợ. */}
-          <div className="rounded-xl bg-surface-container-lowest p-space-md shadow-sm">
+          <div className="rounded-xl bg-white p-space-md shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="flex items-center gap-1.5 text-ds-label-lg font-bold text-secondary-teal">
+              <span className="flex items-center gap-1.5 text-ds-label-lg font-bold text-teal-600">
                 <span className={`${ICON} text-[18px]`}>keyboard_voice</span>
                 Trả lời bằng giọng nói
               </span>
-              <span className="flex items-center gap-2 text-ds-label-sm text-outline tabular-nums">
+              <span className="flex items-center gap-2 text-ds-label-sm text-slate-400 tabular-nums">
                 <span className={`${ICON} text-[16px]`}>timer</span>
                 {fmtClock(turnElapsed)}
               </span>
             </div>
-            <p aria-live="polite" className="mt-2 min-h-[48px] whitespace-pre-wrap text-ds-body-md text-on-surface">
+            <p aria-live="polite" className="mt-2 min-h-[48px] whitespace-pre-wrap text-ds-body-md text-slate-900">
               {voiceInput.listening
                 ? (draft.trim() || voiceInput.interimTranscript || 'Đang nghe câu trả lời của bạn...')
                 : aiSpeaking
@@ -832,7 +832,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
                   : busy ? 'Đang gửi câu trả lời...' : 'Chờ mở micro...'}
             </p>
             {voiceInput.listening && (
-              <p className="mt-1 text-ds-label-sm text-secondary-teal">Ngừng nói khoảng 2 giây để tự gửi câu trả lời.</p>
+              <p className="mt-1 text-ds-label-sm text-teal-600">Ngừng nói khoảng 2 giây để tự gửi câu trả lời.</p>
             )}
             {voiceInput.error && (
               <p className="mt-1 text-ds-label-sm text-error">
@@ -852,7 +852,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
                   onChange={e => setDraft(e.target.value)}
                   disabled={finished || atCap}
                   placeholder="Trình duyệt không hỗ trợ nhận dạng giọng nói — gõ câu trả lời rồi bấm gửi."
-                  className="min-h-[120px] w-full resize-y rounded-lg border border-outline-variant bg-surface-container-lowest p-3 text-ds-body-md text-on-surface placeholder:text-outline focus:border-primary focus:outline-none disabled:opacity-50"
+                  className="min-h-[120px] w-full resize-y rounded-lg border border-slate-200 bg-white p-3 text-ds-body-md text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none disabled:opacity-50"
                 />
                 <button type="button" onClick={() => void nextTurn()} disabled={!draft.trim() || busy || finished || atCap} className={adminButton('primary', 'h-11 mt-2 disabled:opacity-40')}>
                   Trả lời &amp; Tiếp
@@ -884,7 +884,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
         </div>
 
         {/* Panel phải: Bản ghi Live / Ghi chú */}
-        <aside className="flex w-full flex-col rounded-xl bg-surface-container-lowest shadow-sm xl:sticky xl:top-20">
+        <aside className="flex w-full flex-col rounded-xl bg-white shadow-sm xl:sticky xl:top-20">
           <div className="flex border-b border-surface-container-high text-ds-label-lg">
             {([['live', 'Bản ghi Live'], ['notes', 'Ghi chú cá nhân']] as const).map(([key, label]) => (
               <button
@@ -892,7 +892,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
                 type="button"
                 onClick={() => setTab(key)}
                 className={`flex-1 px-3 py-3 font-semibold transition-colors ${
-                  tab === key ? 'border-b-2 border-primary text-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
+                  tab === key ? 'border-b-2 border-primary text-primary' : 'text-slate-600 hover:text-slate-900'}`}
               >
                 {label}
               </button>
@@ -906,28 +906,28 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
               {turns.map(t => (
                 <div key={t.index} className="flex flex-col gap-2">
                   <div className="flex items-start gap-2">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-fixed text-ds-label-sm font-bold text-on-primary-fixed-variant">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-fixed text-ds-label-sm font-bold text-indigo-700">
                       AI
                     </span>
-                    <div className="rounded-lg bg-surface-container-low px-3 py-2 text-ds-body-sm text-on-surface">
+                    <div className="rounded-lg bg-slate-50 px-3 py-2 text-ds-body-sm text-slate-900">
                       {t.questionText}
-                      <span className="mt-0.5 block text-ds-label-sm text-outline tabular-nums">Câu {t.index + 1}</span>
+                      <span className="mt-0.5 block text-ds-label-sm text-slate-400 tabular-nums">Câu {t.index + 1}</span>
                     </div>
                   </div>
                   {(t.answerText || (t.index === turn && draft)) && (
                     <div className="flex items-start gap-2">
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary-container text-ds-label-sm font-bold text-on-secondary-container">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-100 text-ds-label-sm font-bold text-teal-700">
                         Bạn
                       </span>
-                      <div className={`rounded-lg px-3 py-2 text-ds-body-sm text-on-surface ${t.confirmed ? 'bg-surface-container' : 'border border-dashed border-outline-variant bg-surface-container-lowest'}`}>
+                      <div className={`rounded-lg px-3 py-2 text-ds-body-sm text-slate-900 ${t.confirmed ? 'bg-slate-100' : 'border border-dashed border-slate-200 bg-white'}`}>
                         {t.answerText || draft}
                         {!t.confirmed && (
-                          <span className="mt-0.5 block text-ds-label-sm text-outline">
+                          <span className="mt-0.5 block text-ds-label-sm text-slate-400">
                             Nháp — chưa chốt lượt
                           </span>
                         )}
                         {t.confirmed && t.answeredAt && (
-                          <span className="mt-0.5 block text-ds-label-sm text-outline">{fmtServer(t.answeredAt, 'time')}</span>
+                          <span className="mt-0.5 block text-ds-label-sm text-slate-400">{fmtServer(t.answeredAt, 'time')}</span>
                         )}
                       </div>
                     </div>
@@ -935,7 +935,7 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
                 </div>
               ))}
               {turns.length === 0 && (
-                <p className="py-space-xl text-center text-ds-body-sm text-outline">
+                <p className="py-space-xl text-center text-ds-body-sm text-slate-400">
                   AI đang chuẩn bị câu hỏi đầu tiên...
                 </p>
               )}
@@ -946,11 +946,11 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 placeholder="Ghi chú cá nhân trong phiên — chỉ hiển thị trên màn hình này, không lưu vào máy chủ."
-                className="min-h-[320px] w-full resize-none rounded-lg border border-outline-variant bg-surface-container-lowest p-3 text-ds-body-md text-on-surface placeholder:text-outline focus:border-primary focus:outline-none"
+                className="min-h-[320px] w-full resize-none rounded-lg border border-slate-200 bg-white p-3 text-ds-body-md text-slate-900 placeholder:text-slate-400 focus:border-primary focus:outline-none"
               />
             </div>
           )}
-          <div className="border-t border-surface-container-high px-space-md py-2.5 text-ds-label-sm text-on-surface-variant">
+          <div className="border-t border-surface-container-high px-space-md py-2.5 text-ds-label-sm text-slate-600">
             {media.state === 'granted'
               ? `${media.hasAudio ? (media.micOn ? 'Micro đang bật' : 'Micro đang tắt') : 'Micro không khả dụng'} • ${media.hasVideo ? (media.camOn ? 'Camera đang bật' : 'Camera đang tắt') : 'Camera không khả dụng'}`
               : 'Chưa cấp quyền thiết bị — transcript vẫn ghi bình thường'}
@@ -962,25 +962,25 @@ const AvatarInterviewSessionPage: React.FC<{ sessionId: number }> = ({ sessionId
 
       {showStar && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-inverse-surface/45 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
-          <div className="w-full max-w-lg rounded-xl bg-surface-container-lowest p-space-xl shadow-lg">
-            <h3 className="flex items-center gap-2 text-ds-headline-sm font-bold text-on-surface">
+          <div className="w-full max-w-lg rounded-xl bg-white p-space-xl shadow-lg">
+            <h3 className="flex items-center gap-2 text-ds-headline-sm font-bold text-slate-900">
               <span className={`${ICON} text-amber-500`}>lightbulb</span>
               Khung trả lời STAR
             </h3>
-            <dl className="mt-4 flex flex-col gap-3 text-ds-body-md text-on-surface">
+            <dl className="mt-4 flex flex-col gap-3 text-ds-body-md text-slate-900">
               {[
                 ['Situation', 'Bối cảnh dự án/vấn đề bạn gặp'],
                 ['Task', 'Nhiệm vụ của bạn, mục tiêu đo được'],
                 ['Action', 'Bạn đã làm gì, vì sao chọn cách đó'],
                 ['Result', 'Kết quả kèm số liệu hoặc bài học'],
               ].map(([k, v]) => (
-                <div key={k} className="rounded-lg bg-surface-container-low px-4 py-3">
+                <div key={k} className="rounded-lg bg-slate-50 px-4 py-3">
                   <dt className="font-bold text-primary">{k}</dt>
-                  <dd className="m-0 text-ds-body-sm text-on-surface-variant">{v}</dd>
+                  <dd className="m-0 text-ds-body-sm text-slate-600">{v}</dd>
                 </div>
               ))}
             </dl>
-            <p className="mt-3 text-ds-body-sm text-outline">
+            <p className="mt-3 text-ds-body-sm text-slate-400">
               Đây là khung gợi ý cách trình bày, không phải nhận định AI về câu trả lời của bạn.
             </p>
             <button type="button" onClick={() => setShowStar(false)} className={adminButton('primary', 'mt-4 w-full justify-center')}>

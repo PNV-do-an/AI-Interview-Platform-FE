@@ -45,8 +45,8 @@ const readFileAsDataUrl = (file: File) => new Promise<string>((resolve, reject) 
 const csvToList = (value: string) => value.split(',').map(s => s.trim()).filter(Boolean);
 const listToCsv = (list: string[]) => Array.from(new Set(list)).join(', ');
 
-const label2 = 'text-ds-label-md text-on-surface';
-const boxInput = `${adminInputClass} bg-surface-container-low border-transparent`;
+const label2 = 'text-ds-label-md text-slate-900';
+const boxInput = `${adminInputClass} bg-slate-50 border-transparent`;
 
 const SectionHead: React.FC<{
   icon: string; iconClass: string; title: string; description?: string; right?: React.ReactNode;
@@ -57,8 +57,8 @@ const SectionHead: React.FC<{
         <span className={`${ICON} text-[18px]`}>{icon}</span>
       </span>
       <div className="min-w-0">
-        <h2 className="text-ds-headline-md text-on-surface">{title}</h2>
-        {description && <p className="text-ds-body-sm text-on-surface-variant">{description}</p>}
+        <h2 className="text-ds-headline-md text-slate-900">{title}</h2>
+        {description && <p className="text-ds-body-sm text-slate-600">{description}</p>}
       </div>
     </div>
     {right}
@@ -68,11 +68,11 @@ const SectionHead: React.FC<{
 const ReadonlyBox: React.FC<{ label: string; value: string; hint?: string }> = ({ label, value, hint }) => (
   <div className="flex flex-col gap-space-xs">
     <span className={label2}>{label}</span>
-    <div className="flex h-10 items-center gap-2 rounded-lg border border-outline-variant/50 bg-surface-container-low px-space-md text-ds-body-md text-on-surface-variant">
+    <div className="flex h-10 items-center gap-2 rounded-lg border border-slate-200/50 bg-slate-50 px-space-md text-ds-body-md text-slate-600">
       <span className="truncate">{value || 'Chưa có'}</span>
       <span className={`${ICON} ml-auto shrink-0 text-[16px]`}>lock</span>
     </div>
-    {hint && <span className="text-ds-body-sm text-outline">{hint}</span>}
+    {hint && <span className="text-ds-body-sm text-slate-400">{hint}</span>}
   </div>
 );
 
@@ -203,7 +203,7 @@ const CandidateProfilePage = () => {
 
   if (!user || user.role !== 'ROLE_USER') {
     return (
-      <div className={`${CARD} p-space-lg text-ds-body-md text-on-surface-variant`}>
+      <div className={`${CARD} p-space-lg text-ds-body-md text-slate-600`}>
         Vui lòng đăng nhập bằng tài khoản ứng viên.
       </div>
     );
@@ -248,14 +248,14 @@ const CandidateProfilePage = () => {
                   strokeWidth="3.5"
                 />
               </svg>
-              <span className="absolute text-ds-label-md text-on-surface tabular-nums">{completeness}%</span>
+              <span className="absolute text-ds-label-md text-slate-900 tabular-nums">{completeness}%</span>
             </span>
             <span className="flex flex-col">
-              <span className="flex items-center gap-space-xs text-ds-label-lg text-on-surface">
+              <span className="flex items-center gap-space-xs text-ds-label-lg text-slate-900">
                 Độ hoàn thiện
-                <span className="h-2 w-2 rounded-full bg-secondary-teal" />
+                <span className="h-2 w-2 rounded-full bg-teal-600" />
               </span>
-              <span className="text-ds-body-sm text-on-surface-variant">
+              <span className="text-ds-body-sm text-slate-600">
                 Đếm theo 6 mục đã điền (tóm tắt, kỹ năng, số năm, mục tiêu, CV, SĐT)
               </span>
             </span>
@@ -264,13 +264,13 @@ const CandidateProfilePage = () => {
       />
 
       {successMsg && (
-        <p role="status" className="m-0 flex items-center gap-2 rounded-lg bg-secondary-container/50 px-4 py-3 text-ds-body-md text-on-secondary-container">
+        <p role="status" className="m-0 flex items-center gap-2 rounded-lg bg-teal-100/50 px-4 py-3 text-ds-body-md text-teal-700">
           <span className={`${ICON} text-[18px]`}>check_circle</span>
           {successMsg}
         </p>
       )}
       {error && (
-        <p role="alert" className="m-0 flex items-center gap-2 rounded-lg bg-error-container px-4 py-3 text-ds-body-md text-on-error-container">
+        <p role="alert" className="m-0 flex items-center gap-2 rounded-lg bg-red-100 px-4 py-3 text-ds-body-md text-red-700">
           <span className={`${ICON} text-[18px]`}>error</span>
           {error}
         </p>
@@ -282,7 +282,7 @@ const CandidateProfilePage = () => {
           <div className={`${CARD} flex flex-col gap-space-lg p-space-lg`}>
             <div className="flex flex-col items-center gap-space-md text-center">
               <div className="relative">
-                <div className="h-28 w-28 overflow-hidden rounded-full bg-surface-container-high shadow-md">
+                <div className="h-28 w-28 overflow-hidden rounded-full bg-slate-200 shadow-md">
                   {avatarUrl ? (
                     <img src={avatarUrl} alt={user.fullName} className="h-full w-full object-cover" />
                   ) : (
@@ -296,7 +296,7 @@ const CandidateProfilePage = () => {
                   aria-label="Thay đổi ảnh đại diện"
                   disabled={avatarBusy}
                   onClick={() => avatarInput.current?.click()}
-                  className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full bg-primary text-on-primary shadow-md transition-colors hover:bg-on-primary-fixed-variant"
+                  className="absolute bottom-0 right-0 flex h-9 w-9 items-center justify-center rounded-full bg-primary text-on-primary shadow-md transition-colors hover:bg-indigo-700"
                 >
                   <span className={`${ICON} text-[18px]`}>{avatarBusy ? 'progress_activity' : 'photo_camera'}</span>
                 </button>
@@ -308,33 +308,33 @@ const CandidateProfilePage = () => {
                     Xóa ảnh đại diện
                   </button>
                 ) : (
-                  <span className="mb-space-xs text-ds-label-md text-outline">Chưa có ảnh</span>
+                  <span className="mb-space-xs text-ds-label-md text-slate-400">Chưa có ảnh</span>
                 )}
-                <span className="text-ds-body-sm text-outline">PNG, JPG hoặc WEBP, tối đa 2MB</span>
+                <span className="text-ds-body-sm text-slate-400">PNG, JPG hoặc WEBP, tối đa 2MB</span>
               </div>
               {avatarMsg && (
-                <p className={`m-0 flex items-center gap-1.5 text-ds-body-sm ${avatarMsg.kind === 'success' ? 'text-secondary-teal' : 'text-error'}`}>
+                <p className={`m-0 flex items-center gap-1.5 text-ds-body-sm ${avatarMsg.kind === 'success' ? 'text-teal-600' : 'text-error'}`}>
                   <span className={`${ICON} text-[16px]`}>{avatarMsg.kind === 'success' ? 'check_circle' : 'error'}</span>
                   {avatarMsg.text}
                 </p>
               )}
               <div className="flex flex-col items-center gap-space-xs pt-space-xs">
-                <h2 className="text-ds-headline-md text-on-surface">{user.fullName}</h2>
-                <span className="flex items-center gap-space-xs text-ds-label-md text-on-surface-variant">
-                  <span className={`${ICON} text-[16px] text-secondary-teal`}>code</span>
+                <h2 className="text-ds-headline-md text-slate-900">{user.fullName}</h2>
+                <span className="flex items-center gap-space-xs text-ds-label-md text-slate-600">
+                  <span className={`${ICON} text-[16px] text-teal-600`}>code</span>
                   {careerGoal.trim() ? careerGoal.trim().slice(0, 48) : 'Chưa đặt mục tiêu nghề nghiệp'}
                 </span>
-                <span className="text-ds-body-sm text-outline">{user.email}</span>
+                <span className="text-ds-body-sm text-slate-400">{user.email}</span>
                 {profile?.updatedAt && (
-                  <span className="text-ds-body-sm text-outline">Hồ sơ lưu {timeAgo(profile.updatedAt)}</span>
+                  <span className="text-ds-body-sm text-slate-400">Hồ sơ lưu {timeAgo(profile.updatedAt)}</span>
                 )}
               </div>
             </div>
 
             <div className={`flex items-center justify-between gap-space-md rounded-xl p-space-md ${SOFT}`}>
               <div className="flex flex-col">
-                <span className="text-ds-label-lg leading-snug text-on-surface">Sẵn sàng nhận lời mời phỏng vấn</span>
-                <span className="flex flex-wrap items-center gap-1.5 text-ds-body-sm text-on-surface-variant">
+                <span className="text-ds-label-lg leading-snug text-slate-900">Sẵn sàng nhận lời mời phỏng vấn</span>
+                <span className="flex flex-wrap items-center gap-1.5 text-ds-body-sm text-slate-600">
                   Open to work
                   <DemoTag>Khối demo</DemoTag>
                 </span>
@@ -345,10 +345,10 @@ const CandidateProfilePage = () => {
                 aria-checked={openToWork}
                 aria-label="Sẵn sàng nhận lời mời phỏng vấn"
                 onClick={() => setOpenToWork(v => !v)}
-                className={`relative h-6 w-11 shrink-0 rounded-full border-0 transition-colors ${openToWork ? 'bg-secondary-teal' : 'bg-outline-variant'}`}
+                className={`relative h-6 w-11 shrink-0 rounded-full border-0 transition-colors ${openToWork ? 'bg-teal-600' : 'bg-outline-variant'}`}
               >
                 <span
-                  className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-surface-container-lowest shadow-sm transition-transform"
+                  className="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform"
                   style={{ transform: openToWork ? 'translateX(20px)' : 'none' }}
                 />
               </button>
@@ -356,12 +356,12 @@ const CandidateProfilePage = () => {
 
             <div className="grid grid-cols-2 gap-space-sm pt-space-xs">
               <div className={`flex flex-col items-center rounded-lg p-space-sm text-center ${SOFT}`}>
-                <span className="text-ds-headline-sm text-outline">—</span>
-                <span className="text-ds-body-sm text-on-surface-variant">Lượt xem hồ sơ</span>
+                <span className="text-ds-headline-sm text-slate-400">—</span>
+                <span className="text-ds-body-sm text-slate-600">Lượt xem hồ sơ</span>
               </div>
               <div className={`flex flex-col items-center rounded-lg p-space-sm text-center ${SOFT}`}>
                 <span className="text-ds-headline-sm text-primary tabular-nums">{completeness}%</span>
-                <span className="text-ds-body-sm text-on-surface-variant">Mục hồ sơ đã điền</span>
+                <span className="text-ds-body-sm text-slate-600">Mục hồ sơ đã điền</span>
               </div>
             </div>
           </div>
@@ -370,14 +370,14 @@ const CandidateProfilePage = () => {
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-space-xs">
                 <span className={`${ICON} text-[20px] text-primary`}>description</span>
-                <h3 className="text-ds-headline-sm text-on-surface">Quản lý File CV</h3>
+                <h3 className="text-ds-headline-sm text-slate-900">Quản lý File CV</h3>
               </span>
               {cvFileName.trim() ? (
-                <span className="rounded-full bg-secondary-container px-2 py-0.5 text-ds-label-sm uppercase text-on-secondary-container">
+                <span className="rounded-full bg-teal-100 px-2 py-0.5 text-ds-label-sm uppercase text-teal-700">
                   Đã lưu tên
                 </span>
               ) : (
-                <span className="rounded-full bg-surface-container-high px-2 py-0.5 text-ds-label-sm uppercase text-on-surface-variant">
+                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-ds-label-sm uppercase text-slate-600">
                   Trống
                 </span>
               )}
@@ -392,19 +392,19 @@ const CandidateProfilePage = () => {
                 onChange={e => setCvFileName(e.target.value)}
                 placeholder="vd: LeVanHuy_Frontend_CV.pdf"
               />
-              <span className="text-ds-body-sm text-outline">
+              <span className="text-ds-body-sm text-slate-400">
                 Hồ sơ chỉ lưu tên file; nội dung CV được phân tích ở màn Phân tích CV.
               </span>
             </div>
 
             {cvFileName.trim() && (
-              <div className="flex items-center gap-space-sm rounded-xl border border-outline-variant/30 bg-surface-container-low p-space-md">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-error-container text-error">
+              <div className="flex items-center gap-space-sm rounded-xl border border-slate-200/30 bg-slate-50 p-space-md">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-100 text-error">
                   <span className={`${ICON} text-[22px]`}>picture_as_pdf</span>
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-ds-label-md text-on-surface" title={cvFileName}>{cvFileName}</span>
-                  <span className="text-ds-body-sm text-on-surface-variant">
+                  <span className="truncate text-ds-label-md text-slate-900" title={cvFileName}>{cvFileName}</span>
+                  <span className="text-ds-body-sm text-slate-600">
                     {profile?.updatedAt ? `Ghi nhận ${timeAgo(profile.updatedAt)}` : 'Chưa lưu lần nào'}
                   </span>
                 </span>
@@ -412,7 +412,7 @@ const CandidateProfilePage = () => {
                   type="button"
                   title="Xóa tên file"
                   onClick={() => setCvFileName('')}
-                  className="rounded-lg p-1.5 text-on-surface-variant transition-colors hover:bg-error-container hover:text-error"
+                  className="rounded-lg p-1.5 text-slate-600 transition-colors hover:bg-red-100 hover:text-error"
                 >
                   <span className={`${ICON} text-[18px]`}>delete</span>
                 </button>
@@ -424,14 +424,14 @@ const CandidateProfilePage = () => {
               Tải &amp; phân tích CV
             </Link>
 
-            <div className="flex items-start gap-space-sm rounded-xl bg-surface-container-high/60 p-space-md">
+            <div className="flex items-start gap-space-sm rounded-xl bg-slate-200/60 p-space-md">
               <span className={`${ICON} mt-0.5 shrink-0 text-[20px] text-primary`}>smart_toy</span>
               <div className="flex flex-col">
-                <span className="flex flex-wrap items-center gap-1.5 text-ds-label-md text-on-surface">
+                <span className="flex flex-wrap items-center gap-1.5 text-ds-label-md text-slate-900">
                   Mẹo phỏng vấn từ trợ lý AI
                   <DemoTag>Khối demo</DemoTag>
                 </span>
-                <span className="text-ds-body-sm text-on-surface-variant">
+                <span className="text-ds-body-sm text-slate-600">
                   CV cập nhật chi tiết các số liệu định lượng (metrics) sẽ giúp hệ thống tạo ra các câu
                   phỏng vấn sát với thực tế hơn 35%.
                 </span>
@@ -448,7 +448,7 @@ const CandidateProfilePage = () => {
               iconClass="bg-primary/10 text-primary"
               title="Thông tin cá nhân cơ bản"
               description="Thông tin dùng để nhà tuyển dụng liên hệ và hệ thống thiết lập xưng hô"
-              right={<span className="text-ds-label-sm text-outline">Bắt buộc (*)</span>}
+              right={<span className="text-ds-label-sm text-slate-400">Bắt buộc (*)</span>}
             />
             <div className="grid grid-cols-1 gap-space-md md:grid-cols-2">
               <ReadonlyBox label="Họ và tên *" value={user.fullName} hint="Đổi tên liên hệ quản trị viên; tên hiển thị chỉ cập nhật sau khi đăng nhập lại." />
@@ -465,14 +465,14 @@ const CandidateProfilePage = () => {
                   value={experienceYears}
                   onChange={e => setExperienceYears(e.target.value)}
                 />
-                <span className="text-ds-body-sm text-outline">Dùng để chọn độ khó câu hỏi phỏng vấn.</span>
+                <span className="text-ds-body-sm text-slate-400">Dùng để chọn độ khó câu hỏi phỏng vấn.</span>
               </div>
             </div>
 
             <div className="flex flex-col gap-space-xs pt-space-xs">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <label className={label2} htmlFor="career-goal">Mục tiêu nghề nghiệp (Career Objective)</label>
-                <span className="text-ds-body-sm text-outline tabular-nums">{careerGoal.length} ký tự</span>
+                <span className="text-ds-body-sm text-slate-400 tabular-nums">{careerGoal.length} ký tự</span>
               </div>
               <textarea
                 id="career-goal"
@@ -487,7 +487,7 @@ const CandidateProfilePage = () => {
             <div className="flex flex-col gap-space-xs">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <label className={label2} htmlFor="summary">Tóm tắt năng lực</label>
-                <span className="text-ds-body-sm text-outline tabular-nums">{summary.length} ký tự</span>
+                <span className="text-ds-body-sm text-slate-400 tabular-nums">{summary.length} ký tự</span>
               </div>
               <textarea
                 id="summary"
@@ -503,19 +503,19 @@ const CandidateProfilePage = () => {
           <section className={`${CARD} flex flex-col gap-space-lg p-space-lg`}>
             <SectionHead
               icon="psychology"
-              iconClass="bg-secondary-teal/10 text-secondary-teal"
+              iconClass="bg-teal-600/10 text-teal-600"
               title="Kỹ năng chuyên môn & Công nghệ"
               description="Kỹ năng được gắn thẻ giúp đối chiếu độ khớp với bản mô tả công việc (JD)"
               right={
-                <span className="rounded-full bg-surface-container-high px-2.5 py-1 text-ds-label-sm font-semibold text-on-surface tabular-nums">
+                <span className="rounded-full bg-slate-200 px-2.5 py-1 text-ds-label-sm font-semibold text-slate-900 tabular-nums">
                   {skillList.length} kỹ năng
                 </span>
               }
             />
 
-            <div className="flex flex-col gap-space-sm rounded-xl bg-secondary-container/30 p-space-md sm:flex-row sm:items-center sm:justify-between">
-              <span className="flex items-start gap-space-sm text-ds-body-sm text-on-secondary-container">
-                <span className={`${ICON} shrink-0 text-[20px] text-secondary-teal`}>auto_awesome</span>
+            <div className="flex flex-col gap-space-sm rounded-xl bg-teal-100/30 p-space-md sm:flex-row sm:items-center sm:justify-between">
+              <span className="flex items-start gap-space-sm text-ds-body-sm text-teal-700">
+                <span className={`${ICON} shrink-0 text-[20px] text-teal-600`}>auto_awesome</span>
                 <span>
                   <span className="font-semibold">Khối demo</span> — gợi ý kỹ năng theo mục tiêu:
                   GraphQL, Micro-frontends, Core Web Vitals.
@@ -532,17 +532,17 @@ const CandidateProfilePage = () => {
             </div>
 
             <div className="flex flex-col gap-space-xs">
-              <span className="text-ds-label-sm uppercase tracking-wider text-on-surface-variant">
+              <span className="text-ds-label-sm uppercase tracking-wider text-slate-600">
                 Kỹ năng đã lưu trong hồ sơ
               </span>
               {skillList.length === 0 ? (
-                <p className="m-0 text-ds-body-sm text-outline">Chưa có kỹ năng nào — thêm ở ô bên dưới.</p>
+                <p className="m-0 text-ds-body-sm text-slate-400">Chưa có kỹ năng nào — thêm ở ô bên dưới.</p>
               ) : (
                 <div className="flex flex-wrap items-center gap-space-xs">
                   {skillList.map(s => (
                     <span
                       key={s}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-surface-container-high px-3 py-1 text-ds-label-md text-on-surface"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-slate-200 px-3 py-1 text-ds-label-md text-slate-900"
                     >
                       {s}
                       <button type="button" aria-label={`Xóa ${s}`} onClick={() => removeSkill(s)} className="flex items-center hover:text-error">
@@ -575,7 +575,7 @@ const CandidateProfilePage = () => {
                   Thêm
                 </button>
               </div>
-              <span className="text-ds-body-sm text-outline">
+              <span className="text-ds-body-sm text-slate-400">
                 Danh sách lưu thành một chuỗi phân tách dấu phẩy; bấm "Lưu thay đổi" để ghi vào hồ sơ.
               </span>
             </div>
@@ -595,9 +595,9 @@ const CandidateProfilePage = () => {
                 { role: 'Frontend Developer', org: 'Startup X • 06/2020 - 12/2022', detail: 'Phát triển dashboard realtime với React + TypeScript, giảm 40% thời gian tải trang.' },
               ].map(item => (
                 <div key={item.role} className={`flex flex-col gap-1 rounded-lg p-space-md ${SOFT}`}>
-                  <span className="text-ds-headline-sm font-semibold text-on-surface">{item.role}</span>
-                  <span className="text-ds-label-md text-on-surface-variant">{item.org}</span>
-                  <span className="text-ds-body-sm text-on-surface-variant">{item.detail}</span>
+                  <span className="text-ds-headline-sm font-semibold text-slate-900">{item.role}</span>
+                  <span className="text-ds-label-md text-slate-600">{item.org}</span>
+                  <span className="text-ds-body-sm text-slate-600">{item.detail}</span>
                 </div>
               ))}
             </div>
@@ -617,8 +617,8 @@ const CandidateProfilePage = () => {
                 { title: 'AWS Certified Developer – Associate', org: 'Amazon • 2023' },
               ].map(item => (
                 <div key={item.title} className={`flex flex-col gap-1 rounded-lg p-space-md ${SOFT}`}>
-                  <span className="text-ds-label-lg font-semibold text-on-surface">{item.title}</span>
-                  <span className="text-ds-body-sm text-on-surface-variant">{item.org}</span>
+                  <span className="text-ds-label-lg font-semibold text-slate-900">{item.title}</span>
+                  <span className="text-ds-body-sm text-slate-600">{item.org}</span>
                 </div>
               ))}
             </div>

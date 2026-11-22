@@ -103,7 +103,7 @@ const MockInterviewHistoryPage: React.FC = () => {
               Luyện phiên mới
             </Link>
             <button type="button" onClick={() => void fetchMySessions(page)} className={adminButton('ghost', 'h-10')}>
-              <span className={`${ICON} text-[18px] text-outline`}>autorenew</span>
+              <span className={`${ICON} text-[18px] text-slate-400`}>autorenew</span>
               Làm mới
             </button>
           </>
@@ -118,7 +118,7 @@ const MockInterviewHistoryPage: React.FC = () => {
           icon="history"
           tone="primary"
           sub={
-            <span className="text-on-surface-variant">
+            <span className="text-slate-600">
               Trang này: {pageStats.done} hoàn thành • {pageStats.running} đang làm
             </span>
           }
@@ -130,7 +130,7 @@ const MockInterviewHistoryPage: React.FC = () => {
           icon="analytics"
           tone="teal"
           sub={
-            <span className="text-on-surface-variant">
+            <span className="text-slate-600">
               {pageStats.avg == null ? 'Chưa có phiên chấm điểm' : `Tính trên ${pageStats.done} phiên của trang này`}
             </span>
           }
@@ -155,7 +155,7 @@ const MockInterviewHistoryPage: React.FC = () => {
           unit="câu"
           icon="edit_note"
           tone="neutral"
-          sub={<span className="text-on-surface-variant">Tổng trong trang đang xem</span>}
+          sub={<span className="text-slate-600">Tổng trong trang đang xem</span>}
         />
       </div>
 
@@ -164,10 +164,10 @@ const MockInterviewHistoryPage: React.FC = () => {
       <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
         <div className="flex flex-col gap-space-md border-b border-surface-container-high pb-space-md md:flex-row md:items-center md:justify-between">
           <div>
-            <h2 className="text-ds-headline-sm font-bold tracking-tight text-on-surface">Bảng phiên luyện tập</h2>
-            <p className="text-ds-body-sm text-on-surface-variant">Mỗi dòng mở báo cáo đánh giá chi tiết của phiên đó.</p>
+            <h2 className="text-ds-headline-sm font-bold tracking-tight text-slate-900">Bảng phiên luyện tập</h2>
+            <p className="text-ds-body-sm text-slate-600">Mỗi dòng mở báo cáo đánh giá chi tiết của phiên đó.</p>
           </div>
-          <div className="flex flex-wrap items-center gap-1 rounded-lg bg-surface-container-low p-1 text-ds-label-md">
+          <div className="flex flex-wrap items-center gap-1 rounded-lg bg-slate-50 p-1 text-ds-label-md">
             {TABS.map(t => {
               const active = t.key === tab;
               return (
@@ -176,7 +176,7 @@ const MockInterviewHistoryPage: React.FC = () => {
                   type="button"
                   onClick={() => setTab(t.key)}
                   className={`rounded px-space-md py-1.5 transition-colors ${
-                    active ? 'bg-surface-container-lowest font-bold text-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'
+                    active ? 'bg-white font-bold text-primary shadow-sm' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   {t.label}
@@ -188,7 +188,7 @@ const MockInterviewHistoryPage: React.FC = () => {
             })}
           </div>
         </div>
-        <p className="-mt-2 text-ds-body-sm text-outline">
+        <p className="-mt-2 text-ds-body-sm text-slate-400">
           Bộ lọc áp dụng trên trang đang xem; tổng số phiên chính xác nằm ở card "Tổng số phiên".
         </p>
 
@@ -220,22 +220,22 @@ const MockInterviewHistoryPage: React.FC = () => {
               </thead>
               <tbody>
                 {visible.map(s => (
-                  <tr key={s.id} className="transition-colors hover:bg-surface-container-low/60">
+                  <tr key={s.id} className="transition-colors hover:bg-slate-50/60">
                     <td className={adminTdClass}>
                       <div className="flex flex-col">
-                        <span className="font-semibold text-on-surface">{fmtServer(s.completedAt ?? s.createdAt, 'date')}</span>
-                        <span className="text-ds-label-sm text-outline">
+                        <span className="font-semibold text-slate-900">{fmtServer(s.completedAt ?? s.createdAt, 'date')}</span>
+                        <span className="text-ds-label-sm text-slate-400">
                           {s.status === 'COMPLETED' ? timeAgo(s.completedAt ?? s.createdAt) : `Bắt đầu ${timeAgo(s.createdAt)}`}
                         </span>
                       </div>
                     </td>
                     <td className={adminTdClass}>
                       <div className="flex flex-wrap items-center gap-space-xs">
-                        <span className={`h-2 w-2 shrink-0 rounded-full ${s.status === 'COMPLETED' ? 'bg-secondary-teal' : 'bg-primary'}`} />
-                        <span className="font-medium text-on-surface">{titleOf(s)}</span>
+                        <span className={`h-2 w-2 shrink-0 rounded-full ${s.status === 'COMPLETED' ? 'bg-teal-600' : 'bg-primary'}`} />
+                        <span className="font-medium text-slate-900">{titleOf(s)}</span>
                         {s.mode === 'AVATAR' && <Pill tone="warning">Video Call</Pill>}
                       </div>
-                      <span className="text-ds-label-sm text-outline-variant">{subOf(s)}</span>
+                      <span className="text-ds-label-sm text-slate-400-variant">{subOf(s)}</span>
                     </td>
                     <td className={`${adminTdClass} tabular-nums`}>
                       {progressOf(s)}
@@ -244,12 +244,12 @@ const MockInterviewHistoryPage: React.FC = () => {
                       {s.overallScore != null ? (
                         <Pill tone={scoreTone(s.overallScore)}>{s.overallScore}/100</Pill>
                       ) : (
-                        <span className="text-outline">Chưa chấm</span>
+                        <span className="text-slate-400">Chưa chấm</span>
                       )}
                     </td>
                     <td className={adminTdClass}>
                       {s.overallScore != null ? (
-                        <span className="flex items-center gap-1 text-secondary-teal">
+                        <span className="flex items-center gap-1 text-teal-600">
                           <span className={`${ICON} text-[16px]`}>stars</span>
                           {scoreBand(s.overallScore)}
                         </span>
@@ -303,8 +303,8 @@ const MockInterviewHistoryPage: React.FC = () => {
           <span className={`${ICON} text-[22px]`}>insights</span>
         </span>
         <div className="min-w-0 flex-1">
-          <span className="text-ds-label-lg font-bold text-on-surface">Điểm theo từng câu mới hiện trong báo cáo</span>
-          <p className="text-ds-body-sm text-on-surface-variant">
+          <span className="text-ds-label-lg font-bold text-slate-900">Điểm theo từng câu mới hiện trong báo cáo</span>
+          <p className="text-ds-body-sm text-slate-600">
             Mở một phiên đã hoàn thành để xem điểm từng câu hỏi, nội dung trả lời và nhận xét kèm theo.
             Phiên video call hiển thị transcript từng lượt và điểm đánh giá 5 chiều do hệ thống tự chấm.
           </p>

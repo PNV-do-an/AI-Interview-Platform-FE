@@ -135,7 +135,7 @@ const MockInterviewSessionPage = () => {
               <span className="text-label-sm font-semibold text-ink">Phiên luyện tập trực tiếp</span>
               {contextLabel && (
                 <>
-                  <span className="text-outline-strong">/</span>
+                  <span className="text-slate-500">/</span>
                   <span className="text-label-md text-ink">{contextLabel}</span>
                 </>
               )}
@@ -149,7 +149,7 @@ const MockInterviewSessionPage = () => {
               </div>
               <div className="mt-1 h-1.5 w-44 overflow-hidden rounded-full bg-surface-high">
                 <div
-                  className="h-full rounded-full bg-primary-container transition-all duration-500"
+                  className="h-full rounded-full bg-indigo-600 transition-all duration-500"
                   /* width dẫn xuất từ answeredCount/total -> giữ inline style */
                   style={{ width: `${total > 0 ? (session.answeredCount / total) * 100 : 0}%` }}
                 />
@@ -218,8 +218,8 @@ const MockInterviewSessionPage = () => {
                       key={`${index}-${i}`}
                       className={`flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-body-md transition-colors ${
                         answerText === opt
-                          ? 'border-primary bg-primary-container/15 text-ink'
-                          : 'border-outline-variant bg-surface-low text-ink hover:bg-surface-container'
+                          ? 'border-primary bg-indigo-600/15 text-ink'
+                          : 'border-slate-200 bg-surface-low text-ink hover:bg-slate-100'
                       }`}
                     >
                       <input
@@ -229,7 +229,7 @@ const MockInterviewSessionPage = () => {
                         checked={answerText === opt}
                         onChange={() => setAnswerText(opt)}
                       />
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-container-high text-label-sm font-bold text-ink-variant">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-200 text-label-sm font-bold text-ink-variant">
                         {String.fromCharCode(65 + i)}
                       </span>
                       <span>{opt}</span>

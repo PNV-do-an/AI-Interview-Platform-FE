@@ -18,13 +18,13 @@ import {
 import { adminButton, adminInputClass, fmtServer } from '../components/adminKit';
 import { CARD, CandidatePageHeader, ICON, SOFT } from '../components/candidateKit';
 
-const label2 = 'text-ds-label-md text-on-surface';
-const note = 'text-ds-body-sm text-outline';
+const label2 = 'text-ds-label-md text-slate-900';
+const note = 'text-ds-body-sm text-slate-400';
 
 const STATUS_TONE: Record<string, string> = {
-  ACTIVE: 'bg-secondary-container/40 text-secondary-teal',
-  COMPLETED: 'bg-primary-container text-on-primary',
-  ARCHIVED: 'bg-surface-container-high text-on-surface-variant',
+  ACTIVE: 'bg-teal-100/40 text-teal-600',
+  COMPLETED: 'bg-indigo-600 text-on-primary',
+  ARCHIVED: 'bg-slate-200 text-slate-600',
 };
 
 const StudyProgramsPage = () => {
@@ -55,7 +55,7 @@ const StudyProgramsPage = () => {
 
   if (!user || user.role !== 'ROLE_USER') {
     return (
-      <div className={`${CARD} p-space-lg text-ds-body-md text-on-surface-variant`}>
+      <div className={`${CARD} p-space-lg text-ds-body-md text-slate-600`}>
         Vui lòng đăng nhập bằng tài khoản ứng viên.
       </div>
     );
@@ -76,13 +76,13 @@ const StudyProgramsPage = () => {
       />
 
       {successMsg && (
-        <p role="status" className="m-0 flex items-center gap-2 rounded-lg bg-secondary-container/50 px-4 py-3 text-ds-body-md text-on-secondary-container">
+        <p role="status" className="m-0 flex items-center gap-2 rounded-lg bg-teal-100/50 px-4 py-3 text-ds-body-md text-teal-700">
           <span className={`${ICON} text-[18px]`}>check_circle</span>
           {successMsg}
         </p>
       )}
       {error && (
-        <p role="alert" className="m-0 flex items-center gap-2 rounded-lg bg-error-container px-4 py-3 text-ds-body-md text-on-error-container">
+        <p role="alert" className="m-0 flex items-center gap-2 rounded-lg bg-red-100 px-4 py-3 text-ds-body-md text-red-700">
           <span className={`${ICON} text-[18px]`}>error</span>
           {error}
         </p>
@@ -94,7 +94,7 @@ const StudyProgramsPage = () => {
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <span className={`${ICON} text-[18px]`}>auto_stories</span>
             </span>
-            <h2 className="text-ds-headline-md text-on-surface">Tạo chương trình mới</h2>
+            <h2 className="text-ds-headline-md text-slate-900">Tạo chương trình mới</h2>
           </div>
         </div>
 
@@ -147,21 +147,21 @@ const StudyProgramsPage = () => {
       <section className={`${CARD} flex flex-col gap-space-md p-space-lg`}>
         <div className="flex flex-wrap items-center justify-between gap-space-sm border-b border-surface-container-high pb-space-sm">
           <div className="flex items-center gap-space-sm">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary-teal/10 text-secondary-teal">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-600/10 text-teal-600">
               <span className={`${ICON} text-[18px]`}>list_alt</span>
             </span>
-            <h2 className="text-ds-headline-md text-on-surface">Chương trình của bạn</h2>
+            <h2 className="text-ds-headline-md text-slate-900">Chương trình của bạn</h2>
           </div>
-          <span className="rounded-full bg-surface-container-high px-2.5 py-1 text-ds-label-sm font-semibold text-on-surface tabular-nums">
+          <span className="rounded-full bg-slate-200 px-2.5 py-1 text-ds-label-sm font-semibold text-slate-900 tabular-nums">
             {programs.length} chương trình
           </span>
         </div>
 
         {programs.length === 0 ? (
           <div className="flex flex-col items-center gap-space-md py-space-lg text-center">
-            <span className={`${ICON} text-[32px] text-outline`}>menu_book</span>
+            <span className={`${ICON} text-[32px] text-slate-400`}>menu_book</span>
             <div className="flex flex-col gap-1">
-              <span className="text-ds-headline-sm font-semibold text-on-surface">Chưa có chương trình nào</span>
+              <span className="text-ds-headline-sm font-semibold text-slate-900">Chưa có chương trình nào</span>
               <span className={note}>
                 Phân tích CV trước rồi quay lại tạo chương trình ôn tập.
               </span>
@@ -179,16 +179,16 @@ const StudyProgramsPage = () => {
                 <Link
                   key={p.id}
                   to={`/study/${p.id}`}
-                  className={`${SOFT} flex flex-col gap-space-sm rounded-xl p-space-md no-underline transition-colors hover:bg-surface-container-high`}
+                  className={`${SOFT} flex flex-col gap-space-sm rounded-xl p-space-md no-underline transition-colors hover:bg-slate-200`}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-space-xs">
-                    <span className="min-w-0 flex-1 truncate text-ds-headline-sm font-semibold text-on-surface">{p.title}</span>
+                    <span className="min-w-0 flex-1 truncate text-ds-headline-sm font-semibold text-slate-900">{p.title}</span>
                     <span className={`rounded-full px-2.5 py-0.5 text-ds-label-sm font-bold ${STATUS_TONE[p.status] ?? STATUS_TONE.ACTIVE}`}>
                       {PROGRAM_STATUS_LABELS[p.status] ?? p.status}
                     </span>
                   </div>
-                  <div className="flex flex-wrap items-center gap-space-xs text-ds-label-md text-on-surface-variant">
-                    <span className="rounded-full bg-surface-container-high px-2.5 py-0.5 text-ds-label-sm text-on-surface">
+                  <div className="flex flex-wrap items-center gap-space-xs text-ds-label-md text-slate-600">
+                    <span className="rounded-full bg-slate-200 px-2.5 py-0.5 text-ds-label-sm text-slate-900">
                       {PROGRAM_TYPE_LABELS[p.programType] ?? p.programType}
                     </span>
                     {p.targetPosition && <span>Vị trí: {p.targetPosition}</span>}
@@ -196,10 +196,10 @@ const StudyProgramsPage = () => {
                     <span className="ml-auto">{fmtServer(p.createdAt, 'date')}</span>
                   </div>
                   <div className="flex items-center gap-space-sm">
-                    <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-surface-container">
-                      <div className="h-full rounded-full bg-secondary-teal" style={{ width: `${done}%` }} />
+                    <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-100">
+                      <div className="h-full rounded-full bg-teal-600" style={{ width: `${done}%` }} />
                     </div>
-                    <span className="text-ds-body-sm text-on-surface-variant tabular-nums">
+                    <span className="text-ds-body-sm text-slate-600 tabular-nums">
                       {p.completedTopics}/{p.totalTopics} chủ đề
                     </span>
                   </div>

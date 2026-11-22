@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './views/components/ProtectedRoute';
 import AppLayout from './views/layout/AppLayout';
 import CandidateLayout from './views/layout/CandidateLayout';
+import EmployerLayout from './views/layout/EmployerLayout';
 import AdminLayout from './views/layout/AdminLayout';
 import LoginPage from './views/pages/LoginPage';
 import RegisterPage from './views/pages/RegisterPage';
@@ -36,9 +37,10 @@ import CoverLettersPage from './views/pages/CoverLettersPage';
 import StudyProgramsPage from './views/pages/StudyProgramsPage';
 import StudyProgramDetailPage from './views/pages/StudyProgramDetailPage';
 import PackagesPage from './views/pages/PackagesPage';
+import PublicPricingPage from './views/pages/PublicPricingPage';
 import MyOrdersPage from './views/pages/MyOrdersPage';
 import WalletPage from './views/pages/WalletPage';
-import AiCreditsPage from './views/pages/AiCreditsPage';
+import PaymentsPage from './views/pages/PaymentsPage';
 import MyBookingsPage from './views/pages/MyBookingsPage';
 import MentorPricingPage from './views/pages/MentorPricingPage';
 import WithdrawalsPage from './views/pages/WithdrawalsPage';
@@ -78,7 +80,9 @@ const HomeRoute: React.FC = () => {
  */
 const WorkspaceLayout: React.FC = () => {
   const { user } = useAuth();
-  return user?.role === 'ROLE_USER' ? <CandidateLayout /> : <AppLayout />;
+  if (user?.role === 'ROLE_USER') return <CandidateLayout />;
+  if (user?.role === 'ROLE_INTERVIEWER') return <EmployerLayout />;
+  return <AppLayout />;
 };
 
 const App: React.FC = () => {
@@ -99,7 +103,7 @@ const App: React.FC = () => {
           <Route path="/opportunities" element={<PublicJobBoardPage />} />
           {/* Trang marketing công khai theo bộ mockup 2026-11-12 */}
           <Route path="/mentors" element={<MentorsPage />} />
-          <Route path="/pricing" element={<PackagesPage />} />
+          <Route path="/pricing" element={<PublicPricingPage />} />
           <Route path="/ai-interview" element={<MockInterviewsPublicPage />} />
 
           {/* Protected routes — any authenticated user */}
@@ -109,6 +113,9 @@ const App: React.FC = () => {
               <Route path="/jobs" element={<JobsPage />} />
               <Route path="/jobs/:id" element={<JobDetailPage />} />
               <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/payments" element={<PaymentsPage />} />
+              <Route path="/packages" element={<PackagesPage />} />
+              <Route path="/wallet" element={<WalletPage />} />
               <Route path="/employers/:id/reviews" element={<EmployerReviewsPage />} />
               <Route path="/bug-reports" element={<BugReportsPage />} />
 
@@ -119,7 +126,6 @@ const App: React.FC = () => {
                 <Route path="/my-jobs" element={<MyJobsPage />} />
                 <Route path="/my-slots" element={<MySlotsPage />} />
                 <Route path="/my-slots/calendar" element={<InterviewCalendarPage />} />
-                <Route path="/packages" element={<PackagesPage />} />
                 <Route path="/my-orders" element={<MyOrdersPage />} />
                 <Route path="/my-bookings" element={<MyBookingsPage />} />
                 <Route path="/mentor-pricing" element={<MentorPricingPage />} />
@@ -132,8 +138,6 @@ const App: React.FC = () => {
                 <Route path="/my-interviews" element={<MyInterviewsPage />} />
                 <Route path="/my-profile" element={<CandidateProfilePage />} />
                 <Route path="/account" element={<CandidateAccountPage />} />
-                <Route path="/wallet" element={<WalletPage />} />
-                <Route path="/ai-credits" element={<AiCreditsPage />} />
                 <Route path="/mock-interviews" element={<MockInterviewsPage />} />
                 {/* Route tĩnh xếp trên `:id` để "history" không bị màn session nuốt. */}
                 <Route path="/mock-interviews/history" element={<MockInterviewHistoryPage />} />

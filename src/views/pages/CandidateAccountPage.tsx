@@ -83,8 +83,8 @@ const SectionCard: React.FC<{
           <span className={`${ICON} text-[20px]`}>{icon}</span>
         </span>
         <div className="min-w-0">
-          <h3 className="text-ds-headline-sm font-semibold text-on-surface">{title}</h3>
-          {description && <p className="text-ds-body-sm text-on-surface-variant">{description}</p>}
+          <h3 className="text-ds-headline-sm font-semibold text-slate-900">{title}</h3>
+          {description && <p className="text-ds-body-sm text-slate-600">{description}</p>}
         </div>
       </div>
       {extra}
@@ -98,14 +98,14 @@ const ReadonlyCell: React.FC<{ label: string; value: string; verified?: boolean;
   label, value, verified, pending,
 }) => (
   <div className="flex flex-col gap-1.5">
-    <span className="text-ds-label-md font-semibold text-on-surface">{label}</span>
-    <div className="flex h-10 items-center justify-between gap-2 rounded-lg bg-surface-container-low px-3 text-ds-body-md text-on-surface">
+    <span className="text-ds-label-md font-semibold text-slate-900">{label}</span>
+    <div className="flex h-10 items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 text-ds-body-md text-slate-900">
       <span className="truncate">{value}</span>
       {verified && (
-        <span className={`${ICON} shrink-0 text-[18px] text-secondary-teal`} title="Đã xác thực">verified</span>
+        <span className={`${ICON} shrink-0 text-[18px] text-teal-600`} title="Đã xác thực">verified</span>
       )}
       {pending && (
-        <span className={`${ICON} shrink-0 text-[18px] text-outline`} title="Chưa có thông tin">edit_note</span>
+        <span className={`${ICON} shrink-0 text-[18px] text-slate-400`} title="Chưa có thông tin">edit_note</span>
       )}
     </div>
   </div>
@@ -115,7 +115,7 @@ const Message: React.FC<{ kind: 'success' | 'error'; children: React.ReactNode }
   <p
     role="status"
     className={`m-0 flex flex-wrap items-center gap-1.5 rounded-lg px-3 py-2 text-ds-body-sm ${
-      kind === 'success' ? 'bg-secondary-container/50 text-on-secondary-container' : 'bg-error-container text-on-error-container'
+      kind === 'success' ? 'bg-teal-100/50 text-teal-700' : 'bg-red-100 text-red-700'
     }`}
   >
     <span className={`${ICON} text-[18px]`}>{kind === 'success' ? 'check_circle' : 'error'}</span>
@@ -128,7 +128,7 @@ const EyeButton: React.FC<{ shown: boolean; onToggle: () => void; label: string 
     type="button"
     aria-label={label}
     onClick={onToggle}
-    className="absolute right-3 top-1/2 -translate-y-1/2 border-0 bg-transparent p-0 text-on-surface-variant hover:text-on-surface"
+    className="absolute right-3 top-1/2 -translate-y-1/2 border-0 bg-transparent p-0 text-slate-600 hover:text-slate-900"
   >
     <span className={`${ICON} text-[18px]`}>{shown ? 'visibility_off' : 'visibility'}</span>
   </button>
@@ -139,7 +139,7 @@ const PwdField: React.FC<{
   shown: boolean; onToggle: () => void; autoComplete: string;
 }> = ({ label, value, onChange, placeholder, shown, onToggle, autoComplete }) => (
   <div className="flex flex-col gap-1.5">
-    <label className="text-ds-label-md text-on-surface">{label}</label>
+    <label className="text-ds-label-md text-slate-900">{label}</label>
     <div className="relative">
       <input
         type={shown ? 'text' : 'password'}
@@ -159,18 +159,18 @@ const ToggleRow: React.FC<{
   title: string; description: string; checked: boolean; onChange: (v: boolean) => void;
   badge?: string; soft?: boolean; icon?: string;
 }> = ({ title, description, checked, onChange, badge, soft, icon }) => (
-  <div className={`flex items-start justify-between gap-space-sm ${soft ? 'rounded-lg bg-surface-container-low p-3' : ''}`}>
+  <div className={`flex items-start justify-between gap-space-sm ${soft ? 'rounded-lg bg-slate-50 p-3' : ''}`}>
     <div className="flex min-w-0 flex-col pr-2">
-      <span className="flex items-center gap-1.5 text-ds-label-lg font-semibold text-on-surface">
-        {icon && <span className={`${ICON} text-[20px] text-secondary-teal`}>{icon}</span>}
+      <span className="flex items-center gap-1.5 text-ds-label-lg font-semibold text-slate-900">
+        {icon && <span className={`${ICON} text-[20px] text-teal-600`}>{icon}</span>}
         {title}
         {badge && (
-          <span className="rounded bg-secondary-container px-1.5 py-[2px] text-[10px] font-bold uppercase text-on-secondary-container">
+          <span className="rounded bg-teal-100 px-1.5 py-[2px] text-[10px] font-bold uppercase text-teal-700">
             {badge}
           </span>
         )}
       </span>
-      <span className="mt-0.5 text-ds-body-sm text-on-surface-variant">{description}</span>
+      <span className="mt-0.5 text-ds-body-sm text-slate-600">{description}</span>
     </div>
     <div className="mt-1 shrink-0">
       <Toggle checked={checked} onChange={onChange} label={title} />
@@ -181,14 +181,14 @@ const ToggleRow: React.FC<{
 const ConnectedRow: React.FC<{
   name: string; handle: string | null; logo: React.ReactNode; connected: boolean;
 }> = ({ name, handle, logo, connected }) => (
-  <div className={`flex items-center justify-between gap-3 rounded-lg p-3 ${connected ? 'bg-surface-container-low' : 'border border-outline-variant/60 bg-surface-container-lowest'}`}>
+  <div className={`flex items-center justify-between gap-3 rounded-lg p-3 ${connected ? 'bg-slate-50' : 'border border-slate-200/60 bg-white'}`}>
     <div className="flex min-w-0 items-center gap-3">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-container-lowest shadow-sm">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
         {logo}
       </span>
       <span className="flex min-w-0 flex-col">
-        <span className="text-ds-label-md font-semibold text-on-surface">{name}</span>
-        <span className={`truncate text-ds-body-sm ${handle ? 'text-on-surface-variant' : 'text-outline'}`}>
+        <span className="text-ds-label-md font-semibold text-slate-900">{name}</span>
+        <span className={`truncate text-ds-body-sm ${handle ? 'text-slate-600' : 'text-slate-400'}`}>
           {handle ?? 'Chưa kết nối'}
         </span>
       </span>
@@ -198,8 +198,8 @@ const ConnectedRow: React.FC<{
       disabled
       className={`shrink-0 rounded-lg px-3 py-1.5 text-ds-label-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 ${
         connected
-          ? 'bg-surface-container-high text-on-surface-variant'
-          : 'bg-primary-container text-on-primary'
+          ? 'bg-slate-200 text-slate-600'
+          : 'bg-indigo-600 text-on-primary'
       }`}
     >
       {connected ? 'Hủy liên kết' : 'Kết nối'}
@@ -495,7 +495,7 @@ const CandidateAccountPage: React.FC = () => {
                   strokeWidth="3.5"
                 />
                 <path
-                  className="text-secondary-teal"
+                  className="text-teal-600"
                   d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   fill="none"
                   stroke="currentColor"
@@ -505,47 +505,47 @@ const CandidateAccountPage: React.FC = () => {
                 />
               </svg>
               <div className="absolute flex flex-col items-center">
-                <span className="text-ds-headline-md font-bold leading-none text-on-surface">85%</span>
-                <span className="mt-0.5 text-[10px] font-bold uppercase text-secondary-teal">Tốt</span>
+                <span className="text-ds-headline-md font-bold leading-none text-slate-900">85%</span>
+                <span className="mt-0.5 text-[10px] font-bold uppercase text-teal-600">Tốt</span>
               </div>
             </div>
             <div className="flex min-w-0 flex-col gap-1">
               <div className="flex flex-wrap items-center gap-space-xs">
-                <h2 className="text-ds-headline-sm text-on-surface">Mức độ an toàn tài khoản</h2>
-                <span className={`${ICON} text-[20px] text-secondary-teal`}>verified_user</span>
+                <h2 className="text-ds-headline-sm text-slate-900">Mức độ an toàn tài khoản</h2>
+                <span className={`${ICON} text-[20px] text-teal-600`}>verified_user</span>
                 <DemoTag>Khối demo</DemoTag>
               </div>
-              <p className="text-ds-body-sm text-on-surface-variant">
+              <p className="text-ds-body-sm text-slate-600">
                 Điểm mẫu theo thiết kế: tài khoản có độ bảo vệ cao. Bật xác thực 2 lớp (2FA) để đạt
                 mức bảo mật tuyệt đối 100%.
               </p>
             </div>
           </div>
           <div className="grid w-full shrink-0 grid-cols-2 gap-2 md:w-auto">
-            <span className="flex items-center gap-2 rounded-lg bg-surface-container-low px-3 py-1.5 text-ds-label-md text-on-surface">
-              <span className={`${ICON} text-[18px] text-secondary-teal`}>check_circle</span>
+            <span className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5 text-ds-label-md text-slate-900">
+              <span className={`${ICON} text-[18px] text-teal-600`}>check_circle</span>
               Mật khẩu theo quy định
             </span>
-            <span className="flex items-center gap-2 rounded-lg bg-surface-container-low px-3 py-1.5 text-ds-label-md text-on-surface">
-              <span className={`${ICON} text-[18px] text-secondary-teal`}>check_circle</span>
+            <span className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5 text-ds-label-md text-slate-900">
+              <span className={`${ICON} text-[18px] text-teal-600`}>check_circle</span>
               Đã xác thực email
             </span>
-            <span className="flex items-center gap-2 rounded-lg bg-surface-container-low px-3 py-1.5 text-ds-label-md text-on-surface">
-              <span className={`${ICON} text-[18px] text-outline`}>hourglass_top</span>
+            <span className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5 text-ds-label-md text-slate-900">
+              <span className={`${ICON} text-[18px] text-slate-400`}>hourglass_top</span>
               {phone ? 'Đã có số điện thoại' : 'Chưa có số điện thoại'}
             </span>
             {twoFa.loading ? (
-              <span className="flex items-center gap-2 rounded-lg bg-surface-container-low px-3 py-1.5 text-ds-label-md text-on-surface">
-                <span className={`${ICON} text-[18px] text-outline`}>hourglass_top</span>
+              <span className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5 text-ds-label-md text-slate-900">
+                <span className={`${ICON} text-[18px] text-slate-400`}>hourglass_top</span>
                 Đang kiểm tra 2FA
               </span>
             ) : twoFa.enabled ? (
-              <span className="flex items-center gap-2 rounded-lg bg-secondary-container/40 px-3 py-1.5 text-ds-label-md text-on-secondary-container">
-                <span className={`${ICON} text-[18px] text-secondary-teal`}>check_circle</span>
+              <span className="flex items-center gap-2 rounded-lg bg-teal-100/40 px-3 py-1.5 text-ds-label-md text-teal-700">
+                <span className={`${ICON} text-[18px] text-teal-600`}>check_circle</span>
                 Đã bật 2FA
               </span>
             ) : (
-              <span className="flex items-center gap-2 rounded-lg bg-error-container/40 px-3 py-1.5 text-ds-label-md text-on-error-container">
+              <span className="flex items-center gap-2 rounded-lg bg-red-100/40 px-3 py-1.5 text-ds-label-md text-red-700">
                 <span className={`${ICON} text-[18px] text-error`}>error</span>
                 Chưa bật 2FA
               </span>
@@ -555,22 +555,22 @@ const CandidateAccountPage: React.FC = () => {
 
         <div className={`${CARD} flex flex-col justify-between p-space-lg lg:col-span-4`}>
           <div className="flex items-center justify-between">
-            <span className="text-ds-label-sm font-bold uppercase tracking-wider text-on-surface-variant">
+            <span className="text-ds-label-sm font-bold uppercase tracking-wider text-slate-600">
               Kênh nhận thông báo
             </span>
-            <span className="rounded-lg bg-secondary-container/40 p-1 text-on-secondary-container">
+            <span className="rounded-lg bg-teal-100/40 p-1 text-teal-700">
               <span className={`${ICON} text-[18px]`}>notifications_active</span>
             </span>
           </div>
           <div className="mt-3">
-            <span className="text-ds-headline-md text-on-surface">Email &amp; Trình duyệt</span>
-            <p className="mt-1 text-ds-body-sm text-on-surface-variant">
+            <span className="text-ds-headline-md text-slate-900">Email &amp; Trình duyệt</span>
+            <p className="mt-1 text-ds-body-sm text-slate-600">
               Đang kích hoạt đồng bộ thông báo phỏng vấn &amp; gợi ý việc làm thời gian thực.
             </p>
           </div>
           <div className="mt-4 flex items-center justify-between border-t border-surface-container-high pt-3">
-            <span className="flex items-center gap-1 text-ds-label-sm font-semibold text-secondary-teal">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-secondary-teal" /> Sẵn sàng kết nối
+            <span className="flex items-center gap-1 text-ds-label-sm font-semibold text-teal-600">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-teal-600" /> Sẵn sàng kết nối
             </span>
             <a href="#notification-section" className="flex items-center text-ds-label-md text-primary hover:underline">
               Tùy chỉnh <span className={`${ICON} text-[16px]`}>arrow_forward</span>
@@ -611,7 +611,7 @@ const CandidateAccountPage: React.FC = () => {
                   />
                 </div>
                 {!phone && (
-                  <p className="m-0 flex items-start gap-1 text-ds-body-sm text-on-surface-variant">
+                  <p className="m-0 flex items-start gap-1 text-ds-body-sm text-slate-600">
                     <span className={`${ICON} shrink-0 text-[14px]`}>info</span>
                     Số điện thoại do quản trị viên cập nhật khi lập hồ sơ; màn này chỉ hiển thị.
                   </p>
@@ -630,8 +630,8 @@ const CandidateAccountPage: React.FC = () => {
                       )}
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-ds-label-lg font-semibold text-on-surface">Ảnh đại diện</span>
-                      <span className="text-ds-body-sm text-on-surface-variant">PNG, JPG hoặc WEBP, tối đa 2MB.</span>
+                      <span className="text-ds-label-lg font-semibold text-slate-900">Ảnh đại diện</span>
+                      <span className="text-ds-body-sm text-slate-600">PNG, JPG hoặc WEBP, tối đa 2MB.</span>
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
@@ -657,11 +657,11 @@ const CandidateAccountPage: React.FC = () => {
                 {/* Đổi mật khẩu */}
                 <div className="flex flex-col gap-space-md border-t border-surface-container-high pt-space-md">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h4 className="flex items-center gap-2 text-[15px] font-semibold text-on-surface">
-                      <span className={`${ICON} text-[18px] text-on-surface-variant`}>lock_reset</span>
+                    <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                      <span className={`${ICON} text-[18px] text-slate-600`}>lock_reset</span>
                       Đổi mật khẩu tài khoản
                     </h4>
-                    <span className="text-ds-label-sm text-on-surface-variant">
+                    <span className="text-ds-label-sm text-slate-600">
                       {profileUpdatedAt ? `Hồ sơ cập nhật ${timeAgo(profileUpdatedAt)}` : 'Hồ sơ chưa có bản cập nhật'}
                     </span>
                   </div>
@@ -699,17 +699,17 @@ const CandidateAccountPage: React.FC = () => {
 
                     <div className={`flex flex-col gap-1.5 rounded-lg p-space-sm ${SOFT}`}>
                       <div className="flex items-center justify-between text-ds-label-sm">
-                        <span className="text-on-surface-variant">Độ an toàn mật khẩu:</span>
-                        <span className="flex items-center gap-1 font-semibold text-secondary-teal">
+                        <span className="text-slate-600">Độ an toàn mật khẩu:</span>
+                        <span className="flex items-center gap-1 font-semibold text-teal-600">
                           <span className={`${ICON} text-[14px]`}>shield</span>
                           {STRENGTH_LABEL[passed]}
                         </span>
                       </div>
-                      <div className="flex h-1.5 w-full gap-1 overflow-hidden rounded-full bg-surface-container-high">
+                      <div className="flex h-1.5 w-full gap-1 overflow-hidden rounded-full bg-slate-200">
                         {RULES.map((rule, i) => (
                           <span
                             key={rule.key}
-                            className={`h-full flex-1 rounded-full ${i < passed ? 'bg-secondary-teal' : 'bg-surface-container-highest'}`}
+                            className={`h-full flex-1 rounded-full ${i < passed ? 'bg-teal-600' : 'bg-slate-200est'}`}
                           />
                         ))}
                       </div>
@@ -717,7 +717,7 @@ const CandidateAccountPage: React.FC = () => {
                         {RULES.map(rule => {
                           const ok = rule.test(newPwd);
                           return (
-                            <li key={rule.key} className={`flex items-center gap-1.5 text-ds-body-sm ${ok ? 'text-secondary-teal' : 'text-on-surface-variant'}`}>
+                            <li key={rule.key} className={`flex items-center gap-1.5 text-ds-body-sm ${ok ? 'text-teal-600' : 'text-slate-600'}`}>
                               <span className={`${ICON} text-[16px]`}>{ok ? 'check_circle' : 'radio_button_unchecked'}</span>
                               {rule.label}
                             </li>
@@ -735,7 +735,7 @@ const CandidateAccountPage: React.FC = () => {
                     {pwdMsg && <Message kind={pwdMsg.kind}>{pwdMsg.text}</Message>}
 
                     <div className={`flex items-center justify-between gap-space-sm rounded-lg p-3 ${SOFT}`}>
-                      <p className="m-0 flex items-start gap-1.5 text-ds-body-sm text-on-surface-variant">
+                      <p className="m-0 flex items-start gap-1.5 text-ds-body-sm text-slate-600">
                         <span className={`${ICON} shrink-0 text-[16px] text-error`}>warning</span>
                         <span>
                           Đổi mật khẩu sẽ đăng xuất mọi thiết bị, kể cả máy đang dùng. Phải đăng nhập
@@ -763,18 +763,18 @@ const CandidateAccountPage: React.FC = () => {
 
           <SectionCard
             icon="security"
-            iconClass="bg-secondary-container/40 text-on-secondary-container"
+            iconClass="bg-teal-100/40 text-teal-700"
             title="Bảo mật nâng cao & 2FA"
             description="Bảo vệ tài khoản bằng lớp phòng thủ hai lớp và giám sát thiết bị"
           >
             <div className={`flex flex-col gap-space-md rounded-xl p-space-md ${SOFT} sm:flex-row sm:items-center sm:justify-between`}>
               <div className="flex items-start gap-space-md">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-container-lowest text-primary shadow-sm">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-primary shadow-sm">
                   <span className={`${ICON} text-[24px]`}>phonelink_lock</span>
                 </span>
                 <div className="flex flex-col">
                   <span className="flex flex-wrap items-center gap-2">
-                    <span className="text-ds-label-lg font-semibold text-on-surface">Xác thực 2 yếu tố (2FA)</span>
+                    <span className="text-ds-label-lg font-semibold text-slate-900">Xác thực 2 yếu tố (2FA)</span>
                     {twoFa.loading ? (
                       <Pill tone="neutral">Đang kiểm tra...</Pill>
                     ) : twoFa.enabled ? (
@@ -783,7 +783,7 @@ const CandidateAccountPage: React.FC = () => {
                       <Pill tone="danger">Đang tắt</Pill>
                     )}
                   </span>
-                  <p className="mt-0.5 max-w-md text-ds-body-sm text-on-surface-variant">
+                  <p className="mt-0.5 max-w-md text-ds-body-sm text-slate-600">
                     Yêu cầu mã 6 chữ số từ ứng dụng xác thực (Google Authenticator / Authy) mỗi khi
                     đăng nhập. Mất thiết bị thì dùng mã dự phòng.
                   </p>
@@ -824,11 +824,11 @@ const CandidateAccountPage: React.FC = () => {
 
             <div className="mt-space-xs flex flex-col gap-space-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h4 className="flex items-center gap-2 text-[15px] font-semibold text-on-surface">
-                  <span className={`${ICON} text-[18px] text-on-surface-variant`}>devices</span>
+                <h4 className="flex items-center gap-2 text-[15px] font-semibold text-slate-900">
+                  <span className={`${ICON} text-[18px] text-slate-600`}>devices</span>
                   Quản lý phiên đăng nhập (Active Sessions)
                 </h4>
-                <span className="text-ds-label-sm text-on-surface-variant">
+                <span className="text-ds-label-sm text-slate-600">
                   {sessionsLoading ? 'Đang tải...' : `${sessions.length} thiết bị kết nối`}
                 </span>
               </div>
@@ -845,7 +845,7 @@ const CandidateAccountPage: React.FC = () => {
               {sessionsLoading ? (
                 <LoadingBlock label="Đang tải danh sách thiết bị..." />
               ) : sessions.length === 0 ? (
-                <p className="m-0 rounded-lg bg-surface-container-low p-3 text-ds-body-sm text-on-surface-variant">
+                <p className="m-0 rounded-lg bg-slate-50 p-3 text-ds-body-sm text-slate-600">
                   Chưa ghi nhận thiết bị nào đang đăng nhập.
                 </p>
               ) : (
@@ -853,25 +853,25 @@ const CandidateAccountPage: React.FC = () => {
                   {sessions.map(s => {
                     const label = s.deviceLabel?.trim() || 'Thiết bị khác';
                     return (
-                      <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-surface-container-low p-3 transition-colors hover:bg-surface-container">
+                      <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-slate-50 p-3 transition-colors hover:bg-slate-100">
                         <div className="flex min-w-0 items-center gap-3">
-                          <span className={`${ICON} text-[26px] ${s.current ? 'text-primary' : 'text-on-surface-variant'}`}>
+                          <span className={`${ICON} text-[26px] ${s.current ? 'text-primary' : 'text-slate-600'}`}>
                             {deviceIconOf(label)}
                           </span>
                           <div className="min-w-0 flex flex-col">
                             <span className="flex flex-wrap items-center gap-2">
-                              <span className="text-ds-label-md font-semibold text-on-surface">{label}</span>
+                              <span className="text-ds-label-md font-semibold text-slate-900">{label}</span>
                               {s.current ? (
-                                <span className="rounded-full bg-secondary-container px-2 py-0.5 text-ds-label-sm font-medium text-on-secondary-container">
+                                <span className="rounded-full bg-teal-100 px-2 py-0.5 text-ds-label-sm font-medium text-teal-700">
                                   Phiên hiện tại
                                 </span>
                               ) : (
-                                <span className="text-ds-body-sm text-outline">
+                                <span className="text-ds-body-sm text-slate-400">
                                   {s.lastSeenAt ? `Hoạt động ${timeAgo(s.lastSeenAt)}` : `Tạo ${timeAgo(s.createdAt)}`}
                                 </span>
                               )}
                             </span>
-                            <span className="truncate text-ds-body-sm text-on-surface-variant">
+                            <span className="truncate text-ds-body-sm text-slate-600">
                               {s.ipAddress ? `IP: ${s.ipAddress}` : 'Không ghi nhận địa chỉ IP'}
                               {s.expiresAt ? ` • Hết hạn ${timeAgo(s.expiresAt)}` : ''}
                             </span>
@@ -892,7 +892,7 @@ const CandidateAccountPage: React.FC = () => {
                             type="button"
                             onClick={() => void revokeOne(s.id)}
                             disabled={busyId === s.id}
-                            className={`${adminButton('ghost', 'h-9')} text-error hover:bg-error-container/40`}
+                            className={`${adminButton('ghost', 'h-9')} text-error hover:bg-red-100/40`}
                           >
                             Đăng xuất
                           </button>
@@ -904,7 +904,7 @@ const CandidateAccountPage: React.FC = () => {
               )}
 
               <div className="flex items-center justify-between gap-2 pt-2">
-                <span className="text-ds-body-sm text-on-surface-variant">
+                <span className="text-ds-body-sm text-slate-600">
                   Thu hồi sẽ buộc thiết bị đó đăng nhập lại ngay.
                 </span>
                 <button
@@ -920,24 +920,24 @@ const CandidateAccountPage: React.FC = () => {
             </div>
           </SectionCard>
 
-          <section className="flex flex-col gap-space-md rounded-xl bg-error-container/20 p-space-lg shadow-sm">
+          <section className="flex flex-col gap-space-md rounded-xl bg-red-100/20 p-space-lg shadow-sm">
             <header className="flex flex-wrap items-center gap-space-sm border-b border-error-container/50 pb-space-sm">
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-error-container text-on-error-container">
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-100 text-red-700">
                 <span className={`${ICON} text-[20px]`}>warning</span>
               </span>
               <div className="flex flex-col">
                 <h3 className="text-ds-headline-sm text-error">Khu vực nguy hiểm (Danger Zone)</h3>
-                <p className="text-ds-body-sm text-on-surface-variant">
+                <p className="text-ds-body-sm text-slate-600">
                   Hành động không thể hoàn tác, ảnh hưởng trực tiếp đến dữ liệu ứng tuyển
                 </p>
               </div>
               <DemoTag>Khối demo</DemoTag>
             </header>
             <div className="flex flex-col gap-space-md">
-              <div className="flex flex-col gap-space-sm rounded-lg bg-surface-container-lowest p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-space-sm rounded-lg bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-col">
-                  <span className="text-ds-label-lg font-semibold text-on-surface">Tạm khóa tài khoản</span>
-                  <span className="text-ds-body-sm text-on-surface-variant">
+                  <span className="text-ds-label-lg font-semibold text-slate-900">Tạm khóa tài khoản</span>
+                  <span className="text-ds-body-sm text-slate-600">
                     Ẩn hồ sơ khỏi nhà tuyển dụng và tạm ngưng email phỏng vấn. Bạn có thể mở lại bất
                     cứ lúc nào.
                   </span>
@@ -946,12 +946,12 @@ const CandidateAccountPage: React.FC = () => {
                   Tạm khóa
                 </button>
               </div>
-              <div className="flex flex-col gap-space-sm rounded-lg bg-surface-container-lowest p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-space-sm rounded-lg bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-col">
                   <span className="text-ds-label-lg font-semibold text-error">
                     Xóa vĩnh viễn tài khoản &amp; dữ liệu luyện tập
                   </span>
-                  <span className="text-ds-body-sm text-on-surface-variant">
+                  <span className="text-ds-body-sm text-slate-600">
                     Mọi kết quả phỏng vấn AI, video mock, hồ sơ CV và báo cáo đánh giá sẽ bị hủy hoàn toàn.
                   </span>
                 </div>
@@ -992,7 +992,7 @@ const CandidateAccountPage: React.FC = () => {
                 handle="— chưa ghi nhận —"
                 connected
                 logo={
-                  <svg className="h-5 w-5 text-on-surface" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <svg className="h-5 w-5 text-slate-900" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
                   </svg>
                 }
@@ -1007,7 +1007,7 @@ const CandidateAccountPage: React.FC = () => {
                   </svg>
                 }
               />
-              <p className="m-0 text-ds-body-sm text-on-surface-variant">
+              <p className="m-0 text-ds-body-sm text-slate-600">
                 Ảnh và danh sách liên kết ở trên là bản mẫu; đăng nhập nhanh bằng Google/GitHub chỉ
                 bật ở màn Đăng nhập.
               </p>
@@ -1029,21 +1029,21 @@ const CandidateAccountPage: React.FC = () => {
                 checked={notify.aiMatch}
                 onChange={v => setNotify(n => ({ ...n, aiMatch: v }))}
               />
-              <span className="h-px bg-surface-container-high" />
+              <span className="h-px bg-slate-200" />
               <ToggleRow
                 title="Nhắc lịch phỏng vấn trước 24h & 2h"
                 description="Gửi thông báo nhắc qua Email và tin nhắn kèm đường link phòng họp."
                 checked={notify.reminder}
                 onChange={v => setNotify(n => ({ ...n, reminder: v }))}
               />
-              <span className="h-px bg-surface-container-high" />
+              <span className="h-px bg-slate-200" />
               <ToggleRow
                 title="Bản tin xu hướng tuyển dụng hàng tuần"
                 description="Tổng hợp báo cáo lương, kỹ năng hot và mẹo trả lời phỏng vấn theo ngành."
                 checked={notify.newsletter}
                 onChange={v => setNotify(n => ({ ...n, newsletter: v }))}
               />
-              <span className="h-px bg-surface-container-high" />
+              <span className="h-px bg-slate-200" />
               <ToggleRow
                 soft
                 icon="visibility"
@@ -1053,7 +1053,7 @@ const CandidateAccountPage: React.FC = () => {
                 onChange={v => setNotify(n => ({ ...n, visible: v }))}
               />
               <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
-                <span className="text-ds-body-sm text-on-surface-variant">
+                <span className="text-ds-body-sm text-slate-600">
                   Công tắc chỉ đổi trên màn hình, chưa gửi về hệ thống.
                 </span>
                 <button type="button" disabled className={`${adminButton('primary', 'h-10')} disabled:cursor-not-allowed disabled:opacity-60`}>
@@ -1069,11 +1069,11 @@ const CandidateAccountPage: React.FC = () => {
               <span className={`${ICON} text-[22px]`}>smart_toy</span>
             </span>
             <div className="flex flex-col gap-1">
-              <span className="flex flex-wrap items-center gap-2 text-ds-label-lg font-bold text-on-surface">
+              <span className="flex flex-wrap items-center gap-2 text-ds-label-lg font-bold text-slate-900">
                 Mẹo từ trợ lý AI
                 <DemoTag>Khối demo</DemoTag>
               </span>
-              <p className="text-ds-body-sm leading-relaxed text-on-surface-variant">
+              <p className="text-ds-body-sm leading-relaxed text-slate-600">
                 Ứng viên kích hoạt bảo mật 2 lớp (2FA) và liên kết đầy đủ hồ sơ GitHub/LinkedIn thường
                 có tỷ lệ xem xét phỏng vấn cao hơn 40% nhờ mức độ xác thực danh tính cao.
               </p>
@@ -1087,8 +1087,8 @@ const CandidateAccountPage: React.FC = () => {
           <div className="flex max-h-[90vh] w-full max-w-md flex-col overflow-y-auto rounded-xl bg-surface p-space-lg shadow-xl">
             <header className="flex items-start justify-between gap-2">
               <div className="flex flex-col gap-1">
-                <h3 className="m-0 text-ds-headline-sm font-bold text-on-surface">Bật xác thực 2 yếu tố</h3>
-                <p className="m-0 text-ds-body-sm text-on-surface-variant">
+                <h3 className="m-0 text-ds-headline-sm font-bold text-slate-900">Bật xác thực 2 yếu tố</h3>
+                <p className="m-0 text-ds-body-sm text-slate-600">
                   Quét mã QR bằng ứng dụng xác thực, rồi nhập mã 6 chữ số để hoàn tất.
                 </p>
               </div>
@@ -1096,7 +1096,7 @@ const CandidateAccountPage: React.FC = () => {
                 type="button"
                 onClick={closeTwoFa}
                 aria-label="Đóng"
-                className="border-0 bg-transparent p-0 text-on-surface-variant hover:text-on-surface"
+                className="border-0 bg-transparent p-0 text-slate-600 hover:text-slate-900"
               >
                 <span className={`${ICON} text-[22px]`}>close</span>
               </button>
@@ -1114,17 +1114,17 @@ const CandidateAccountPage: React.FC = () => {
                     <div className="rounded-xl bg-white p-3 shadow-sm">
                       <QRCodeSVG value={setupInfo.otpauthUri} size={176} />
                     </div>
-                    <div className="flex w-full flex-col items-center gap-1 rounded-lg bg-surface-container-low p-3 text-center">
-                      <span className="text-ds-label-sm text-on-surface-variant">Không quét được? Nhập thủ công chuỗi bí mật:</span>
-                      <code className="break-all text-ds-label-md font-semibold tracking-wider text-on-surface">
+                    <div className="flex w-full flex-col items-center gap-1 rounded-lg bg-slate-50 p-3 text-center">
+                      <span className="text-ds-label-sm text-slate-600">Không quét được? Nhập thủ công chuỗi bí mật:</span>
+                      <code className="break-all text-ds-label-md font-semibold tracking-wider text-slate-900">
                         {groupSecret(setupInfo.secret)}
                       </code>
-                      <span className="text-ds-body-sm text-outline">
+                      <span className="text-ds-body-sm text-slate-400">
                         {setupInfo.accountName} • {setupInfo.issuer}
                       </span>
                     </div>
                     <div className="flex w-full flex-col gap-1.5">
-                      <label className="text-ds-label-md text-on-surface">Mã xác thực</label>
+                      <label className="text-ds-label-md text-slate-900">Mã xác thực</label>
                       <input
                         value={twoFaCode}
                         onChange={e => setTwoFaCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
@@ -1161,8 +1161,8 @@ const CandidateAccountPage: React.FC = () => {
         <ModalBackdrop onClose={closeTwoFa}>
           <div className="flex max-h-[90vh] w-full max-w-md flex-col gap-space-md overflow-y-auto rounded-xl bg-surface p-space-lg shadow-xl">
             <header className="flex flex-col gap-1">
-              <h3 className="m-0 text-ds-headline-sm font-bold text-on-surface">Đã bật xác thực 2 yếu tố</h3>
-              <p className="m-0 text-ds-body-sm text-on-surface-variant">
+              <h3 className="m-0 text-ds-headline-sm font-bold text-slate-900">Đã bật xác thực 2 yếu tố</h3>
+              <p className="m-0 text-ds-body-sm text-slate-600">
                 Lưu các mã dự phòng bên dưới — chúng chỉ hiển thị một lần này. Mỗi mã dùng được một
                 lần khi mất thiết bị xác thực.
               </p>
@@ -1171,7 +1171,7 @@ const CandidateAccountPage: React.FC = () => {
               {recoveryCodes.map(code => (
                 <li
                   key={code}
-                  className="rounded-lg bg-surface-container-low px-2 py-1.5 text-center font-mono text-ds-label-md text-on-surface"
+                  className="rounded-lg bg-slate-50 px-2 py-1.5 text-center font-mono text-ds-label-md text-slate-900"
                 >
                   {code}
                 </li>
@@ -1199,15 +1199,15 @@ const CandidateAccountPage: React.FC = () => {
         <ModalBackdrop onClose={closeTwoFa}>
           <div className="flex w-full max-w-md flex-col gap-space-md rounded-xl bg-surface p-space-lg shadow-xl">
             <header className="flex flex-col gap-1">
-              <h3 className="m-0 text-ds-headline-sm font-bold text-on-surface">Tắt xác thực 2 yếu tố</h3>
-              <p className="m-0 text-ds-body-sm text-on-surface-variant">
+              <h3 className="m-0 text-ds-headline-sm font-bold text-slate-900">Tắt xác thực 2 yếu tố</h3>
+              <p className="m-0 text-ds-body-sm text-slate-600">
                 Nhập mã 6 chữ số từ ứng dụng xác thực hoặc một mã dự phòng (dạng XXXXX-XXXXX) để
                 xác nhận bạn đang giữ thiết bị.
               </p>
             </header>
             {twoFaMsg && <Message kind="error">{twoFaMsg.text}</Message>}
             <div className="flex flex-col gap-1.5">
-              <label className="text-ds-label-md text-on-surface">Mã xác thực / Mã dự phòng</label>
+              <label className="text-ds-label-md text-slate-900">Mã xác thực / Mã dự phòng</label>
               <input
                 value={twoFaCode}
                 onChange={e => setTwoFaCode(e.target.value.replace(/[^0-9A-Za-z-]/g, '').slice(0, 11))}

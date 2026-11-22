@@ -344,7 +344,7 @@ const Field: React.FC<{
         {label}
         {required && <span className="text-error"> *</span>}
       </span>
-      {hint && <span className="text-label-sm text-outline-strong">{hint}</span>}
+      {hint && <span className="text-label-sm text-slate-500">{hint}</span>}
     </div>
     {children}
     {error && <p className="m-0 text-label-sm text-error">{error}</p>}
@@ -389,10 +389,10 @@ const Stepper: React.FC<{ step: number }> = ({ step }) => (
             <span
               className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-label-sm ${
                 isDone
-                  ? 'bg-primary-container text-on-primary'
+                  ? 'bg-indigo-600 text-on-primary'
                   : isCurrent
                     ? 'bg-primary text-on-primary shadow-sm'
-                    : 'bg-surface-mid text-outline-strong'
+                    : 'bg-surface-mid text-slate-500'
               }`}
             >
               {isDone ? <span className="material-symbols-outlined text-[16px]">check</span> : index + 1}
@@ -400,7 +400,7 @@ const Stepper: React.FC<{ step: number }> = ({ step }) => (
             <div className="flex min-w-0 flex-col">
               <span
                 className={`text-label-sm uppercase tracking-wider ${
-                  isCurrent ? 'font-semibold text-primary' : 'text-outline-strong'
+                  isCurrent ? 'font-semibold text-primary' : 'text-slate-500'
                 }`}
               >
                 Bước {String(index + 1).padStart(2, '0')}
@@ -587,7 +587,7 @@ const SkillTags: React.FC<{
                 type="button"
                 aria-label={`Xoá ${skill}`}
                 onClick={() => onChange(values.filter((value) => value !== skill))}
-                className="text-outline-strong transition-colors hover:text-error"
+                className="text-slate-500 transition-colors hover:text-error"
               >
                 <span className="material-symbols-outlined text-[14px]">close</span>
               </button>
@@ -662,7 +662,7 @@ const LivePreviewCard: React.FC<{
           <span className="material-symbols-outlined text-[18px]">devices</span>
           <h2 className="m-0 text-headline-sm text-ink">Xem trước bản đăng</h2>
         </div>
-        <span className="text-label-sm text-outline-strong">Góc nhìn ứng viên</span>
+        <span className="text-label-sm text-slate-500">Góc nhìn ứng viên</span>
       </div>
 
       <div className="flex flex-col gap-3 rounded-xl bg-surface-low p-4">
@@ -709,7 +709,7 @@ const LivePreviewCard: React.FC<{
         </div>
       </div>
 
-      <p className="m-0 text-label-sm text-outline-strong">
+      <p className="m-0 text-label-sm text-slate-500">
         {status === 'OPEN'
           ? 'Tin đang hiển thị công khai. Bản xem trước phản ánh nội dung hiện tại của form.'
           : status === 'PENDING_APPROVAL'
@@ -831,7 +831,7 @@ const PreviewModal: React.FC<{
         )}
 
         <div className="flex items-center justify-between gap-3 border-t border-[#e2e8f0] pt-4">
-          <span className="text-label-sm text-outline-strong">Chỉ xem trước - Ứng tuyển nhanh đang bị tắt.</span>
+          <span className="text-label-sm text-slate-500">Chỉ xem trước - Ứng tuyển nhanh đang bị tắt.</span>
           <button type="button" disabled className={buttonClass('primary')}>Ứng tuyển nhanh</button>
         </div>
       </div>
@@ -1515,7 +1515,7 @@ const JobFormPage: React.FC = () => {
                       icon="terminal"
                       title="Công nghệ và kỹ năng cốt lõi"
                       description="Các thẻ này quyết định mức độ khớp ứng viên và chủ đề sàng lọc."
-                      aside={<span className="text-label-sm text-outline-strong">Đã cấu hình {form.requiredSkills.length} thẻ</span>}
+                      aside={<span className="text-label-sm text-slate-500">Đã cấu hình {form.requiredSkills.length} thẻ</span>}
                     >
                       <SkillTags
                         values={form.requiredSkills}
@@ -1696,7 +1696,7 @@ const JobFormPage: React.FC = () => {
                           className="mt-1 h-2 w-full cursor-pointer appearance-none rounded-lg bg-surface-high accent-primary disabled:cursor-not-allowed"
                           aria-label="Ngưỡng điểm đạt"
                         />
-                        <div className="flex justify-between px-0.5 text-label-sm text-outline-strong">
+                        <div className="flex justify-between px-0.5 text-label-sm text-slate-500">
                           <span>{MIN_SCORE} (Dễ)</span>
                           <span>80 (Khuyên dùng)</span>
                           <span>{MAX_SCORE} (Khắt khe)</span>
@@ -1727,7 +1727,7 @@ const JobFormPage: React.FC = () => {
                               />
                               <div className="flex flex-col">
                                 <span className="text-body-md font-medium text-ink">{area.title}</span>
-                                {area.hint && <span className="text-label-sm text-outline-strong">{area.hint}</span>}
+                                {area.hint && <span className="text-label-sm text-slate-500">{area.hint}</span>}
                               </div>
                             </label>
                           ))}

@@ -286,7 +286,7 @@ const DeviceCheckPage: React.FC = () => {
       {/* Readiness summary */}
       <Card className={`flex items-center justify-between gap-3 ${allReady ? '' : 'opacity-100'}`}>
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-container text-on-primary">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-on-primary">
             <span className="material-symbols-outlined text-[22px]">{allReady ? 'task_alt' : 'build'}</span>
           </div>
           <div className="flex flex-col">
@@ -363,7 +363,7 @@ const DeviceCheckPage: React.FC = () => {
                     ))
                   )}
                 </select>
-                <span className="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[18px] text-outline-strong">
+                <span className="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[18px] text-slate-500">
                   expand_more
                 </span>
               </div>
@@ -404,7 +404,7 @@ const DeviceCheckPage: React.FC = () => {
                     ))
                   )}
                 </select>
-                <span className="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[18px] text-outline-strong">
+                <span className="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[18px] text-slate-500">
                   expand_more
                 </span>
               </div>
@@ -465,7 +465,7 @@ const DeviceCheckPage: React.FC = () => {
                   </>
                 )}
               </select>
-              <span className="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[18px] text-outline-strong">
+              <span className="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[18px] text-slate-500">
                 expand_more
               </span>
             </div>
