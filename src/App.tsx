@@ -40,6 +40,7 @@ import PackagesPage from './views/pages/PackagesPage';
 import PublicPricingPage from './views/pages/PublicPricingPage';
 import MyOrdersPage from './views/pages/MyOrdersPage';
 import WalletPage from './views/pages/WalletPage';
+import VnpayResultPage from './views/pages/VnpayResultPage';
 import PaymentsPage from './views/pages/PaymentsPage';
 import MyBookingsPage from './views/pages/MyBookingsPage';
 import MentorPricingPage from './views/pages/MentorPricingPage';
@@ -116,6 +117,8 @@ const App: React.FC = () => {
               <Route path="/payments" element={<PaymentsPage />} />
               <Route path="/packages" element={<PackagesPage />} />
               <Route path="/wallet" element={<WalletPage />} />
+              {/* VNPay redirect về sau khi thanh toán (BE: app.frontend-url/payment/vnpay/result). */}
+              <Route path="/payment/vnpay/result" element={<VnpayResultPage />} />
               <Route path="/employers/:id/reviews" element={<EmployerReviewsPage />} />
               <Route path="/bug-reports" element={<BugReportsPage />} />
 

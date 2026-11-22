@@ -15,6 +15,17 @@ export interface TopupWebhookRequest {
   providerTxId: string;
 }
 
+/** VNPay gateway (BE: POST /api/v1/payment/vnpay/create). */
+export interface VnpayCreateRequest {
+  amount: number;
+  orderInfo?: string;
+}
+
+export interface VnpayCreateResponse {
+  paymentUrl: string;
+  txnRef: string;
+}
+
 export interface Withdrawal {
   id: number;
   mentorId: number;
