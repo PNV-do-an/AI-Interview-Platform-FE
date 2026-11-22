@@ -10,27 +10,30 @@ const BTN_PRIMARY =
 const BTN_SECONDARY =
   'inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 no-underline transition-colors hover:border-indigo-300 hover:bg-slate-50';
 
-type VnpayStatus = 'success' | 'failed' | 'invalid-signature' | 'error' | 'unknown';
+type ResultStatus = 'success' | 'failed' | 'pending' | 'invalid-signature' | 'error' | 'unknown';
 
-const STATUS_CONTENT: Record<
-  VnpayStatus,
-  { title: string; description: string; icon: string; tone: string }
-> = {
+const STATUS_CONTENT: Record<ResultStatus, { title: string; description: string; icon: string; tone: string }> = {
   success: {
     title: 'Nạp tiền thành công',
-    description: 'Giao dịch đã được VNPay xác nhận. Số dư ví đã được cập nhật.',
+    description: 'Giao dịch đã được cổng thanh toán xác nhận. Số dư ví đã được cập nhật.',
     icon: 'check_circle',
     tone: 'emerald',
   },
+  pending: {
+    title: 'Giao dịch đang xử lý',
+    description: 'Cổng thanh toán chưa xác nhận. Số dư sẽ được cập nhật sau khi callback tới hệ thống.',
+    icon: 'schedule',
+    tone: 'amber',
+  },
   failed: {
     title: 'Thanh toán chưa thành công',
-    description: 'VNPay chưa xác nhận giao dịch này. Ví của bạn không bị trừ tiền.',
+    description: 'Giao dịch không thành công. Ví của bạn không bị trừ tiền.',
     icon: 'error',
     tone: 'amber',
   },
   'invalid-signature': {
     title: 'Chữ ký giao dịch không hợp lệ',
-    description: 'Thông tin trả về từ cổng thanh toán không xác thực được. Vui lòng liên hệ hỗ trợ nếu bạn đã thanh toán.',
+    description: 'Thông tin trả về không xác thực được. Vui lòng liên hệ hỗ trợ nếu bạn đã thanh toán.',
     icon: 'verified_user',
     tone: 'red',
   },
@@ -55,33 +58,38 @@ const TONE_CLASS: Record<string, string> = {
   indigo: 'border-indigo-200 bg-indigo-50/70 text-indigo-700',
 };
 
-const VnpayResultPage: React.FC = () => {
+interface Props {
+  provider: 'MOMO' | 'ZALOPAY';
+}
+
+const PaymentResultPage: React.FC<Props> = ({ provider }) => {
   const [searchParams] = useSearchParams();
   const rawStatus = searchParams.get('status') ?? '';
-  const status: VnpayStatus = (['success', 'failed', 'invalid-signature', 'error'] as const).includes(
-    rawStatus as any
-  )
-    ? (rawStatus as VnpayStatus)
+  const status: ResultStatus = (
+    ['success', 'failed', 'pending', 'invalid-signature', 'error'] as const
+  ).includes(rawStatus as any)
+    ? (rawStatus as ResultStatus)
     : 'unknown';
-  const txnRef = searchParams.get('txnRef') ?? '';
-  const responseCode = searchParams.get('responseCode') ?? '';
+  const paymentRef = searchParams.get('orderId') ?? searchParams.get('appTransId') ?? '';
 
   const [amount, setAmount] = useState<number | null>(null);
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [loadingWallet, setLoadingWallet] = useState(true);
 
+  const providerName = provider === 'MOMO' ? 'MoMo' : 'ZaloPay';
+
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem('vnpay:pending-topup');
+      const raw = sessionStorage.getItem('payment:pending-topup');
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (!txnRef || parsed.txnRef === txnRef) setAmount(parsed.amount ?? null);
-        if (status !== 'unknown') sessionStorage.removeItem('vnpay:pending-topup');
+        if (!paymentRef || parsed.ref === paymentRef) setAmount(parsed.amount ?? null);
+        if (status !== 'pending' && status !== 'unknown') sessionStorage.removeItem('payment:pending-topup');
       }
     } catch {
       // bỏ qua dữ liệu phiên không hợp lệ
     }
-  }, [status, txnRef]);
+  }, [status, paymentRef]);
 
   useEffect(() => {
     let active = true;
@@ -96,8 +104,10 @@ const VnpayResultPage: React.FC = () => {
       }
     };
     void load();
+    const timer = window.setTimeout(load, 2500);
     return () => {
       active = false;
+      window.clearTimeout(timer);
     };
   }, []);
 
@@ -110,11 +120,11 @@ const VnpayResultPage: React.FC = () => {
         <div className="relative">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold backdrop-blur">
             <span className="material-symbols-outlined text-[15px]">payments</span>
-            Kết quả thanh toán VNPay
+            Kết quả thanh toán {providerName}
           </span>
           <h1 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">Xác nhận giao dịch</h1>
           <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-300">
-            Kết quả được xác thực trực tiếp từ cổng thanh toán VNPay.
+            Kết quả được xác thực trực tiếp từ cổng thanh toán {providerName}.
           </p>
         </div>
       </section>
@@ -128,7 +138,7 @@ const VnpayResultPage: React.FC = () => {
           <p className="m-0 max-w-md text-sm leading-relaxed">{content.description}</p>
         </div>
 
-        {(amount !== null || txnRef || responseCode) && (
+        {(amount !== null || paymentRef) && (
           <div className="mt-5 grid grid-cols-1 gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm sm:grid-cols-2">
             {amount !== null && (
               <div>
@@ -136,18 +146,16 @@ const VnpayResultPage: React.FC = () => {
                 <p className="m-0 mt-0.5 font-bold text-slate-900">{formatVnd(amount)}</p>
               </div>
             )}
-            {txnRef && (
+            {paymentRef && (
               <div className="min-w-0">
                 <p className="m-0 text-xs text-slate-500">Mã giao dịch</p>
-                <p className="m-0 mt-0.5 truncate font-mono text-xs font-semibold text-slate-900">{txnRef}</p>
+                <p className="m-0 mt-0.5 truncate font-mono text-xs font-semibold text-slate-900">{paymentRef}</p>
               </div>
             )}
-            {responseCode && (
-              <div>
-                <p className="m-0 text-xs text-slate-500">Mã phản hồi VNPay</p>
-                <p className="m-0 mt-0.5 font-mono font-semibold text-slate-900">{responseCode}</p>
-              </div>
-            )}
+            <div>
+              <p className="m-0 text-xs text-slate-500">Phương thức</p>
+              <p className="m-0 mt-0.5 font-bold text-slate-900">{providerName}</p>
+            </div>
             <div>
               <p className="m-0 text-xs text-slate-500">Số dư khả dụng</p>
               <p className="m-0 mt-0.5 font-bold text-slate-900">
@@ -172,4 +180,4 @@ const VnpayResultPage: React.FC = () => {
   );
 };
 
-export default VnpayResultPage;
+export default PaymentResultPage;

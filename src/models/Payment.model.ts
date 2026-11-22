@@ -15,15 +15,22 @@ export interface TopupWebhookRequest {
   providerTxId: string;
 }
 
-/** VNPay gateway (BE: POST /api/v1/payment/vnpay/create). */
-export interface VnpayCreateRequest {
+/** Payment gateway (BE: POST /api/v1/payment/{provider}/create). */
+export type PaymentProvider = 'MOMO' | 'ZALOPAY';
+
+export interface PaymentCreateRequest {
   amount: number;
   orderInfo?: string;
 }
 
-export interface VnpayCreateResponse {
+export interface PaymentCreateResponse {
   paymentUrl: string;
-  txnRef: string;
+  /** MoMo trả URL ảnh QR; ZaloPay dùng paymentUrl để render QR. */
+  qrCodeUrl?: string;
+  deeplink?: string;
+  orderId?: string;
+  requestId?: string;
+  appTransId?: string;
 }
 
 export interface Withdrawal {

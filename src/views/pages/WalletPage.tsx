@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../../context/AuthContext';
 import PaymentService from '../../services/payment.service';
-import { Wallet } from '../../models/Payment.model';
+import { PaymentProvider, Wallet } from '../../models/Payment.model';
 import { formatVnd } from '../../models/Order.model';
 
 const CARD = 'rounded-2xl border border-slate-200 bg-white shadow-sm';
@@ -19,12 +19,19 @@ const MAX_AMOUNT = 50000000;
 type Step = 'form' | 'confirm' | 'checkout' | 'success';
 
 interface PendingTopup {
-  txnRef: string;
+  provider: PaymentProvider;
+  ref: string;
   amount: number;
   at: string;
+  qrCodeUrl?: string;
 }
 
-const PENDING_KEY = 'vnpay:pending-topup';
+const PENDING_KEY = 'payment:pending-topup';
+
+const PROVIDERS: Array<{ id: PaymentProvider; name: string; description: string; badge: string; color: string }> = [
+  { id: 'MOMO', name: 'Ví MoMo', description: 'Quét QR hoặc mở app MoMo', badge: 'M', color: 'bg-pink-50 text-pink-600 border-pink-300' },
+  { id: 'ZALOPAY', name: 'ZaloPay', description: 'Quét QR hoặc mở app ZaloPay', badge: 'Z', color: 'bg-blue-50 text-blue-600 border-blue-300' },
+];
 
 interface TopupRecord {
   code: string;
@@ -56,7 +63,9 @@ const WalletPage: React.FC = () => {
   const [history, setHistory] = useState<TopupRecord[]>([]);
   const [lastTopup, setLastTopup] = useState<TopupRecord | null>(null);
   const [paymentUrl, setPaymentUrl] = useState('');
-  const [txnRef, setTxnRef] = useState('');
+  const [paymentRef, setPaymentRef] = useState('');
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [provider, setProvider] = useState<PaymentProvider>('MOMO');
 
   const amount = useMemo(() => {
     const raw = Number(amountInput);
@@ -118,22 +127,31 @@ const WalletPage: React.FC = () => {
     setError('');
     setNotice('');
     try {
-      // Backend tạo giao dịch VNPay, ký HMAC SHA512 và trả về URL thanh toán thật.
-      const res = await PaymentService.createVnpayPayment({
-        amount,
-        orderInfo: `Nap tien vi AI Interview ${user?.id ?? ''}`,
-      });
+      // Backend tạo đơn, ký chữ ký HMAC-SHA256 và trả URL thanh toán thật.
+      const body = { amount, orderInfo: `Nap tien vi AI Interview ${user?.id ?? ''}` };
+      const res =
+        provider === 'MOMO'
+          ? await PaymentService.createMomoPayment(body)
+          : await PaymentService.createZalopayPayment(body);
       const data = res.data?.data;
-      if (!data?.paymentUrl || !data?.txnRef) {
-        throw new Error('Không tạo được URL thanh toán VNPay.');
+      const ref = data?.orderId ?? data?.appTransId ?? '';
+      if (!data?.paymentUrl || !ref) {
+        throw new Error('Không tạo được URL thanh toán.');
       }
       setPaymentUrl(data.paymentUrl);
-      setTxnRef(data.txnRef);
+      setPaymentRef(ref);
+      setQrCodeUrl(data.qrCodeUrl ?? '');
 
-      const pending: PendingTopup = { txnRef: data.txnRef, amount, at: new Date().toISOString() };
+      const pending: PendingTopup = {
+        provider,
+        ref,
+        amount,
+        at: new Date().toISOString(),
+        qrCodeUrl: data.qrCodeUrl,
+      };
       sessionStorage.setItem(PENDING_KEY, JSON.stringify(pending));
 
-      const record: TopupRecord = { code: data.txnRef, amount, at: pending.at };
+      const record: TopupRecord = { code: ref, amount, at: pending.at };
       setLastTopup(record);
       setHistory((current) => [record, ...current]);
       setStep('checkout');
@@ -141,7 +159,7 @@ const WalletPage: React.FC = () => {
       setError(
         e?.response?.data?.message ||
           e?.message ||
-          'Không thể tạo giao dịch VNPay. Vui lòng kiểm tra cấu hình cổng thanh toán và thử lại.'
+          'Không thể tạo giao dịch thanh toán. Vui lòng kiểm tra cấu hình cổng thanh toán và thử lại.'
       );
       setStep('form');
     } finally {
@@ -149,9 +167,11 @@ const WalletPage: React.FC = () => {
     }
   };
 
-  const openVnpayGateway = () => {
+  const openGateway = () => {
     if (paymentUrl) window.location.assign(paymentUrl);
   };
+
+  const providerName = PROVIDERS.find((p) => p.id === provider)?.name ?? 'Ví điện tử';
 
   const resetFlow = () => {
     setStep('form');
@@ -160,7 +180,8 @@ const WalletPage: React.FC = () => {
     setNotice('');
     setLastTopup(null);
     setPaymentUrl('');
-    setTxnRef('');
+    setPaymentRef('');
+    setQrCodeUrl('');
   };
 
   if (loading) {
@@ -246,7 +267,7 @@ const WalletPage: React.FC = () => {
               <div>
                 <h2 className="m-0 text-lg font-bold text-slate-900">
                   {step === 'checkout'
-                    ? 'Thanh toán với VNPay'
+                    ? `Thanh toán với ${providerName}`
                     : step === 'success'
                       ? 'Nạp tiền thành công'
                       : step === 'confirm'
@@ -255,12 +276,12 @@ const WalletPage: React.FC = () => {
                 </h2>
                 <p className="m-0 text-xs text-slate-500">
                   {step === 'checkout'
-                    ? 'Quét mã QR hoặc mở cổng VNPay để hoàn tất thanh toán.'
+                    ? `Quét mã QR hoặc mở ${providerName} để hoàn tất thanh toán.`
                     : step === 'success'
                       ? 'Số dư ví đã được cập nhật.'
                       : step === 'confirm'
-                        ? 'Kiểm tra thông tin trước khi chuyển sang cổng VNPay.'
-                        : 'Số dư sẽ được cộng sau khi VNPay xác nhận giao dịch.'}
+                        ? `Kiểm tra thông tin trước khi chuyển sang ${providerName}.`
+                        : 'Số dư sẽ được cộng sau khi cổng thanh toán xác nhận giao dịch.'}
                 </p>
               </div>
             </div>
@@ -279,23 +300,27 @@ const WalletPage: React.FC = () => {
             <div className="mt-6 flex flex-col items-center gap-5">
               <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-6 py-6 text-center">
                 <div className="rounded-xl bg-white p-3 shadow-sm">
-                  <QRCodeSVG value={paymentUrl} size={188} level="M" marginSize={0} />
+                  {qrCodeUrl ? (
+                    <img src={qrCodeUrl} alt={`QR thanh toán ${providerName}`} className="h-[188px] w-[188px]" />
+                  ) : (
+                    <QRCodeSVG value={paymentUrl} size={188} level="M" marginSize={0} />
+                  )}
                 </div>
                 <div>
                   <p className="m-0 text-lg font-bold text-slate-900">{formatVnd(amount)}</p>
                   <p className="m-0 mt-0.5 text-xs text-slate-500">
-                    Mã giao dịch: <span className="font-mono font-semibold text-slate-700">{txnRef}</span>
+                    Mã giao dịch: <span className="font-mono font-semibold text-slate-700">{paymentRef}</span>
                   </p>
                 </div>
                 <p className="m-0 max-w-md text-xs leading-relaxed text-slate-600">
-                  Quét mã QR bằng điện thoại để mở trang thanh toán VNPay, hoặc bấm nút bên dưới.
-                  Tiền sẽ được cộng vào ví sau khi VNPay xác nhận thành công.
+                  Quét mã QR bằng điện thoại để thanh toán qua {providerName}, hoặc bấm nút bên dưới.
+                  Tiền sẽ được cộng vào ví sau khi cổng thanh toán xác nhận thành công.
                 </p>
               </div>
               <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-center">
-                <button type="button" onClick={openVnpayGateway} className={`${BTN_PRIMARY} sm:min-w-[220px]`}>
+                <button type="button" onClick={openGateway} className={`${BTN_PRIMARY} sm:min-w-[220px]`}>
                   <span className="material-symbols-outlined text-[18px]">qr_code_scanner</span>
-                  Mở cổng thanh toán VNPay
+                  Mở {providerName}
                 </button>
                 <button type="button" onClick={resetFlow} className={BTN_SECONDARY}>
                   Huỷ giao dịch
@@ -323,7 +348,7 @@ const WalletPage: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <span>Phương thức</span>
-                  <span className="font-medium text-slate-900">VNPay</span>
+                  <span className="font-medium text-slate-900">Ví điện tử</span>
                 </div>
               </div>
               <div className="mt-2 flex flex-col gap-2 sm:flex-row">
@@ -352,7 +377,7 @@ const WalletPage: React.FC = () => {
                   <span className="text-slate-600">Phương thức</span>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-900 shadow-sm">
                     <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                    VNPay
+                    {providerName}
                   </span>
                 </div>
                 <div className="mt-3 border-t border-slate-200 pt-3">
@@ -365,7 +390,7 @@ const WalletPage: React.FC = () => {
               <div className="flex items-start gap-2 rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-xs leading-relaxed text-indigo-900">
                 <span className="material-symbols-outlined text-[18px] text-indigo-600">info</span>
                 <span>
-                  Bạn sẽ được chuyển đến cổng thanh toán VNPay. Số dư ví chỉ được cộng sau khi giao dịch được VNPay
+                  Bạn sẽ được chuyển đến {providerName}. Số dư ví chỉ được cộng sau khi giao dịch được cổng thanh toán
                   xác nhận thành công.
                 </span>
               </div>
@@ -375,7 +400,7 @@ const WalletPage: React.FC = () => {
                 </button>
                 <button type="button" onClick={confirmTopup} disabled={busy} className={BTN_PRIMARY}>
                   <span className="material-symbols-outlined text-[18px]">lock</span>
-                  {busy ? 'Đang tạo giao dịch...' : 'Tiếp tục sang VNPay'}
+                  {busy ? 'Đang tạo giao dịch...' : `Tiếp tục sang ${providerName}`}
                 </button>
               </div>
             </div>
@@ -441,19 +466,41 @@ const WalletPage: React.FC = () => {
 
               <div>
                 <p className="m-0 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Phương thức thanh toán</p>
-                <div className="flex items-center justify-between rounded-xl border border-indigo-300 bg-indigo-50/50 px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-indigo-600 shadow-sm">
-                      <span className="material-symbols-outlined text-[20px]">credit_card</span>
-                    </span>
-                    <div>
-                      <p className="m-0 text-sm font-semibold text-slate-900">VNPay</p>
-                      <p className="m-0 text-[11px] text-slate-500">QR / thẻ nội địa · Bảo mật bởi VNPay</p>
-                    </div>
-                  </div>
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-white">
-                    <span className="material-symbols-outlined text-[14px]">check</span>
-                  </span>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {PROVIDERS.map((item) => {
+                    const selected = provider === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setProvider(item.id)}
+                        className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-all ${
+                          selected
+                            ? `${item.color} shadow-sm`
+                            : 'border-slate-200 bg-white hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`flex h-9 w-9 items-center justify-center rounded-lg text-sm font-bold shadow-sm ${
+                              selected ? 'bg-white' : 'bg-slate-100 text-slate-500'
+                            }`}
+                          >
+                            {item.badge}
+                          </span>
+                          <div>
+                            <p className="m-0 text-sm font-semibold text-slate-900">{item.name}</p>
+                            <p className="m-0 text-[11px] text-slate-500">{item.description}</p>
+                          </div>
+                        </div>
+                        {selected && (
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-white">
+                            <span className="material-symbols-outlined text-[14px]">check</span>
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -469,7 +516,7 @@ const WalletPage: React.FC = () => {
         <aside className="flex flex-col gap-6 lg:col-span-5">
           <section className={`${CARD} p-5 sm:p-6`}>
             <div className="flex items-center justify-between gap-2">
-              <h2 className="m-0 text-base font-bold text-slate-900">Giao dịch VNPay trong phiên này</h2>
+              <h2 className="m-0 text-base font-bold text-slate-900">Giao dịch trong phiên này</h2>
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
                 {history.length} giao dịch
               </span>
@@ -488,7 +535,7 @@ const WalletPage: React.FC = () => {
                   </div>
                   <span className="shrink-0 text-right">
                     <span className="block text-sm font-bold text-slate-900">{formatVnd(record.amount)}</span>
-                    <span className="block text-[10px] font-medium text-amber-600">Chờ VNPay xác nhận</span>
+                    <span className="block text-[10px] font-medium text-amber-600">Chờ xác nhận</span>
                   </span>
                 </div>
               ))}
@@ -505,7 +552,7 @@ const WalletPage: React.FC = () => {
             <h2 className="m-0 text-base font-bold text-slate-900">Lưu ý khi nạp tiền</h2>
             <ul className="mt-3 flex flex-col gap-2.5 text-sm text-slate-600">
               {[
-                'Thanh toán qua VNPay (QR hoặc thẻ), số dư được cộng sau khi xác nhận.',
+                'Thanh toán qua MoMo hoặc ZaloPay, số dư được cộng sau khi xác nhận.',
                 'Không đóng trang trong lúc đang thanh toán để tránh gián đoạn giao dịch.',
                 'Mỗi giao dịch có mã riêng để đối soát khi cần.',
                 'Liên hệ hỗ trợ nếu tiền chưa được cộng sau 5 phút.',

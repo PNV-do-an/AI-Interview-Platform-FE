@@ -46,6 +46,7 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   MOMO: 'Ví MoMo',
+  ZALOPAY: 'ZaloPay',
   VNPAY: 'VNPay',
   BANK_TRANSFER: 'Chuyển khoản ngân hàng',
 };

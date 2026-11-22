@@ -40,7 +40,7 @@ import PackagesPage from './views/pages/PackagesPage';
 import PublicPricingPage from './views/pages/PublicPricingPage';
 import MyOrdersPage from './views/pages/MyOrdersPage';
 import WalletPage from './views/pages/WalletPage';
-import VnpayResultPage from './views/pages/VnpayResultPage';
+import PaymentResultPage from './views/pages/PaymentResultPage';
 import PaymentsPage from './views/pages/PaymentsPage';
 import MyBookingsPage from './views/pages/MyBookingsPage';
 import MentorPricingPage from './views/pages/MentorPricingPage';
@@ -117,8 +117,9 @@ const App: React.FC = () => {
               <Route path="/payments" element={<PaymentsPage />} />
               <Route path="/packages" element={<PackagesPage />} />
               <Route path="/wallet" element={<WalletPage />} />
-              {/* VNPay redirect về sau khi thanh toán (BE: app.frontend-url/payment/vnpay/result). */}
-              <Route path="/payment/vnpay/result" element={<VnpayResultPage />} />
+              {/* Callback redirect từ MoMo / ZaloPay về sau khi thanh toán. */}
+              <Route path="/payment/momo/result" element={<PaymentResultPage provider="MOMO" />} />
+              <Route path="/payment/zalopay/result" element={<PaymentResultPage provider="ZALOPAY" />} />
               <Route path="/employers/:id/reviews" element={<EmployerReviewsPage />} />
               <Route path="/bug-reports" element={<BugReportsPage />} />
 

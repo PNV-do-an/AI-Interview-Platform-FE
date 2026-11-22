@@ -20,7 +20,7 @@ Vào **Project Settings → Environment Variables**, thêm (chọn Production + 
 | `REACT_APP_AI_SERVICE_URL` | URL AI service nếu dùng, để trống nếu không dùng | Không |
 
 > CRA đọc biến `REACT_APP_*` lúc **build**. Đổi env xong phải **Redeploy**.
-> Không bao giờ đưa `VNPAY_HASH_SECRET` lên Vercel — đây là secret backend.
+> Không bao giờ đưa `MOMO_SECRET_KEY` / `ZALOPAY_KEY1` / `ZALOPAY_KEY2` lên Vercel — đây là secret backend.
 
 ## 3. Cấu hình backend (Render/container)
 
@@ -28,28 +28,29 @@ Backend cần các env sau (không phải Vercel):
 
 | Biến | Giá trị |
 |---|---|
-| `FRONTEND_URL` | `https://<project>.vercel.app` — backend redirect về đây sau khi VNPay trả kết quả |
+| `FRONTEND_URL` | `https://<project>.vercel.app` — backend redirect về đây sau khi thanh toán |
 | `CORS_ALLOWED_ORIGINS` | `https://<project>.vercel.app` (phân tách bằng `,` nếu nhiều domain) |
-| `VNPAY_TMN_CODE` | TmnCode lấy từ VNPay merchant portal |
-| `VNPAY_HASH_SECRET` | HashSecret lấy từ VNPay merchant portal |
-| `VNPAY_PAY_URL` | `https://sandbox.vnpayment.vn/paymentv2/vpcpay.html` hoặc production |
-| `VNPAY_RETURN_URL` | `https://<backend>/api/v1/payment/vnpay/return` |
-| `VNPAY_IPN_URL` | `https://<backend>/api/v1/payment/vnpay/ipn` |
+| `MOMO_PARTNER_CODE` / `MOMO_ACCESS_KEY` / `MOMO_SECRET_KEY` | Credential MoMo merchant portal |
+| `MOMO_REDIRECT_URL` | `https://<backend>/api/v1/payment/momo/return` |
+| `MOMO_IPN_URL` | `https://<backend>/api/v1/payment/momo/ipn` |
+| `ZALOPAY_APP_ID` / `ZALOPAY_KEY1` / `ZALOPAY_KEY2` | Credential ZaloPay (sandbox mặc định AppID 554) |
+| `ZALOPAY_CALLBACK_URL` | `https://<backend>/api/v1/payment/zalopay/callback` |
+| `ZALOPAY_REDIRECT_URL` | `https://<backend>/api/v1/payment/zalopay/return` |
 
-Trên VNPay merchant portal, đăng ký đúng `Return URL` và `IPN URL` ở trên. Với production, IPN bắt buộc phải là URL public HTTPS.
+Đăng ký Return URL / IPN URL tương ứng trên merchant portal của từng cổng. Production bắt buộc dùng URL public HTTPS.
 
-## 4. Luồng VNPay sau khi deploy
+## 4. Luồng thanh toán sau khi deploy
 
-1. FE gọi `POST {REACT_APP_API_URL}/api/v1/payment/vnpay/create`.
-2. FE hiển thị QR của `paymentUrl` và nút mở cổng VNPay.
-3. VNPay gọi `VNPAY_RETURN_URL` trên backend → backend verify chữ ký, cộng ví (idempotent).
-4. Backend redirect `302` về `FRONTEND_URL/payment/vnpay/result?status=...&txnRef=...`.
+1. FE gọi `POST {REACT_APP_API_URL}/api/v1/payment/momo/create` hoặc `/zalopay/create`.
+2. FE hiển thị QR (MoMo trả `qrCodeUrl`; ZaloPay render QR từ `paymentUrl`) và nút mở cổng thanh toán.
+3. Cổng gọi callback/IPN trên backend → backend verify chữ ký, cộng ví (idempotent).
+4. Backend redirect `302` về `FRONTEND_URL/payment/momo/result` hoặc `/payment/zalopay/result`.
 5. FE đọc query, tải lại số dư ví.
 
 ## 5. Kiểm tra sau deploy
 
 - Truy cập `https://<project>.vercel.app/wallet` → refresh trang vẫn hiện nội dung (rewrite hoạt động).
-- Đăng nhập → nạp tiền → tạo được giao dịch VNPay (không còn lỗi “VNPay chưa được cấu hình”).
-- Sau thanh toán sandbox, về `/payment/vnpay/result?status=success` và số dư ví tăng.
+- Đăng nhập → nạp tiền → chọn MoMo hoặc ZaloPay → tạo được giao dịch (không còn lỗi “chưa được cấu hình”).
+- Sau thanh toán sandbox, về `/payment/momo/result?status=success` hoặc `/payment/zalopay/result?status=success` và số dư ví tăng.
 - Nếu lỗi CORS: kiểm tra `CORS_ALLOWED_ORIGINS` trên backend.
 - Nếu lỗi 404 API: kiểm tra `REACT_APP_API_URL` và redeploy FE.

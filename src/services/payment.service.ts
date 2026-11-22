@@ -11,8 +11,8 @@ import {
   TopupRequest,
   TopupWebhookRequest,
   Wallet,
-  VnpayCreateRequest,
-  VnpayCreateResponse,
+  PaymentCreateRequest,
+  PaymentCreateResponse,
   Withdrawal,
   WithdrawalRequest,
 } from '../models/Payment.model';
@@ -26,9 +26,11 @@ const PaymentService = {
   topupWebhook: (body: TopupWebhookRequest) =>
     httpService.post<ApiResponse<string>>('/api/v1/wallet/webhook/topup', body),
 
-  // VNPay gateway — backend ký URL và xử lý return/IPN.
-  createVnpayPayment: (body: VnpayCreateRequest) =>
-    httpService.post<ApiResponse<VnpayCreateResponse>>('/api/v1/payment/vnpay/create', body),
+  // Payment gateways — backend tạo đơn, ký chữ ký và xử lý callback/IPN.
+  createMomoPayment: (body: PaymentCreateRequest) =>
+    httpService.post<ApiResponse<PaymentCreateResponse>>('/api/v1/payment/momo/create', body),
+  createZalopayPayment: (body: PaymentCreateRequest) =>
+    httpService.post<ApiResponse<PaymentCreateResponse>>('/api/v1/payment/zalopay/create', body),
 
   // Withdrawals
   requestWithdrawal: (body: WithdrawalRequest) =>

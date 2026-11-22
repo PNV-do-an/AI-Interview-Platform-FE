@@ -66,12 +66,17 @@ services:
       GMAIL_TOKEN_URI: ${GMAIL_TOKEN_URI:-https://oauth2.googleapis.com/token}
       GMAIL_API_BASE_URL: ${GMAIL_API_BASE_URL:-https://gmail.googleapis.com}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
-      # VNPay: backend ky URL thanh toan. Sandbox mac dinh; doi sang production khi co credential that.
-      VNPAY_TMN_CODE: ${VNPAY_TMN_CODE:-}
-      VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET:-}
-      VNPAY_PAY_URL: ${VNPAY_PAY_URL:-https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
-      VNPAY_RETURN_URL: ${VNPAY_RETURN_URL:-http://localhost:8081/api/v1/payment/vnpay/return}
-      VNPAY_IPN_URL: ${VNPAY_IPN_URL:-http://localhost:8081/api/v1/payment/vnpay/ipn}
+      # MoMo / ZaloPay: backend tao don, ky chu ky, xu ly callback/IPN.
+      MOMO_PARTNER_CODE: ${MOMO_PARTNER_CODE:-}
+      MOMO_ACCESS_KEY: ${MOMO_ACCESS_KEY:-}
+      MOMO_SECRET_KEY: ${MOMO_SECRET_KEY:-}
+      MOMO_REDIRECT_URL: ${MOMO_REDIRECT_URL:-http://localhost:8081/api/v1/payment/momo/return}
+      MOMO_IPN_URL: ${MOMO_IPN_URL:-http://localhost:8081/api/v1/payment/momo/ipn}
+      ZALOPAY_APP_ID: ${ZALOPAY_APP_ID:-554}
+      ZALOPAY_KEY1: ${ZALOPAY_KEY1:-8NdU5pG5R2spGHGhyO99HN1OhD8IQJBn}
+      ZALOPAY_KEY2: ${ZALOPAY_KEY2:-uUfsWgfLkRLzq6W2uNXTCxrfxs51auny}
+      ZALOPAY_CALLBACK_URL: ${ZALOPAY_CALLBACK_URL:-http://localhost:8081/api/v1/payment/zalopay/callback}
+      ZALOPAY_REDIRECT_URL: ${ZALOPAY_REDIRECT_URL:-http://localhost:8081/api/v1/payment/zalopay/return}
       # AI (CV/study): key lay tu file .env (gitignored). Default khớp application.yml của BE.
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       AI_PROVIDER: ${AI_PROVIDER:-openai}
