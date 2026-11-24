@@ -33,6 +33,14 @@ export interface PaymentCreateResponse {
   qrCode?: string;
 }
 
+/** GET /api/v1/payment/payos/status — backend đối soát trực tiếp với payOS. */
+export interface PayosPaymentStatus {
+  orderCode: number;
+  status: 'PENDING' | 'SUCCESS' | 'FAILED';
+  amount: number;
+  paymentLinkId?: string;
+}
+
 export interface Withdrawal {
   id: number;
   mentorId: number;

@@ -13,6 +13,7 @@ import {
   Wallet,
   PaymentCreateRequest,
   PaymentCreateResponse,
+  PayosPaymentStatus,
   Withdrawal,
   WithdrawalRequest,
 } from '../models/Payment.model';
@@ -29,6 +30,13 @@ const PaymentService = {
   // payOS — backend tạo đơn, ký HMAC-SHA256 và xử lý webhook/return.
   createPayosPayment: (body: PaymentCreateRequest) =>
     httpService.post<ApiResponse<PaymentCreateResponse>>('/api/v1/payment/payos/create', body),
+  /** Đối soát trạng thái với payOS; backend cộng ví nếu webhook/return bị lỡ. */
+  getPayosStatus: (orderCode: number | string) =>
+    httpService.get<ApiResponse<PayosPaymentStatus>>('/api/v1/payment/payos/status', {
+      params: { orderCode },
+      // Backend có thể query payOS (timeout read 15s) trước khi trả kết quả.
+      timeout: 30000,
+    }),
 
   // Withdrawals
   requestWithdrawal: (body: WithdrawalRequest) =>
