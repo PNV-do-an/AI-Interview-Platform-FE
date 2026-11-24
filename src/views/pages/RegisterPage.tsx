@@ -67,7 +67,7 @@ const REGISTER_BENEFITS = [
   },
 ];
 
-const COMPANY_CHIPS = ['VNG', 'FPT SOFTWARE', 'VIETTEL', 'SHOPEE', 'MOMO'];
+const COMPANY_CHIPS = ['VNG', 'FPT SOFTWARE', 'VIETTEL', 'SHOPEE', 'TIKI'];
 
 const RegisterPage: React.FC = () => {
   const { register, loginWithGoogle, loading, error, errorStatus } = useAuth();

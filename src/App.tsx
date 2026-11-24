@@ -117,9 +117,8 @@ const App: React.FC = () => {
               <Route path="/payments" element={<PaymentsPage />} />
               <Route path="/packages" element={<PackagesPage />} />
               <Route path="/wallet" element={<WalletPage />} />
-              {/* Callback redirect từ MoMo / ZaloPay về sau khi thanh toán. */}
-              <Route path="/payment/momo/result" element={<PaymentResultPage provider="MOMO" />} />
-              <Route path="/payment/zalopay/result" element={<PaymentResultPage provider="ZALOPAY" />} />
+              {/* payOS redirect về sau khi thanh toán (BE verify rồi 302 tới đây). */}
+              <Route path="/payment/payos/result" element={<PaymentResultPage />} />
               <Route path="/employers/:id/reviews" element={<EmployerReviewsPage />} />
               <Route path="/bug-reports" element={<BugReportsPage />} />
 

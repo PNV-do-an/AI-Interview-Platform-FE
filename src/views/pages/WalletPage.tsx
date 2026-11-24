@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAuth } from '../../context/AuthContext';
 import PaymentService from '../../services/payment.service';
-import { PaymentProvider, Wallet } from '../../models/Payment.model';
+import { Wallet } from '../../models/Payment.model';
 import { formatVnd } from '../../models/Order.model';
 
 const CARD = 'rounded-2xl border border-slate-200 bg-white shadow-sm';
@@ -19,19 +19,14 @@ const MAX_AMOUNT = 50000000;
 type Step = 'form' | 'confirm' | 'checkout' | 'success';
 
 interface PendingTopup {
-  provider: PaymentProvider;
   ref: string;
   amount: number;
   at: string;
-  qrCodeUrl?: string;
+  qrCode?: string;
 }
 
 const PENDING_KEY = 'payment:pending-topup';
-
-const PROVIDERS: Array<{ id: PaymentProvider; name: string; description: string; badge: string; color: string }> = [
-  { id: 'MOMO', name: 'Ví MoMo', description: 'Quét QR hoặc mở app MoMo', badge: 'M', color: 'bg-pink-50 text-pink-600 border-pink-300' },
-  { id: 'ZALOPAY', name: 'ZaloPay', description: 'Quét QR hoặc mở app ZaloPay', badge: 'Z', color: 'bg-blue-50 text-blue-600 border-blue-300' },
-];
+const PROVIDER_NAME = 'payOS';
 
 interface TopupRecord {
   code: string;
@@ -62,10 +57,9 @@ const WalletPage: React.FC = () => {
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState<TopupRecord[]>([]);
   const [lastTopup, setLastTopup] = useState<TopupRecord | null>(null);
-  const [paymentUrl, setPaymentUrl] = useState('');
+  const [checkoutUrl, setCheckoutUrl] = useState('');
   const [paymentRef, setPaymentRef] = useState('');
-  const [qrCodeUrl, setQrCodeUrl] = useState('');
-  const [provider, setProvider] = useState<PaymentProvider>('MOMO');
+  const [qrCode, setQrCode] = useState('');
 
   const amount = useMemo(() => {
     const raw = Number(amountInput);
@@ -127,27 +121,23 @@ const WalletPage: React.FC = () => {
     setError('');
     setNotice('');
     try {
-      // Backend tạo đơn, ký chữ ký HMAC-SHA256 và trả URL thanh toán thật.
-      const body = { amount, orderInfo: `Nap tien vi AI Interview ${user?.id ?? ''}` };
-      const res =
-        provider === 'MOMO'
-          ? await PaymentService.createMomoPayment(body)
-          : await PaymentService.createZalopayPayment(body);
+      // Backend tạo đơn payOS, ký HMAC-SHA256 và trả checkoutUrl + VietQR.
+      const body = { amount, description: `NAPTIEN${user?.id ?? ''}` };
+      const res = await PaymentService.createPayosPayment(body);
       const data = res.data?.data;
-      const ref = data?.orderId ?? data?.appTransId ?? '';
-      if (!data?.paymentUrl || !ref) {
-        throw new Error('Không tạo được URL thanh toán.');
+      const ref = data?.orderCode ? String(data.orderCode) : '';
+      if (!data?.checkoutUrl || !ref) {
+        throw new Error('Không tạo được URL thanh toán payOS.');
       }
-      setPaymentUrl(data.paymentUrl);
+      setCheckoutUrl(data.checkoutUrl);
       setPaymentRef(ref);
-      setQrCodeUrl(data.qrCodeUrl ?? '');
+      setQrCode(data.qrCode ?? '');
 
       const pending: PendingTopup = {
-        provider,
         ref,
         amount,
         at: new Date().toISOString(),
-        qrCodeUrl: data.qrCodeUrl,
+        qrCode: data.qrCode,
       };
       sessionStorage.setItem(PENDING_KEY, JSON.stringify(pending));
 
@@ -168,10 +158,10 @@ const WalletPage: React.FC = () => {
   };
 
   const openGateway = () => {
-    if (paymentUrl) window.location.assign(paymentUrl);
+    if (checkoutUrl) window.location.assign(checkoutUrl);
   };
 
-  const providerName = PROVIDERS.find((p) => p.id === provider)?.name ?? 'Ví điện tử';
+  const providerName = PROVIDER_NAME;
 
   const resetFlow = () => {
     setStep('form');
@@ -179,9 +169,9 @@ const WalletPage: React.FC = () => {
     setError('');
     setNotice('');
     setLastTopup(null);
-    setPaymentUrl('');
+    setCheckoutUrl('');
     setPaymentRef('');
-    setQrCodeUrl('');
+    setQrCode('');
   };
 
   if (loading) {
@@ -300,11 +290,7 @@ const WalletPage: React.FC = () => {
             <div className="mt-6 flex flex-col items-center gap-5">
               <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-6 py-6 text-center">
                 <div className="rounded-xl bg-white p-3 shadow-sm">
-                  {qrCodeUrl ? (
-                    <img src={qrCodeUrl} alt={`QR thanh toán ${providerName}`} className="h-[188px] w-[188px]" />
-                  ) : (
-                    <QRCodeSVG value={paymentUrl} size={188} level="M" marginSize={0} />
-                  )}
+                  <QRCodeSVG value={qrCode || checkoutUrl} size={188} level="M" marginSize={0} />
                 </div>
                 <div>
                   <p className="m-0 text-lg font-bold text-slate-900">{formatVnd(amount)}</p>
@@ -348,7 +334,7 @@ const WalletPage: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <span>Phương thức</span>
-                  <span className="font-medium text-slate-900">Ví điện tử</span>
+                  <span className="font-medium text-slate-900">payOS</span>
                 </div>
               </div>
               <div className="mt-2 flex flex-col gap-2 sm:flex-row">
@@ -466,41 +452,19 @@ const WalletPage: React.FC = () => {
 
               <div>
                 <p className="m-0 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Phương thức thanh toán</p>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {PROVIDERS.map((item) => {
-                    const selected = provider === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setProvider(item.id)}
-                        className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition-all ${
-                          selected
-                            ? `${item.color} shadow-sm`
-                            : 'border-slate-200 bg-white hover:border-slate-300'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span
-                            className={`flex h-9 w-9 items-center justify-center rounded-lg text-sm font-bold shadow-sm ${
-                              selected ? 'bg-white' : 'bg-slate-100 text-slate-500'
-                            }`}
-                          >
-                            {item.badge}
-                          </span>
-                          <div>
-                            <p className="m-0 text-sm font-semibold text-slate-900">{item.name}</p>
-                            <p className="m-0 text-[11px] text-slate-500">{item.description}</p>
-                          </div>
-                        </div>
-                        {selected && (
-                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-white">
-                            <span className="material-symbols-outlined text-[14px]">check</span>
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
+                <div className="flex items-center justify-between rounded-xl border border-indigo-200 bg-indigo-50/60 px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-sm font-bold text-indigo-600 shadow-sm">
+                      pay
+                    </span>
+                    <div>
+                      <p className="m-0 text-sm font-semibold text-slate-900">payOS</p>
+                      <p className="m-0 text-[11px] text-slate-500">Chuyển khoản ngân hàng / VietQR, xác nhận realtime</p>
+                    </div>
+                  </div>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-white">
+                    <span className="material-symbols-outlined text-[14px]">check</span>
+                  </span>
                 </div>
               </div>
 
@@ -552,7 +516,7 @@ const WalletPage: React.FC = () => {
             <h2 className="m-0 text-base font-bold text-slate-900">Lưu ý khi nạp tiền</h2>
             <ul className="mt-3 flex flex-col gap-2.5 text-sm text-slate-600">
               {[
-                'Thanh toán qua MoMo hoặc ZaloPay, số dư được cộng sau khi xác nhận.',
+                'Thanh toán qua payOS bằng chuyển khoản/VietQR, số dư được cộng sau khi xác nhận.',
                 'Không đóng trang trong lúc đang thanh toán để tránh gián đoạn giao dịch.',
                 'Mỗi giao dịch có mã riêng để đối soát khi cần.',
                 'Liên hệ hỗ trợ nếu tiền chưa được cộng sau 5 phút.',

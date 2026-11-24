@@ -57,7 +57,7 @@ const LOGIN_BENEFITS = [
   },
 ];
 
-const COMPANY_CHIPS = ['VNG', 'FPT SOFTWARE', 'VIETTEL', 'SHOPEE', 'MOMO'];
+const COMPANY_CHIPS = ['VNG', 'FPT SOFTWARE', 'VIETTEL', 'SHOPEE', 'PAYOS'];
 
 const LoginPage: React.FC = () => {
   const { login, loginWithGoogle, loading, error, errorStatus } = useAuth();

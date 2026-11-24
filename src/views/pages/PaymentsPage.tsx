@@ -98,7 +98,7 @@ const PaymentsPage: React.FC = () => {
     setError('');
     setNotice('');
     try {
-      const created = await OrderService.createOrder({ packageId: pkg.id, paymentMethod: 'VNPAY' });
+      const created = await OrderService.createOrder({ packageId: pkg.id, paymentMethod: 'WALLET' });
       const order = created.data?.data;
       if (!order) throw new Error('Không tạo được đơn hàng.');
       await OrderService.payOrder(order.id);

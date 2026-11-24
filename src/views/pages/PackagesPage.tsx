@@ -150,7 +150,7 @@ const PackagesPage: React.FC = () => {
     setError('');
     setNotice('');
     try {
-      const created = await OrderService.createOrder({ packageId: pkg.id, paymentMethod: 'VNPAY' });
+      const created = await OrderService.createOrder({ packageId: pkg.id, paymentMethod: 'WALLET' });
       const order = created.data?.data;
       if (!order) throw new Error('Không tạo được đơn hàng.');
       setPendingOrder(order);
@@ -175,7 +175,7 @@ const PackagesPage: React.FC = () => {
       await OrderService.payOrder(pendingOrder.id);
       const walletRes = await PaymentService.getWallet();
       setWallet(walletRes.data?.data ?? wallet);
-      setNotice(`Đã thanh toán gói "${pendingOrder.packageName}" thành công qua VNPay.`);
+      setNotice(`Đã thanh toán gói "${pendingOrder.packageName}" thành công từ ví (nạp tiền qua payOS).`);
       setPendingOrder(null);
     } catch (e: any) {
       const message = e?.response?.data?.message || 'Thanh toán thất bại. Vui lòng thử lại.';
@@ -582,7 +582,7 @@ const PackagesPage: React.FC = () => {
           </div>
         </div>
       )}
-      {/* VNPay checkout modal */}
+      {/* Wallet checkout modal */}
       {pendingOrder && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm"
@@ -594,9 +594,9 @@ const PackagesPage: React.FC = () => {
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="m-0 text-xs font-semibold uppercase tracking-wide text-[#0068FF]">VNPay Checkout</p>
+                <p className="m-0 text-xs font-semibold uppercase tracking-wide text-indigo-600">Wallet Checkout</p>
                 <h3 className="m-0 mt-1 text-xl font-bold text-slate-900">Thanh toán đơn hàng</h3>
-                <p className="m-0 mt-1 text-sm text-slate-500">Cổng thanh toán VNPay (môi trường thử nghiệm)</p>
+                <p className="m-0 mt-1 text-sm text-slate-500">Số dư ví đã nạp qua payOS sẽ được sử dụng để thanh toán.</p>
               </div>
               <button
                 type="button"
@@ -622,7 +622,7 @@ const PackagesPage: React.FC = () => {
                 <span className="text-slate-600">Phương thức</span>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[#0068FF] shadow-sm">
                   <span className="h-2 w-2 rounded-full bg-[#0068FF]" />
-                  VNPay
+                  Ví payOS
                 </span>
               </div>
               <div className="mt-3 border-t border-slate-200 pt-3">
@@ -636,7 +636,7 @@ const PackagesPage: React.FC = () => {
             <div className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-xs leading-relaxed text-indigo-900">
               <div className="flex items-start gap-2">
                 <span className="material-symbols-outlined text-[18px] text-indigo-600">info</span>
-                <span>Số dư ví sẽ được trừ ngay sau khi thanh toán. Đây là môi trường thử nghiệm, không phát sinh giao dịch thật.</span>
+                <span>Số dư ví sẽ được trừ ngay sau khi xác nhận. Nếu chưa có tiền, hãy nạp qua payOS tại trang Ví.</span>
               </div>
             </div>
 
@@ -663,7 +663,7 @@ const PackagesPage: React.FC = () => {
                 ) : (
                   <>
                     <span className="material-symbols-outlined text-[18px]">lock</span>
-                    Thanh toán qua VNPay
+                    Thanh toán từ ví
                   </>
                 )}
               </button>

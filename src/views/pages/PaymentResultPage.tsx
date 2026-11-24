@@ -58,25 +58,30 @@ const TONE_CLASS: Record<string, string> = {
   indigo: 'border-indigo-200 bg-indigo-50/70 text-indigo-700',
 };
 
-interface Props {
-  provider: 'MOMO' | 'ZALOPAY';
-}
-
-const PaymentResultPage: React.FC<Props> = ({ provider }) => {
+const PaymentResultPage: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const rawStatus = searchParams.get('status') ?? '';
+  const rawStatusParam = (searchParams.get('status') ?? searchParams.get('code') ?? '').toLowerCase();
+  const cancelled = searchParams.get('cancel') === 'true';
+  const rawStatus =
+    rawStatusParam === 'paid' || rawStatusParam === '00'
+      ? 'success'
+      : rawStatusParam === 'cancelled' || cancelled
+        ? 'failed'
+        : rawStatusParam === 'processing'
+          ? 'pending'
+          : rawStatusParam;
   const status: ResultStatus = (
     ['success', 'failed', 'pending', 'invalid-signature', 'error'] as const
   ).includes(rawStatus as any)
     ? (rawStatus as ResultStatus)
     : 'unknown';
-  const paymentRef = searchParams.get('orderId') ?? searchParams.get('appTransId') ?? '';
+  const paymentRef = searchParams.get('orderCode') ?? searchParams.get('id') ?? '';
 
   const [amount, setAmount] = useState<number | null>(null);
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [loadingWallet, setLoadingWallet] = useState(true);
 
-  const providerName = provider === 'MOMO' ? 'MoMo' : 'ZaloPay';
+  const providerName = 'payOS';
 
   useEffect(() => {
     try {

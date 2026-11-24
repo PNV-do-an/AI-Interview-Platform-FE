@@ -15,22 +15,22 @@ export interface TopupWebhookRequest {
   providerTxId: string;
 }
 
-/** Payment gateway (BE: POST /api/v1/payment/{provider}/create). */
-export type PaymentProvider = 'MOMO' | 'ZALOPAY';
+/** payOS là cổng thanh toán duy nhất (BE: POST /api/v1/payment/payos/create). */
+export type PaymentProvider = 'PAYOS';
 
 export interface PaymentCreateRequest {
   amount: number;
-  orderInfo?: string;
+  /** Nội dung chuyển khoản (tối đa 9 ký tự sau khi BE chuẩn hóa). */
+  description?: string;
 }
 
 export interface PaymentCreateResponse {
-  paymentUrl: string;
-  /** MoMo trả URL ảnh QR; ZaloPay dùng paymentUrl để render QR. */
-  qrCodeUrl?: string;
-  deeplink?: string;
-  orderId?: string;
-  requestId?: string;
-  appTransId?: string;
+  /** Trang checkout payOS để redirect người dùng. */
+  checkoutUrl: string;
+  /** Mã đơn payOS (integer), dùng để đối soát. */
+  orderCode: number;
+  /** Nội dung VietQR payOS trả về; FE render thành mã QR. */
+  qrCode?: string;
 }
 
 export interface Withdrawal {
