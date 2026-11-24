@@ -11,7 +11,8 @@ const NAV_ITEMS: PortalNavItem[] = [
   { to: '/dashboard', label: 'Tổng quan', end: true },
   { to: '/jobs', label: 'Tìm việc làm' },
   { to: '/my-applications', label: 'Đơn ứng tuyển' },
-  { to: '/my-interviews', label: 'Lịch phỏng vấn' },
+  // TẠM TẮT (24/11/2026): lịch phỏng vấn
+  // { to: '/my-interviews', label: 'Lịch phỏng vấn' },
   { to: '/mock-interviews', label: 'Luyện AI' },
   { to: '/payments', label: 'Ví & thanh toán' },
 ];
@@ -31,7 +32,8 @@ const FOOTER_GROUPS = [
     links: [
       { label: 'Tìm việc làm', to: '/jobs' },
       { label: 'Đơn ứng tuyển', to: '/my-applications' },
-      { label: 'Lịch phỏng vấn', to: '/my-interviews' },
+      // TẠM TẮT (24/11/2026): lịch phỏng vấn
+      // { label: 'Lịch phỏng vấn', to: '/my-interviews' },
       { label: 'Luyện phỏng vấn AI', to: '/mock-interviews' },
     ],
   },

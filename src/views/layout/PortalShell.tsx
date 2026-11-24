@@ -41,7 +41,8 @@ const DEFAULT_FOOTER_GROUPS = [
     links: [
       { label: 'Đăng tin tuyển dụng', to: '/jobs/new' },
       { label: 'Quản lý tin đăng', to: '/my-jobs' },
-      { label: 'Lịch phỏng vấn', to: '/my-slots' },
+      // TẠM TẮT (24/11/2026): đặt lịch phỏng vấn
+      // { label: 'Lịch phỏng vấn', to: '/my-slots' },
       { label: 'Gói dịch vụ', to: '/packages' },
     ],
   },

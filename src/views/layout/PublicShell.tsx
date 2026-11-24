@@ -7,8 +7,8 @@ import BrandLogo from '../components/BrandLogo';
  *   /  (LandingPage)
  *   /opportunities  (PublicJobBoardPage)
  *   /ai-interview   (MockInterviewsPage)
- *   /mentors        (MentorsPage)
  *   /pricing        (PackagesPage)
+ * (/mentors tạm tắt 24/11/2026 — giữ file, chỉ comment nav/route)
  *
  * Thiết kế: capsule nav + scrolled-shadow header + mobile drawer + footer đầy đủ.
  * Các mockup page tự render <header> và <footer> trong HTML bên trong; MockupPage.tsx
@@ -24,7 +24,8 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Trang chủ' },
   { to: '/opportunities', label: 'Tìm việc làm' },
   { to: '/ai-interview', label: 'Luyện phỏng vấn AI' },
-  { to: '/mentors', label: 'Chuyên gia Mentor' },
+  // TẠM TẮT (24/11/2026): Chuyên gia Mentor
+  // { to: '/mentors', label: 'Chuyên gia Mentor' },
   { to: '/pricing', label: 'Bảng giá' },
 ];
 
@@ -256,7 +257,8 @@ const PublicShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 links: [
                   { label: 'Luyện phỏng vấn AI', to: '/ai-interview' },
                   { label: 'Tìm việc làm', to: '/opportunities' },
-                  { label: 'Chuyên gia Mentor', to: '/mentors' },
+                  // TẠM TẮT (24/11/2026): Chuyên gia Mentor
+                  // { label: 'Chuyên gia Mentor', to: '/mentors' },
                   { label: 'Bảng giá', to: '/pricing' },
                 ],
               },
