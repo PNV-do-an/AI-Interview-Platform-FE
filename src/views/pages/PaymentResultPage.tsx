@@ -163,8 +163,17 @@ const PaymentResultPage: React.FC = () => {
         }
         setStatus('pending');
       } catch {
-        // Backend cũ chưa có endpoint /status: giữ kết quả đọc từ query param.
-        if (active) setVerifying(false);
+        // Chưa đối soát được (payOS trễ, backend cũ, mạng...): không chốt thành lỗi,
+        // cứ để trạng thái chờ xử lý và thử lại để webhook/scheduler kịp cộng ví.
+        if (!active) return;
+        if (attempts >= MAX_VERIFY_ATTEMPTS) {
+          setStatus((current) =>
+            current === 'error' || current === 'unknown' ? 'pending' : current
+          );
+          setVerifying(false);
+        } else {
+          timer = window.setTimeout(verify, VERIFY_INTERVAL_MS);
+        }
         return;
       }
 
@@ -172,6 +181,9 @@ const PaymentResultPage: React.FC = () => {
       if (attempts < MAX_VERIFY_ATTEMPTS) {
         timer = window.setTimeout(verify, VERIFY_INTERVAL_MS);
       } else {
+        setStatus((current) =>
+          current === 'error' || current === 'unknown' ? 'pending' : current
+        );
         setVerifying(false);
       }
     };
