@@ -122,7 +122,10 @@ const WalletPage: React.FC = () => {
     setNotice('');
     try {
       // Backend tạo đơn payOS, ký HMAC-SHA256 và trả checkoutUrl + VietQR.
-      const body = { amount, description: `NAPTIEN${user?.id ?? ''}` };
+      // Mã mô tả 9 ký tự: NAP + 6 chữ số id.Backend cần parse lại id này khi phải
+      // khôi phục giao dịch bị mất bản ghi local (xem PayosServiceImpl.extractUserId).
+      const description = user?.id ? `NAP${String(user.id).padStart(6, '0')}` : 'NAPTIEN';
+      const body = { amount, description };
       const res = await PaymentService.createPayosPayment(body);
       const data = res.data?.data;
       const ref = data?.orderCode ? String(data.orderCode) : '';
