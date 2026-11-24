@@ -1,9 +1,10 @@
 /**
  * Màn "Đơn ứng tuyển của tôi" (mockup Stitch `screen_7`) — route /my-applications, shell CandidateLayout.
  *
- * Giữ nguyên luồng cũ: GET đơn của ứng viên (`fetchMyApplications(page)`), đặt lịch phỏng vấn
- * (`openBooking`/`confirmBooking` qua `useSlotController`), rút đơn (`cancelApplication` +
- * ConfirmDialog), tab lọc trạng thái + tìm kiếm chạy ở client, phân trang, chuyển kiểu xem thẻ/bảng.
+ * Giữ nguyên luồng cũ: GET đơn của ứng viên (`fetchMyApplications(page)`), rút đơn
+ * (`cancelApplication` + ConfirmDialog), tab lọc trạng thái + tìm kiếm chạy ở client, phân trang,
+ * chuyển kiểu xem thẻ/bảng.
+ * TẠM TẮT (24/11/2026): đặt lịch phỏng vấn (`openBooking`/`confirmBooking`) — giữ code, comment lại.
  *
  * Số thật trên màn: totalElements, trạng thái đơn, `score` (điểm sàng lọc), `slot` (giờ phỏng vấn
  * + ghi chú của doanh nghiệp), `createdAt`/`updatedAt`, tên công ty + vị trí, `feedback`,
@@ -23,7 +24,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCandidateController } from '../../controllers/useCandidateController';
-import { useSlotController } from '../../controllers/useSlotController';
+// TẠM TẮT (24/11/2026): đặt lịch phỏng vấn
+// import { useSlotController } from '../../controllers/useSlotController';
 import { useAuth } from '../../context/AuthContext';
 import {
   APPLICATION_STATUS_LABELS, Application, ApplicationStatus,
@@ -111,14 +113,19 @@ const MyApplicationsPage: React.FC = () => {
   const navigate = useNavigate();
   const {
     applications, profile, loading, error, successMsg,
-    fetchMyApplications, cancelApplication, bookSlot,
-    fetchProfile, clearMessages,
+    fetchMyApplications, cancelApplication,
+    // TẠM TẮT (24/11/2026): bookSlot, clearMessages chỉ dùng cho luồng đặt lịch
+    // bookSlot,
+    // clearMessages,
+    fetchProfile,
   } = useCandidateController();
-  const { availableSlots, fetchAvailableSlots } = useSlotController();
+  // TẠM TẮT (24/11/2026): đặt lịch phỏng vấn
+  // const { availableSlots, fetchAvailableSlots } = useSlotController();
 
   const [page, setPage] = useState(0);
-  const [bookingApp, setBookingApp] = useState<Application | null>(null);
-  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
+  // TẠM TẮT (24/11/2026): đặt lịch phỏng vấn
+  // const [bookingApp, setBookingApp] = useState<Application | null>(null);
+  // const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [tab, setTab] = useState('all');
   const [query, setQuery] = useState('');
   const [view, setView] = useState<'cards' | 'table'>('cards');
@@ -131,21 +138,22 @@ const MyApplicationsPage: React.FC = () => {
     }
   }, [user]);
 
-  const openBooking = async (app: Application) => {
-    clearMessages();
-    setSelectedSlot(null);
-    setBookingApp(app);
-    await fetchAvailableSlots(app.employerId);
-  };
-
-  const confirmBooking = async () => {
-    if (!bookingApp || !selectedSlot) return;
-    const ok = await bookSlot(selectedSlot, bookingApp.id);
-    if (ok) {
-      setBookingApp(null);
-      fetchMyApplications(page);
-    }
-  };
+  // TẠM TẮT (24/11/2026): đặt lịch phỏng vấn
+  // const openBooking = async (app: Application) => {
+  //   clearMessages();
+  //   setSelectedSlot(null);
+  //   setBookingApp(app);
+  //   await fetchAvailableSlots(app.employerId);
+  // };
+  //
+  // const confirmBooking = async () => {
+  //   if (!bookingApp || !selectedSlot) return;
+  //   const ok = await bookSlot(selectedSlot, bookingApp.id);
+  //   if (ok) {
+  //     setBookingApp(null);
+  //     fetchMyApplications(page);
+  //   }
+  // };
 
   const withdraw = (app: Application) => setPendingWithdraw(app);
 
@@ -236,6 +244,7 @@ const MyApplicationsPage: React.FC = () => {
 
   const renderActions = (app: Application, compact = false) => (
     <div className="flex flex-wrap items-center justify-end gap-space-xs">
+      {/* TẠM TẮT (24/11/2026): đặt lịch phỏng vấn
       {app.status === 'PENDING' && (
         <button
           type="button"
@@ -245,7 +254,7 @@ const MyApplicationsPage: React.FC = () => {
           <span className={`${ICON} text-[18px]`}>event_available</span>
           Đặt lịch phỏng vấn
         </button>
-      )}
+      )} */}
       {(app.status === 'PENDING' || app.status === 'SCHEDULED') && (
         <button
           type="button"
@@ -462,7 +471,9 @@ const MyApplicationsPage: React.FC = () => {
                   </span>
                   <span className="text-ds-body-sm text-slate-600">
                     {spotlight.status === 'PENDING'
-                      ? 'Khi hồ sơ được duyệt, bạn sẽ chọn khung giờ ở nút "Đặt lịch phỏng vấn".'
+                      // TẠM TẮT (24/11/2026): nút "Đặt lịch phỏng vấn" đã tắt
+                      // ? 'Khi hồ sơ được duyệt, bạn sẽ chọn khung giờ ở nút "Đặt lịch phỏng vấn".'
+                      ? 'Đơn đang được xét duyệt. Lịch phỏng vấn (nếu có) sẽ hiển thị tại đây.'
                       : 'Doanh nghiệp chưa mở khung giờ cho đơn này.'}
                   </span>
                 </>
@@ -787,6 +798,7 @@ const MyApplicationsPage: React.FC = () => {
         </Link>
       </div>
 
+      {/* TẠM TẮT (24/11/2026): modal đặt lịch phỏng vấn
       {bookingApp && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 p-4">
           <div className={`flex max-h-[80vh] w-full max-w-[520px] flex-col gap-space-md overflow-y-auto p-space-lg ${CARD}`}>
@@ -861,7 +873,7 @@ const MyApplicationsPage: React.FC = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       <ConfirmDialog
         open={pendingWithdraw !== null}

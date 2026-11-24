@@ -200,8 +200,9 @@ const PaymentsPage: React.FC = () => {
         { to: '/packages', icon: 'inventory_2', title: 'Gói dịch vụ', desc: 'Chọn gói phù hợp cho nhu cầu tuyển dụng.' },
         { to: '/my-orders', icon: 'receipt_long', title: 'Đơn hàng của tôi', desc: 'Xem, thanh toán hoặc huỷ các đơn hàng.' },
         { to: '/withdrawals', icon: 'account_balance', title: 'Rút tiền', desc: 'Gửi yêu cầu rút thu nhập về tài khoản.' },
-        { to: '/my-bookings', icon: 'event_available', title: 'Lịch sử đặt lịch', desc: 'Theo dõi các buổi phỏng vấn đã đặt.' },
-        { to: '/mentor-pricing', icon: 'sell', title: 'Bảng giá mentor', desc: 'Thiết lập giá và gói mentor của bạn.' },
+        // TẠM TẮT (24/11/2026): booking/mentor
+        // { to: '/my-bookings', icon: 'event_available', title: 'Lịch sử đặt lịch', desc: 'Theo dõi các buổi phỏng vấn đã đặt.' },
+        // { to: '/mentor-pricing', icon: 'sell', title: 'Bảng giá mentor', desc: 'Thiết lập giá và gói mentor của bạn.' },
       ];
 
   return (

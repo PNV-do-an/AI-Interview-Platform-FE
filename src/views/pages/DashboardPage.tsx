@@ -304,10 +304,11 @@ const CandidateDashboard: React.FC = () => {
                       <span className={`${ICON} text-[16px] text-teal-600`}>mic</span>
                       Kiểm tra Mic &amp; Cam
                     </Link>
-                    <Link to="/my-interviews" className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-ds-label-md text-slate-900 transition-colors hover:bg-slate-200 no-underline">
+                    {/* TẠM TẮT (24/11/2026): lịch phỏng vấn */}
+                    {/* <Link to="/my-interviews" className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-1.5 text-ds-label-md text-slate-900 transition-colors hover:bg-slate-200 no-underline">
                       <span className={`${ICON} text-[16px] text-primary`}>calendar_month</span>
                       Xem chi tiết lịch
-                    </Link>
+                    </Link> */}
                   </div>
                   <Link to={`/jobs/${nextInterview.app.jobId}`} className="ml-auto inline-flex items-center gap-space-xs rounded-lg bg-primary px-space-md py-2 text-ds-label-md font-semibold text-on-primary shadow-sm transition-colors hover:bg-indigo-700 no-underline">
                     <span className={`${ICON} text-[18px]`}>description</span>
@@ -612,7 +613,8 @@ const ROLE_LINKS: Record<string, { to: string; label: string; description: strin
   employer: [
     { to: '/my-jobs', label: 'Tin đã đăng', description: 'Quản lý các tin đang tuyển', icon: 'work' },
     { to: '/jobs/new', label: 'Đăng tin mới', description: 'Tạo tin tuyển dụng mới', icon: 'add' },
-    { to: '/my-slots', label: 'Lịch trống', description: 'Khung giờ phỏng vấn bạn mở cho ứng viên', icon: 'event' },
+    // TẠM TẮT (24/11/2026): đặt lịch phỏng vấn
+    // { to: '/my-slots', label: 'Lịch trống', description: 'Khung giờ phỏng vấn bạn mở cho ứng viên', icon: 'event' },
     { to: '/payments', label: 'Ví & thanh toán', description: 'Nạp tiền, mua gói và theo dõi giao dịch', icon: 'account_balance_wallet' },
     { to: '/packages', label: 'Gói dịch vụ', description: 'Mua lượt đăng tin và lượt phỏng vấn', icon: 'deployed_code' },
     { to: '/my-orders', label: 'Đơn hàng', description: 'Lịch sử thanh toán các gói dịch vụ', icon: 'receipt_long' },

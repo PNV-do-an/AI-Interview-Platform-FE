@@ -21,11 +21,12 @@ import JobsPage from './views/pages/JobsPage';
 import JobDetailPage from './views/pages/JobDetailPage';
 import JobFormPage from './views/pages/JobFormPage';
 import MyJobsPage from './views/pages/MyJobsPage';
-import MySlotsPage from './views/pages/MySlotsPage';
-import InterviewCalendarPage from './views/pages/InterviewCalendarPage';
+// TẠM TẮT (24/11/2026, theo yêu cầu): tính năng đặt lịch phỏng vấn — giữ file, chỉ comment route/nav.
+// import MySlotsPage from './views/pages/MySlotsPage';
+// import InterviewCalendarPage from './views/pages/InterviewCalendarPage';
 import MyApplicationsPage from './views/pages/MyApplicationsPage';
 import CandidateProfilePage from './views/pages/CandidateProfilePage';
-import MyInterviewsPage from './views/pages/MyInterviewsPage';
+// import MyInterviewsPage from './views/pages/MyInterviewsPage';
 import CandidateAccountPage from './views/pages/CandidateAccountPage';
 import MockInterviewHistoryPage from './views/pages/MockInterviewHistoryPage';
 import MockInterviewsPage from './views/pages/MockInterviewsPage';
@@ -42,8 +43,9 @@ import MyOrdersPage from './views/pages/MyOrdersPage';
 import WalletPage from './views/pages/WalletPage';
 import PaymentResultPage from './views/pages/PaymentResultPage';
 import PaymentsPage from './views/pages/PaymentsPage';
-import MyBookingsPage from './views/pages/MyBookingsPage';
-import MentorPricingPage from './views/pages/MentorPricingPage';
+// TẠM TẮT (24/11/2026): luồng booking/mentor.
+// import MyBookingsPage from './views/pages/MyBookingsPage';
+// import MentorPricingPage from './views/pages/MentorPricingPage';
 import WithdrawalsPage from './views/pages/WithdrawalsPage';
 import AdminPaymentMetricsPage from './views/pages/AdminPaymentMetricsPage';
 import PackageManagementPage from './views/pages/PackageManagementPage';
@@ -51,7 +53,8 @@ import EmployerReviewsPage from './views/pages/EmployerReviewsPage';
 import BugReportsPage from './views/pages/BugReportsPage';
 import AdminFeedbackPage from './views/pages/AdminFeedbackPage';
 import LandingPage from './views/pages/LandingPage';
-import MentorsPage from './views/pages/MentorsPage';
+// TẠM TẮT (24/11/2026): trang marketing "Chuyên gia Mentor".
+// import MentorsPage from './views/pages/MentorsPage';
 import PublicJobBoardPage from './views/pages/PublicJobBoardPage';
 import TwoFactorPage from './views/pages/TwoFactorPage';
 import MagicLinkPage from './views/pages/MagicLinkPage';
@@ -103,7 +106,8 @@ const App: React.FC = () => {
           <Route path="/magic-link" element={<MagicLinkPage />} />
           <Route path="/opportunities" element={<PublicJobBoardPage />} />
           {/* Trang marketing công khai theo bộ mockup 2026-11-12 */}
-          <Route path="/mentors" element={<MentorsPage />} />
+          {/* TẠM TẮT (24/11/2026): /mentors — Chuyên gia Mentor */}
+          {/* <Route path="/mentors" element={<MentorsPage />} /> */}
           <Route path="/pricing" element={<PublicPricingPage />} />
           <Route path="/ai-interview" element={<MockInterviewsPublicPage />} />
 
@@ -127,18 +131,20 @@ const App: React.FC = () => {
                 <Route path="/jobs/new" element={<JobFormPage />} />
                 <Route path="/jobs/:id/edit" element={<JobFormPage />} />
                 <Route path="/my-jobs" element={<MyJobsPage />} />
-                <Route path="/my-slots" element={<MySlotsPage />} />
-                <Route path="/my-slots/calendar" element={<InterviewCalendarPage />} />
+                {/* TẠM TẮT (24/11/2026): đặt lịch phỏng vấn + booking/mentor */}
+                {/* <Route path="/my-slots" element={<MySlotsPage />} /> */}
+                {/* <Route path="/my-slots/calendar" element={<InterviewCalendarPage />} /> */}
                 <Route path="/my-orders" element={<MyOrdersPage />} />
-                <Route path="/my-bookings" element={<MyBookingsPage />} />
-                <Route path="/mentor-pricing" element={<MentorPricingPage />} />
+                {/* <Route path="/my-bookings" element={<MyBookingsPage />} /> */}
+                {/* <Route path="/mentor-pricing" element={<MentorPricingPage />} /> */}
                 <Route path="/withdrawals" element={<WithdrawalsPage />} />
               </Route>
 
               {/* Candidate routes */}
               <Route element={<ProtectedRoute allowedRoles={['ROLE_USER']} />}>
                 <Route path="/my-applications" element={<MyApplicationsPage />} />
-                <Route path="/my-interviews" element={<MyInterviewsPage />} />
+                {/* TẠM TẮT (24/11/2026): lịch phỏng vấn ứng viên */}
+                {/* <Route path="/my-interviews" element={<MyInterviewsPage />} /> */}
                 <Route path="/my-profile" element={<CandidateProfilePage />} />
                 <Route path="/account" element={<CandidateAccountPage />} />
                 <Route path="/mock-interviews" element={<MockInterviewsPage />} />

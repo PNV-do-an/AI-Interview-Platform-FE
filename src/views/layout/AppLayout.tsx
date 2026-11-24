@@ -24,7 +24,8 @@ const WORKSPACES: { title: string; items: NavItem[] }[] = [
     items: [
       { to: '/my-jobs', label: 'Quản lý JD', icon: 'description', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
       { to: '/jobs/new', label: 'Tạo JD mới', icon: 'add', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
-      { to: '/my-slots', label: 'Lịch rảnh phỏng vấn', icon: 'calendar_month', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
+      // TẠM TẮT (24/11/2026): đặt lịch phỏng vấn
+      // { to: '/my-slots', label: 'Lịch rảnh phỏng vấn', icon: 'calendar_month', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
     ],
   },
   {
@@ -48,7 +49,8 @@ const WORKSPACES: { title: string; items: NavItem[] }[] = [
   {
     title: 'Hệ thống',
     items: [
-      { to: '/my-slots/calendar', label: 'Lịch khung giờ', icon: 'calendar_month', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
+      // TẠM TẮT (24/11/2026): đặt lịch phỏng vấn
+      // { to: '/my-slots/calendar', label: 'Lịch khung giờ', icon: 'calendar_month', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
       { to: '/packages', label: 'Gói dịch vụ', icon: 'deployed_code', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
       { to: '/my-orders', label: 'Đơn hàng', icon: 'receipt_long', roles: ['ROLE_INTERVIEWER', 'ROLE_STAFF', 'ROLE_ADMIN'] },
     ],

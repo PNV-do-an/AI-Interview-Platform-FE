@@ -11,8 +11,9 @@ const NAV_ITEMS: PortalNavItem[] = [
   { to: '/dashboard', label: 'Tổng quan', end: true },
   { to: '/my-jobs', label: 'Tin tuyển dụng' },
   { to: '/jobs/new', label: 'Đăng tin mới' },
-  { to: '/my-slots', label: 'Lịch rảnh', end: true },
-  { to: '/my-slots/calendar', label: 'Lịch phỏng vấn' },
+  // TẠM TẮT (24/11/2026): đặt lịch phỏng vấn
+  // { to: '/my-slots', label: 'Lịch rảnh', end: true },
+  // { to: '/my-slots/calendar', label: 'Lịch phỏng vấn' },
   { to: '/payments', label: 'Ví & thanh toán' },
 ];
 
@@ -20,8 +21,9 @@ const QUICK_LINKS = [
   { label: 'Nạp tiền vào ví', to: '/wallet' },
   { label: 'Gói dịch vụ', to: '/packages' },
   { label: 'Đơn hàng của tôi', to: '/my-orders' },
-  { label: 'Lịch sử phỏng vấn', to: '/my-bookings' },
-  { label: 'Bảng giá mentor', to: '/mentor-pricing' },
+  // TẠM TẮT (24/11/2026): booking/mentor
+  // { label: 'Lịch sử phỏng vấn', to: '/my-bookings' },
+  // { label: 'Bảng giá mentor', to: '/mentor-pricing' },
   { label: 'Rút tiền', to: '/withdrawals' },
   { label: 'Trợ giúp & hỗ trợ', to: '/bug-reports' },
 ];
@@ -32,8 +34,9 @@ const FOOTER_GROUPS = [
     links: [
       { label: 'Đăng tin mới', to: '/jobs/new' },
       { label: 'Quản lý tin đăng', to: '/my-jobs' },
-      { label: 'Lịch rảnh', to: '/my-slots' },
-      { label: 'Lịch phỏng vấn', to: '/my-slots/calendar' },
+      // TẠM TẮT (24/11/2026): đặt lịch phỏng vấn
+      // { label: 'Lịch rảnh', to: '/my-slots' },
+      // { label: 'Lịch phỏng vấn', to: '/my-slots/calendar' },
     ],
   },
   {
@@ -41,8 +44,9 @@ const FOOTER_GROUPS = [
     links: [
       { label: 'Gói dịch vụ', to: '/packages' },
       { label: 'Đơn hàng', to: '/my-orders' },
-      { label: 'Đánh giá ứng viên', to: '/my-bookings' },
-      { label: 'Bảng giá mentor', to: '/mentor-pricing' },
+      // TẠM TẮT (24/11/2026): booking/mentor
+      // { label: 'Đánh giá ứng viên', to: '/my-bookings' },
+      // { label: 'Bảng giá mentor', to: '/mentor-pricing' },
     ],
   },
   {
