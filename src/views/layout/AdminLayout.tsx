@@ -6,19 +6,8 @@ import BrandLogo from '../components/BrandLogo';
 import { UserStats } from '../../models/User.model';
 
 /**
- * Shell Admin Console theo mockup Stitch 2026-10-21 (`dash_board_admin` + submenu của
- * `l_ch_s_a_ki_m_duy_t`). Một shell riêng cho nhóm /admin/*: màn candidate/employer vẫn dùng
- * AppLayout.
- *
- * Ánh xạ token mockup -> token dự án (giá trị bằng nhau, chỉ khác tên):
- *   text-outline (#777587)          -> text-outline-strong
- *   text-headline-* / label-* / body-* -> text-ds-* (scale DESIGN.md, app giữ scale cũ)
- *   shadow-[0_1px_8px_rgba(0,0,0,0.04)] -> shadow-header
- *   font-* theo DESIGN.md            -> bỏ (app đã chạy Inter toàn cục)
- *
- * Số liệu: badge "Người dùng" = GET /admin/users/stats.total, badge "Kiểm duyệt JD" =
- * GET /admin/dashboard jobs.pendingModeration. Cả hai là ADMIN-only nên ROLE_STAFF không gọi
- * và không hiện badge (không dựng số demo).
+ * Shell riêng cho /admin/*, dùng chung bảng màu editorial và các trạng thái quyền của nền tảng.
+ * Số liệu badge vẫn lấy từ API thật; ROLE_STAFF không gọi API quản trị ADMIN-only.
  */
 
 const ROLE_LABEL: Record<string, string> = {
@@ -80,9 +69,9 @@ const NAV: { title: string; items: AdminNavItem[] }[] = [
 ];
 
 const NAV_ITEM_BASE =
-  'flex items-center justify-between px-space-md py-2.5 rounded-xl transition-all text-ds-label-lg';
-const NAV_ITEM_IDLE = 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface';
-const NAV_ITEM_ACTIVE = 'bg-primary-container text-on-primary shadow-sm font-bold';
+  'flex items-center justify-between px-space-md py-2.5 rounded-xl transition-all text-ds-label-lg border border-transparent';
+const NAV_ITEM_IDLE = 'text-on-surface-variant hover:border-outline-variant hover:bg-surface-container-low hover:text-on-surface';
+const NAV_ITEM_ACTIVE = 'bg-primary-container text-on-primary shadow-[3px_3px_0_#d5ef6c] font-bold';
 const SUBITEM_BASE =
   'flex items-center justify-between px-space-sm py-2 rounded-lg transition-colors text-ds-body-md';
 const SUBITEM_IDLE = 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface';
@@ -160,18 +149,18 @@ const AdminLayout: React.FC = () => {
   const sidebar = (
     <>
       <div className="flex flex-col flex-1 overflow-y-auto">
-        <div className="h-16 px-space-lg flex items-center border-b border-surface-container">
+        <div className="h-[72px] px-space-lg flex items-center border-b border-outline-variant">
           <BrandLogo
             markClass="h-7"
             nameClass="text-ds-label-lg text-on-surface font-bold tracking-tight"
-            sub="Admin Portal"
+            sub={isAdmin ? 'Control room' : 'Operations'}
           />
         </div>
 
         <div className="px-space-md py-space-md">
           {sections.map((section) => (
             <div key={section.title} className="mb-space-sm">
-              <div className="px-space-sm pb-2 text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
+              <div className="px-space-sm pb-2 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
                 {section.title}
               </div>
               <nav className="flex flex-col gap-1">
@@ -243,7 +232,7 @@ const AdminLayout: React.FC = () => {
           </div>
           <div className="flex flex-col min-w-0 flex-1">
             <span className="text-ds-label-md text-on-surface font-semibold truncate leading-tight">
-              {user?.fullName || 'Quản trị viên'}
+              {user?.fullName || ROLE_LABEL[role] || 'Tài khoản'}
             </span>
             <span className="text-[11px] text-primary truncate leading-tight">
               {ROLE_LABEL[role] ?? 'Quản trị viên'}
@@ -277,74 +266,95 @@ const AdminLayout: React.FC = () => {
 
   return (
     <div className="admin-shell min-h-screen bg-background text-ds-body-md text-on-surface">
-      <aside className="fixed left-0 top-0 h-full w-72 border-r border-outline-variant bg-surface-container-lowest z-50 hidden lg:flex flex-col justify-between shadow-header">
+      <aside className="fixed left-0 top-0 z-50 hidden h-full w-72 flex-col justify-between border-r border-outline-variant bg-surface-container-lowest shadow-header lg:flex">
         {sidebar}
       </aside>
 
       {drawerOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setDrawerOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 flex w-72 flex-col justify-between bg-surface-container-lowest shadow-header">
+          <button type="button" aria-label="Đóng menu quản trị" className="absolute inset-0 border-0 bg-[#28212e]/45" onClick={() => setDrawerOpen(false)} />
+          <aside id="admin-mobile-menu" className="absolute inset-y-0 left-0 flex w-72 flex-col justify-between bg-surface-container-lowest shadow-header">
             {sidebar}
           </aside>
         </div>
       )}
 
       <div className="lg:pl-72 flex flex-col min-h-screen">
-        <header className="fixed top-0 left-0 right-0 lg:left-72 h-16 bg-surface-container-lowest/90 backdrop-blur-xl z-40 shadow-header flex items-center justify-between px-space-md lg:px-space-lg gap-2">
+        <header className="fixed left-0 right-0 top-0 z-40 flex h-[72px] items-center justify-between gap-2 border-b border-outline-variant bg-surface-container-lowest/90 px-space-md shadow-header backdrop-blur-xl lg:left-72 lg:px-space-lg">
           <button
             type="button"
-            aria-label="Mở menu"
+            aria-label="Mở menu quản trị"
+            aria-expanded={drawerOpen}
+            aria-controls="admin-mobile-menu"
             onClick={() => setDrawerOpen(true)}
             className="w-10 h-10 shrink-0 rounded-xl border border-outline-variant/40 bg-transparent flex items-center justify-center text-on-surface-variant hover:text-on-surface lg:hidden"
           >
-            <span className="material-symbols-outlined text-[20px]">menu</span>
+            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">menu</span>
           </button>
 
-          <div className="flex items-center gap-space-lg flex-1 min-w-0">
-            <form className="relative w-full max-w-md" onSubmit={onSearch}>
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline-strong text-[18px]">
-                search
-              </span>
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                aria-label="Tìm kiếm toàn hệ thống"
-                placeholder="Tìm kiếm ứng viên, JD, doanh nghiệp, phiên phỏng vấn..."
-                className="w-full h-10 pl-10 pr-space-md rounded-xl bg-surface-container-lowest border border-outline-variant text-on-surface text-ds-body-sm placeholder:text-on-surface-variant focus:border-primary focus:ring-2 focus:ring-primary focus:outline-none transition-all shadow-sm"
-              />
-            </form>
+          <div className="flex min-w-0 flex-1 items-center gap-space-lg">
+            {isAdmin ? (
+              <form className="relative w-full max-w-md" onSubmit={onSearch}>
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline-strong text-[18px]" aria-hidden="true">
+                  search
+                </span>
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  aria-label="Tìm kiếm toàn hệ thống"
+                  placeholder="Tìm kiếm ứng viên, JD, doanh nghiệp, phiên phỏng vấn..."
+                  className="w-full h-10 pl-10 pr-space-md rounded-xl bg-surface-container-lowest border border-outline-variant text-on-surface text-ds-body-sm placeholder:text-on-surface-variant focus:border-primary focus:ring-2 focus:ring-primary focus:outline-none transition-all shadow-sm"
+                />
+              </form>
+            ) : (
+              <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">fact_check</span>
+                Operations / kiểm duyệt
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-space-md shrink-0">
             <Link
-              to="/admin/audit"
-              aria-label="Nhật ký hoạt động"
+              to={isAdmin ? '/admin/audit' : '/admin/job-approvals'}
+              aria-label={isAdmin ? 'Nhật ký hoạt động' : 'Kiểm duyệt JD'}
               className="w-10 h-10 rounded-xl hover:bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors border border-outline-variant/40 no-underline"
             >
-              <span className="material-symbols-outlined text-[20px]">receipt_long</span>
+              <span className="material-symbols-outlined text-[20px]" aria-hidden="true">{isAdmin ? 'receipt_long' : 'fact_check'}</span>
             </Link>
-            <Link
-              to="/admin/account"
-              className="flex items-center gap-space-sm pl-space-xs cursor-pointer hover:opacity-90 transition-opacity no-underline"
-            >
-              <span className="w-9 h-9 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-bold text-sm shadow-sm">
-                {initials}
-              </span>
-              <span className="text-left hidden sm:flex flex-col">
-                <span className="text-ds-label-md text-on-surface font-semibold leading-tight">
-                  {user?.fullName || 'Quản trị viên'}
+            {isAdmin ? (
+              <Link
+                to="/admin/account"
+                className="flex items-center gap-space-sm pl-space-xs cursor-pointer hover:opacity-90 transition-opacity no-underline"
+              >
+                <span className="w-9 h-9 rounded-xl bg-primary-container text-on-primary flex items-center justify-center font-mono font-bold text-xs shadow-sm">
+                  {initials}
                 </span>
-                <span className="text-[11px] text-primary font-medium leading-tight">
-                  {ROLE_LABEL[role] ?? 'Quản trị viên'}
+                <span className="text-left hidden sm:flex flex-col">
+                  <span className="text-ds-label-md text-on-surface font-semibold leading-tight">
+                    {user?.fullName || 'Quản trị viên'}
+                  </span>
+                  <span className="font-mono text-[9px] text-primary font-bold uppercase tracking-[0.12em] leading-tight">
+                    {ROLE_LABEL[role] ?? 'Quản trị viên'}
+                  </span>
                 </span>
-              </span>
-              <span className="material-symbols-outlined text-on-surface-variant text-[18px]">expand_more</span>
-            </Link>
+                <span className="material-symbols-outlined text-on-surface-variant text-[18px]" aria-hidden="true">expand_more</span>
+              </Link>
+            ) : (
+              <div className="flex items-center gap-space-sm pl-space-xs">
+                <span className="w-9 h-9 rounded-xl bg-secondary-container text-on-secondary-container flex items-center justify-center font-mono font-bold text-xs">
+                  {initials}
+                </span>
+                <span className="hidden text-left sm:flex sm:flex-col">
+                  <span className="text-ds-label-md text-on-surface font-semibold leading-tight">{user?.fullName || 'Nhân viên'}</span>
+                  <span className="font-mono text-[9px] text-on-surface-variant font-bold uppercase tracking-[0.12em] leading-tight">{ROLE_LABEL[role] ?? 'Nhân viên vận hành'}</span>
+                </span>
+              </div>
+            )}
           </div>
         </header>
 
-        <main className="relative pt-16 bg-background w-full min-h-screen">
+        <main className="relative min-h-screen w-full bg-background pt-[72px]">
           <Outlet />
         </main>
       </div>

@@ -185,6 +185,13 @@ body {
   color: var(--ink);
 }
 
+.role-workspace-shell,
+.career-shell,
+.admin-shell {
+  background-image: radial-gradient(rgb(96 66 115 / 0.055) 0.7px, transparent 0.7px);
+  background-size: 18px 18px;
+}
+
 .public-header {
   border-bottom: 1px solid rgb(40 33 46 / 0.1);
   background: rgb(243 239 230 / 0.9);

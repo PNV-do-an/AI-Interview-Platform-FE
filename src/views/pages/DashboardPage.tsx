@@ -606,8 +606,8 @@ const CandidateDashboard: React.FC = () => {
 };
 
 /**
- * Dashboard của các vai trò khác (employer/staff/admin) — chưa có mockup mới, giữ lối dựng cũ
- * bằng primitive `ui.tsx`: chỉ là danh sách đường tắt, không có số liệu.
+ * Dashboard nhà tuyển dụng và nội bộ: dữ liệu ví/đơn thật, lối tắt được lọc theo role,
+ * trình bày theo bộ nhận diện editorial dùng chung với các portal.
  */
 const ROLE_LINKS: Record<string, { to: string; label: string; description: string; icon: string }[]> = {
   employer: [
@@ -655,39 +655,58 @@ const WorkspaceDashboard: React.FC = () => {
     .filter((order) => order.status === 'PAID')
     .reduce((sum, order) => sum + order.amount, 0);
 
+  const roleMeta = role === 'ROLE_ADMIN'
+    ? {
+      eyebrow: 'Control room / admin',
+      description: 'Theo dõi hoạt động nền tảng, xử lý vận hành và truy cập nhanh các công cụ quản trị.',
+      primary: { to: '/admin/dashboard', label: 'Mở bảng quản trị', icon: 'dashboard' },
+      secondary: { to: '/admin/job-approvals', label: 'Hàng chờ kiểm duyệt', icon: 'fact_check' },
+    }
+    : role === 'ROLE_STAFF'
+      ? {
+        eyebrow: 'Operations / staff',
+        description: 'Kiểm duyệt tin tuyển dụng và hỗ trợ các hoạt động hằng ngày của nền tảng.',
+        primary: { to: '/admin/job-approvals', label: 'Mở hàng chờ duyệt', icon: 'fact_check' },
+        secondary: { to: '/admin/feedback', label: 'Xem phản hồi', icon: 'forum' },
+      }
+      : {
+        eyebrow: 'Talent / hiring workspace',
+        description: 'Quản lý tin tuyển dụng, thanh toán và các công cụ cần thiết cho đội ngũ tuyển dụng.',
+        primary: { to: '/jobs/new', label: 'Đăng tin mới', icon: 'add' },
+        secondary: { to: '/payments', label: 'Ví & thanh toán', icon: 'account_balance_wallet' },
+      };
+
   return (
-    <div className="flex flex-col gap-6">
-      {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-900 px-6 py-8 text-white shadow-xl sm:px-10 sm:py-10">
-        <div className="absolute -right-16 -top-16 h-52 w-52 rounded-full bg-indigo-500/20 blur-2xl" />
-        <div className="absolute -bottom-20 right-24 h-44 w-44 rounded-full bg-teal-300/10 blur-2xl" />
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+    <div className="role-dashboard flex flex-col gap-6">
+      <section className="relative overflow-hidden rounded-[2rem] border border-[#30243a] bg-[#30243a] px-6 py-8 text-[#fffdf7] shadow-[6px_6px_0_#d5ef6c] sm:px-10 sm:py-10">
+        <div aria-hidden="true" className="absolute inset-y-0 right-0 hidden w-[34%] border-l border-white/10 bg-[linear-gradient(135deg,transparent,rgba(213,239,108,0.1))] lg:block" />
+        <div className="relative flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold backdrop-blur">
-              <span className="material-symbols-outlined text-[15px]">space_dashboard</span>
-              Bảng điều khiển nhà tuyển dụng
+            <span className="inline-flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-[#d5ef6c]">
+              <span aria-hidden="true" className="h-2 w-2 rounded-full bg-[#d5ef6c]" />
+              {roleMeta.eyebrow}
             </span>
-            <h1 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">
-              Chào mừng {user?.fullName ?? 'bạn'} trở lại!
+            <h1 className="mt-4 text-3xl font-semibold tracking-[-0.045em] sm:text-4xl">
+              Chào mừng {user?.fullName ?? 'bạn'} trở lại.
             </h1>
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-300">
-              Quản lý tin tuyển dụng, lịch phỏng vấn và thanh toán của bạn trong một nơi duy nhất.
+            <p className="mt-3 max-w-xl text-sm leading-6 text-[#e8dfe8] sm:text-base">
+              {roleMeta.description}
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex flex-wrap items-center gap-3">
             <Link
-              to="/jobs/new"
-              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 no-underline shadow-sm transition-transform hover:-translate-y-0.5"
+              to={roleMeta.primary.to}
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#d5ef6c] px-4 text-sm font-bold text-[#28212e] no-underline shadow-[3px_3px_0_#ee795f] transition-transform hover:-translate-y-0.5"
             >
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              Đăng tin mới
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">{roleMeta.primary.icon}</span>
+              {roleMeta.primary.label}
             </Link>
             <Link
-              to="/payments"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white no-underline backdrop-blur transition-colors hover:bg-white/20"
+              to={roleMeta.secondary.to}
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/25 bg-white/5 px-4 text-sm font-semibold text-[#fffdf7] no-underline transition-colors hover:bg-white/10"
             >
-              <span className="material-symbols-outlined text-[18px]">account_balance_wallet</span>
-              Ví &amp; thanh toán
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">{roleMeta.secondary.icon}</span>
+              {roleMeta.secondary.label}
             </Link>
           </div>
         </div>
@@ -700,22 +719,22 @@ const WorkspaceDashboard: React.FC = () => {
             label: 'Số dư khả dụng',
             value: wallet ? formatVnd(wallet.availableBalance) : '—',
             icon: 'account_balance_wallet',
-            tone: 'bg-indigo-50 text-indigo-600',
+            tone: 'bg-[#e9dff0] text-[#604273]',
           },
           {
             label: 'Đơn chờ thanh toán',
             value: `${pendingOrders.length} đơn`,
             icon: 'receipt_long',
-            tone: 'bg-violet-50 text-violet-600',
+            tone: 'bg-[#f6d0c5] text-[#7b392d]',
           },
         ].map((item) => (
-          <div key={item.label} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${item.tone}`}>
-              <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
+          <div key={item.label} className="flex items-start gap-3 rounded-2xl border border-[#d9d0c3] bg-[#fffdf7] p-5 shadow-[3px_3px_0_#e2d9cc]">
+            <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${item.tone}`}>
+              <span className="material-symbols-outlined text-[22px]" aria-hidden="true">{item.icon}</span>
             </span>
             <div className="min-w-0">
-              <p className="m-0 text-xs font-medium uppercase tracking-wide text-slate-500">{item.label}</p>
-              <p className="m-0 mt-1 truncate text-lg font-bold text-slate-900">{item.value}</p>
+              <p className="m-0 text-xs font-semibold uppercase tracking-[0.12em] text-[#6f6675]">{item.label}</p>
+              <p className="m-0 mt-1 truncate text-lg font-bold tracking-tight text-[#28212e]">{item.value}</p>
             </div>
           </div>
         ))}
@@ -723,63 +742,63 @@ const WorkspaceDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
         {/* Wallet actions */}
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm lg:col-span-4">
-          <div className="bg-gradient-to-br from-indigo-600 via-indigo-600 to-violet-600 px-5 py-4 text-white">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <span className="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+        <section className="overflow-hidden rounded-2xl border border-[#d9d0c3] bg-[#fffdf7] shadow-[3px_3px_0_#e2d9cc] lg:col-span-4">
+          <div className="border-b border-[#d9d0c3] bg-[#e9dff0] px-5 py-4 text-[#28212e]">
+            <div className="flex items-center gap-2 text-sm font-bold">
+              <span className="material-symbols-outlined text-[20px] text-[#604273]" aria-hidden="true">account_balance_wallet</span>
               Ví &amp; thanh toán
             </div>
-            <p className="m-0 mt-3 text-[11px] font-medium uppercase tracking-wide text-indigo-200">Tổng đã thanh toán</p>
-            <p className="m-0 text-2xl font-bold tracking-tight">{formatVnd(paidTotal)}</p>
+            <p className="m-0 mt-3 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[#6f6675]">Tổng đã thanh toán</p>
+            <p className="m-0 text-2xl font-bold tracking-tight text-[#604273]">{formatVnd(paidTotal)}</p>
           </div>
           <div className="flex flex-col gap-2 p-4">
             <Link
               to="/wallet"
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 text-sm font-semibold text-white no-underline transition-colors hover:bg-indigo-700"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#604273] px-4 text-sm font-semibold text-[#fffdf7] no-underline transition-colors hover:bg-[#492f59]"
             >
-              <span className="material-symbols-outlined text-[18px]">add_card</span>
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">add_card</span>
               Nạp tiền vào ví
             </Link>
             <Link
               to="/packages"
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 no-underline transition-colors hover:border-indigo-300 hover:text-indigo-600"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[#d9d0c3] bg-[#fffdf7] px-4 text-sm font-semibold text-[#514957] no-underline transition-colors hover:border-[#604273]/40 hover:text-[#604273]"
             >
-              <span className="material-symbols-outlined text-[18px]">inventory_2</span>
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">inventory_2</span>
               Mua gói dịch vụ
             </Link>
             <Link
               to="/my-orders"
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 no-underline transition-colors hover:border-indigo-300 hover:text-indigo-600"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[#d9d0c3] bg-[#fffdf7] px-4 text-sm font-semibold text-[#514957] no-underline transition-colors hover:border-[#604273]/40 hover:text-[#604273]"
             >
-              <span className="material-symbols-outlined text-[18px]">receipt_long</span>
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">receipt_long</span>
               Đơn hàng của tôi
             </Link>
           </div>
         </section>
 
-        {/* Quick links */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:col-span-8">
+        <section className="rounded-2xl border border-[#d9d0c3] bg-[#fffdf7] p-5 shadow-[3px_3px_0_#e2d9cc] lg:col-span-8">
           <div className="flex items-center justify-between gap-2">
             <div>
-              <h2 className="m-0 text-lg font-bold text-slate-900">Công cụ tuyển dụng</h2>
-              <p className="m-0 mt-0.5 text-sm text-slate-500">Các lối tắt dành cho vai trò của bạn.</p>
+              <p className="m-0 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[#ee795f]">Lối tắt theo vai trò</p>
+              <h2 className="m-0 mt-1 text-lg font-bold tracking-tight text-[#28212e]">Công cụ dành cho bạn</h2>
+              <p className="m-0 mt-0.5 text-sm text-[#6f6675]">Các lối tắt được chọn theo vai trò hiện tại.</p>
             </div>
           </div>
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
             {links.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
-                className="group flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 no-underline transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:bg-white hover:shadow-md"
+                className="group flex items-start gap-3 rounded-xl border border-[#d9d0c3] bg-[#f8f4ec] p-4 no-underline transition-all hover:-translate-y-0.5 hover:border-[#604273]/35 hover:bg-[#fffdf7] hover:shadow-[3px_3px_0_#d5ef6c]"
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-indigo-600 shadow-sm group-hover:bg-indigo-50">
-                  <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e9dff0] text-[#604273]">
+                  <span className="material-symbols-outlined text-[20px]" aria-hidden="true">{item.icon}</span>
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-slate-900 group-hover:text-indigo-600">{item.label}</span>
-                  <span className="mt-0.5 block text-xs leading-relaxed text-slate-500">{item.description}</span>
+                  <span className="block text-sm font-semibold text-[#28212e] group-hover:text-[#604273]">{item.label}</span>
+                  <span className="mt-0.5 block text-xs leading-relaxed text-[#6f6675]">{item.description}</span>
                 </span>
-                <span className="material-symbols-outlined ml-auto text-[18px] text-slate-300 group-hover:text-indigo-500">arrow_forward</span>
+                <span className="material-symbols-outlined ml-auto text-[18px] text-[#a39aa6] transition-transform group-hover:translate-x-0.5 group-hover:text-[#604273]" aria-hidden="true">arrow_forward</span>
               </Link>
             ))}
           </div>

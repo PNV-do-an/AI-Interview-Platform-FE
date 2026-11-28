@@ -80,8 +80,8 @@ const HomeRoute: React.FC = () => {
 };
 
 /**
- * Ứng viên vào `CandidateLayout` (shell "CANDIDATE PORTAL" theo mockup 2026-10-26); các vai trò
- * khác giữ `AppLayout` vì chưa có thiết kế mới. Route dùng chung nên không phải nhân đôi khai báo.
+ * Ứng viên và nhà tuyển dụng dùng portal shell riêng; quản trị/nhân viên dùng workspace vận hành.
+ * Route dùng chung nên không phải nhân đôi khai báo.
  */
 const WorkspaceLayout: React.FC = () => {
   const { user } = useAuth();
