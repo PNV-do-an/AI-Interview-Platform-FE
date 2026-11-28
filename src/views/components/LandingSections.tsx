@@ -1,13 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-type IconName = 'arrow' | 'spark' | 'briefcase' | 'users' | 'play' | 'check' | 'mic';
+type IconName = 'arrow' | 'spark' | 'briefcase' | 'users' | 'file' | 'play' | 'check' | 'mic';
 
 const ICON_PATHS: Record<IconName, React.ReactNode> = {
   arrow: <><path d="M7 17 17 7" /><path d="M7 7h10v10" /></>,
   spark: <><path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z" /><path d="m19 14 1.1 2.9L23 18l-2.9 1.1L19 22l-1.1-2.9L15 18l2.9-1.1L19 14Z" /></>,
   briefcase: <><rect x="3" y="7" width="18" height="14" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18M10 12v2h4v-2" /></>,
   users: <><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="10" cy="7" r="4" /><path d="M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></>,
+  file: <><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5M9 13h6M9 17h6" /></>,
   play: <><circle cx="12" cy="12" r="9" /><path d="m10 8 6 4-6 4V8Z" /></>,
   check: <><path d="m5 12 4 4L19 6" /></>,
   mic: <><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8" /></>,
@@ -148,9 +149,9 @@ const FEATURES: Array<{ icon: IconName; eyebrow: string; title: string; descript
     link: 'Xem việc làm', to: '/opportunities', accent: 'bg-teal-50 text-teal-700',
   },
   {
-    icon: 'users', eyebrow: 'KẾT NỐI CHUYÊN GIA', title: 'Đồng hành cùng mentor',
-    description: 'Kết nối với chuyên gia để tháo gỡ băn khoăn và xây dựng lộ trình nghề nghiệp rõ ràng hơn.',
-    link: 'Tìm mentor', to: '/mentors', accent: 'bg-amber-50 text-amber-700',
+    icon: 'file', eyebrow: 'HỒ SƠ SẴN SÀNG', title: 'Tạo CV chuyên nghiệp',
+    description: 'Hoàn thiện thông tin, kinh nghiệm và kỹ năng để xây dựng hồ sơ nổi bật, sẵn sàng ứng tuyển.',
+    link: 'Bắt đầu tạo CV', to: '/my-profile', accent: 'bg-violet-50 text-violet-700',
   },
 ];
 
@@ -158,8 +159,8 @@ export const FeatureSection: React.FC = () => (
   <section id="features" aria-labelledby="features-title" className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-24 lg:px-10">
     <div data-reveal className="max-w-2xl">
       <p className="text-xs font-bold tracking-[0.16em] text-indigo-600">MỘT NỀN TẢNG · NHIỀU CƠ HỘI</p>
-      <h2 id="features-title" className="mt-4 text-3xl font-semibold leading-tight tracking-[-0.045em] text-slate-950 sm:text-4xl">Mỗi bước tiến, đều có người đồng hành.</h2>
-      <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">Từ lúc chuẩn bị cho buổi phỏng vấn đến khi tìm thấy công việc phù hợp — bắt đầu từ điều bạn cần nhất.</p>
+      <h2 id="features-title" className="mt-4 text-3xl font-semibold leading-tight tracking-[-0.045em] text-slate-950 sm:text-4xl">CV tốt, phỏng vấn tự tin, cơ hội rộng mở.</h2>
+      <p className="mt-4 max-w-xl text-base leading-7 text-slate-600">Tạo hồ sơ chuyên nghiệp, luyện tập cùng AI và tìm công việc phù hợp — tất cả trên một nền tảng.</p>
     </div>
     <div className="mt-10 grid gap-4 md:grid-cols-3">
       {FEATURES.map((feature, index) => (
@@ -185,9 +186,9 @@ export const FeatureSection: React.FC = () => (
 );
 
 const STEPS = [
-  { number: '01', title: 'Chọn mục tiêu', text: 'Bắt đầu với công việc hoặc kỹ năng bạn muốn tập trung.' },
-  { number: '02', title: 'Thử sức & nhận góp ý', text: 'Luyện tập theo tình huống thực tế, xem gợi ý sau mỗi lượt.' },
-  { number: '03', title: 'Tiến gần cơ hội mới', text: 'Tự tin ứng tuyển và kết nối với nhà tuyển dụng phù hợp.' },
+  { number: '01', title: 'Tạo CV chuyên nghiệp', text: 'Hoàn thiện thông tin, kinh nghiệm và kỹ năng để hồ sơ sẵn sàng ứng tuyển.' },
+  { number: '02', title: 'Luyện tập & nhận góp ý', text: 'Thực hành theo tình huống thực tế và nhận gợi ý sau mỗi lượt.' },
+  { number: '03', title: 'Tiến gần cơ hội mới', text: 'Ứng tuyển tự tin vào những công việc phù hợp với mục tiêu của bạn.' },
 ];
 
 export const HowItWorksSection: React.FC = () => (
@@ -227,10 +228,10 @@ export const ClosingSection: React.FC = () => (
       <div className="relative z-10 max-w-2xl">
         <p className="text-xs font-bold tracking-[0.16em] text-teal-200">BƯỚC TIẾP THEO BẮT ĐẦU TỪ BẠN</p>
         <h2 id="closing-title" className="mt-4 text-3xl font-semibold leading-tight tracking-[-0.045em] sm:text-4xl">Sẵn sàng cho cơ hội tiếp theo?</h2>
-        <p className="mt-4 max-w-xl text-sm leading-6 text-indigo-100/80 sm:text-base sm:leading-7">Tạo hồ sơ miễn phí, luyện tập theo nhịp độ của riêng bạn và khám phá những lựa chọn mới.</p>
+        <p className="mt-4 max-w-xl text-sm leading-6 text-indigo-100/80 sm:text-base sm:leading-7">Tạo CV nổi bật, luyện tập theo nhịp độ của riêng bạn và khám phá những cơ hội mới.</p>
         <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-          <Link to="/register" className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-indigo-800 no-underline transition hover:-translate-y-0.5 hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-            Đăng ký miễn phí<Icon name="arrow" className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          <Link to="/my-profile" className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-indigo-800 no-underline transition hover:-translate-y-0.5 hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+            Tạo CV ngay<Icon name="arrow" className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
           </Link>
           <Link to="/opportunities" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold text-white no-underline transition hover:border-white/40 hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Khám phá việc làm</Link>
         </div>
