@@ -14,26 +14,26 @@ import BrandLogo from '../components/BrandLogo';
  */
 
 const NAV_ITEMS = [
-  { to: '/dashboard', label: 'Tổng quan', end: true },
-  { to: '/my-profile', label: 'Hồ sơ & CV' },
-  { to: '/cv-analyzer', label: 'Phân tích CV' },
-  { to: '/study', label: 'Lộ trình ôn tập' },
-  { to: '/jobs', label: 'Tìm việc làm' },
-  { to: '/my-applications', label: 'Đơn ứng tuyển' },
-  { to: '/my-interviews', label: 'Lịch phỏng vấn' },
-  { to: '/mock-interviews', label: 'Luyện phỏng vấn AI' },
-  { to: '/mock-interviews/history', label: 'Báo cáo & Đánh giá' },
+  { to: '/dashboard', label: 'Tổng quan', icon: 'dashboard', end: true },
+  { to: '/my-profile', label: 'Hồ sơ & CV', icon: 'account_box' },
+  { to: '/cv-analyzer', label: 'Phân tích CV', icon: 'fact_check' },
+  { to: '/study', label: 'Lộ trình ôn tập', icon: 'menu_book' },
+  { to: '/jobs', label: 'Tìm việc làm', icon: 'work_outline' },
+  { to: '/my-applications', label: 'Đơn ứng tuyển', icon: 'send' },
+  { to: '/my-interviews', label: 'Lịch phỏng vấn', icon: 'calendar_month' },
+  { to: '/mock-interviews', label: 'Luyện phỏng vấn AI', icon: 'smart_toy' },
+  { to: '/mock-interviews/history', label: 'Báo cáo & Đánh giá', icon: 'insights' },
 ];
 
 const FOOTER_ITEMS = [
-  { to: '/account', label: 'Cài đặt tài khoản' },
-  { to: '/bug-reports', label: 'Trợ giúp & Hỗ trợ' },
+  { to: '/account', label: 'Cài đặt tài khoản', icon: 'settings' },
+  { to: '/bug-reports', label: 'Trợ giúp & Hỗ trợ', icon: 'help_outline' },
 ];
 
 const NAV_BASE =
-  'flex items-center px-space-md py-space-sm rounded-lg transition-colors text-ds-label-lg';
+  'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-ds-label-md font-semibold transition-colors no-underline';
 const NAV_IDLE = 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface';
-const NAV_ACTIVE = 'bg-primary text-on-primary shadow-sm font-semibold';
+const NAV_ACTIVE = 'bg-primary-fixed text-on-primary-fixed-variant';
 
 const CandidateLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -66,7 +66,7 @@ const CandidateLayout: React.FC = () => {
   const sidebar = (
     <>
       <div className="flex flex-col gap-space-lg">
-        <div className="flex items-center gap-space-sm px-gutter-compact">
+        <div className="px-space-md">
           <BrandLogo
             markClass="h-9 w-9 rounded-xl shadow-sm"
             nameClass="text-ds-headline-sm text-on-surface font-semibold"
@@ -74,7 +74,8 @@ const CandidateLayout: React.FC = () => {
           />
         </div>
 
-        <nav className="flex flex-col gap-space-xs px-space-sm">
+        <nav aria-label="Điều hướng ứng viên" className="flex flex-col gap-1 px-space-sm">
+          <p className="mb-1 px-3 text-ds-label-sm font-bold uppercase tracking-[0.12em] text-outline">Không gian cá nhân</p>
           {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.to}
@@ -82,27 +83,30 @@ const CandidateLayout: React.FC = () => {
               end={item.end}
               className={({ isActive }) => `${NAV_BASE} ${isActive ? NAV_ACTIVE : NAV_IDLE}`}
             >
-              {item.label}
+              <span className="material-symbols-outlined text-[19px] text-current" aria-hidden="true">{item.icon}</span>
+              <span>{item.label}</span>
             </NavLink>
           ))}
         </nav>
       </div>
 
-      <div className="flex flex-col gap-space-xs px-space-sm pt-space-md border-t border-outline-variant/30">
+      <div className="flex flex-col gap-1 px-space-sm pt-space-md border-t border-outline-variant/40">
         {FOOTER_ITEMS.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) => `${NAV_BASE} ${isActive ? NAV_ACTIVE : NAV_IDLE}`}
           >
-            {item.label}
+            <span className="material-symbols-outlined text-[19px] text-current" aria-hidden="true">{item.icon}</span>
+            <span>{item.label}</span>
           </NavLink>
         ))}
         <button
           type="button"
           onClick={signOut}
-          className="w-full flex items-center px-space-md py-space-sm rounded-lg text-error hover:bg-error-container hover:text-on-error-container transition-colors text-left font-semibold"
+          className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-ds-label-md font-semibold text-error transition-colors hover:bg-error-container hover:text-on-error-container"
         >
+          <span className="material-symbols-outlined text-[19px]" aria-hidden="true">logout</span>
           Đăng xuất
         </button>
       </div>
@@ -117,8 +121,8 @@ const CandidateLayout: React.FC = () => {
 
       {drawerOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setDrawerOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 flex w-64 flex-col justify-between bg-surface-container-low shadow-header">
+          <button type="button" aria-label="Đóng menu điều hướng" className="absolute inset-0 h-full w-full cursor-default bg-black/40" onClick={() => setDrawerOpen(false)} />
+          <aside id="candidate-navigation-drawer" aria-label="Điều hướng ứng viên" className="absolute inset-y-0 left-0 flex w-72 flex-col justify-between border-r border-outline-variant/40 bg-surface-container-lowest py-space-md shadow-header">
             {sidebar}
           </aside>
         </div>
@@ -130,6 +134,8 @@ const CandidateLayout: React.FC = () => {
             <button
               type="button"
               aria-label="Mở menu điều hướng"
+              aria-expanded={drawerOpen}
+              aria-controls="candidate-navigation-drawer"
               onClick={() => setDrawerOpen(true)}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-outline-variant/40 text-on-surface-variant lg:hidden"
             >
