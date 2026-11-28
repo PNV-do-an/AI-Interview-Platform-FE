@@ -2,6 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: light;
+  --color-canvas: 250 249 246;
+  --color-surface: 255 255 255;
+  --color-surface-muted: 240 239 249;
+  --color-text-primary: 15 23 42;
+  --color-text-secondary: 71 85 105;
+  --color-brand-primary: 79 70 229;
+  --color-brand-primary-foreground: 255 255 255;
+  --color-brand-secondary: 20 184 166;
+  --color-border: 226 232 240;
+  --color-focus-ring: 99 102 241;
+}
+
 body {
   @apply bg-surface font-sans text-ink antialiased;
+}
+
+.landing-page ::selection {
+  background-color: rgb(var(--color-brand-primary) / 0.18);
+  color: rgb(var(--color-text-primary));
 }
