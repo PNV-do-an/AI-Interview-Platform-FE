@@ -11,6 +11,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Trang chủ' },
   { to: '/opportunities', label: 'Tìm việc làm' },
   { to: '/ai-interview', label: 'Luyện AI' },
+  { to: '/cv-builder', label: 'Tạo CV' },
   { to: '/pricing', label: 'Bảng giá' },
 ];
 
