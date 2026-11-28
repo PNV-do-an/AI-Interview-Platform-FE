@@ -204,8 +204,8 @@ const AppLayout: React.FC = () => {
   );
 
   return (
-    <div className={`min-h-screen bg-surface font-sans text-ink ${isRecruiterHub ? "theme-home" : ""}`}>
-      <aside className="fixed left-0 top-0 z-50 hidden h-full w-72 flex-col justify-between overflow-y-auto bg-card shadow-header lg:flex">
+    <div className={`career-shell min-h-screen bg-surface font-sans text-ink ${isRecruiterHub ? "theme-home" : ""}`}>
+      <aside className="fixed left-0 top-0 z-50 hidden h-full w-72 flex-col justify-between overflow-y-auto border-r border-outline bg-card shadow-header lg:flex">
         {sidebar}
       </aside>
 

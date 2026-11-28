@@ -276,8 +276,8 @@ const AdminLayout: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background text-ds-body-md text-on-surface">
-      <aside className="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest z-50 hidden lg:flex flex-col justify-between shadow-header">
+    <div className="admin-shell min-h-screen bg-background text-ds-body-md text-on-surface">
+      <aside className="fixed left-0 top-0 h-full w-72 border-r border-outline-variant bg-surface-container-lowest z-50 hidden lg:flex flex-col justify-between shadow-header">
         {sidebar}
       </aside>
 

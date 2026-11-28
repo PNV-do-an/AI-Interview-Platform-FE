@@ -1,19 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import BrandLogo from '../components/BrandLogo';
-
-/**
- * PublicShell – Header + Footer dùng chung cho 5 trang marketing public:
- *   /  (LandingPage)
- *   /opportunities  (PublicJobBoardPage)
- *   /ai-interview   (MockInterviewsPage)
- *   /pricing        (PackagesPage)
- * (/mentors tạm tắt 24/11/2026 — giữ file, chỉ comment nav/route)
- *
- * Thiết kế: capsule nav + scrolled-shadow header + mobile drawer + footer đầy đủ.
- * Các mockup page tự render <header> và <footer> trong HTML bên trong; MockupPage.tsx
- * strip chúng khi được đặt bên trong <main>.  PublicShell bọc bên ngoài nên không bị strip.
- */
 
 interface NavItem {
   to: string;
@@ -23,297 +10,128 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Trang chủ' },
   { to: '/opportunities', label: 'Tìm việc làm' },
-  { to: '/ai-interview', label: 'Luyện phỏng vấn AI' },
-  // TẠM TẮT (24/11/2026): Chuyên gia Mentor
-  // { to: '/mentors', label: 'Chuyên gia Mentor' },
+  { to: '/ai-interview', label: 'Luyện AI' },
   { to: '/pricing', label: 'Bảng giá' },
 ];
 
 const PublicShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
 
-  // shadow on scroll
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  // close mobile menu on route change
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
 
-  // prevent body scroll when mobile menu is open
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [menuOpen]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white font-sans text-on-surface antialiased">
-      {/* ── HEADER ── */}
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-200 ${
-          scrolled
-            ? 'bg-white/95 backdrop-blur-md shadow-[0_1px_12px_rgba(15,23,42,0.08)] border-b border-slate-200/60'
-            : 'bg-white/80 backdrop-blur-sm border-b border-slate-200/40'
-        }`}
-      >
-        <div className="max-w-7xl mx-auto h-16 px-4 sm:px-6 flex items-center justify-between gap-4">
-          {/* Brand */}
-          <Link
-            to="/"
-            className="flex items-center gap-2.5 group no-underline flex-shrink-0"
-            aria-label="AI Interview – Trang chủ"
-          >
-            <img
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0YLWyXI6zV1VNWAKua3PkKH0HlTIdIzUbhb6YPTr3VBuL4Ga2KVW0j2WBifvbBD5AhD60T-nSrRLjB3nO8huiGt1WK2ISAoeF191cowURaM_WVq3f7Pbcs64rDRYhOjqlSKARz9L0_m4RDfINtIOPP8QmCzQqCpGg7qHwmYKYvC-qZt4XCtxVlqvwir9tQRjAJfbjq7kI0IfKwPwr7XAqlg4nzz8wpjSmabI5Y2vo7yE3-ESQuud9"
-              alt="AI Interview Logo"
-              className="w-8 h-8 rounded-xl object-contain shadow-sm group-hover:scale-105 transition-transform"
-            />
-            <span className="text-[17px] font-bold text-slate-900 tracking-tight group-hover:text-indigo-600 transition-colors whitespace-nowrap">
-              AI Interview
+    <div className="public-shell flex min-h-screen flex-col font-sans antialiased">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-[#d5ef6c] focus:px-4 focus:py-3 focus:font-bold focus:text-[#28212e]">
+        Bỏ qua điều hướng
+      </a>
+      <header className="public-header sticky top-0 z-50">
+        <div className="mx-auto flex min-h-[72px] max-w-7xl items-center justify-between gap-4 px-4 sm:px-7 lg:px-10">
+          <Link to="/" className="flex shrink-0 items-center gap-2.5 no-underline" aria-label="AI Interview — Trang chủ">
+            <span className="flex size-10 items-center justify-center rounded-[14px] border border-[#604273]/20 bg-[#e9dff0]">
+              <BrandLogo markClass="h-7" nameClass="hidden" />
+            </span>
+            <span className="flex flex-col leading-none">
+              <span className="text-sm font-bold tracking-[-0.04em] text-[#28212e] sm:text-base">AI Interview</span>
+              <span className="mt-1 font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-[#6f6675]">career lab / VN</span>
             </span>
           </Link>
 
-          {/* Desktop Capsule Nav */}
-          <nav
-            className="hidden lg:flex items-center gap-0.5 bg-slate-100/70 rounded-full p-1 border border-slate-200/50"
-            aria-label="Điều hướng chính"
-          >
-            {NAV_ITEMS.map((item) => (
+          <nav className="public-nav hidden items-center gap-1 rounded-2xl border border-[#28212e]/10 bg-[#fffdf7]/65 p-1 lg:flex" aria-label="Điều hướng chính">
+            {NAV_ITEMS.map((item, index) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.to === '/'}
-                className={({ isActive }) =>
-                  `px-3.5 py-1.5 rounded-full text-sm font-medium transition-all no-underline whitespace-nowrap ${
-                    isActive
-                      ? 'bg-white text-indigo-600 font-semibold shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
-                  }`
-                }
+                className={({ isActive }) => `public-nav-link inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold no-underline ${isActive ? 'bg-[#fffdf7] text-[#28212e] shadow-sm' : ''}`}
               >
+                <span className="font-mono text-[9px] opacity-50">0{index + 1}</span>
                 {item.label}
               </NavLink>
             ))}
           </nav>
 
-          {/* Desktop CTA */}
-          <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
-            <Link
-              to="/login"
-              className="px-4 py-2 rounded-xl text-slate-700 font-semibold text-sm hover:bg-slate-100 transition-colors no-underline whitespace-nowrap"
-            >
-              Đăng nhập
-            </Link>
-            <Link
-              to="/register"
-              className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold text-sm shadow-sm hover:bg-indigo-700 hover:shadow-md transition-all no-underline whitespace-nowrap"
-            >
-              Đăng ký miễn phí
+          <div className="hidden shrink-0 items-center gap-3 sm:flex">
+            <Link to="/login" className="px-2 py-2 text-sm font-semibold text-[#4d4654] no-underline transition hover:text-[#604273]">Đăng nhập</Link>
+            <Link to="/register" className="public-cta inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-bold no-underline">
+              Vào phòng thử<span aria-hidden="true">↗</span>
             </Link>
           </div>
 
-          {/* Mobile: CTA + Hamburger */}
-          <div className="flex items-center gap-2 lg:hidden">
-            <Link
-              to="/register"
-              className="sm:hidden px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold text-xs shadow-sm hover:bg-indigo-700 transition-all no-underline whitespace-nowrap"
-            >
-              Đăng ký
-            </Link>
-            <div className="hidden sm:flex items-center gap-2">
-              <Link
-                to="/login"
-                className="px-3 py-1.5 rounded-lg text-slate-600 font-semibold text-sm hover:bg-slate-100 transition-colors no-underline"
-              >
-                Đăng nhập
-              </Link>
-              <Link
-                to="/register"
-                className="px-4 py-1.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm shadow-sm hover:bg-indigo-700 transition-all no-underline"
-              >
-                Đăng ký miễn phí
-              </Link>
-            </div>
-            <button
-              type="button"
-              onClick={() => setMenuOpen((v) => !v)}
-              aria-label={menuOpen ? 'Đóng menu' : 'Mở menu'}
-              aria-expanded={menuOpen}
-              aria-controls="mobile-menu"
-              className="flex items-center justify-center w-9 h-9 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
-            >
-              {menuOpen ? (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                  <line x1="4" y1="6" x2="20" y2="6" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="18" x2="20" y2="18" />
-                </svg>
-              )}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-label={menuOpen ? 'Đóng menu' : 'Mở menu'}
+            aria-expanded={menuOpen}
+            aria-controls="public-mobile-menu"
+            className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl border border-[#28212e]/15 bg-[#fffdf7] text-[#28212e] transition hover:bg-[#e9dff0] lg:hidden"
+          >
+            <span className="material-symbols-outlined" aria-hidden="true">{menuOpen ? 'close' : 'menu'}</span>
+          </button>
         </div>
 
-        {/* Mobile Drawer */}
         {menuOpen && (
-          <div
-            id="mobile-menu"
-            className="lg:hidden border-t border-slate-200/60 bg-white/98 backdrop-blur-md"
-            role="navigation"
-            aria-label="Điều hướng mobile"
-          >
-            <nav className="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-1">
-              {NAV_ITEMS.map((item) => (
+          <div id="public-mobile-menu" className="border-t border-[#28212e]/10 bg-[#f3efe6] px-4 pb-5 pt-3 shadow-lg lg:hidden">
+            <nav className="mx-auto flex max-w-7xl flex-col gap-1" aria-label="Điều hướng điện thoại">
+              {NAV_ITEMS.map((item, index) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
                   end={item.to === '/'}
-                  className={({ isActive }) =>
-                    `px-4 py-2.5 rounded-xl text-sm font-medium transition-colors no-underline ${
-                      isActive
-                        ? 'bg-indigo-50 text-indigo-600 font-semibold'
-                        : 'text-slate-700 hover:bg-slate-50 hover:text-slate-900'
-                    }`
-                  }
+                  className={({ isActive }) => `flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold no-underline ${isActive ? 'bg-[#e9dff0] text-[#4f3569]' : 'text-[#28212e]'}`}
                 >
-                  {item.label}
+                  <span className="font-mono text-xs text-[#ee795f]">0{index + 1}</span>{item.label}
                 </NavLink>
               ))}
-              <div className="mt-3 pt-3 border-t border-slate-200 flex flex-col gap-2">
-                <Link
-                  to="/login"
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm text-center hover:bg-slate-50 transition-colors no-underline"
-                >
-                  Đăng nhập
-                </Link>
-                <Link
-                  to="/register"
-                  className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm text-center hover:bg-indigo-700 transition-all no-underline shadow-sm"
-                >
-                  Đăng ký miễn phí
-                </Link>
+              <div className="mt-2 grid grid-cols-2 gap-2 border-t border-[#28212e]/10 pt-3 sm:hidden">
+                <Link to="/login" className="flex min-h-11 items-center justify-center rounded-xl border border-[#28212e]/15 bg-[#fffdf7] text-sm font-semibold text-[#28212e] no-underline">Đăng nhập</Link>
+                <Link to="/register" className="public-cta flex min-h-11 items-center justify-center rounded-xl text-sm font-bold no-underline">Đăng ký</Link>
               </div>
             </nav>
           </div>
         )}
       </header>
 
-      {/* ── PAGE CONTENT ── */}
-      <main className="flex-1 pt-16 min-h-0">
-        {children}
-      </main>
+      <main id="main-content" className="min-h-0 flex-1">{children}</main>
 
-      {/* ── FOOTER ── */}
-      <footer className="bg-slate-900 text-slate-300">
-        {/* Top section */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-14">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
-            {/* Brand column */}
-            <div className="lg:col-span-2 flex flex-col gap-5">
-              <Link to="/" className="flex items-center gap-2.5 no-underline w-fit group">
-                <img
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0YLWyXI6zV1VNWAKua3PkKH0HlTIdIzUbhb6YPTr3VBuL4Ga2KVW0j2WBifvbBD5AhD60T-nSrRLjB3nO8huiGt1WK2ISAoeF191cowURaM_WVq3f7Pbcs64rDRYhOjqlSKARz9L0_m4RDfINtIOPP8QmCzQqCpGg7qHwmYKYvC-qZt4XCtxVlqvwir9tQRjAJfbjq7kI0IfKwPwr7XAqlg4nzz8wpjSmabI5Y2vo7yE3-ESQuud9"
-                  alt="AI Interview"
-                  className="w-8 h-8 rounded-xl object-contain"
-                />
-                <span className="text-base font-bold text-white group-hover:text-indigo-400 transition-colors">AI Interview</span>
-              </Link>
-              <p className="text-sm leading-relaxed text-slate-400 max-w-sm">
-                Nền tảng luyện phỏng vấn AI đầu tiên tại Việt Nam, kết hợp công nghệ giọng nói thời gian thực và mạng lưới mentor hàng đầu giúp bạn tự tin chinh phục mọi nhà tuyển dụng.
-              </p>
-              {/* Social links */}
-              <div className="flex items-center gap-3">
-                {[
-                  { href: '#', label: 'Facebook', icon: 'M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z' },
-                  { href: '#', label: 'LinkedIn', icon: 'M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z M4 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4z' },
-                  { href: '#', label: 'YouTube', icon: 'M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.95C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.95A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z M9.75 15.02l5.75-3.02-5.75-3.02v6.04z' },
-                ].map(({ href, label, icon }) => (
-                  <a
-                    key={label}
-                    href={href}
-                    aria-label={label}
-                    className="flex items-center justify-center w-9 h-9 rounded-lg bg-slate-800 text-slate-400 hover:bg-indigo-600 hover:text-white transition-all"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                      <path d={icon} />
-                    </svg>
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            {/* Nav columns */}
-            {[
-              {
-                title: 'Sản phẩm',
-                links: [
-                  { label: 'Luyện phỏng vấn AI', to: '/ai-interview' },
-                  { label: 'Tìm việc làm', to: '/opportunities' },
-                  // TẠM TẮT (24/11/2026): Chuyên gia Mentor
-                  // { label: 'Chuyên gia Mentor', to: '/mentors' },
-                  { label: 'Bảng giá', to: '/pricing' },
-                ],
-              },
-              {
-                title: 'Công ty',
-                links: [
-                  { label: 'Giới thiệu', to: '/' },
-                  { label: 'Tin tức & Sự kiện', to: '/' },
-                  { label: 'Liên hệ hợp tác', to: '/' },
-                  { label: 'Trung tâm trợ giúp', to: '/' },
-                ],
-              },
-              {
-                title: 'Pháp lý',
-                links: [
-                  { label: 'Chính sách bảo mật', to: '/' },
-                  { label: 'Điều khoản dịch vụ', to: '/' },
-                  { label: 'Tiêu chuẩn AI minh bạch', to: '/' },
-                  { label: 'Cookie Policy', to: '/' },
-                ],
-              },
-            ].map(({ title, links }) => (
-              <div key={title} className="flex flex-col gap-4">
-                <span className="text-xs font-bold text-white uppercase tracking-widest">{title}</span>
-                <ul className="flex flex-col gap-2.5">
-                  {links.map(({ label, to }) => (
-                    <li key={label}>
-                      <Link
-                        to={to}
-                        className="text-sm text-slate-400 hover:text-white transition-colors no-underline"
-                      >
-                        {label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+      <footer className="public-footer">
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-12 sm:px-8 md:grid-cols-[1.3fr_1fr_1fr_1fr] lg:px-10 lg:py-16">
+          <div className="max-w-sm">
+            <Link to="/" className="inline-flex items-center gap-2.5 text-[#fffdf7] no-underline">
+              <span className="flex size-10 items-center justify-center rounded-[14px] bg-[#fffdf7]/10"><BrandLogo markClass="h-7" nameClass="hidden" /></span>
+              <span className="text-base font-bold tracking-tight">AI Interview</span>
+            </Link>
+            <p className="mt-4 text-sm leading-6 text-[#e7dce9]/80">Một phòng thử nhỏ cho những bước đi nghề nghiệp lớn. Diễn tập, hoàn thiện hồ sơ và gặp cơ hội mới.</p>
+            <span className="mt-4 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-[#d5ef6c]">
+              <span className="size-2 rounded-full bg-[#d5ef6c]" aria-hidden="true" />Trạm đang phát tín hiệu
+            </span>
           </div>
-        </div>
-
-        {/* Bottom bar */}
-        <div className="border-t border-slate-800">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-xs text-slate-500 text-center sm:text-left">
-              © {new Date().getFullYear()} AI Interview Platform. Mọi quyền được bảo lưu.
-            </p>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500">
-              <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
-                Hệ thống đang hoạt động
-              </span>
-              <span className="mx-2">·</span>
-              <span>Phiên bản 2.5.0</span>
-            </div>
+          <div>
+            <h2 className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-[#d5ef6c]">Khám phá</h2>
+            <ul className="mt-4 flex list-none flex-col gap-3 p-0 text-sm">
+              <li><Link to="/opportunities" className="no-underline">Cơ hội nghề nghiệp</Link></li>
+              <li><Link to="/ai-interview" className="no-underline">Luyện phỏng vấn AI</Link></li>
+              <li><Link to="/pricing" className="no-underline">Gói dịch vụ</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h2 className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-[#d5ef6c]">Bắt đầu</h2>
+            <ul className="mt-4 flex list-none flex-col gap-3 p-0 text-sm">
+              <li><Link to="/register" className="no-underline">Tạo tài khoản</Link></li>
+              <li><Link to="/login" className="no-underline">Đăng nhập</Link></li>
+              <li><Link to="/opportunities" className="no-underline">Tìm việc làm</Link></li>
+            </ul>
+          </div>
+          <div className="flex flex-col items-start justify-between gap-6 md:items-end">
+            <span className="rotate-2 rounded-lg border border-[#fffdf7]/20 px-3 py-2 font-mono text-[10px] uppercase tracking-wider text-[#fffdf7]/70">Được làm ở Trái Đất</span>
+            <p className="m-0 text-left text-xs text-[#e7dce9]/65 md:text-right">© {new Date().getFullYear()} AI Interview Platform<br />Mọi quyền được bảo lưu.</p>
           </div>
         </div>
       </footer>

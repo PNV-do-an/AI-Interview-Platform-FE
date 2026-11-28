@@ -1,14 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-
-/**
- * Shell công khai dùng chung cho khu vực ứng viên và nhà tuyển dụng.
- *
- * Mục tiêu: hai khu vực này trông như một trang web thật (header trong, footer tối,
- * nội dung max-w-7xl) thay vì console quản trị có sidebar cố định. Admin vẫn dùng
- * AdminLayout riêng.
- */
+import BrandLogo from '../components/BrandLogo';
 
 export interface PortalNavItem {
   to: string;
@@ -27,43 +20,13 @@ interface PortalShellProps {
 }
 
 const DEFAULT_FOOTER_GROUPS = [
-  {
-    title: 'Dành cho ứng viên',
-    links: [
-      { label: 'Tìm việc làm', to: '/jobs' },
-      { label: 'Luyện phỏng vấn AI', to: '/mock-interviews' },
-      { label: 'Phân tích CV', to: '/cv-analyzer' },
-      { label: 'Lộ trình ôn tập', to: '/study' },
-    ],
-  },
-  {
-    title: 'Dành cho nhà tuyển dụng',
-    links: [
-      { label: 'Đăng tin tuyển dụng', to: '/jobs/new' },
-      { label: 'Quản lý tin đăng', to: '/my-jobs' },
-      // TẠM TẮT (24/11/2026): đặt lịch phỏng vấn
-      // { label: 'Lịch phỏng vấn', to: '/my-slots' },
-      { label: 'Gói dịch vụ', to: '/packages' },
-    ],
-  },
-  {
-    title: 'Hỗ trợ',
-    links: [
-      { label: 'Trung tâm trợ giúp', to: '/bug-reports' },
-      { label: 'Gửi báo lỗi', to: '/bug-reports' },
-      { label: 'Thông báo', to: '/notifications' },
-    ],
-  },
+  { title: 'Dành cho ứng viên', links: [{ label: 'Tìm việc làm', to: '/jobs' }, { label: 'Luyện phỏng vấn AI', to: '/mock-interviews' }, { label: 'Phân tích CV', to: '/cv-analyzer' }] },
+  { title: 'Dành cho tuyển dụng', links: [{ label: 'Đăng tin tuyển dụng', to: '/jobs/new' }, { label: 'Quản lý tin đăng', to: '/my-jobs' }, { label: 'Gói dịch vụ', to: '/packages' }] },
+  { title: 'Hỗ trợ', links: [{ label: 'Trung tâm trợ giúp', to: '/bug-reports' }, { label: 'Thông báo', to: '/notifications' }, { label: 'Tài khoản', to: '/account' }] },
 ];
 
 const initialsOf = (name: string): string =>
-  (name || '?')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('') || '?';
+  (name || '?').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('') || '?';
 
 const PortalShell: React.FC<PortalShellProps> = ({
   children,
@@ -79,6 +42,8 @@ const PortalShell: React.FC<PortalShellProps> = ({
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const displayName = user?.fullName || user?.email || 'Tài khoản';
+  const initials = initialsOf(displayName);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -95,195 +60,99 @@ const PortalShell: React.FC<PortalShellProps> = ({
     navigate('/login');
   };
 
-  const displayName = user?.fullName || user?.email || 'Tài khoản';
-
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 font-sans text-slate-900 antialiased theme-home">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/70 shadow-[0_1px_12px_rgba(15,23,42,0.05)]">
-        <div className="max-w-7xl mx-auto h-16 px-4 sm:px-6 flex items-center justify-between gap-4">
-          <Link to={homeTo} className="flex items-center gap-2.5 group no-underline flex-shrink-0" aria-label="AI Interview">
-            <img
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0YLWyXI6zV1VNWAKua3PkKH0HlTIdIzUbhb6YPTr3VBuL4Ga2KVW0j2WBifvbBD5AhD60T-nSrRLjB3nO8huiGt1WK2ISAoeF191cowURaM_WVq3f7Pbcs64rDRYhOjqlSKARz9L0_m4RDfINtIOPP8QmCzQqCpGg7qHwmYKYvC-qZt4XCtxVlqvwir9tQRjAJfbjq7kI0IfKwPwr7XAqlg4nzz8wpjSmabI5Y2vo7yE3-ESQuud9"
-              alt="AI Interview"
-              className="w-8 h-8 rounded-xl object-contain shadow-sm group-hover:scale-105 transition-transform"
-            />
-            <span className="text-[17px] font-bold text-slate-900 tracking-tight group-hover:text-indigo-600 transition-colors whitespace-nowrap">
-              AI Interview
+    <div className="career-shell flex min-h-screen flex-col font-sans antialiased">
+      <a href="#portal-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-[#d5ef6c] focus:px-4 focus:py-3 focus:font-bold focus:text-[#28212e]">Bỏ qua điều hướng</a>
+      <header className="sticky top-0 z-40 border-b border-[#28212e]/10 bg-[#f3efe6]/90 backdrop-blur-xl">
+        <div className="mx-auto flex min-h-[72px] max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <Link to={homeTo} className="flex shrink-0 items-center gap-2.5 no-underline" aria-label="AI Interview — Tổng quan">
+            <span className="flex size-10 items-center justify-center rounded-[14px] border border-[#604273]/20 bg-[#e9dff0]"><BrandLogo markClass="h-7" nameClass="hidden" /></span>
+            <span className="hidden flex-col leading-none sm:flex">
+              <span className="text-sm font-bold tracking-[-0.04em] text-[#28212e]">AI Interview</span>
+              <span className="mt-1 font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-[#6f6675]">{roleLabel} / workspace</span>
             </span>
           </Link>
 
-          <nav className="hidden lg:flex items-center gap-0.5 bg-slate-100/80 rounded-full p-1 border border-slate-200/60" aria-label="Điều hướng chính">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  `px-3.5 py-1.5 rounded-full text-sm font-medium transition-all no-underline whitespace-nowrap ${
-                    isActive
-                      ? 'bg-white text-indigo-600 font-semibold shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
-                  }`
-                }
-              >
-                {item.label}
+          <nav className="hidden min-w-0 items-center gap-1 overflow-x-auto rounded-2xl border border-[#28212e]/10 bg-[#fffdf7]/65 p-1 lg:flex" aria-label="Điều hướng không gian làm việc">
+            {navItems.map((item, index) => (
+              <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => `inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold no-underline transition ${isActive ? 'bg-[#604273] text-[#fffdf7]' : 'text-[#6f6675] hover:bg-[#fffdf7] hover:text-[#28212e]'}`}>
+                <span className="font-mono text-[9px] opacity-60">0{index + 1}</span>{item.label}
               </NavLink>
             ))}
           </nav>
 
-          <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
-            <Link
-              to="/notifications"
-              aria-label="Thông báo"
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors no-underline"
-            >
-              <span className="material-symbols-outlined text-[21px]">notifications</span>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link to="/notifications" aria-label="Thông báo" className="flex size-10 items-center justify-center rounded-xl border border-[#28212e]/10 bg-[#fffdf7] text-[#604273] no-underline transition hover:-translate-y-0.5 hover:shadow-sm">
+              <span className="material-symbols-outlined" aria-hidden="true">notifications</span>
             </Link>
-
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setUserMenuOpen((v) => !v)}
-                aria-expanded={userMenuOpen}
-                className="flex items-center gap-2.5 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-2.5 shadow-sm hover:border-indigo-300 hover:shadow transition-all"
-              >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">
-                  {initialsOf(displayName)}
-                </span>
-                <span className="hidden md:flex flex-col items-start leading-tight">
-                  <span className="max-w-[150px] truncate text-xs font-semibold text-slate-900">{displayName}</span>
-                  <span className="text-[10px] font-medium text-indigo-600">{roleLabel}</span>
-                </span>
-                <span className="material-symbols-outlined text-[18px] text-slate-400">expand_more</span>
+            <div className="relative hidden sm:block">
+              <button type="button" onClick={() => setUserMenuOpen((open) => !open)} aria-expanded={userMenuOpen} aria-haspopup="menu" className="flex min-h-10 items-center gap-2 rounded-xl border border-[#28212e]/10 bg-[#fffdf7] py-1 pl-1 pr-3 text-left transition hover:border-[#604273]/40">
+                <span className="flex size-8 items-center justify-center rounded-lg bg-[#e9dff0] font-mono text-xs font-bold text-[#604273]">{initials}</span>
+                <span className="hidden max-w-32 truncate text-xs font-semibold text-[#28212e] md:block">{displayName}</span>
+                <span className="material-symbols-outlined text-base text-[#6f6675]" aria-hidden="true">expand_more</span>
               </button>
-
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
-                  <div className="px-3 py-2 border-b border-slate-100">
-                    <p className="m-0 truncate text-sm font-semibold text-slate-900">{displayName}</p>
-                    <p className="m-0 text-xs text-slate-500">{roleLabel}</p>
+                <div role="menu" className="absolute right-0 mt-2 w-64 rounded-2xl border border-[#28212e]/10 bg-[#fffdf7] p-2 shadow-xl">
+                  <div className="border-b border-[#d9d0c3] px-3 py-2">
+                    <p className="m-0 truncate text-sm font-bold text-[#28212e]">{displayName}</p>
+                    <p className="m-0 mt-1 font-mono text-[10px] uppercase tracking-wider text-[#6f6675]">{roleLabel}</p>
                   </div>
                   <div className="py-1">
-                    {[{ label: 'Tài khoản của tôi', to: accountTo }, ...quickLinks].map((link) => (
-                      <Link
-                        key={`${link.to}-${link.label}`}
-                        to={link.to}
-                        className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 no-underline"
-                      >
-                        <span className="material-symbols-outlined text-[18px] text-slate-400">chevron_right</span>
-                        {link.label}
+                    {[{ label: 'Tài khoản của tôi', to: accountTo }, ...quickLinks].map((item) => (
+                      <Link key={`${item.to}-${item.label}`} to={item.to} role="menuitem" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-[#514957] no-underline hover:bg-[#f3efe6] hover:text-[#604273]">
+                        <span className="material-symbols-outlined text-base text-[#ee795f]" aria-hidden="true">{item.icon ?? 'arrow_outward'}</span>{item.label}
                       </Link>
                     ))}
                   </div>
-                  <button
-                    type="button"
-                    onClick={signOut}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50 border-0 bg-transparent cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">logout</span>
-                    Đăng xuất
+                  <button type="button" role="menuitem" onClick={signOut} className="flex min-h-10 w-full items-center gap-2 rounded-xl px-3 text-left text-sm font-semibold text-[#ad493b] transition hover:bg-[#f9d9d0]">
+                    <span className="material-symbols-outlined text-base" aria-hidden="true">logout</span>Đăng xuất
                   </button>
                 </div>
               )}
             </div>
+            <button type="button" onClick={() => setMenuOpen((open) => !open)} aria-label={menuOpen ? 'Đóng menu' : 'Mở menu'} aria-expanded={menuOpen} aria-controls="portal-mobile-menu" className="flex size-10 items-center justify-center rounded-xl border border-[#28212e]/10 bg-[#fffdf7] text-[#28212e] lg:hidden">
+              <span className="material-symbols-outlined" aria-hidden="true">{menuOpen ? 'close' : 'menu'}</span>
+            </button>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-label={menuOpen ? 'Đóng menu' : 'Mở menu'}
-            aria-expanded={menuOpen}
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 transition-colors lg:hidden"
-          >
-            <span className="material-symbols-outlined text-[22px]">{menuOpen ? 'close' : 'menu'}</span>
-          </button>
         </div>
 
         {menuOpen && (
-          <div className="lg:hidden border-t border-slate-200 bg-white">
-            <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-1">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.end}
-                  className={({ isActive }) =>
-                    `rounded-xl px-4 py-2.5 text-sm font-medium no-underline transition-colors ${
-                      isActive ? 'bg-indigo-50 text-indigo-600 font-semibold' : 'text-slate-700 hover:bg-slate-50'
-                    }`
-                  }
-                >
-                  {item.label}
+          <div id="portal-mobile-menu" className="border-t border-[#28212e]/10 bg-[#f3efe6] px-4 pb-5 pt-3 lg:hidden">
+            <nav className="mx-auto flex max-w-7xl flex-col gap-1" aria-label="Điều hướng điện thoại">
+              {navItems.map((item, index) => (
+                <NavLink key={item.to} to={item.to} end={item.end} className={({ isActive }) => `flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold no-underline ${isActive ? 'bg-[#604273] text-[#fffdf7]' : 'text-[#28212e] hover:bg-[#fffdf7]'}`}>
+                  <span className="font-mono text-[10px] text-[#ee795f]">0{index + 1}</span>{item.label}
                 </NavLink>
               ))}
-              <div className="mt-3 pt-3 border-t border-slate-200 flex flex-col gap-2">
-                <Link to={accountTo} className="rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 no-underline hover:bg-slate-50">
-                  Tài khoản của tôi
-                </Link>
-                <Link to="/notifications" className="rounded-xl px-4 py-2.5 text-sm font-medium text-slate-700 no-underline hover:bg-slate-50">
-                  Thông báo
-                </Link>
-                <button
-                  type="button"
-                  onClick={signOut}
-                  className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white border-0 cursor-pointer"
-                >
-                  Đăng xuất
-                </button>
+              <div className="mt-2 grid grid-cols-2 gap-2 border-t border-[#28212e]/10 pt-3">
+                <Link to={accountTo} className="flex min-h-11 items-center justify-center rounded-xl border border-[#28212e]/15 bg-[#fffdf7] text-sm font-semibold text-[#28212e] no-underline">Tài khoản</Link>
+                <button type="button" onClick={signOut} className="min-h-11 rounded-xl bg-[#604273] text-sm font-bold text-[#fffdf7]">Đăng xuất</button>
               </div>
-            </div>
+            </nav>
           </div>
         )}
       </header>
 
-      <main className="flex-1 pt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">{children}</div>
+      <main id="portal-content" className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-7 sm:px-6 sm:py-9 lg:px-10">
+        {children}
       </main>
 
-      <footer className="bg-slate-900 text-slate-300 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
-            <div className="lg:col-span-2 flex flex-col gap-4">
-              <Link to={homeTo} className="flex items-center gap-2.5 no-underline w-fit group">
-                <img
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0YLWyXI6zV1VNWAKua3PkKH0HlTIdIzUbhb6YPTr3VBuL4Ga2KVW0j2WBifvbBD5AhD60T-nSrRLjB3nO8huiGt1WK2ISAoeF191cowURaM_WVq3f7Pbcs64rDRYhOjqlSKARz9L0_m4RDfINtIOPP8QmCzQqCpGg7qHwmYKYvC-qZt4XCtxVlqvwir9tQRjAJfbjq7kI0IfKwPwr7XAqlg4nzz8wpjSmabI5Y2vo7yE3-ESQuud9"
-                  alt="AI Interview"
-                  className="w-8 h-8 rounded-xl object-contain"
-                />
-                <span className="text-base font-bold text-white group-hover:text-indigo-400 transition-colors">AI Interview</span>
-              </Link>
-              <p className="text-sm leading-relaxed text-slate-400 max-w-sm">
-                Nền tảng luyện phỏng vấn AI và kết nối cơ hội nghề nghiệp dành cho ứng viên và nhà tuyển dụng tại Việt Nam.
-              </p>
-            </div>
-
-            {footerGroups.map((group) => (
-              <div key={group.title} className="flex flex-col gap-4">
-                <span className="text-xs font-bold text-white uppercase tracking-widest">{group.title}</span>
-                <ul className="flex flex-col gap-2.5">
-                  {group.links.map((link) => (
-                    <li key={`${group.title}-${link.label}`}>
-                      <Link to={link.to} className="text-sm text-slate-400 hover:text-white transition-colors no-underline">
-                        {link.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+      <footer className="mt-auto border-t border-[#28212e]/10 bg-[#ebe5d9]">
+        <div className="mx-auto grid max-w-[1600px] gap-8 px-5 py-10 sm:px-8 md:grid-cols-[1.3fr_1fr_1fr_1fr] lg:px-10">
+          <div>
+            <Link to={homeTo} className="inline-flex items-center gap-2 font-bold text-[#28212e] no-underline"><BrandLogo markClass="h-7" nameClass="text-sm font-bold text-[#28212e]" /></Link>
+            <p className="mt-3 max-w-xs text-xs leading-5 text-[#6f6675]">Không gian nghề nghiệp của bạn, bớt nghi thức và nhiều lần thử hơn.</p>
           </div>
-        </div>
-        <div className="border-t border-slate-800">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-xs text-slate-500 text-center sm:text-left">
-              © {new Date().getFullYear()} AI Interview Platform. Mọi quyền được bảo lưu.
-            </p>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500">
-              <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
-              Hệ thống đang hoạt động
+          {footerGroups.map((group) => (
+            <div key={group.title}>
+              <h2 className="font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-[#604273]">{group.title}</h2>
+              <ul className="mt-3 flex list-none flex-col gap-2 p-0 text-xs">
+                {group.links.map((item) => <li key={`${group.title}-${item.label}`}><Link to={item.to} className="text-[#6f6675] no-underline transition hover:text-[#604273]">{item.label}</Link></li>)}
+              </ul>
             </div>
-          </div>
+          ))}
         </div>
+        <div className="border-t border-[#28212e]/10 px-5 py-4 text-center font-mono text-[9px] uppercase tracking-widest text-[#6f6675]">AI Interview · tín hiệu từ Việt Nam · © {new Date().getFullYear()}</div>
       </footer>
     </div>
   );
