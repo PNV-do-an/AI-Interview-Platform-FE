@@ -34,6 +34,7 @@ import MockInterviewsPublicPage from './views/pages/MockInterviewsPublicPage';
 import MockInterviewSessionPage from './views/pages/MockInterviewSessionPage';
 import MockInterviewResultPage from './views/pages/MockInterviewResultPage';
 import CvAnalyzerPage from './views/pages/CvAnalyzerPage';
+import CvBuilderPage from './views/pages/CvBuilderPage';
 import CoverLettersPage from './views/pages/CoverLettersPage';
 import StudyProgramsPage from './views/pages/StudyProgramsPage';
 import StudyProgramDetailPage from './views/pages/StudyProgramDetailPage';
@@ -79,8 +80,8 @@ const HomeRoute: React.FC = () => {
 };
 
 /**
- * Ứng viên vào `CandidateLayout` (shell "CANDIDATE PORTAL" theo mockup 2026-10-26); các vai trò
- * khác giữ `AppLayout` vì chưa có thiết kế mới. Route dùng chung nên không phải nhân đôi khai báo.
+ * Ứng viên và nhà tuyển dụng dùng portal shell riêng; quản trị/nhân viên dùng workspace vận hành.
+ * Route dùng chung nên không phải nhân đôi khai báo.
  */
 const WorkspaceLayout: React.FC = () => {
   const { user } = useAuth();
@@ -153,6 +154,7 @@ const App: React.FC = () => {
                 <Route path="/mock-interviews/:id" element={<MockInterviewSessionPage />} />
                 <Route path="/mock-interviews/:id/result" element={<MockInterviewResultPage />} />
                 <Route path="/cv-analyzer" element={<CvAnalyzerPage />} />
+                <Route path="/cv-builder" element={<CvBuilderPage />} />
                 <Route path="/study" element={<StudyProgramsPage />} />
                 <Route path="/study/:id" element={<StudyProgramDetailPage />} />
                 <Route path="/cover-letters" element={<CoverLettersPage />} />

@@ -14,10 +14,12 @@ const NAV_ITEMS: PortalNavItem[] = [
   // TẠM TẮT (24/11/2026): lịch phỏng vấn
   // { to: '/my-interviews', label: 'Lịch phỏng vấn' },
   { to: '/mock-interviews', label: 'Luyện AI' },
+  { to: '/cv-builder', label: 'Tạo CV' },
   { to: '/payments', label: 'Ví & thanh toán' },
 ];
 
 const QUICK_LINKS = [
+  { label: 'Tạo CV', to: '/cv-builder' },
   { label: 'Hồ sơ & CV', to: '/my-profile' },
   { label: 'Nạp tiền vào ví', to: '/wallet' },
   { label: 'Gói dịch vụ & nâng cấp', to: '/packages' },
@@ -40,6 +42,7 @@ const FOOTER_GROUPS = [
   {
     title: 'Công cụ',
     links: [
+      { label: 'Tạo CV', to: '/cv-builder' },
       { label: 'Phân tích CV', to: '/cv-analyzer' },
       { label: 'Hồ sơ & CV', to: '/my-profile' },
       { label: 'Lộ trình ôn tập', to: '/study' },
