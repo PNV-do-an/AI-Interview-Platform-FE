@@ -24,7 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Trang chủ' },
   { to: '/opportunities', label: 'Tìm việc làm' },
   { to: '/ai-interview', label: 'Luyện phỏng vấn AI' },
-  { to: '/mentors', label: 'Chuyên gia Mentor' },
+  { to: '/my-profile', label: 'Tạo CV' },
   { to: '/pricing', label: 'Bảng giá' },
 ];
 
@@ -226,7 +226,7 @@ const PublicShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <span className="text-base font-bold text-white group-hover:text-indigo-400 transition-colors">AI Interview</span>
               </Link>
               <p className="text-sm leading-relaxed text-slate-400 max-w-sm">
-                Nền tảng luyện phỏng vấn AI đầu tiên tại Việt Nam, kết hợp công nghệ giọng nói thời gian thực và mạng lưới mentor hàng đầu giúp bạn tự tin chinh phục mọi nhà tuyển dụng.
+                Nền tảng nghề nghiệp kết hợp tạo CV, luyện phỏng vấn AI và cơ hội việc làm, giúp bạn tự tin chinh phục nhà tuyển dụng.
               </p>
               {/* Social links */}
               <div className="flex items-center gap-3">
@@ -256,7 +256,7 @@ const PublicShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 links: [
                   { label: 'Luyện phỏng vấn AI', to: '/ai-interview' },
                   { label: 'Tìm việc làm', to: '/opportunities' },
-                  { label: 'Chuyên gia Mentor', to: '/mentors' },
+                  { label: 'Tạo CV', to: '/my-profile' },
                   { label: 'Bảng giá', to: '/pricing' },
                 ],
               },
